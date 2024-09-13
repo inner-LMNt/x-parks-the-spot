@@ -11,12 +11,14 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-import { login } from '@/features/user/userSlice'; // Assuming this is the correct path to your userSlice
+import { login } from '@/features/user/userSlice';
+import AuthLayout from "@/components/AuthLayout";
 
-
-type LoginFormInputs = {
+type SignUpFormInputs = {
+    name: string;
     email: string;
     password: string;
+    confirmPassword: string;
 };
 
 const Logo = () => (
@@ -50,60 +52,72 @@ const itemVariants = {
     }
 };
 
-export default function LoginPage() {
+export default function SignUpPage() {
     const {
         register,
         handleSubmit,
-        formState: { errors, isSubmitting }
-    } = useForm<LoginFormInputs>();
+        formState: { errors, isSubmitting },
+        watch
+    } = useForm<SignUpFormInputs>();
 
     const dispatch = useDispatch();
     const router = useRouter();
 
-    const onSubmit = async (data: LoginFormInputs) => {
+    const onSubmit = async (data: SignUpFormInputs) => {
         try {
-            // Simulated API call
             await new Promise(resolve => setTimeout(resolve, 2000));
             console.log('Form submitted:', data);
-
-            // Dispatch login action
-            dispatch(login(data));
-
-            // Redirect to dashboard or home page
+            dispatch(login());
             router.push('/dashboard');
         } catch (error) {
-            console.error('Login failed:', error);
-            // Handle login error (e.g., show error message)
+            console.error('Signup failed:', error);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-4 overflow-hidden">
+        <div className = "min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-4">
             <Logo />
             <motion.div
                 variants={formVariants}
                 initial="hidden"
                 animate="visible"
             >
-                <Card className="w-[350px] shadow-2xl backdrop-blur-sm bg-white/90">
+                <Card className="w-[400px] shadow-2xl backdrop-blur-sm bg-white/90">
                     <CardHeader className="space-y-1">
                         <motion.div variants={itemVariants}>
-                            <CardTitle className="text-2xl text-center font-bold">Sign in</CardTitle>
+                            <CardTitle className="text-2xl text-center font-bold">Create an Account</CardTitle>
                         </motion.div>
                         <motion.div variants={itemVariants}>
                             <CardDescription className="text-center">
-                                Enter your credentials to access your account
+                                Sign up for a new Parking Pass account
                             </CardDescription>
                         </motion.div>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                             <motion.div variants={itemVariants} className="space-y-2">
+                                <Label htmlFor="name">Name</Label>
+                                <Input
+                                    id="name"
+                                    type="text"
+                                    {...register("name", { required: "Name is required" })}
+                                    className="transition-all duration-200 focus:ring-2 focus:ring-purple-400"
+                                />
+                                {errors.name && (
+                                    <motion.p
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="text-sm text-red-500"
+                                    >
+                                        {errors.name.message}
+                                    </motion.p>
+                                )}
+                            </motion.div>
+                            <motion.div variants={itemVariants} className="space-y-2">
                                 <Label htmlFor="email">Email</Label>
                                 <Input
                                     id="email"
                                     type="email"
-                                    placeholder="m@example.com"
                                     {...register("email", {
                                         required: "Email is required",
                                         pattern: {
@@ -147,6 +161,31 @@ export default function LoginPage() {
                                     </motion.p>
                                 )}
                             </motion.div>
+                            <motion.div variants={itemVariants} className="space-y-2">
+                                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                                <Input
+                                    id="confirmPassword"
+                                    type="password"
+                                    {...register("confirmPassword", {
+                                        required: "Please confirm your password",
+                                        validate: (val: string) => {
+                                            if (watch('password') != val) {
+                                                return "Your passwords do not match";
+                                            }
+                                        }
+                                    })}
+                                    className="transition-all duration-200 focus:ring-2 focus:ring-purple-400"
+                                />
+                                {errors.confirmPassword && (
+                                    <motion.p
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="text-sm text-red-500"
+                                    >
+                                        {errors.confirmPassword.message}
+                                    </motion.p>
+                                )}
+                            </motion.div>
                             <motion.div variants={itemVariants}>
                                 <Button
                                     type="submit"
@@ -156,21 +195,17 @@ export default function LoginPage() {
                                     {isSubmitting ? (
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     ) : null}
-                                    Sign In
+                                    Sign Up
                                 </Button>
                             </motion.div>
                         </form>
                     </CardContent>
                     <CardFooter>
-                        <motion.div variants={itemVariants} className="w-full">
-                            <Button variant="link" className="w-full text-sm text-gray-600 hover:text-gray-800">
-                                Forgot password?
-                            </Button>
-                        </motion.div>
-                        <motion.div variants={itemVariants} className="w-full">
-                            <Link href="/signup" passHref>
-                                <Button variant="outline" className="w-full">
-                                    Create an account
+                        <motion.div variants={itemVariants} className="w-full text-center">
+                            <span className="text-sm text-gray-600">Already have an account? </span>
+                            <Link href="/login" passHref>
+                                <Button variant="link" className="text-sm text-purple-600 hover:text-purple-800">
+                                    Sign In
                                 </Button>
                             </Link>
                         </motion.div>
