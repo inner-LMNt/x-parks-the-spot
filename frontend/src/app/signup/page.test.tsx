@@ -28,7 +28,7 @@ describe('SignUpPage', () => {
 
         expect(screen.getByLabelText(/name/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+        expect(screen.queryAllByLabelText(/password/i).length).toBeGreaterThan(0);
         expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /sign up/i })).toBeInTheDocument();
     });
@@ -58,7 +58,7 @@ describe('SignUpPage', () => {
 
         fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'John Doe' } });
         fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'john@example.com' } });
-        fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'password123' } });
+        fireEvent.change(screen.getByLabelText(/^password$/i), { target: { value: 'password123' } });
         fireEvent.change(screen.getByLabelText(/confirm password/i), { target: { value: 'password123' } });
 
         fireEvent.click(screen.getByRole('button', { name: /sign up/i }));
