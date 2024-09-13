@@ -12,8 +12,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { login } from '@/features/user/userSlice';
-import AuthLayout from "@/components/AuthLayout";
-
+import {Logo} from '@/components/custom/TopLeftLogo'
 type SignUpFormInputs = {
     name: string;
     email: string;
@@ -21,11 +20,6 @@ type SignUpFormInputs = {
     confirmPassword: string;
 };
 
-const Logo = () => (
-    <div className="absolute top-4 left-4 text-white font-bold text-2xl">
-        Parking Pass
-    </div>
-);
 
 const formVariants = {
     hidden: { opacity: 0, y: 50, scale: 0.9 },
