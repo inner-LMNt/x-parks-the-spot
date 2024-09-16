@@ -11,7 +11,7 @@ export const Logo = () => (
                 <MapPin className="text-emerald-500" size={36} strokeWidth={2.5} />
             </div>
             <svg width="348" height="80" viewBox="0 0 348 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="absolute -bottom-16 -left-1 pointer-events-none">
-                <path d="M20 10 C 80 40, 160 0, 240 30 S 300 10, 320 10" stroke="url(#gradient)" strokeWidth="2" strokeDasharray="4 4" fill="none" />
+                <path d="M 18 10 C 40 95 121 -11 159 37 S 324 35 317 10" stroke="url(#gradient)" strokeWidth="2" strokeDasharray="4 4" fill="none" />
                 <defs>
                     <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stopColor="#E9D5FF" />
