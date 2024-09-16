@@ -15,8 +15,6 @@ tags:
     description: Parking space listings and management
   - name: Reservations
     description: Booking and managing reservations
-  - name: Payments
-    description: Payment processing and management
   - name: Spot Finder
     description: Spot finder submissions and rewards
   - name: Notifications
@@ -216,47 +214,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CarInfo'
-        '400':
-          description: Invalid input
-        '401':
-          description: Unauthorized
-  /users/me/payment-methods:
-    get:
-      tags:
-        - Users
-      summary: Get current user's payment methods
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: List of payment methods
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PaymentMethod'
-        '401':
-          description: Unauthorized
-    post:
-      tags:
-        - Users
-      summary: Add new payment method
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PaymentMethod'
-      responses:
-        '201':
-          description: Payment method added
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaymentMethod'
         '400':
           description: Invalid input
         '401':
@@ -550,30 +507,7 @@ paths:
           description: Unauthorized
         '403':
           description: Forbidden
-  /payments:
-    post:
-      tags:
-        - Payments
-      summary: Process a payment
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PaymentRequest'
-      responses:
-        '200':
-          description: Payment processed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaymentResponse'
-        '400':
-          description: Payment failed
-        '401':
-          description: Unauthorized
+
   /spot-finder/submissions:
     get:
       tags:
@@ -877,25 +811,6 @@ components:
           type: string
         default:
           type: boolean
-    PaymentMethod:
-      type: object
-      required:
-        - type
-        - details
-      properties:
-        id:
-          type: string
-          format: uuid
-        type:
-          type: string
-          enum:
-            - card
-            - paypal
-            - offline
-        details:
-          type: object
-        default:
-          type: boolean
     RenterProfile:
       type: object
       properties:
@@ -903,10 +818,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CarInfo'
-        payment_methods:
-          type: array
-          items:
-            $ref: '#/components/schemas/PaymentMethod'
         favorites:
           type: array
           items:
@@ -1121,8 +1032,6 @@ components:
             - active
             - completed
             - canceled
-        payment_info:
-          $ref: '#/components/schemas/Payment'
         car_info:
           $ref: '#/components/schemas/CarInfo'
         created_at:
@@ -1138,7 +1047,6 @@ components:
         - start_time
         - end_time
         - car_info_id
-        - payment_method_id
       properties:
         parking_space_id:
           type: string
@@ -1152,67 +1060,12 @@ components:
         car_info_id:
           type: string
           format: uuid
-        payment_method_id:
-          type: string
-          format: uuid
     ReservationUpdateRequest:
       type: object
       properties:
         end_time:
           type: string
           format: date-time
-    Payment:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        reservation_id:
-          type: string
-          format: uuid
-        amount:
-          type: number
-          format: float
-        method:
-          $ref: '#/components/schemas/PaymentMethod'
-        status:
-          type: string
-          enum:
-            - pending
-            - completed
-            - failed
-        timestamp:
-          type: string
-          format: date-time
-    PaymentRequest:
-      type: object
-      required:
-        - reservation_id
-        - amount
-        - payment_method_id
-      properties:
-        reservation_id:
-          type: string
-          format: uuid
-        amount:
-          type: number
-          format: float
-        payment_method_id:
-          type: string
-          format: uuid
-    PaymentResponse:
-      type: object
-      properties:
-        payment_id:
-          type: string
-          format: uuid
-        status:
-          type: string
-          enum:
-            - success
-            - failed
-        message:
-          type: string
     SpotFinderSubmission:
       type: object
       properties:
