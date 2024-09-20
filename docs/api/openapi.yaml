@@ -219,7 +219,7 @@ paths:
         '401':
           description: Unauthorized
   /parking-spaces:
-    get:
+    post:
       tags:
         - Parking Spaces
       summary: Search for parking spaces
@@ -662,7 +662,6 @@ components:
         - email
         - password
         - full_name
-        - roles
       properties:
         email:
           type: string
@@ -672,14 +671,6 @@ components:
           format: password
         full_name:
           type: string
-        roles:
-          type: array
-          items:
-            type: string
-            enum:
-              - renter
-              - owner
-              - spot_finder
     AuthResponse:
       type: object
       properties:
@@ -932,12 +923,12 @@ components:
         pricing_info:
           $ref: '#/components/schemas/PricingInfo'
         dynamic_pricing_enabled:
-          type: boolean
+          type: boolean # default: false, might be useful to toggle later?
         cancellation_policy:
           type: string
         proof_of_ownership:
           type: string
-          format: uri
+          format: uri # is this how we can get a "link" to the binary? or would it be passed to the api in another way?
     ParkingSpaceUpdateRequest:
       type: object
       properties:
@@ -1047,6 +1038,7 @@ components:
         - start_time
         - end_time
         - car_info_id
+        - renter_id
       properties:
         parking_space_id:
           type: string
@@ -1060,9 +1052,18 @@ components:
         car_info_id:
           type: string
           format: uuid
+        renter_id:
+          type: string
+          format: uuid
     ReservationUpdateRequest:
       type: object
+      required:
+        - end_time
+        - parking_space_id
       properties:
+        parking_space_id:
+          type: string
+          format: uuid
         end_time:
           type: string
           format: date-time
