@@ -700,6 +700,9 @@ components:
         email:
           type: string
           format: email
+        username:
+          type:
+            string
         full_name:
           type: string
         roles:
@@ -829,12 +832,6 @@ components:
         earnings:
           type: number
           format: float
-        verification_status:
-          type: string
-          enum:
-            - verified
-            - pending
-            - rejected
     SpotFinderProfile:
       type: object
       properties:

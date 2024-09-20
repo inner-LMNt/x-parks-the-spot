@@ -158,9 +158,11 @@ export default function LoginPage() {
                     </CardContent>
                     <CardFooter>
                         <motion.div variants={itemVariants} className="w-full">
-                            <Button variant="link" className="w-full text-sm text-gray-600 hover:text-gray-800">
-                                Forgot password?
-                            </Button>
+                            <Link href="/reset" passHref>
+                                <Button variant="link" className="w-full text-sm text-gray-600 hover:text-gray-800">
+                                    Forgot password?
+                                </Button>
+                            </Link>
                         </motion.div>
                         <motion.div variants={itemVariants} className="w-full">
                             <Link href="/signup" passHref>
