@@ -1,42 +1,4 @@
-# Dependencies
-/frontend/node_modules
-/frontend/.pnp
-/frontend/.pnp.js
-
-# Next.js build output
-/frontend/.next/
-/frontend/out/
-
-# Log files
-/frontend/npm-debug.log*
-/frontend/yarn-debug.log*
-/frontend/yarn-error.log*
-/frontend/pnpm-debug.log*
-
-# Local environment variables
-/frontend/.env
-/frontend/.env.local
-/frontend/.env.development.local
-/frontend/.env.test.local
-/frontend/.env.production.local
-
-# Next.js specific files
-/frontend/.next/
-/frontend/.next/
-/frontend/out/
-
-# Node specific
-/frontend/package-lock.json
-/frontend/yarn.lock
-/frontend/.pnpm-debug.log
-
-# Optional npm cache directory
-/frontend/.npm
-
-# IDE specific files
-/frontend/.vscode/
-/frontend/.idea/
-*.swp
-*.swo
-*.swn
-*.swd
+# Do not check in IDE files
+.DS_Store
+.idea
+.vscode
