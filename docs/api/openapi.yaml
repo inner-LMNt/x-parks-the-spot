@@ -973,10 +973,10 @@ components:
             - Sunday
         start_time:
           type: string
-          pattern: '^[0-2][0-9]:[0-5][0-9]$'
+          pattern: date-time
         end_time:
           type: string
-          pattern: '^[0-2][0-9]:[0-5][0-9]$'
+          pattern: date-time
     PricingInfo:
       type: object
       required:
@@ -1053,9 +1053,9 @@ components:
       type: object
       required:
         - end_time
-        - parking_space_id
+        - reservation_id
       properties:
-        parking_space_id:
+        reservation_id:
           type: string
           format: uuid
         end_time:
