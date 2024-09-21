@@ -820,17 +820,11 @@ components:
         parking_spaces:
           type: array
           items:
-            type: string
-            format: uuid
+            $ref: '#/components/schemas/ParkingSpace'
+
         earnings:
           type: number
           format: float
-        verification_status:
-          type: string
-          enum:
-            - verified
-            - pending
-            - rejected
     SpotFinderProfile:
       type: object
       properties:
