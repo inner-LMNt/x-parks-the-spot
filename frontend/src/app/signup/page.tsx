@@ -59,8 +59,6 @@ export default function SignUpPage() {
 
     const onSubmit = async (data: SignUpFormInputs) => {
         try {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            console.log('Form submitted:', data);
             dispatch(login());
             router.push('/dashboard');
         } catch (error) {

@@ -1,9 +1,11 @@
+// src/app/login/page.tsx
+
 'use client';
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch, useAppSelector } from '@/store/hooks'; // Use typed hooks
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -11,9 +13,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-import { login } from '@/features/user/userSlice'; // Assuming this is the correct path to your userSlice
-import {Logo} from '@/components/custom/TopLeftLogo'
-
+import { login } from '@/features/user/userSlice';
+import { Logo } from '@/components/custom/TopLeftLogo';
+import {LoginRequest} from "@/types/type";
 
 type LoginFormInputs = {
     email: string;
@@ -52,23 +54,25 @@ export default function LoginPage() {
         formState: { errors, isSubmitting }
     } = useForm<LoginFormInputs>();
 
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch(); // Use the typed dispatch
     const router = useRouter();
 
-    const onSubmit = async (data: LoginFormInputs) => {
+    const { loading, error } = useAppSelector((state) => state.user); // Access loading and error states
+
+    const onSubmit = async (data: LoginRequest) => {
         try {
-            // Simulated API call
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            console.log('Form submitted:', data);
-
-            // Dispatch login action
-            dispatch(login(data));
-
-            // Redirect to dashboard or home page
-            router.push('/dashboard');
+            const resultAction = await dispatch(login(data));
+            if (login.fulfilled.match(resultAction)) {
+                // Login successful
+                router.push('/dashboard');
+            } else if (login.rejected.match(resultAction)) {
+                // Login failed
+                console.error('Login failed:', resultAction.payload);
+                // Optionally, display the error using a toast or UI element
+            }
         } catch (error) {
             console.error('Login failed:', error);
-            // Handle login error (e.g., show error message)
+            // Handle any unexpected errors
         }
     };
 
@@ -146,14 +150,23 @@ export default function LoginPage() {
                                 <Button
                                     type="submit"
                                     className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-200"
-                                    disabled={isSubmitting}
+                                    disabled={isSubmitting || loading}
                                 >
-                                    {isSubmitting ? (
+                                    {isSubmitting || loading ? (
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     ) : null}
                                     Sign In
                                 </Button>
                             </motion.div>
+                            {error && (
+                                <motion.p
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="text-sm text-red-500 text-center"
+                                >
+                                    {error}
+                                </motion.p>
+                            )}
                         </form>
                     </CardContent>
                     <CardFooter>

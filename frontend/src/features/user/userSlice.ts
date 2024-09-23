@@ -1,26 +1,138 @@
 // src/features/user/userSlice.ts
-import { createSlice } from '@reduxjs/toolkit';
 
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import axios from '../../api/axiosInstance'; // Ensure the path is correct
+import { LoginRequest, RegisterRequest, AuthResponse, User } from '@/types/type';
+
+/**
+ * Interface for the user slice state
+ */
 interface UserState {
     isLoggedIn: boolean;
+    user: User | null;
+    loading: boolean;
+    error: string | null;
 }
 
 const initialState: UserState = {
     isLoggedIn: false,
+    user: null,
+    loading: false,
+    error: null,
 };
+
+/**
+ * Define the login thunk
+ */
+export const login = createAsyncThunk<
+    AuthResponse, // Return type of the payload creator
+    LoginRequest, // First argument to the payload creator
+    { rejectValue: string } // Types for ThunkAPI
+>(
+    'user/login',
+    async (credentials, { rejectWithValue }) => {
+        try {
+            const response = await axios.post<AuthResponse>('auth/login', credentials);
+            return response.data;
+        } catch (error: any) {
+            // Extract a meaningful error message
+            return rejectWithValue(error.response?.data?.message || 'Login failed');
+        }
+    }
+);
+
+/**
+ * Define the register thunk
+ */
+export const register = createAsyncThunk<
+    AuthResponse, // Return type of the payload creator
+    RegisterRequest, // First argument to the payload creator
+    { rejectValue: string } // Types for ThunkAPI
+>(
+    'user/register',
+    async (credentials, { rejectWithValue }) => {
+        try {
+            const response = await axios.post<AuthResponse>('auth/register', credentials);
+            return response.data;
+        } catch (error: any) {
+            // Extract a meaningful error message
+            return rejectWithValue(error.response?.data?.message || 'Registration failed');
+        }
+    }
+);
+
+/**
+ * Define the logout thunk
+ */
+export const logout = createAsyncThunk<
+    void, // Return type of the payload creator
+    void, // First argument to the payload creator
+    { rejectValue: string } // Types for ThunkAPI
+>(
+    'user/logout',
+    async (_, { rejectWithValue }) => {
+        try {
+            // Implement logout logic if needed (e.g., API call to invalidate token)
+            await axios.post('auth/logout');
+            return;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Logout failed');
+        }
+    }
+);
 
 const userSlice = createSlice({
     name: 'user',
     initialState,
     reducers: {
-        login(state) {
-            state.isLoggedIn = true;
-        },
-        logout(state) {
-            state.isLoggedIn = false;
-        },
+    },
+    extraReducers: (builder) => {
+        builder
+            // Handle login
+            .addCase(login.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(login.fulfilled, (state, action) => {
+                state.loading = false;
+                state.isLoggedIn = true;
+                state.user = action.payload.user; // Ensure AuthResponse includes 'user'
+                // Optionally, store tokens or other necessary data if included in AuthResponse
+            })
+            .addCase(login.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || 'Login failed';
+            })
+            // Handle register
+            .addCase(register.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(register.fulfilled, (state, action) => {
+                state.loading = false;
+                state.isLoggedIn = true;
+                state.user = action.payload.user; // Ensure AuthResponse includes 'user'
+                // Optionally, store tokens or other necessary data if included in AuthResponse
+            })
+            .addCase(register.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || 'Registration failed';
+            })
+            // Handle logout
+            .addCase(logout.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(logout.fulfilled, (state) => {
+                state.loading = false;
+                state.isLoggedIn = false;
+                state.user = null;
+            })
+            .addCase(logout.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || 'Logout failed';
+            });
     },
 });
 
-export const { login, logout } = userSlice.actions;
 export default userSlice.reducer;

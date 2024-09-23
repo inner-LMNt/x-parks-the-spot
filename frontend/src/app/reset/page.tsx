@@ -137,7 +137,6 @@ export default function ForgotPasswordPage() {
         </Card>
       </motion.div>
 
-      // AlertDialog Section
         <AlertDialog open={isDialogOpen} onOpenChange={() => setIsDialogOpen(true)}>
         <AlertDialogContent className="bg-white shadow-lg rounded-lg p-6">
             <AlertDialogHeader>

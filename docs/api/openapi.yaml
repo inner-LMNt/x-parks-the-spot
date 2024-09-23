@@ -673,12 +673,17 @@ components:
           type: string
     AuthResponse:
       type: object
+      required:
+        - userId
       properties:
         access_token:
           type: string
         token_type:
           type: string
           example: Bearer
+        userId:
+          type: string
+          format: uuid
     LoginRequest:
       type: object
       required:
