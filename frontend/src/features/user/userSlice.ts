@@ -1,6 +1,6 @@
 // src/features/user/userSlice.ts
 
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import {createSlice, createAsyncThunk, UnknownAction, PayloadAction, isAnyOf} from '@reduxjs/toolkit';
 import axios from '../../api/axiosInstance'; // Ensure the path is correct
 import {LoginRequest, RegisterRequest, AuthResponse, User, PasswordResetRequest} from '@/types/type';
 
@@ -9,14 +9,14 @@ import {LoginRequest, RegisterRequest, AuthResponse, User, PasswordResetRequest}
  */
 interface UserState {
     isLoggedIn: boolean;
-    user: User | null;
+    userId: string | null;
     loading: boolean;
     error: string | null;
 }
 
 const initialState: UserState = {
     isLoggedIn: false,
-    user: null,
+    userId: null,
     loading: false,
     error: null,
 };
@@ -55,8 +55,16 @@ export const register_acc = createAsyncThunk<
             const response = await axios.post<AuthResponse>('auth/register', credentials);
             return response.data;
         } catch (error: any) {
-            // Extract a meaningful error message
-            return rejectWithValue(error.response?.data?.message || 'Registration failed');
+            let errorMessage = 'Login failed';
+
+            if (error instanceof Error) {
+                // General error handling
+                errorMessage = error.message || errorMessage;
+            }
+
+            console.error('Login error:', error);
+
+            return rejectWithValue(errorMessage);
         }
     }
 );
@@ -97,71 +105,60 @@ export const reset = createAsyncThunk<
     }
 );
 
-const userSlice = createSlice({
+const userSlice = createSlice<UserState, {}, 'user'>({
     name: 'user',
     initialState,
     reducers: {
+        // Add synchronous reducers here if needed
     },
     extraReducers: (builder) => {
         builder
-            // Handle login
-            .addCase(login.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(login.fulfilled, (state, action) => {
-                state.loading = false;
-                state.isLoggedIn = true;
-                state.user = action.payload.user; // Ensure AuthResponse includes 'user'
-                // Optionally, store tokens or other necessary data if included in AuthResponse
-            })
-            .addCase(login.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload || 'Login failed';
-            })
-            // Handle register
-            .addCase(register_acc.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(register_acc.fulfilled, (state, action) => {
-                state.loading = false;
-                state.isLoggedIn = true;
-                state.user = action.payload.user; // Ensure AuthResponse includes 'user'
-                // Optionally, store tokens or other necessary data if included in AuthResponse
-            })
-            .addCase(register_acc.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload || 'Registration failed';
-            })
-            // Handle logout
-            .addCase(logout.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(logout.fulfilled, (state) => {
-                state.loading = false;
-                state.isLoggedIn = false;
-                state.user = null;
-            })
-            .addCase(logout.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload || 'Logout failed';
-            })
-            .addCase(reset.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(reset.fulfilled, (state) => {
-                state.loading = false;
-                state.isLoggedIn = false;
-                state.user = null;
-            })
-            .addCase(reset.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload || 'Logout failed';
-            });
+            // Handle all pending actions
+            .addMatcher(
+                (action: UnknownAction): action is ReturnType<typeof login.pending | typeof register_acc.pending | typeof logout.pending | typeof reset.pending> =>
+                    action.type.endsWith('/pending'),
+                (state) => {
+                    state.loading = true;
+                    state.error = null;
+                }
+            )
+
+            // Handle all rejected actions
+            .addMatcher(
+                (action: UnknownAction): action is ReturnType<typeof login.rejected | typeof register_acc.rejected | typeof logout.rejected | typeof reset.rejected> =>
+                    action.type.endsWith('/rejected'),
+                (state, action) => {
+                    state.loading = false;
+
+                    // Note: because the type of the action could be different, I need to simply
+                    // parse it as a json string and back to json to get the field out
+
+                    const actionmessage  = JSON.parse(JSON.stringify(action, null, 2)).payload;
+                    state.error = actionmessage || 'An error occurred';
+                }
+            )
+
+            // Handle fulfilled actions for login and register_acc
+            .addMatcher(
+                isAnyOf(login.fulfilled, register_acc.fulfilled),
+                (state, action: PayloadAction<AuthResponse>) => {
+                    state.loading = false;
+                    state.isLoggedIn = true;
+                    state.userId = action.payload.userId;
+                }
+            )
+
+            // Handle fulfilled actions for logout and reset
+            .addMatcher(
+                isAnyOf(logout.fulfilled, reset.fulfilled),
+                (state) => {
+                    state.loading = false;
+                    state.isLoggedIn = false;
+                    state.userId = null;
+                }
+            );
     },
 });
+
 
 export default userSlice.reducer;
