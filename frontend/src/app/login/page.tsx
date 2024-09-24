@@ -158,6 +158,7 @@ export default function LoginPage() {
                                     Sign In
                                 </Button>
                             </motion.div>
+                            <motion.div variants={itemVariants}>
                             {error && (
                                 <motion.p
                                     initial={{ opacity: 0, y: -10 }}
@@ -167,6 +168,7 @@ export default function LoginPage() {
                                     {error}
                                 </motion.p>
                             )}
+                            </motion.div>
                         </form>
                     </CardContent>
                     <CardFooter>

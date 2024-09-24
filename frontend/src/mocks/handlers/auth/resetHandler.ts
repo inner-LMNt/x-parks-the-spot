@@ -16,29 +16,30 @@ const passwordResetTokens: Record<string, string> = {};
  * Handler for POST /auth/password-reset
  * Initiates a password reset by generating a token
  */
-export const resetHandler = http.post<PasswordResetRequest>(
-    '/auth/password-reset',
-    async ({ request, params, requestId }) => {
-        const { email } = request.body as PasswordResetRequest;
-
+export const resetHandler = http.post<never,PasswordResetRequest>(
+    'v1/auth/password-reset',
+    async ({ request , params}) => {
+        const data: PasswordResetRequest = await request.json();
+        const email = data.email;
+        console.log(email)
         // Check if user exists
         const user = findUserByEmail(email);
         if (!user) {
             return HttpResponse.json(
-                { message: "Invalid email" },
+                { message: `User with email ${email} not found` },
                 { status: 400 }
             );
         }
 
         // Generate a reset token
         const resetToken = uuidv4();
-        passwordResetTokens[resetToken] = user.id;
+        passwordResetTokens[resetToken] = user.id ?? '';
 
         // In a real application, an email would be sent to the user with the reset token
         console.log(`Password reset token for ${email}: ${resetToken}`);
 
         return HttpResponse.json(
-            { message: "Password reset email sent" },
+            { message: 'Password reset email sent' },
             { status: 200 }
         );
     }

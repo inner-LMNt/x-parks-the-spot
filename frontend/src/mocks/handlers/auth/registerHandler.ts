@@ -8,11 +8,11 @@ import { v4 as uuidv4 } from 'uuid';
 /**
  * Handler for POST /auth/register
  */
-export const registerHandler = http.post<RegisterRequest>(
-    '/auth/register',
-    async ({ request, params, requestId }) => {
-        const { email, password, full_name, roles } = request.body as RegisterRequest;
-
+export const registerHandler = http.post<never,RegisterRequest>(
+    'v1/auth/register',
+    async ({ request, params }) => {
+        const data = await request.json();
+        const { email, password, full_name } = data as RegisterRequest;
         // Check if user already exists
         const existingUser = findUserByEmail(email);
         if (existingUser) {
@@ -27,41 +27,34 @@ export const registerHandler = http.post<RegisterRequest>(
             id: uuidv4(),
             email,
             full_name,
-            roles,
             account_status: "active",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            // Initialize profiles based on roles
-            ...(roles.includes("renter") && {
-                renter_profile: {
-                    car_info: [],
-                    favorites: []
-                }
-            }),
-            ...(roles.includes("owner") && {
-                owner_profile: {
-                    parking_spaces: [],
-                    earnings: 0,
-                    verification_status: "pending"
-                }
-            }),
-            ...(roles.includes("spot_finder") && {
-                spot_finder_profile: {
-                    submissions: [],
-                    points_accumulated: 0
-                }
-            })
+            // Initialize profiles based on role
+            renter_profile: {
+                car_info: [],
+                favorites: [],
+            },
+            owner_profile: {
+                parking_spaces: [],
+                earnings: 0,
+            },
+            spot_finder_profile: {
+                submissions: [],
+                points_accumulated: 0
+            }
         };
 
         // Add user to mock database
         addUser(newUser);
-
+        const token = generateToken()
         // Generate token
-        const token: AuthResponse = {
-            access_token: generateToken(),
-            token_type: "Bearer"
+        const res: AuthResponse = {
+            access_token: token,
+            token_type: "Bearer",
+            userId: newUser.id
         };
 
-        return HttpResponse.json(token, { status: 201 });
+        return HttpResponse.json(res, { status: 201 });
     }
 );

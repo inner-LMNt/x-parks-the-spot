@@ -11,8 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-import { login } from '@/features/user/userSlice';
+import { register_acc } from '@/features/user/userSlice';
 import {Logo} from '@/components/custom/TopLeftLogo'
+import {RegisterRequest} from "@/types/type";
 type SignUpFormInputs = {
     name: string;
     email: string;
@@ -59,10 +60,20 @@ export default function SignUpPage() {
 
     const onSubmit = async (data: SignUpFormInputs) => {
         try {
-            dispatch(login());
-            router.push('/dashboard');
+            console.log(data)
+            const final_data : RegisterRequest = {email: data.email, password: data.password, full_name: data.name}
+            const resultAction = await dispatch(register_acc(final_data));
+
+            if (register_acc.fulfilled.match(resultAction)) {
+                // Sign up successful
+                router.push('/dashboard');
+            } else if (register_acc.rejected.match(resultAction)) {
+                // Sign up failed
+                console.error('Signup failed:', resultAction.payload);
+                // Optionally, display the error to the user
+            }
         } catch (error) {
-            console.error('Signup failed:', error);
+            console.error('An unexpected error occurred:', error);
         }
     };
 
