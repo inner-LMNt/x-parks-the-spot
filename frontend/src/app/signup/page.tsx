@@ -68,6 +68,7 @@ export default function SignUpPage() {
         try {
             console.log(data)
             const final_data : RegisterRequest = {email: data.email, password: data.password, full_name: data.name}
+            // @ts-ignore
             const resultAction = await dispatch(register_acc(final_data));
 
             if (register_acc.fulfilled.match(resultAction)) {
