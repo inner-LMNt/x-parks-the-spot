@@ -1,6 +1,6 @@
 from flask import request
 from app.logic.user import validate_token_and_refresh
-from result import Result, Ok, Err
+from result import Ok, Err
 
 
 def require_logged_in_user(next_fn):
@@ -17,6 +17,7 @@ def require_logged_in_user(next_fn):
         match validate_token_and_refresh(split_token[1]):
             case Ok(user_id):
                 kwargs["user_id"] = user_id
+                kwargs["token"] = split_token[1]
                 return next_fn(*args, **kwargs)
             case Err(e):
                 return e, 401
