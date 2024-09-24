@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import {reset} from '@/features/user/userSlice';
 import {PasswordResetRequest} from "@/types/type";
-import {useDispatch} from "react-redux";
+import {useAppDispatch} from "@/store/hooks";
 import {useAppSelector} from "@/store/hooks";
 import Link from "next/link"; // Adjust the path if needed
 
@@ -61,7 +61,7 @@ export default function ForgotPasswordPage() {
     formState: { errors, isSubmitting },
   } = useForm<ForgotPasswordInputs>();
 
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const [isDialogOpen, setIsDialogOpen] = useState(false); // Initially false
   const { loading, error } = useAppSelector((state) => state.user);
   const router = useRouter();

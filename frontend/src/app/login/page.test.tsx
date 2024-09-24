@@ -3,10 +3,9 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import LoginPage from './page';
 import { Provider } from 'react-redux';
-import { store } from '../../store';
-import {  } from 'msw';
+import { store } from '@/store';
 import { setupServer } from 'msw/node';
-import { handlers } from '../../mocks/handlers';
+import { handlers } from '@/mocks/handlers';
 
 // Setup MSW server
 const server = setupServer(...handlers);
