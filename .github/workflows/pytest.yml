@@ -39,7 +39,7 @@ jobs:
         run: pip3 install -r backend/requirements.txt
 
       - name: Mypy
-        run: "cd backend && mypy --strict"
+        run: "cd backend && mypy app --strict"
 
       - name: Run Tests
         # Runs a script that creates a PostgreSQL table, populates
