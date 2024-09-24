@@ -1,5 +1,5 @@
 from psycopg_pool import ConnectionPool
-from config import Config
+from app.config import Config
 import os
 import redis
 

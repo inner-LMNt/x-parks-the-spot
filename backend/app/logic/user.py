@@ -2,7 +2,7 @@ from app.utils.db import pool, token_cache
 from app.utils.password import password_hasher
 import uuid
 import secrets
-from config import Config
+from app.config import Config
 from result import Result, Ok, Err
 
 
