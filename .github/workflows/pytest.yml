@@ -12,6 +12,9 @@ jobs:
     # Service containers to run with `container-job`
     services:
       # Label used to access the service container
+      redis:
+        # Docker Hub image
+        image: redis
       postgres:
         # Docker Hub image
         image: postgres
@@ -43,5 +46,7 @@ jobs:
         env:
           # The hostname used to communicate with the PostgreSQL service container
           TEST_DATABASE_URI: "user=postgres password=postgres host=postgres port=5432"
-          # The default PostgreSQL port
+          DATABASE_URI: "unused"
           TEST_DATABASE_NAME: test_xpark
+          REDIS_URI: "redis://redis?db=0"
+          SECRET_KEY: test_key
