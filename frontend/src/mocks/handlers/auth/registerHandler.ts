@@ -18,7 +18,7 @@ export const registerHandler = http.post<never,RegisterRequest>(
         if (existingUser) {
             return HttpResponse.json(
                 { message: "User already exists" },
-                { status: 400 }
+                { status: 401 }
             );
         }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -65,7 +65,10 @@ export default function ForgotPasswordPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false); // Initially false
   const { loading, error } = useAppSelector((state) => state.user);
   const router = useRouter();
-
+  // Reset the error state when the component mounts
+    useEffect(() => {
+      dispatch({type: 'user/errorReset'})
+    },[])
   const onSubmit = async (data: PasswordResetRequest) => {
     try {
       const resultAction = await dispatch(reset(data.email));
@@ -143,9 +146,9 @@ export default function ForgotPasswordPage() {
                 <Button
                     type="submit"
                     className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || loading}
                 >
-                  {isSubmitting ? (
+                  {isSubmitting || loading ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
                   ) : null}
                   Reset Password

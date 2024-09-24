@@ -2,7 +2,7 @@
 
 'use client';
 
-import React from 'react';
+import React, {useEffect} from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { useAppDispatch, useAppSelector } from '@/store/hooks'; // Use typed hooks
@@ -59,6 +59,10 @@ export default function LoginPage() {
 
     const { loading, error } = useAppSelector((state) => state.user); // Access loading and error states
 
+    // Reset the error state when the component mounts
+    useEffect(() => {
+        dispatch({type: 'user/errorReset'})
+    },[])
     const onSubmit = async (data: LoginRequest) => {
         try {
             const resultAction = await dispatch(login(data));

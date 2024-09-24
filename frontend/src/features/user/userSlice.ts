@@ -55,16 +55,7 @@ export const register_acc = createAsyncThunk<
             const response = await axios.post<AuthResponse>('auth/register', credentials);
             return response.data;
         } catch (error: any) {
-            let errorMessage = 'Login failed';
-
-            if (error instanceof Error) {
-                // General error handling
-                errorMessage = error.message || errorMessage;
-            }
-
-            console.error('Login error:', error);
-
-            return rejectWithValue(errorMessage);
+            return rejectWithValue(error.response?.data?.message || 'Registration failed');
         }
     }
 );
@@ -155,6 +146,13 @@ const userSlice = createSlice<UserState, {}, 'user'>({
                     state.loading = false;
                     state.isLoggedIn = false;
                     state.userId = null;
+                }
+            )
+
+            .addMatcher(
+                (action: {type: string}): action is {type: 'user/errorReset'} => action.type === 'user/errorReset',
+                (state) => {
+                    state.error = null;
                 }
             );
     },
