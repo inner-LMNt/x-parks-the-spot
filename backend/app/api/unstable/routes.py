@@ -1,4 +1,4 @@
-from app.api.unstable import bp
+from . import bp
 
 @bp.get("version")
 def version():

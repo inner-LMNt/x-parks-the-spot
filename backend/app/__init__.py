@@ -7,8 +7,8 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
 
     # Initialize DB
-    from app.db import pool
-    from app.db import makemigrate
+    from .utils.db import pool
+    from .utils.db import makemigrate
 
     # Run SQL migrations in one transaction. Any failures will not modify the database
     with pool.connection() as conn:
