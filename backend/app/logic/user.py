@@ -1,4 +1,4 @@
-from app.utils.db import pool, token_cache
+from app.utils.db import DB
 from app.utils.password import password_hasher
 import uuid
 import secrets
@@ -7,7 +7,7 @@ from result import Result, Ok, Err
 
 
 def check_if_user_exists(email: str) -> bool:
-    with pool.connection() as conn:
+    with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(1) from users WHERE email = %s", (email,))
             return cur.fetchone() != (0,)
@@ -19,7 +19,7 @@ def create_user(name: str, email: str, password: str) -> Result[uuid.UUID, str]:
 
     # If it doesn't exist, then continue creating the user
     hash = password_hasher.hash(password)
-    with pool.connection() as conn:
+    with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 "INSERT INTO users (name, email, password_hash) VALUES (%s, %s, %s) RETURNING id",
@@ -33,7 +33,7 @@ def check_username_password(email: str, password: str) -> Result[uuid.UUID, str]
     if not check_if_user_exists(email):
         return Err("Wrong Password")
 
-    with pool.connection() as conn:
+    with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT id, password_hash from users WHERE email = %s", (email,))
             correct_hashed_password = cur.fetchone()
@@ -49,17 +49,21 @@ def check_username_password(email: str, password: str) -> Result[uuid.UUID, str]
 
 def create_token(user_id: uuid.UUID) -> str:
     token = Config.TOKEN_PREFIX + secrets.token_urlsafe(32)
-    token_cache.set(token, user_id.bytes, ex=Config.TOKEN_EXPIRY_SECONDS)
+    DB.token_cache.set(token, user_id.bytes, ex=Config.TOKEN_EXPIRY_SECONDS)
     return token
 
 
 def validate_token_and_refresh(token) -> Result[uuid.UUID, str]:
     # Check if token exists
     # If it does, refresh it
-    uuid_ret = token_cache.getex(token, ex=Config.TOKEN_EXPIRY_SECONDS)
+    uuid_ret = DB.token_cache.getex(token, ex=Config.TOKEN_EXPIRY_SECONDS)
     if uuid_ret != None:
         return Ok(uuid.UUID(bytes=uuid_ret))
     return Err("Token expired")
 
+def expire_valid_token(token: str) -> Result[None, None]:
+    if DB.token_cache.delete(token) == 0:
+        return Err(None)
+    return Ok(None)
 
 # TODO: Delete all keys for a user

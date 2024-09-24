@@ -1,15 +1,13 @@
-from psycopg_pool import ConnectionPool
 from app.config import Config
 import os
 import redis
+from psycopg_pool import ConnectionPool
 
 MIGRATION_BASEDIR = "migrations"
 
-
-# Initialize the database
-pool = ConnectionPool(conninfo=Config.DATABASE_URI, open=True)
-
-token_cache = redis.Redis().from_url(Config.REDIS_URI)
+class DB:
+    pool = ConnectionPool(conninfo=Config.DATABASE_URI, open=False)
+    token_cache = redis.Redis().from_url(Config.REDIS_URI)
 
 
 def run_migration(conn, file_name):

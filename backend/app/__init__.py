@@ -1,5 +1,6 @@
 from flask import Flask
 from .config import Config
+from psycopg_pool import ConnectionPool
 
 
 def create_app(config_class=Config):
@@ -7,11 +8,12 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
 
     # Initialize DB
-    from .utils.db import pool
-    from .utils.db import makemigrate
+    from .utils.db import DB, makemigrate
+
+    DB.pool = ConnectionPool(conninfo=Config.DATABASE_URI, open=True)
 
     # Run SQL migrations in one transaction. Any failures will not modify the database
-    with pool.connection() as conn:
+    with DB.pool.connection() as conn:
         makemigrate(conn)
 
     import app.api.unstable as unstable
