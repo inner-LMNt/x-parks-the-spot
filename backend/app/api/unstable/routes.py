@@ -1,5 +1,5 @@
 from . import bp
 
 @bp.get("version")
-def version():
+def version() -> str:
     return "unstable"

@@ -2,6 +2,7 @@ from app.config import Config
 import os
 import redis
 from psycopg_pool import ConnectionPool
+from psycopg import Connection
 
 MIGRATION_BASEDIR = "migrations"
 
@@ -10,7 +11,7 @@ class DB:
     token_cache = redis.Redis().from_url(Config.REDIS_URI)
 
 
-def run_migration(conn, file_name):
+def run_migration(conn: Connection, file_name: str) -> None:
     with conn.cursor() as cur:
         # Check if migration is already applied
         # Check if the migration name is already in the table
@@ -29,7 +30,7 @@ def run_migration(conn, file_name):
                 )
 
 
-def makemigrate(conn):
+def makemigrate(conn: Connection) -> None:
     # First, track the migrations
     with conn.cursor() as cur:
         cur.execute(

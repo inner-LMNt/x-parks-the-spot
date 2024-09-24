@@ -1,7 +1,7 @@
 import os
 
 
-def test_verify_migration():
+def test_verify_migration() -> None:
     from app.utils.db import DB
 
     with DB.pool.connection() as conn:

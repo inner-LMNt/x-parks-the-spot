@@ -1,6 +1,7 @@
 from app.logic.user import *
+from result import Ok, Err
 
-def test_successful_create_user():
+def test_successful_create_user() -> None:
     user_id = None
     match create_user(name="Test User", email="testuser@example.com", password="secureP@ssW0rD!"):
         case Ok(u):
@@ -17,7 +18,7 @@ def test_successful_create_user():
             case Err(_):
                 assert False
 
-def test_create_user_already_exists():
+def test_create_user_already_exists() -> None:
     match create_user(name="Test User", email="testuser1@example.com", password="secureP@ssW0rD!"):
         case Ok(_):
             assert True

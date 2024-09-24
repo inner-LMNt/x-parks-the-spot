@@ -4,6 +4,7 @@ import uuid
 import secrets
 from app.config import Config
 from result import Result, Ok, Err
+from typing import cast, Tuple
 
 
 def check_if_user_exists(email: str) -> bool:
@@ -11,6 +12,7 @@ def check_if_user_exists(email: str) -> bool:
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(1) from users WHERE email = %s", (email,))
             return cur.fetchone() != (0,)
+
 
 # If it returns None, then the user already exists
 def create_user(name: str, email: str, password: str) -> Result[uuid.UUID, str]:
@@ -25,9 +27,9 @@ def create_user(name: str, email: str, password: str) -> Result[uuid.UUID, str]:
                 "INSERT INTO users (name, email, password_hash) VALUES (%s, %s, %s) RETURNING id",
                 (name, email, hash),
             )
-            new_user = cur.fetchone()
-            assert new_user != None
+            new_user = cast(Tuple[uuid.UUID, str, str], cur.fetchone())
             return Ok(new_user[0])
+
 
 def check_username_password(email: str, password: str) -> Result[uuid.UUID, str]:
     if not check_if_user_exists(email):
@@ -35,11 +37,13 @@ def check_username_password(email: str, password: str) -> Result[uuid.UUID, str]
 
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, password_hash from users WHERE email = %s", (email,))
-            correct_hashed_password = cur.fetchone()
-            assert correct_hashed_password != None # We know it'll return something because the email exists
-            user_id = correct_hashed_password[0] # Extract the tuple value
-            correct_hashed_password = correct_hashed_password[1] # Extract the tuple value
+            cur.execute(
+                "SELECT id, password_hash from users WHERE email = %s", (email,)
+            )
+
+            (user_id, correct_hashed_password) = cast(
+                Tuple[uuid.UUID, str], cur.fetchone()
+            )
 
             if password_hasher.verify(correct_hashed_password, password):
                 return Ok(user_id)
@@ -53,7 +57,7 @@ def create_token(user_id: uuid.UUID) -> str:
     return token
 
 
-def validate_token_and_refresh(token) -> Result[uuid.UUID, str]:
+def validate_token_and_refresh(token: str) -> Result[uuid.UUID, str]:
     # Check if token exists
     # If it does, refresh it
     uuid_ret = DB.token_cache.getex(token, ex=Config.TOKEN_EXPIRY_SECONDS)
@@ -61,9 +65,11 @@ def validate_token_and_refresh(token) -> Result[uuid.UUID, str]:
         return Ok(uuid.UUID(bytes=uuid_ret))
     return Err("Token expired")
 
+
 def expire_valid_token(token: str) -> Result[None, None]:
     if DB.token_cache.delete(token) == 0:
         return Err(None)
     return Ok(None)
+
 
 # TODO: Delete all keys for a user

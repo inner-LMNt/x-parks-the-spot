@@ -1,12 +1,13 @@
 from . import bp
 from app.logic.user import *
 from flask import request
-from result import Result, Ok, Err
+from result import Ok, Err
 from app.middleware.token_auth_middleware import require_logged_in_user
+from typing import Tuple, Any
 
 
 @bp.post("register")
-def create():
+def create() -> Tuple[Any, int]:
     # If we have a keyerror (param not sent), the app returns a 400 here
     # FIXME: validate email address
     match create_user(
@@ -22,7 +23,7 @@ def create():
 
 
 @bp.post("login")
-def login():
+def login() -> Tuple[Any, Any]:
     match check_username_password(
         password=request.form["password"],
         email=request.form["email"],
@@ -34,7 +35,8 @@ def login():
 
 
 @bp.post("logout")
-def logout(token):
+@require_logged_in_user
+def logout(token: str) -> Tuple[Any, Any]:
     match expire_valid_token(token):
         case Ok(_):
             return {}, 200

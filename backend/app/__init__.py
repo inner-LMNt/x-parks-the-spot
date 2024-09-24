@@ -3,7 +3,7 @@ from .config import Config
 from psycopg_pool import ConnectionPool
 
 
-def create_app(config_class=Config):
+def create_app(config_class: type[Config] = Config) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config_class)
 
@@ -21,7 +21,7 @@ def create_app(config_class=Config):
     app.register_blueprint(unstable.bp)
 
     @app.route("/")
-    def status():
+    def status() -> str:
         return "running"
 
     return app
