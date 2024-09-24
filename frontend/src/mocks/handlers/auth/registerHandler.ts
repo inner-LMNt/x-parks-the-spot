@@ -21,10 +21,10 @@ export const registerHandler = http.post<never,RegisterRequest>(
                 { status: 401 }
             );
         }
-
+        const newUuid = uuidv4();
         // Create new user
         const newUser: User = {
-            id: uuidv4(),
+            id: newUuid,
             email,
             full_name,
             account_status: "active",
@@ -52,7 +52,7 @@ export const registerHandler = http.post<never,RegisterRequest>(
         const res: AuthResponse = {
             access_token: token,
             token_type: "Bearer",
-            userId: newUser.id
+            userId: newUuid
         };
 
         return HttpResponse.json(res, { status: 201 });

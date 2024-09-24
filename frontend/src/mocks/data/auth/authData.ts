@@ -41,7 +41,6 @@ export const mockUsers: User[] = [
         owner_profile: {
             parking_spaces: [],
             earnings: 0,
-            verification_status: "verified"
         }
     },
     {

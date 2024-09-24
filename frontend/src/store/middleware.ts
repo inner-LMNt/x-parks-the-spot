@@ -2,7 +2,7 @@
 import { Middleware } from '@reduxjs/toolkit';
 import { RootState } from '@/store/index'; // Adjust the import path as needed
 
-// Example: Logger middleware
+// @ts-ignore
 export const loggerMiddleware: Middleware<{}, RootState> = storeAPI => next => action => {
     console.log('Dispatching action:', action);
     const result = next(action);
@@ -10,7 +10,8 @@ export const loggerMiddleware: Middleware<{}, RootState> = storeAPI => next => a
     return result;
 };
 
-// Add any other custom middleware here
+
 
 // Export an array of middleware to be included in the store
+// @ts-ignore
 export const customMiddleware = [loggerMiddleware];

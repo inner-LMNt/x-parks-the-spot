@@ -50,9 +50,10 @@ export const resetHandler = http.post<never,PasswordResetRequest>(
  * Confirms the password reset using the token and updates the password
  */
 export const resetConfirmHandler = http.post<PasswordResetConfirmRequest>(
-    '/auth/password-reset/confirm',
+    'v1/auth/password-reset/confirm',
     async ({ request, params, requestId }) => {
-        const { token, new_password } = request.body as PasswordResetConfirmRequest;
+        const data = await request.json();
+        const { token, new_password } = data as PasswordResetConfirmRequest;
 
         // Validate token
         const userId = passwordResetTokens[token];
