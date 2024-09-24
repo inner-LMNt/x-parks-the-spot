@@ -38,6 +38,9 @@ jobs:
       - name: Install dependencies
         run: pip3 install -r backend/requirements.txt
 
+      - name: Mypy
+        run: "cd backend && mypy --strict"
+
       - name: Run Tests
         # Runs a script that creates a PostgreSQL table, populates
         # the table with data, and then retrieves the data.
