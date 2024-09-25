@@ -3,8 +3,10 @@ import os
 import redis
 from psycopg_pool import ConnectionPool
 from psycopg import Connection
+from typing import Any, cast
 
 MIGRATION_BASEDIR = "migrations"
+
 
 class DB:
     pool = ConnectionPool(conninfo=Config.DATABASE_URI, open=False)
@@ -23,7 +25,7 @@ def run_migration(conn: Connection, file_name: str) -> None:
         # If the migration is not in the table, execute the migration
         if cur.fetchone() == (0,):
             with open(os.path.join(MIGRATION_BASEDIR, file_name), "r") as f:
-                cur.execute(f.read())
+                cur.execute(cast(Any, f.read()))
                 cur.execute(
                     "INSERT INTO migrations (migration_name) VALUES (%s)",
                     (file_name,),
@@ -40,7 +42,7 @@ def makemigrate(conn: Connection) -> None:
         )
 
     # Run each migration
-    for migration_file in os.listdir(MIGRATION_BASEDIR):
+    for migration_file in sorted(os.listdir(MIGRATION_BASEDIR)):
         if migration_file.endswith(".sql"):
             # Remove .sql extension and run migration
             run_migration(conn, migration_file)
