@@ -49,5 +49,5 @@ jobs:
         uses: thollander/actions-comment-pull-request@v2
         with:
           filePath: backend/codecov.md
-        comment_tag: coverage
-        mode: recreate
+          comment_tag: coverage
+          mode: recreate
