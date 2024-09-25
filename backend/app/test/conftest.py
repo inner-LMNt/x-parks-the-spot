@@ -3,10 +3,15 @@ from app.config import Config
 import psycopg
 from psycopg_pool import ConnectionPool
 from typing import Any, Generator, cast
+from flask import Flask
 
 
 @pytest.fixture(scope="function", autouse=True)
-def initialize_db() -> Generator[Any, Any, Any]:
+def app() -> Generator[Any]:
+
+    app = Flask(__name__)
+    app.config.from_object(Config)
+
     with psycopg.connect(Config.TEST_DATABASE_URI, autocommit=True) as conn:
         cur = conn.cursor()
 
@@ -30,11 +35,26 @@ def initialize_db() -> Generator[Any, Any, Any]:
         with DB.pool.connection() as pool_conn:
             makemigrate(pool_conn)
 
-        yield
+        # Continue with application setup
 
+        yield app
+
+        # Cleanup
         cur.execute(
             cast(
                 Any,
                 "DROP DATABASE IF EXISTS %s WITH (FORCE)" % Config.TEST_DATABASE_NAME,
             )
         )
+
+    # clean up / reset resources here
+
+
+@pytest.fixture()
+def client(app: Flask) -> Any:
+    return app.test_client()
+
+
+@pytest.fixture()
+def runner(app: Flask) -> Any:
+    return app.test_cli_runner()
