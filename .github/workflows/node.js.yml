@@ -30,7 +30,7 @@ jobs:
       working-directory: ./frontend
       run: |
         echo '```' > coverage.md
-        npm run test:coverage | tail -n +5 >> coverage.md
+        npm run test:coverage | tail -n +6 | sed '$d' >> coverage.md
         sed -i '2,$ s/^/| /; 2,$ s/$/ |/' coverage.md
         echo '```' >> coverage.md
     - name: "Report Code Coverage"
