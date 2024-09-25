@@ -1,7 +1,9 @@
 from app.config import Config
+from flask.testing import FlaskClient
+from typing import Dict, cast
 
 
-def test_api_register(client) -> None:
+def test_api_register(client: FlaskClient) -> None:
     response = client.post(
         "/api/unstable/auth/register",
         json={
@@ -22,7 +24,7 @@ def test_api_register(client) -> None:
     assert response.status_code == 400
 
 
-def test_api_auth(client) -> None:
+def test_api_auth(client: FlaskClient) -> None:
     response = client.post("/api/unstable/auth/logout")
     assert response.status_code == 403  # 403 when no token is passed
 
@@ -34,7 +36,7 @@ def test_api_auth(client) -> None:
             "password": "BobRocks123",
         },
     )
-    token = response.json["access_token"]
+    token = cast(Dict[str, str], response.json)["access_token"]
     assert token[0 : len(Config.TOKEN_PREFIX)] == Config.TOKEN_PREFIX
     response = client.post(
         "/api/unstable/auth/logout", headers={"Authorization": "Bearer " + token}
@@ -53,7 +55,7 @@ def test_api_auth(client) -> None:
             "password": "BobRocks123",
         },
     )
-    token = response.json["access_token"]
+    token = cast(Dict[str, str], response.json)["access_token"]
     assert token[0 : len(Config.TOKEN_PREFIX)] == Config.TOKEN_PREFIX
     response = client.post(
         "/api/unstable/auth/logout", headers={"Authorization": "Bearer " + token}
