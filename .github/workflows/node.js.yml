@@ -28,4 +28,16 @@ jobs:
       run: npm run build --if-present
     - name: Test
       working-directory: ./frontend
-      run: npm test
+      run: |
+        echo '```' > coverage.md
+        npm run test:coverage | tail -n +5 >> coverage.md
+        echo '```' >> coverage.md
+    - name: "Report Code Coverage"
+      if: github.event_name == 'pull_request'
+      uses: thollander/actions-comment-pull-request@v2
+      with:
+        filePath: frontend/coverage.md
+        comment_tag: coverage_frontend
+        mode: recreate
+    
+

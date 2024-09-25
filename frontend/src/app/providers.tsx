@@ -2,10 +2,10 @@
 
 import { Provider } from 'react-redux';
 import { store } from '@/store';
-import { useEffect } from 'react';
+import {ReactNode, useEffect} from 'react';
 import { setUpMocks } from '@/mocks/browser';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (process.env.NODE_ENV === 'development') {
             setUpMocks().catch(console.error);

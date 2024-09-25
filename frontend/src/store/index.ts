@@ -1,12 +1,21 @@
+// store.ts
 import { configureStore } from '@reduxjs/toolkit';
 import userReducer from '@/features/user/userSlice';
+import { customMiddleware } from './middleware'; // Import your custom middleware
 
+// @ts-ignore
 export const store = configureStore({
     reducer: {
         user: userReducer,
         // Add other reducers here
     },
+    // @ts-ignore
+    middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware().concat(customMiddleware),
 });
 
-export type RootState = ReturnType<typeof store.getState>;
+// Infer the `RootState` and `AppDispatch` types from the store itself
+export type AppStore = typeof store;
+// @ts-ignore
+export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch;

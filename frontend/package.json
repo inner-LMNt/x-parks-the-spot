@@ -8,6 +8,7 @@
     "start": "next start",
     "msw:init": "msw init public/ --save",
     "test": "jest",
+    "test:coverage": "jest --coverage --silent --no-watchman",
     "test:watch": "jest --watch"
   },
   "dependencies": {
@@ -37,6 +38,7 @@
     "recharts": "^2.12.7",
     "redux-mock-store": "^1.5.4",
     "shadcn": "^2.0.6",
+    "uuid": "^10.0.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -48,6 +50,7 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/redux-mock-store": "^1.0.6",
+    "@types/uuid": "^10.0.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "eslint": "^8",
@@ -57,6 +60,7 @@
     "lucide-react": "^0.441.0",
     "msw": "^2.4.5",
     "next-router-mock": "^0.9.13",
+    "openapi-typescript": "^7.4.1",
     "postcss": "^8",
     "shadcn-ui": "^0.9.0",
     "tailwind-merge": "^2.5.2",
@@ -70,4 +74,5 @@
       "public"
     ]
   }
+
 }

@@ -673,12 +673,14 @@ components:
           type: string
     AuthResponse:
       type: object
+      required:
+        - userId
       properties:
         access_token:
           type: string
-        token_type:
+        userId:
           type: string
-          example: Bearer
+          format: uuid
     LoginRequest:
       type: object
       required:
@@ -721,15 +723,6 @@ components:
           format: email
         full_name:
           type: string
-        roles:
-          type: array
-          items:
-            type: string
-            enum:
-              - renter
-              - owner
-              - spot_finder
-              - admin
         account_status:
           type: string
           enum:

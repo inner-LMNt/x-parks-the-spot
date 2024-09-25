@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, {useEffect} from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { useDispatch } from 'react-redux';
@@ -11,8 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-import { login } from '@/features/user/userSlice';
+import { register_acc } from '@/features/user/userSlice';
 import {Logo} from '@/components/custom/TopLeftLogo'
+import {RegisterRequest} from "@/types/type";
+import {useAppSelector} from "@/store/hooks";
 type SignUpFormInputs = {
     name: string;
     email: string;
@@ -56,15 +58,29 @@ export default function SignUpPage() {
 
     const dispatch = useDispatch();
     const router = useRouter();
+    const { loading, error } = useAppSelector((state) => state.user); // Access loading and error states
 
+    // Reset the error state when the component mounts
+    useEffect(() => {
+        dispatch({type: 'user/errorReset'})
+    },[])
     const onSubmit = async (data: SignUpFormInputs) => {
         try {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            console.log('Form submitted:', data);
-            dispatch(login());
-            router.push('/dashboard');
+            console.log(data)
+            const final_data : RegisterRequest = {email: data.email, password: data.password, full_name: data.name}
+            // @ts-ignore
+            const resultAction = await dispatch(register_acc(final_data));
+
+            if (register_acc.fulfilled.match(resultAction)) {
+                // Sign up successful
+                router.push('/dashboard');
+            } else if (register_acc.rejected.match(resultAction)) {
+                // Sign up failed
+                console.error('Signup failed:', resultAction.payload);
+                // Optionally, display the error to the user
+            }
         } catch (error) {
-            console.error('Signup failed:', error);
+            console.error('An unexpected error occurred:', error);
         }
     };
 
@@ -184,13 +200,24 @@ export default function SignUpPage() {
                                 <Button
                                     type="submit"
                                     className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-200"
-                                    disabled={isSubmitting}
+                                    disabled={isSubmitting || loading}
                                 >
-                                    {isSubmitting ? (
+                                    {isSubmitting || loading ? (
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     ) : null}
                                     Sign Up
                                 </Button>
+                            </motion.div>
+                            <motion.div variants={itemVariants}>
+                            {error && (
+                                <motion.p
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="text-sm text-red-500 text-center"
+                                >
+                                    {error}
+                                </motion.p>
+                            )}
                             </motion.div>
                         </form>
                     </CardContent>
