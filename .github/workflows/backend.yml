@@ -1,12 +1,10 @@
 name: Backend Tests
 on:
   push:
-    branches: ["main"]
   pull_request:
-    branches: ["main"]
 
 jobs:
-  container-job:
+  test:
     runs-on: ubuntu-latest
     container: python:3-bookworm
 
@@ -50,6 +48,7 @@ jobs:
           SECRET_KEY: test_key
 
       - name: "Report Code Coverage"
+        if: github.event_name == 'pull_request'
         uses: thollander/actions-comment-pull-request@v2
         with:
           filePath: backend/codecov.md
