@@ -1,5 +1,6 @@
 from app.utils.db import DB
 from app.utils.password import password_hasher
+from argon2.exceptions import VerifyMismatchError, VerificationError
 import uuid
 import secrets
 from app.config import Config
@@ -45,10 +46,30 @@ def check_username_password(email: str, password: str) -> Result[uuid.UUID, str]
                 Tuple[uuid.UUID, str], cur.fetchone()
             )
 
-            if password_hasher.verify(correct_hashed_password, password):
+            # Ew, exceptions
+            try:
+                password_hasher.verify(correct_hashed_password, password)
+                # We have a correct password here
+
+                if password_hasher.check_needs_rehash(correct_hashed_password):
+                    # Set new password if the hashing parameters have changed
+                    change_password(user_id, password)
+
                 return Ok(user_id)
-            else:
+            except VerifyMismatchError:
                 return Err("Wrong Password")
+            except VerificationError:
+                # Do we need special handling?
+                return Err("Wrong Password")
+
+
+def change_password(id: uuid.UUID, new_password: str) -> Result[None, None]:
+    new_password_hash = password_hasher.hash(new_password)
+    with DB.pool.connection() as conn:
+        conn.execute(
+            "UPDATE users SET password_hash = %s WHERE id = %s", (new_password_hash, id)
+        )
+        return Ok(None)
 
 
 def create_token(user_id: uuid.UUID) -> str:

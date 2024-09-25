@@ -23,13 +23,14 @@ def require_logged_in_user(next_fn: AuthFunction) -> Callable[..., Tuple[Any, in
             return {"err": "No authentication provided"}, 403
         token_to_check = token_to_check.strip()
         # This token is prefixed with "Bearer", so we have to trim that
-        split_token = token_to_check.split(" ")
-        if len(split_token) != 2:
+        if not token_to_check.startswith("Bearer "):
             return {"err": "Bad authentication"}, 400
-        match validate_token_and_refresh(split_token[1]):
+        token = token_to_check[7:]
+
+        match validate_token_and_refresh(token):
             case Ok(user_id):
                 kwargs["user_id"] = user_id
-                kwargs["token"] = split_token[1]
+                kwargs["token"] = token
                 return next_fn(*args, **kwargs)
             case Err(e):
                 return {"err": e}, 401

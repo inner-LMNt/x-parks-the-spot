@@ -65,3 +65,23 @@ def test_api_auth(client: FlaskClient) -> None:
         "/api/unstable/auth/logout", headers={"Authorization": "Bearer " + token}
     )
     assert response.status_code == 401  # 401 when wrong token is passed
+
+    # Test bad login
+    response = client.post(
+        "/api/unstable/auth/login",
+        json={
+            "email": "goodemail@example.com",
+            "password": "WrongPassword",
+        },
+    )
+    assert response.status_code == 401
+
+    # Test logging out with no auth
+    response = client.post("/api/unstable/auth/logout")
+    assert response.status_code == 403
+
+    # Test logging out with bad auth header
+    response = client.post(
+        "/api/unstable/auth/logout", headers={"Authorization": "xpark_93429403290"}
+    )
+    assert response.status_code == 400

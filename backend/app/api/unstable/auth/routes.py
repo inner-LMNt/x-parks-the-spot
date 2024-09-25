@@ -38,6 +38,8 @@ def login() -> Tuple[Any, Any]:
 @bp.post("logout")
 @require_logged_in_user
 def logout(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    # We know that the token is valid because the require_logged_in_user decorator validated it
+    # We could get away with not checking
     match expire_valid_token(token):
         case Ok(_):
             return {}, 200

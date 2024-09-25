@@ -3,37 +3,35 @@ from result import Ok, Err
 
 
 def test_successful_create_user() -> None:
-    user_id = None
-    match create_user(
+    user_id_create = create_user(
         name="Test User", email="testuser@example.com", password="secureP@ssW0rD!"
-    ):
-        case Ok(u):
-            assert True
-            user_id = u
-        case Err(e):
-            print(e)
-            assert False
+    )
 
-    if user_id != None:
-        match check_username_password("testuser@example.com", "secureP@ssW0rD!"):
-            case Ok(u):
-                assert u == user_id
-            case Err(_):
-                assert False
+    assert type(user_id_create) == Ok
+
+    user_id_login = check_username_password("testuser@example.com", "secureP@ssW0rD!")
+    assert type(user_id_login) == Ok
+    assert user_id_create.ok_value == user_id_login.ok_value
 
 
 def test_create_user_already_exists() -> None:
-    match create_user(
-        name="Test User", email="testuser1@example.com", password="secureP@ssW0rD!"
-    ):
-        case Ok(_):
-            assert True
-        case Err(_):
-            assert False
-    match create_user(
-        name="Test User", email="testuser1@example.com", password="secureP@ssW0rD!"
-    ):
-        case Ok(_):
-            assert False
-        case Err(_):
-            assert True
+    assert (
+        type(
+            create_user(
+                name="Test User",
+                email="testuser1@example.com",
+                password="secureP@ssW0rD!",
+            )
+        )
+        == Ok
+    )
+    assert (
+        type(
+            create_user(
+                name="Test User",
+                email="testuser1@example.com",
+                password="secureP@ssW0rD!",
+            )
+        )
+        == Err
+    )
