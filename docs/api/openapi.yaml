@@ -678,9 +678,6 @@ components:
       properties:
         access_token:
           type: string
-        token_type:
-          type: string
-          example: Bearer
         userId:
           type: string
           format: uuid
@@ -726,15 +723,6 @@ components:
           format: email
         full_name:
           type: string
-        roles:
-          type: array
-          items:
-            type: string
-            enum:
-              - renter
-              - owner
-              - spot_finder
-              - admin
         account_status:
           type: string
           enum:

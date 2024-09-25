@@ -10,17 +10,16 @@ import {User} from "@/types/type";
 
 export const mockUsers: User[] = [
     {
-        id: "1a2b3c4d-5e6f-7g8h-9i10-j11k12l13m14",
+        id: "a927ff6d-9782-4b13-ac04-831f1066d503",
         email: "test@example.com",
         full_name: "Test User",
-        roles: ["renter"],
         account_status: "active",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         renter_profile: {
             car_info: [
                 {
-                    id: "car-uuid-1",
+                    id: "c927ff6d-9782-4b13-ac04-831f1066d503",
                     make: "Toyota",
                     model: "Corolla",
                     license_plate: "ABC-1234",
@@ -31,10 +30,9 @@ export const mockUsers: User[] = [
         }
     },
     {
-        id: "2b3c4d5e-6f7g-8h9i-10j11-k12l13m14n15",
+        id: "b927ff6d-9782-4b13-ac04-831f1066d503",
         email: "owner@example.com",
         full_name: "Owner User",
-        roles: ["owner"],
         account_status: "active",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -43,25 +41,14 @@ export const mockUsers: User[] = [
             earnings: 0,
         }
     },
-    {
-        id: "3c4d5e6f-7g8h-9i10-j11k-12l13m14n15o",
-        email: "admin@example.com",
-        full_name: "Admin User",
-        roles: ["admin"],
-        account_status: "active",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        // Initialize profiles if necessary
-    }
     // Add more mock users as needed
 ];
 
 
-// In-memory store for password reset tokens
-const passwordResetTokens: Record<string, string> = {};
-
-// Function to generate a mock JWT token (for simplicity, using a static token)
-export const generateToken = (): string => "fake-jwt-token";
+// Function to generate a random token
+export const generateToken = (): string => {
+    return "token";
+};
 
 // Function to find a user by email
 export const findUserByEmail = (email: string): User | undefined => {

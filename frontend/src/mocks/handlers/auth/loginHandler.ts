@@ -14,10 +14,10 @@ export const loginHandler = http.post<never, LoginRequest>('v1/auth/login', asyn
     console.log(data)
     const user = findUserByEmail(data.email);
     if (user && data.password === "password123") { // Replace with actual password validation when implemented
+        const id : string = user.id ?? 'a927ff6d-9782-4b13-ac04-831f1066d503'
         const token: AuthResponse = {
-            userId: "1a2b3c4d-5e6f-7g8h-9i10-j11k12l13m14",
+            userId: id,
             access_token: generateToken(),
-            token_type: "Bearer"
         };
 
         return HttpResponse.json(token, { status: 200 });

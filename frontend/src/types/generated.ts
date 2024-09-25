@@ -1238,8 +1238,7 @@ export interface components {
         };
         AuthResponse: {
             access_token?: string;
-            /** @example Bearer */
-            token_type?: string;
+            /** Format: uuid */
             userId: string;
         };
         LoginRequest: {
@@ -1263,7 +1262,6 @@ export interface components {
             /** Format: email */
             email?: string;
             full_name?: string;
-            roles?: ("renter" | "owner" | "spot_finder" | "admin")[];
             /** @enum {string} */
             account_status?: "active" | "suspended";
             renter_profile?: components["schemas"]["RenterProfile"];
