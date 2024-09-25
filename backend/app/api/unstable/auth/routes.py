@@ -37,7 +37,7 @@ def login() -> Tuple[Any, Any]:
 
 @bp.post("logout")
 @require_logged_in_user
-def logout(token: str, user_id: uuid.UUID) -> Tuple[Any, Any]:
+def logout(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     match expire_valid_token(token):
         case Ok(_):
             return {}, 200
@@ -47,6 +47,6 @@ def logout(token: str, user_id: uuid.UUID) -> Tuple[Any, Any]:
 
 # @bp.get("id")
 # @require_logged_in_user
-# def id(user_id):
+# def id(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 #     print(user_id)
-#     return str(user_id)
+#     return str(user_id), 200
