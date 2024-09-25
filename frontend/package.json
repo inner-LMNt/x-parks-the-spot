@@ -8,6 +8,7 @@
     "start": "next start",
     "msw:init": "msw init public/ --save",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "test:watch": "jest --watch"
   },
   "dependencies": {
