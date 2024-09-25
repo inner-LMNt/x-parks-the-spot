@@ -31,6 +31,7 @@ jobs:
       run: |
         echo '```' > coverage.md
         npm run test:coverage | tail -n +5 >> coverage.md
+        sed '2,$ s/^/| /; s/$/ |/' coverage.md
         echo '```' >> coverage.md
     - name: "Report Code Coverage"
       if: github.event_name == 'pull_request'
