@@ -29,7 +29,6 @@ jobs:
     - name: Test
       working-directory: ./frontend
       run: |
-        cd frontend
         echo '```' > coverage.md
         npm run test:coverage | tail -n +5 >> coverage.md
         echo '```' >> coverage.md
