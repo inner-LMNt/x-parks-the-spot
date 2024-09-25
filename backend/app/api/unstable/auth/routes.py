@@ -4,6 +4,7 @@ from flask import request
 from result import Ok, Err
 from app.middleware.token_auth_middleware import require_logged_in_user
 from typing import Tuple, Any
+import uuid
 
 
 @bp.post("register")
@@ -11,9 +12,9 @@ def create() -> Tuple[Any, int]:
     # If we have a keyerror (param not sent), the app returns a 400 here
     # FIXME: validate email address
     match create_user(
-        name=request.form["full_name"],
-        password=request.form["password"],
-        email=request.form["email"],
+        name=request.json["full_name"],  # type: ignore
+        password=request.json["password"],  # type: ignore
+        email=request.json["email"],  # type: ignore
     ):
         case Ok(new_uuid):
             return {"access_token": create_token(new_uuid), "token_type": "Bearer"}, 201
@@ -25,8 +26,8 @@ def create() -> Tuple[Any, int]:
 @bp.post("login")
 def login() -> Tuple[Any, Any]:
     match check_username_password(
-        password=request.form["password"],
-        email=request.form["email"],
+        password=request.json["password"],  # type: ignore
+        email=request.json["email"],  # type: ignore
     ):
         case Ok(user_id):
             return {"access_token": create_token(user_id), "token_type": "Bearer"}, 201
@@ -36,7 +37,7 @@ def login() -> Tuple[Any, Any]:
 
 @bp.post("logout")
 @require_logged_in_user
-def logout(token: str) -> Tuple[Any, Any]:
+def logout(token: str, user_id: uuid.UUID) -> Tuple[Any, Any]:
     match expire_valid_token(token):
         case Ok(_):
             return {}, 200

@@ -7,7 +7,7 @@ from flask import Flask
 
 
 @pytest.fixture(scope="function", autouse=True)
-def app() -> Generator[Any]:
+def app() -> Generator[Any, Any, Any]:
 
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -36,6 +36,9 @@ def app() -> Generator[Any]:
             makemigrate(pool_conn)
 
         # Continue with application setup
+        import app.api.unstable as unstable
+
+        app.register_blueprint(unstable.bp)
 
         yield app
 
@@ -46,8 +49,6 @@ def app() -> Generator[Any]:
                 "DROP DATABASE IF EXISTS %s WITH (FORCE)" % Config.TEST_DATABASE_NAME,
             )
         )
-
-    # clean up / reset resources here
 
 
 @pytest.fixture()
