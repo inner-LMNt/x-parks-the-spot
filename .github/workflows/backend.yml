@@ -33,10 +33,21 @@ jobs:
         run: "cd backend && black app --check"
 
       - name: Run Tests
-        run: "cd backend && pytest"
+        run: |
+          cd backend
+          coverage run --source app -m pytest
+          coverage report -m --skip-covered --format=markdown > codecov.md
+
         env:
           TEST_DATABASE_URI: "user=postgres password=postgres host=postgres port=5432"
           DATABASE_URI: "unused"
           TEST_DATABASE_NAME: test_xpark
           REDIS_URI: "redis://redis?db=0"
           SECRET_KEY: test_key
+
+      - name: "Report Code Coverage"
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          filePath: backend/codecov.md
+        comment_tag: coverage
+        mode: recreate
