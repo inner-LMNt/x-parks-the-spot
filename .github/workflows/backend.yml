@@ -23,14 +23,6 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      - name: Install lsb_release for Python cache
-        run: "apt-get update && apt-get install -y lsb-release && apt-get clean all"
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-
       - name: Install dependencies
         run: pip3 install -r backend/requirements.txt
 
