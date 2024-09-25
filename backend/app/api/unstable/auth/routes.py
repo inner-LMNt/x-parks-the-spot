@@ -17,7 +17,7 @@ def create() -> Tuple[Any, int]:
         email=request.json["email"],  # type: ignore
     ):
         case Ok(new_uuid):
-            return {"access_token": create_token(new_uuid), "token_type": "Bearer"}, 201
+            return {"access_token": create_token(new_uuid)}, 201
         case Err(e):
             # Should we return 409 instead? https://stackoverflow.com/questions/3825990/http-response-code-for-post-when-resource-already-exists
             return {"err": e}, 400
@@ -30,7 +30,7 @@ def login() -> Tuple[Any, Any]:
         email=request.json["email"],  # type: ignore
     ):
         case Ok(user_id):
-            return {"access_token": create_token(user_id), "token_type": "Bearer"}, 201
+            return {"access_token": create_token(user_id)}, 201
         case Err(e):
             return {"err": e}, 401
 
