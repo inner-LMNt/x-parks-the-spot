@@ -15,4 +15,6 @@ def test_verify_migration() -> None:
 
         a = cur.fetchall()
         # List comprehension to convert 2d tuple into 1d array
-        assert sorted(os.listdir(MIGRATION_BASEDIR)) == sorted([x for xs in a for x in xs])
+        assert sorted(os.listdir(MIGRATION_BASEDIR)) == sorted(
+            [x for xs in a for x in xs]
+        )

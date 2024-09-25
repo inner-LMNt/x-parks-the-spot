@@ -26,8 +26,11 @@ jobs:
       - name: Install dependencies
         run: pip3 install -r backend/requirements.txt
 
-      - name: Mypy
+      - name: mypy
         run: "cd backend && mypy app --strict"
+
+      - name: Check Formatting
+        run: "cd backend && black app --check"
 
       - name: Run Tests
         run: "cd backend && pytest"
