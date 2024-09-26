@@ -28,18 +28,18 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: pip3 install -r backend/requirements.txt
+        run: "cd backend && pip -e install ."
 
       - name: mypy
-        run: "cd backend && mypy app --strict"
+        run: "cd backend && mypy xpark --strict"
 
       - name: Check Formatting
-        run: "cd backend && black app --check"
+        run: "cd backend && black xpark --check"
 
       - name: Run Tests
         run: |
           cd backend
-          coverage run --source app -m pytest
+          coverage run --source xpark -m pytest
           coverage report -m --skip-covered --format=markdown > codecov.md
 
         env:
