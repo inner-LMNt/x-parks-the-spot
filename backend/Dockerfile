@@ -28,4 +28,6 @@ COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
 COPY xpark ./xpark
 
+RUN apk add --no-cache libpq
+
 CMD ["gunicorn", "-b", "0.0.0.0:8000", "xpark:app"]
