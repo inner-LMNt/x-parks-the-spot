@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v4
 
       # Nix develop + nix cache
-      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/nix-installer-action@de22e16c4711fca50c816cc9081563429d1cf563
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: nicknovitski/nix-develop@a2060d116a50b36dfab02280af558e73ab52427d
         with:
