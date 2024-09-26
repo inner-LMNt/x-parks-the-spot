@@ -28,8 +28,11 @@ jobs:
         uses: actions/checkout@v4
 
       # Nix develop + nix cache
+      - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
-      - uses: nicknovitski/nix-develop@972b7cc346f0e0ce0b676231f1544e0bf9323c46
+      - uses: nicknovitski/nix-develop@a2060d116a50b36dfab02280af558e73ab52427d
+        with:
+          arguments: ".#backend"
 
       - name: Check Types
         run: |
