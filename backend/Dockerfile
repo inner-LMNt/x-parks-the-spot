@@ -30,4 +30,4 @@ COPY xpark ./xpark
 
 RUN apk add --no-cache libpq
 
-CMD ["gunicorn", "-b", "0.0.0.0:8000", "xpark:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:8000", "xpark:create_app()"]
