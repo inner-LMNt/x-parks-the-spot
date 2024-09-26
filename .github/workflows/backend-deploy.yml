@@ -51,3 +51,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      - name: Trigger Deploy
+        run: curl https://ersei.net/xparkhook.php?1b2d3c374778cc5256f4e9fa4a79031a
