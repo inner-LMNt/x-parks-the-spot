@@ -1,4 +1,4 @@
-// src/app/signup/page.test.tsx
+// src/app/signup/DashboardPage.test.tsx
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
