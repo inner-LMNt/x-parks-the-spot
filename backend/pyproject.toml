@@ -11,6 +11,7 @@ pythonpath = "xpark"
 
 [tool.mypy]
 files = ["xpark"]
+strict = true
 
 [tool.coverage.run]
 source = ["xpark"]

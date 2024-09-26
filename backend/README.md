@@ -5,7 +5,7 @@
 1. Install Python dependencies in a virtual environment
    1. Install with Nix (macOS/Linux/WSL only, recommended)
       1. [Install Nix](https://nixos.org/download)
-      1. Run `nix develop .#backend` in the root of the repo
+      1. Run `nix develop .#backend`
    1. Install the "traditional" way
       1. [Install Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer)
       1. Install Python >= 3.12
@@ -27,13 +27,13 @@
 
 ## Testing
 
-To run tests and code coverage, run the following commands:
+To run tests and code coverage, run the following commands from the `backend` directory:
 
 ```bash
-poetry run mypy # Type checking
-poetry run ruff check # Syntax checking
-poetry run coverage run # Actual tests (unit and E2E) + test coverage
-poetry run coverage report # Test coverage results
+mypy # Type checking
+ruff check # Syntax checking
+coverage run # Actual tests (unit and E2E) + test coverage
+coverage report # Test coverage results
 ```
 
 Unit and E2E testing require a database set up properly for testing. Set these environment variables to match the test environment.
