@@ -1,0 +1,21 @@
+// components/NavBarWrapper.jsx
+
+'use client'; // This directive makes the component a Client Component
+
+import { usePathname } from 'next/navigation';
+import { BottomNavBar } from '@/components/custom/bottom-nav-bar';
+
+const NavBarWrapper = () => {
+    const pathname = usePathname();
+
+    // Define the routes where the BottomNavBar should appear
+    const navBarPaths = ['/profile', '/home', '/search', '/add', '/bookings'];
+
+    // Determine if the current path is in the list
+    const shouldShowNavBar = navBarPaths.includes(pathname);
+
+    // Render the BottomNavBar only if shouldShowNavBar is true
+    return shouldShowNavBar ? <BottomNavBar /> : null;
+};
+
+export default NavBarWrapper;

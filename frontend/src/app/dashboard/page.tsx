@@ -22,6 +22,7 @@ import {
 } from 'recharts';
 import Link from "next/link";
 
+
 // Example static data
 const userData = {
     isLoggedIn: true,
