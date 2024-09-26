@@ -5,48 +5,58 @@ on:
   pull_request:
     branches: ["main"]
 
+defaults:
+  run:
+    working-directory: backend
+
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: python:3-bookworm
 
     services:
       redis:
         image: redis
+        ports:
+          - 6379:6379
       postgres:
         image: postgres
         env:
           POSTGRES_PASSWORD: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: pip3 install -r backend/requirements.txt
+      # Nix develop + nix cache
+      - uses: DeterminateSystems/nix-installer-action@main
+        name: "Install Nix"
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+        name: "Set up cache"
+      - uses: nicknovitski/nix-develop@a2060d116a50b36dfab02280af558e73ab52427d
+        name: "Install dependencies"
+        with:
+          arguments: ".#backend"
 
-      - name: mypy
-        run: "cd backend && mypy app --strict"
+      - name: Check Types
+        run: |
+          mypy --strict
 
       - name: Check Formatting
-        run: "cd backend && black app --check"
+        run: |
+          ruff check
 
       - name: Run Tests
         run: |
-          cd backend
-          coverage run --source app -m pytest
-          coverage report -m --skip-covered --format=markdown > codecov.md
+          coverage run
+          coverage report --format=markdown > codecov.md
 
         env:
-          TEST_DATABASE_URI: "user=postgres password=postgres host=postgres port=5432"
+          TEST_DATABASE_URI: "user=postgres password=postgres host=127.0.0.1 port=5432"
           DATABASE_URI: "unused"
           TEST_DATABASE_NAME: test_xpark
-          REDIS_URI: "redis://redis?db=0"
+          REDIS_URI: "redis://127.0.0.1?db=0"
           SECRET_KEY: test_key
 
       - name: "Report Code Coverage"
