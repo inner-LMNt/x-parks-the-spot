@@ -30,10 +30,10 @@
 To run tests and code coverage, run the following commands:
 
 ```bash
-mypy xpark --strict # Type checking
-black xpark --check # Syntax checking
-coverage run --source xpark -m pytest # Actual tests (unit and E2E) + test coverage
-coverage report -m --skip-covered # Test coverage results
+poetry run mypy # Type checking
+poetry run ruff check # Syntax checking
+poetry run coverage run # Actual tests (unit and E2E) + test coverage
+poetry run coverage report # Test coverage results
 ```
 
 Unit and E2E testing require a database set up properly for testing. Set these environment variables to match the test environment.

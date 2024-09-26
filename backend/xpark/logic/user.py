@@ -82,7 +82,7 @@ def validate_token_and_refresh(token: str) -> Result[uuid.UUID, str]:
     # Check if token exists
     # If it does, refresh it
     uuid_ret = DB.token_cache.getex(token, ex=Config.TOKEN_EXPIRY_SECONDS)
-    if uuid_ret != None:
+    if uuid_ret is not None:
         return Ok(uuid.UUID(bytes=uuid_ret))
     return Err("Token expired")
 

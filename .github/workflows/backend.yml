@@ -27,20 +27,25 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: "cd backend && pip -e install ."
+      # Nix develop + nix cache
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: nicknovitski/nix-develop@972b7cc346f0e0ce0b676231f1544e0bf9323c46
 
-      - name: mypy
-        run: "cd backend && mypy xpark --strict"
+      - name: Check Types
+        run: |
+          cd backend
+          mypy --strict
 
       - name: Check Formatting
-        run: "cd backend && black xpark --check"
+        run: |
+          cd backend
+          ruff check
 
       - name: Run Tests
         run: |
           cd backend
-          coverage run --source xpark -m pytest
-          coverage report -m --skip-covered --format=markdown > codecov.md
+          coverage run
+          coverage report --format=markdown > codecov.md
 
         env:
           TEST_DATABASE_URI: "user=postgres password=postgres host=postgres port=5432"
