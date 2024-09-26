@@ -50,6 +50,9 @@
       in
       {
         devShells.backend = backend.env;
+        devShells.frontend = pkgs.mkShellNoCC {
+          packages = with pkgs; [ nodejs_22 ];
+        };
       }
     );
 }
