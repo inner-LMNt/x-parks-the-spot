@@ -8,11 +8,12 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: python:3-bookworm
 
     services:
       redis:
         image: redis
+        ports:
+          - 6379:6379
       postgres:
         image: postgres
         env:
@@ -22,13 +23,15 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
 
       # Nix develop + nix cache
-      - uses: DeterminateSystems/nix-installer-action@de22e16c4711fca50c816cc9081563429d1cf563
+      - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: nicknovitski/nix-develop@a2060d116a50b36dfab02280af558e73ab52427d
         with:
