@@ -23,6 +23,9 @@ skip_covered = true
 [tool.ruff]
 src = ["xpark"]
 
+[tool.ruff.lint]
+ignore = ["E402"] # Imports do not have to be at the top of the file
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

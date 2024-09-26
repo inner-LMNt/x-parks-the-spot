@@ -17,18 +17,22 @@ def test_successful_create_user() -> None:
 
 def test_create_user_already_exists() -> None:
     assert (
-        create_user(
-            name="Test User",
-            email="testuser1@example.com",
-            password="secureP@ssW0rD!",
+        type(
+            create_user(
+                name="Test User",
+                email="testuser1@example.com",
+                password="secureP@ssW0rD!",
+            )
         )
         is Ok
     )
     assert (
-        create_user(
-            name="Test User",
-            email="testuser1@example.com",
-            password="secureP@ssW0rD!",
+        type(
+            create_user(
+                name="Test User",
+                email="testuser1@example.com",
+                password="secureP@ssW0rD!",
+            )
         )
         is Err
     )
