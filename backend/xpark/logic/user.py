@@ -1,9 +1,9 @@
-from app.utils.db import DB
-from app.utils.password import password_hasher
+from xpark.utils.db import DB
+from xpark.utils.password import password_hasher
 from argon2.exceptions import VerifyMismatchError, VerificationError
 import uuid
 import secrets
-from app.config import Config
+from xpark.config import Config
 from result import Result, Ok, Err
 from typing import cast, Tuple
 
@@ -82,7 +82,7 @@ def validate_token_and_refresh(token: str) -> Result[uuid.UUID, str]:
     # Check if token exists
     # If it does, refresh it
     uuid_ret = DB.token_cache.getex(token, ex=Config.TOKEN_EXPIRY_SECONDS)
-    if uuid_ret != None:
+    if uuid_ret is not None:
         return Ok(uuid.UUID(bytes=uuid_ret))
     return Err("Token expired")
 

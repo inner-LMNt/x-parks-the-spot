@@ -1,4 +1,4 @@
-from app.config import Config
+from xpark.config import Config
 from flask.testing import FlaskClient
 from typing import Dict, cast
 

@@ -16,7 +16,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     with DB.pool.connection() as conn:
         makemigrate(conn)
 
-    import app.api.unstable as unstable
+    import xpark.api.unstable as unstable
 
     app.register_blueprint(unstable.bp)
 
