@@ -1,4 +1,4 @@
-from app.logic.user import *
+from xpark.logic.user import *
 from result import Ok, Err
 
 

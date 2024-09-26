@@ -3,11 +3,17 @@
 ## How to set up development environment
 
 1. Install Python dependencies in a virtual environment
-   1. Install Python >= 3.12
-   1. [Create a virtual environment](https://docs.python.org/3/library/venv.html)
-   1. Install dependencies in the virtual environment with `pip install -r requirements.txt`
+   1. Install with Nix (macOS/Linux/WSL only, recommended)
+      1. [Install Nix](https://nixos.org/download)
+      1. Run `nix develop .#backend` in the root of the repo
+   1. Install the "traditional" way
+      1. [Install Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer)
+      1. Install Python >= 3.12
+         1. With Poetry: `poetry env use 3.12`
+         1. Or install any other way
+      1. Run `pip install -e .` in the backend directory
 1. Spin up Postgres and Redis
-   1. [Install Podman](https://podman.io/docs/installation) or Docker
+   1. [Install Podman](https://podman.io/docs/installation) or Docker (if using Docker, replace all `podman` commands with `docker`)
    1. Run `podman run -it -p 127.0.0.1:6379:6379 --name parkingpass_redis docker.io/redis:latest` in another terminal window
    1. Run `podman run -it --name parkingpass_db --replace -p 127.0.0.1:5432:5432 -v parkingpass_postgres_data:/var/lib/postgresql/data -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=password docker.io/postgres:16` in another terminal window
    1. For the first time setting up Postgres, create a database
@@ -24,9 +30,9 @@
 To run tests and code coverage, run the following commands:
 
 ```bash
-mypy app --strict # Type checking
-black app --check # Syntax checking
-coverage run --source app -m pytest # Actual tests (unit and E2E) + test coverage
+mypy xpark --strict # Type checking
+black xpark --check # Syntax checking
+coverage run --source xpark -m pytest # Actual tests (unit and E2E) + test coverage
 coverage report -m --skip-covered # Test coverage results
 ```
 
@@ -153,13 +159,13 @@ with DB.pool.connection() as conn:
 
 ## Structure
 
-### migrations
-
-This is where all of the SQL migrations are kept. These represent changes that are made to the database backend. Each file is run in order alphabetically. Modifications to the data structure need a file added here to be added to the database (and for others to automatically have those changes pulled).
-
-### app
+### xpark
 
 This is where all of the application logic is kept. In here, there is a `config.py` file that contains the configuration values that the application will use, such as database connection strings, secrets, and so on.
+
+#### migrations
+
+This is where all of the SQL migrations are kept. These represent changes that are made to the database backend. Each file is run in order alphabetically. Modifications to the data structure need a file added here to be added to the database (and for others to automatically have those changes pulled).
 
 #### api
 
@@ -198,8 +204,8 @@ Then, to add functions under that API endpoint, create the `routes.py` file in t
 
 ```python
 from . import bp
-from app.logic.user import *
-from app.middleware.token_auth_middleware import require_logged_in_user
+from xpark.logic.user import *
+from xpark.middleware.token_auth_middleware import require_logged_in_user
 from typing import Tuple, Any
 import uuid
 
@@ -260,12 +266,12 @@ If you want to test database functionality or internal functions, create a test 
 
 ```python
 import os
-from app.logic.user import *
+from xpark.logic.user import *
 from result import Ok, Err
 
 
 def test_list_migrations() -> None:
-    from app.utils.db import DB
+    from xpark.utils.db import DB
 
     with DB.pool.connection() as conn:
         cur = conn.cursor()

@@ -1,9 +1,9 @@
-from app.utils.db import DB
-from app.utils.password import password_hasher
+from xpark.utils.db import DB
+from xpark.utils.password import password_hasher
 from argon2.exceptions import VerifyMismatchError, VerificationError
 import uuid
 import secrets
-from app.config import Config
+from xpark.config import Config
 from result import Result, Ok, Err
 from typing import cast, Tuple
 

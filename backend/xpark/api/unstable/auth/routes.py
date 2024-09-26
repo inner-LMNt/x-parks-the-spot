@@ -1,8 +1,8 @@
 from . import bp
-from app.logic.user import *
+from xpark.logic.user import *
 from flask import request
 from result import Ok, Err
-from app.middleware.token_auth_middleware import require_logged_in_user
+from xpark.middleware.token_auth_middleware import require_logged_in_user
 from typing import Tuple, Any
 import uuid
 

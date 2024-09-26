@@ -1,11 +1,16 @@
-from app.config import Config
+from xpark.config import Config
 import os
+from pathlib import Path
 import redis
 from psycopg_pool import ConnectionPool
 from psycopg import Connection
 from typing import Any, cast
+import sys
 
-MIGRATION_BASEDIR = "migrations"
+# To import migrations from module dir
+MIGRATION_BASEDIR = os.path.join(
+    cast(Path, os.path.dirname(str(sys.modules["xpark"].__file__))), "migrations"
+)
 
 
 class DB:

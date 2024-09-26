@@ -1,5 +1,5 @@
 from flask import request
-from app.logic.user import validate_token_and_refresh
+from xpark.logic.user import validate_token_and_refresh
 from result import Ok, Err
 from typing import Callable, Any, Tuple, Protocol, TypedDict, Unpack
 import uuid

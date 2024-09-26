@@ -1,5 +1,5 @@
 import pytest
-from app.config import Config
+from xpark.config import Config
 import psycopg
 from psycopg_pool import ConnectionPool
 from typing import Any, Generator, cast
@@ -25,7 +25,7 @@ def app() -> Generator[Any, Any, Any]:
         )
         cur.execute(cast(Any, "CREATE DATABASE %s" % Config.TEST_DATABASE_NAME))
 
-        from app.utils.db import DB, makemigrate
+        from xpark.utils.db import DB, makemigrate
 
         Config.DATABASE_URI = (
             Config.TEST_DATABASE_URI + " dbname=" + Config.TEST_DATABASE_NAME
@@ -36,7 +36,7 @@ def app() -> Generator[Any, Any, Any]:
             makemigrate(pool_conn)
 
         # Continue with application setup
-        import app.api.unstable as unstable
+        import xpark.api.unstable as unstable
 
         app.register_blueprint(unstable.bp)
 
