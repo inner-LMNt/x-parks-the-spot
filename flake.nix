@@ -24,7 +24,7 @@
         overlays = [ poetry2nix.overlays.default ];
         pkgs = import nixpkgs { inherit system overlays; };
         lib = nixpkgs.lib;
-        backend = pkgs.poetry2nix.mkPoetryApplication {
+        backend = pkgs.poetry2nix.mkPoetryEnv {
           projectDir = ./backend;
           preferWheels = true;
           overrides = pkgs.poetry2nix.overrides.withDefaults (
@@ -49,10 +49,7 @@
         };
       in
       {
-        devShells.backend = pkgs.mkShell {
-          inputsFrom = [ self.packages.${system}.backend ];
-        };
-        packages.backend = backend;
+        devShells.backend = backend.env;
       }
     );
 }
