@@ -24,8 +24,7 @@ def create() -> Tuple[Any, int]:
         case Ok(new_uuid):
             return {"access_token": create_token(new_uuid)}, 201
         case Err(e):
-            # Should we return 409 instead? https://stackoverflow.com/questions/3825990/http-response-code-for-post-when-resource-already-exists
-            return {"err": e}, 400
+            return {"err": e}, 409
 
 
 @bp.post("login")
