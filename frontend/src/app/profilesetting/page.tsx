@@ -1,31 +1,71 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation'; // Assuming Next.js for routing, replace with your routing logic
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    AlertDialog,
+    AlertDialogTrigger,
+    AlertDialogContent,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogCancel,
+    AlertDialogOverlay,
+} from '@/components/ui/alert-dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogOverlay,
+} from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import {RegisterRequest} from "@/types/type";
+import { useAppDispatch } from '@/store/hooks'; // Use typed hooks
+import {deleteAccount} from "@/features/user/userSlice";
+
+interface FormData {
+    password: string;
+    confirmPassword: string;
+}
 
 export default function SettingsPage() {
-    const router = useRouter(); // To handle navigation (log out)
-
-    // State for the form fields
-    const [name, setName] = useState('John Doe');
-    const [emailNotifications, setEmailNotifications] = useState(true);
-    const [pushNotifications, setPushNotifications] = useState(true);
-
-    // State for the delete account modal
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [accountDeleted, setAccountDeleted] = useState(false); // To show "Account Deleted" message
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
+    const dispatch = useAppDispatch(); // Use the typed dispatch
+    const router = useRouter();
+    const [accountDeleted, setAccountDeleted] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
+    // Initialize React Hook Form
+    const {
+        watch,
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = useForm<FormData>();
+
     // Handle delete account
-    const handleDeleteAccount = () => {
-        if (password !== confirmPassword) {
-            setErrorMessage('Passwords do not match!');
-            return;
+    const handleDeleteAccount = async (data: { password: string, confirmPassword: string }) => {
+        try {
+            // Dispatch the deleteAccount thunk with the password from the form
+            const resultAction = await dispatch(deleteAccount(data.password)); // Use `data.password`
+
+            if (deleteAccount.fulfilled.match(resultAction)) {
+                // Account successfully deleted
+                setAccountDeleted(true); // Show account deleted dialog
+            } else if (deleteAccount.rejected.match(resultAction)) {
+                // Account deletion failed
+                setErrorMessage(resultAction.payload as string); // Show error message
+            }
+        } catch (error) {
+            console.error('Account deletion failed:', error);
+            setErrorMessage('An unexpected error occurred.');
         }
-        // Simulate account deletion (replace with actual logic)
-        setAccountDeleted(true);
     };
 
     return (
@@ -33,127 +73,136 @@ export default function SettingsPage() {
             <div className="w-full max-w-md bg-white shadow-md rounded-lg p-6 md:p-8">
                 <h2 className="text-2xl font-semibold mb-6">Settings</h2>
 
-                {/* Name Change Section */}
-                <div className="mb-6">
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
-                    <input
-                        type="text"
-                        id="name"
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                    />
-                </div>
-
                 {/* Notification Settings */}
-                <div className="mb-6">
+                <div className="mb-8">
                     <h3 className="text-lg font-medium mb-4">Notification Options</h3>
-                    <div className="flex items-center mb-4">
-                        <input
-                            type="checkbox"
-                            id="emailNotifications"
-                            className="mr-2"
-                            checked={emailNotifications}
-                            onChange={() => setEmailNotifications(!emailNotifications)}
-                        />
-                        <label htmlFor="emailNotifications" className="text-sm">Email Notifications</label>
+                    <div className="flex items-center mb-3">
+                        <Checkbox id="emailNotifications" className="mr-3 h-4 w-4" />
+                        <Label htmlFor="emailNotifications" className="text-sm">
+                            Email Notifications
+                        </Label>
                     </div>
                     <div className="flex items-center">
-                        <input
-                            type="checkbox"
-                            id="pushNotifications"
-                            className="mr-2"
-                            checked={pushNotifications}
-                            onChange={() => setPushNotifications(!pushNotifications)}
-                        />
-                        <label htmlFor="pushNotifications" className="text-sm">Push Notifications</label>
+                        <Checkbox id="pushNotifications" className="mr-3 h-4 w-4" />
+                        <Label htmlFor="pushNotifications" className="text-sm">
+                            Push Notifications
+                        </Label>
                     </div>
                 </div>
 
                 {/* Delete Account Section */}
-                <div className="mt-10">
+                <div className="mt-12">
                     <h3 className="text-lg font-medium text-red-600 mb-4">Delete Account</h3>
-                    <p className="text-sm text-gray-700 mb-4">
+                    <p className="text-sm text-gray-700 mb-6">
                         Deleting your account is permanent and cannot be undone.
                     </p>
-                    <button
-                        type="button"
-                        onClick={() => setShowDeleteModal(true)}
-                        className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                    >
-                        Delete My Account
-                    </button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" className="w-full">
+                                Delete My Account
+                            </Button>
+                        </AlertDialogTrigger>
+                        {/* Semi-transparent overlay */}
+                        <AlertDialogOverlay className="bg-black bg-opacity-50 fixed inset-0" />
+                        <AlertDialogContent className="bg-white rounded-md p-6">
+                            <AlertDialogHeader>
+                                <AlertDialogTitle className="text-xl font-semibold text-gray-900">
+                                    Confirm Account Deletion
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="text-base text-gray-700 mt-2">
+                                    Please confirm your password to permanently delete your account.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <form onSubmit={handleSubmit(handleDeleteAccount)} className="mt-6">
+                                <div className="mb-4">
+                                    <Label htmlFor="password" className="text-sm font-medium text-gray-800">
+                                        Password
+                                    </Label>
+                                    <Input
+                                        id="password"
+                                        type="password"
+                                        placeholder="Enter your password"
+                                        {...register('password', { required: 'Password is required' })}
+                                        className="mt-1 block w-full text-gray-800"
+                                    />
+                                    {errors.password && (
+                                        <p className="text-red-600 text-sm mt-1">{errors.password.message}</p>
+                                    )}
+                                </div>
+                                <div className="mb-4">
+                                    <Label
+                                        htmlFor="confirmPassword"
+                                        className="text-sm font-medium text-gray-900" // Updated to text-gray-900
+                                    >
+                                        Confirm Password
+                                    </Label>
+                                    <Input
+                                        id="confirmPassword"
+                                        type="password"
+                                        placeholder="Confirm your password"
+                                        {...register('confirmPassword', {
+                                            required: 'Confirm your password',
+                                            validate: (val: string) => {
+                                                if (watch('password') != val) {
+                                                    return "Your passwords do not match";
+                                                }
+                                            }
+                                        })}
+                                        className="mt-1 block w-full text-gray-800"
+                                    />
+                                    {errors.confirmPassword && (
+                                        <p className="text-red-600 text-sm mt-1">
+                                            {errors.confirmPassword.message}
+                                        </p>
+                                    )}
+                                </div>
+                                {/* Error message for mismatched passwords */}
+                                {errorMessage && (
+                                    <p className="text-red-600 text-sm mb-4">{errorMessage}</p>
+                                )}
+                                <AlertDialogFooter className="mt-6">
+                                    <AlertDialogCancel asChild>
+                                        <Button variant="secondary">Cancel</Button>
+                                    </AlertDialogCancel>
+                                    <Button variant="destructive" type="submit">
+                                        Yes, Delete My Account
+                                    </Button>
+                                </AlertDialogFooter>
+                            </form>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             </div>
 
-            {/* Delete Account Modal */}
-            {showDeleteModal && !accountDeleted && (
-                <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-                        <h3 className="text-lg font-medium text-red-600 mb-4">Confirm Account Deletion</h3>
-                        <p className="text-sm text-gray-700 mb-4">
-                            Please confirm your password to permanently delete your account.
-                        </p>
-                        <div className="mb-4">
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-                            <input
-                                type="password"
-                                id="password"
-                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">Confirm Password</label>
-                            <input
-                                type="password"
-                                id="confirmPassword"
-                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                            />
-                        </div>
-
-                        {/* Error message for mismatched passwords */}
-                        {errorMessage && <p className="text-red-600 text-sm mb-4">{errorMessage}</p>}
-
-                        <div className="flex justify-between">
-                            <button
-                                type="button"
-                                onClick={() => setShowDeleteModal(false)}
-                                className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-md"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleDeleteAccount}
-                                className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md"
-                            >
-                                Yes, Delete My Account
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Account Deleted Modal */}
-            {accountDeleted && (
-                <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-                        <h3 className="text-lg font-medium text-red-600 mb-4">Account Deleted</h3>
-                        <p className="text-sm text-gray-700 mb-4">Your account has been successfully deleted.</p>
-                        <button
-                            type="button"
-                            onClick={() => router.push('/login')}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        >
-                            Go to Login
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Account Deleted Dialog */}
+            <Dialog
+                open={accountDeleted}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        router.push('/login');
+                    }
+                }}
+            >
+                {/* Semi-transparent overlay */}
+                <DialogOverlay className="bg-black bg-opacity-50 fixed inset-0" />
+                <DialogContent className="bg-white rounded-md p-6">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-semibold text-gray-900">
+                            Account Deleted
+                        </DialogTitle>
+                        <DialogDescription className="text-base text-gray-700 mt-2">
+                            Your account has been successfully deleted.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Button
+                        variant="primary"
+                        onClick={() => router.push('/login')}
+                        className="w-full mt-6"
+                    >
+                        Go to Login
+                    </Button>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
