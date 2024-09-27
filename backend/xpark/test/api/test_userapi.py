@@ -21,7 +21,7 @@ def test_api_register(client: FlaskClient) -> None:
             "password": "PobRocks123",
         },
     )
-    assert response.status_code == 400
+    assert response.status_code == 409
 
 
 def test_api_auth(client: FlaskClient) -> None:
