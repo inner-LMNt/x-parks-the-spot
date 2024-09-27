@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
     Card,
@@ -70,6 +71,8 @@ const bookingData = [
 ];
 
 export default function Dashboard() {
+    const history = useRouter();
+
     if (!userData.isLoggedIn) {
         return <div>Loading...</div>;
     }
@@ -84,12 +87,17 @@ export default function Dashboard() {
                 <h1 className="text-4xl font-bold mb-6">ParkingPass Dashboard</h1>
 
                 <Tabs defaultValue="overview" className="space-y-4">
-                    <TabsList>
-                        <TabsTrigger value="overview">Overview</TabsTrigger>
-                        {userData.permissions.canList && <TabsTrigger value="listings">My Listings</TabsTrigger>}
-                        {userData.permissions.canRent && <TabsTrigger value="bookings">My Bookings</TabsTrigger>}
-                        {userData.permissions.canSpot && <TabsTrigger value="spots">Spotted Spots</TabsTrigger>}
-                    </TabsList>
+                    <div className="flex justify-between items-center mb-4">
+                        <TabsList>
+                            <TabsTrigger value="overview">Overview</TabsTrigger>
+                            {userData.permissions.canList && <TabsTrigger value="listings">My Listings</TabsTrigger>}
+                            {userData.permissions.canRent && <TabsTrigger value="bookings">My Bookings</TabsTrigger>}
+                            {userData.permissions.canSpot && <TabsTrigger value="spots">Spotted Spots</TabsTrigger>}
+                        </TabsList>
+                        <Button onClick={() => history.push('/search')} className="ml-4">
+                            Find Parking
+                        </Button>
+                    </div>
 
                     <TabsContent value="overview">
                         <Card>

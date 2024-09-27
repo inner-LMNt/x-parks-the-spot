@@ -50,6 +50,12 @@ export type ReservationCreateRequest = components["schemas"]["ReservationCreateR
 export type ReservationUpdateRequest = components["schemas"]["ReservationUpdateRequest"];
 
 /**
+ * **Search Type**
+ */
+export type SearchRequest = components["schemas"]["SearchRequest"];
+export type SearchResponse = components["schemas"]["SearchResponse"];
+
+/**
  * **Spot Finder Types**
  */
 export type SpotFinderSubmission = components["schemas"]["SpotFinderSubmission"];

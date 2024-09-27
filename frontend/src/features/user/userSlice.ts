@@ -9,14 +9,14 @@ import {LoginRequest, RegisterRequest, AuthResponse, User, PasswordResetRequest}
  */
 interface UserState {
     isLoggedIn: boolean;
-    userId: string | null;
+    access_token: string | null;
     loading: boolean;
     error: string | null;
 }
 
 const initialState: UserState = {
-    isLoggedIn: false,
-    userId: null,
+    isLoggedIn: false, // Maybe redundant, just check if access_token is null
+    access_token: null,
     loading: false,
     error: null,
 };
@@ -95,6 +95,7 @@ export const reset = createAsyncThunk<
         }
     }
 );
+
 // @ts-ignore
 const userSlice = createSlice<UserState, {}, 'user'>({
     name: 'user',
@@ -135,7 +136,7 @@ const userSlice = createSlice<UserState, {}, 'user'>({
                 (state, action: PayloadAction<AuthResponse>) => {
                     state.loading = false;
                     state.isLoggedIn = true;
-                    state.userId = action.payload.userId;
+                    state.access_token = action.payload.access_token || null;
                 }
             )
 
@@ -145,7 +146,7 @@ const userSlice = createSlice<UserState, {}, 'user'>({
                 (state) => {
                     state.loading = false;
                     state.isLoggedIn = false;
-                    state.userId = null;
+                    state.access_token = null;
                 }
             )
 

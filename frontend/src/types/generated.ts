@@ -1316,7 +1316,7 @@ export interface components {
             id?: string;
             /** Format: uuid */
             owner_id?: string;
-            location?: components["schemas"]["Location"];
+            location: components["schemas"]["Location"]; // required
             features?: string[];
             availability_schedule?: components["schemas"]["TimeSlot"][];
             pricing_info?: components["schemas"]["PricingInfo"];
@@ -1442,6 +1442,17 @@ export interface components {
             read?: boolean;
             /** Format: date-time */
             timestamp?: string;
+        };
+        SearchRequest: {
+            /** Format: float */
+            latitude: number;
+            /** Format: float */
+            longitude: number;
+            /** Format: float */
+            radius?: number;
+        };
+        SearchResponse: {
+            parking_spaces: components["schemas"]["ParkingSpaceSummary"][];
         };
     };
     responses: never;
