@@ -2,6 +2,7 @@ name: Node.js CI
 
 on:
   push:
+    branches: ["main"]
     paths: ['frontend/**', ".github/workflows/node.js.yml"]
   pull_request:
     branches: ["main"]
@@ -30,7 +31,8 @@ jobs:
     - name: Test
       working-directory: ./frontend
       run: |
-        npm run test:coverage | tail -n +6 | head -n -1 | sed 's/^/|/' | sed 's/$/|/' > coverage.md
+        npm run test:coverage | tail -n +6 | sed '$d' > coverage.md
+        sed -i '2,$ s/^/| /; 2,$ s/$/ |/' coverage.md
     - name: "Report Code Coverage"
       if: github.event_name == 'pull_request'
       uses: thollander/actions-comment-pull-request@v2
