@@ -50,6 +50,7 @@ export const deleteAccount = createAsyncThunk<
     'user/deleteAccount',
     async (password, { rejectWithValue, getState }) => {
         const { userId } = getState().user;
+        console.log("hi" + userId)
         if (!userId) {
             return rejectWithValue('User ID not found');
         }
