@@ -52,8 +52,18 @@ export type ReservationUpdateRequest = components["schemas"]["ReservationUpdateR
 /**
  * **Search Type**
  */
-export type SearchRequest = components["schemas"]["SearchRequest"];
-export type SearchResponse = components["schemas"]["SearchResponse"];
+export type SearchRequest = {
+    /** Format: float */
+    latitude: number;
+    /** Format: float */
+    longitude: number;
+    /** Format: float */
+    radius?: number;
+};
+
+export type SearchResponse = {
+    spots: ParkingSpace[];
+};
 
 /**
  * **Spot Finder Types**

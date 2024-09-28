@@ -1,16 +1,17 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import axios from '../../api/axiosInstance'; // Ensure the path is correct
-import { motion } from 'framer-motion'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { MapPin, Navigation } from 'lucide-react'
-import { GoogleMap, LoadScript, Marker, DirectionsRenderer } from '@react-google-maps/api'
-import { ParkingSpace, SearchRequest } from '@/types/type'
-import { useRouter } from 'next/navigation'
+import React, { useState, useEffect } from 'react';
+import axios from '../../api/axiosInstance';
+import { motion } from 'framer-motion';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { MapPin, Navigation } from 'lucide-react';
+import { GoogleMap, LoadScript, Marker, DirectionsRenderer } from '@react-google-maps/api';
+import { ParkingSpace, SearchRequest } from '@/types/type';
+import { useRouter } from 'next/navigation';
 import { set } from 'react-hook-form';
 
 // Static Mock API since I can't figure MSW out right now
@@ -35,15 +36,15 @@ const center = {
 
 export default function ParkingFinder() {
   const history = useRouter();
-  const [parkingSpots, setParkingSpots] = useState<{ id: number; name: string; lat: number; lng: number; }[]>([])
-  const [selectedSpot, setSelectedSpot] = useState<{ id: number; name: string; lat: number; lng: number; } | null>(null)
+  const dispatch = useAppDispatch();
+
+  const parkingSpots = useAppSelector((state) => state.search.spots);
+  const [selectedSpot, setSelectedSpot] = useState<{ id: number; owner_id: string; lat: number; lng: number; } | null>(null)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; } | null>(null)
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null)
   // const [searchRadius, setSearchRadius] = useState<number>(5);
 
   useEffect(() => {
-    fetchSpots().then(setParkingSpots);
-
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -58,6 +59,9 @@ export default function ParkingFinder() {
           console.error("Error: The Geolocation service failed.");
         }
       )
+
+      dispatch({type: 'search/spots', payload: {latitude: 40.7128, longitude: -74.0060, radius: 5}})
+
     } else {
       console.error("Error: Your browser doesn't support geolocation.");
     }
@@ -85,7 +89,7 @@ export default function ParkingFinder() {
   //   }
   // }
 
-  const handleSpotSelect = (spot: React.SetStateAction<{ id: number; name: string; lat: number; lng: number; } | null>) => {
+  const handleSpotSelect = (spot: React.SetStateAction<{ id: number; owner_id: string; lat: number; lng: number; } | null>) => {
     setSelectedSpot(spot);
     setDirections(null);
   }
@@ -133,9 +137,9 @@ export default function ParkingFinder() {
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
-                {parkingSpots.map((spot) => (
+                {parkingSpots.map((spot: { id: number; owner_id: string; lat: number; lng: number; }) => (
                   <li key={spot.id} className="flex justify-between items-center border-b pb-2">
-                    <span>{spot.name}</span>
+                    <span>{spot.owner_id}</span>
                     <Button onClick={() => handleSpotSelect(spot)}>
                       <MapPin className="mr-2 h-4 w-4" />
                       Select
@@ -157,7 +161,7 @@ export default function ParkingFinder() {
                   center={center}
                   zoom={12}
                 >
-                  {parkingSpots.map((spot) => (
+                  {parkingSpots.map((spot: { id: number; owner_id: string; lat: number; lng: number; }) => (
                     <Marker
                       key={spot.id}
                       position={{ lat: spot.lat, lng: spot.lng }}
@@ -175,7 +179,7 @@ export default function ParkingFinder() {
         {selectedSpot && (
           <Card className="mt-6">
             <CardHeader>
-              <CardTitle>Selected Parking Spot: {selectedSpot.name}</CardTitle>
+              <CardTitle>Selected Parking Spot: {selectedSpot.owner_id}</CardTitle>
             </CardHeader>
             <CardContent>
               <p>Latitude: {selectedSpot.lat}</p>
