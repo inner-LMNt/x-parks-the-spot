@@ -12,6 +12,7 @@ import { components } from './generated';
 export type RegisterRequest = components["schemas"]["RegisterRequest"];
 export type AuthResponse = components["schemas"]["AuthResponse"];
 export type LoginRequest = components["schemas"]["LoginRequest"];
+
 export type PasswordResetRequest = components["schemas"]["PasswordResetRequest"];
 export type PasswordResetConfirmRequest = components["schemas"]["PasswordResetConfirmRequest"];
 

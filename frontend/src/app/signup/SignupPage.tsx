@@ -73,7 +73,7 @@ export default function SignUpPage() {
 
             if (register_acc.fulfilled.match(resultAction)) {
                 // Sign up successful
-                router.push('/dashboard');
+                router.push('/profile');
             } else if (register_acc.rejected.match(resultAction)) {
                 // Sign up failed
                 console.error('Signup failed:', resultAction.payload);

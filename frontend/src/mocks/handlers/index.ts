@@ -4,13 +4,14 @@ import { loginHandler } from './auth/loginHandler';
 import { registerHandler } from './auth/registerHandler';
 import { resetHandler, resetConfirmHandler } from './auth/resetHandler';
 import { searchHandler } from './search/searchHandler';
-// Import additional handlers as needed
+import { deleteHandler } from './auth/deleteHandler';
 
 export const handlers = [
   loginHandler,
+  deleteHandler,
   registerHandler,
   resetHandler,
   resetConfirmHandler,
   searchHandler
-  // Add additional handlers here
+  // Additional handlers
 ];

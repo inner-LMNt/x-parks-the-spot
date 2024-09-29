@@ -1,4 +1,4 @@
-from app.config import Config
+from xpark.config import Config
 from flask.testing import FlaskClient
 from typing import Dict, cast
 
@@ -21,7 +21,7 @@ def test_api_register(client: FlaskClient) -> None:
             "password": "PobRocks123",
         },
     )
-    assert response.status_code == 400
+    assert response.status_code == 409
 
 
 def test_api_auth(client: FlaskClient) -> None:
