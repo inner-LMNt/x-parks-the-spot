@@ -10,7 +10,7 @@ export const metadata = {
     title: 'Parking Pass',
     description: 'Your solution to easy parking.',
 };
-
+//@ts-ignore
 export default function RootLayout({ children }) {
     return (
         <html lang="en">
