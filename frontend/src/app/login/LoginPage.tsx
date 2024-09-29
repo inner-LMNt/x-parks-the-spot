@@ -66,7 +66,7 @@ export default function LoginPage() {
     const onSubmit = async (data: LoginRequest) => {
         try {
             // @ts-ignore
-            const resultAction = await dispatch(login(data));
+            const resultAction = dispatch(login(data));
             if (login.fulfilled.match(resultAction)) {
                 // Login successful
                 router.push('/profile');

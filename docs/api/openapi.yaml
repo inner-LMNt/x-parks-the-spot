@@ -830,6 +830,8 @@ components:
           type: integer
     ParkingSpace:
       type: object
+      required:
+        - location
       properties:
         id:
           type: string
@@ -1103,4 +1105,19 @@ components:
         timestamp:
           type: string
           format: date-time
-
+    SearchRequest:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        radius:
+          type: number
+          format: float
+    SearchResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/ParkingSpace'
