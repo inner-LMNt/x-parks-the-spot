@@ -198,7 +198,7 @@ export default function SettingsPage() {
                         </DialogDescription>
                     </DialogHeader>
                     <Button
-                        variant="primary"
+                        variant="secondary"
                         onClick={() => router.push('/login')}
                         className="w-full mt-6 text-gray-900"
                     >

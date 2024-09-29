@@ -37,7 +37,7 @@ function CommentCard({
                      }: {
     user: string;
     comment: string;
-    sentiment: 'positive' | 'negative';
+    sentiment: string;
 }) {
     return (
         <div className="bg-gray-100 p-4 rounded-lg shadow-sm flex justify-between items-start">

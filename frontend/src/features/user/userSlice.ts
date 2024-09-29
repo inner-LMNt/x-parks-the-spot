@@ -47,6 +47,7 @@ export const deleteAccount = createAsyncThunk<
     { rejectValue: string } // ThunkAPI config with state
 >(
     'user/deleteAccount',
+    //@ts-ignore
     async ({ userId, password }, { rejectWithValue }) => {
         try {
             // Make the API call using both userId and password
@@ -164,7 +165,7 @@ const userSlice = createSlice<UserState, {}, 'user'>({
                 (state, action: PayloadAction<AuthResponse>) => {
                     state.loading = false;
                     state.isLoggedIn = true;
-                    state.userId = action.payload.access_token;
+                    state.userId = action.payload.access_token ? action.payload.access_token : null;
                 }
             )
 
