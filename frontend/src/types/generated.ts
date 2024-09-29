@@ -1443,6 +1443,15 @@ export interface components {
             /** Format: date-time */
             timestamp?: string;
         };
+        SearchRequest: {
+            /** Format: float */
+            latitude?: number;
+            /** Format: float */
+            longitude?: number;
+            /** Format: float */
+            radius?: number;
+        };
+        SearchResponse: components["schemas"]["ParkingSpace"][];
     };
     responses: never;
     parameters: never;
