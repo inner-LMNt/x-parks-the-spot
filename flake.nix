@@ -27,25 +27,6 @@
         backend = pkgs.poetry2nix.mkPoetryEnv {
           projectDir = ./backend;
           preferWheels = true;
-          overrides = pkgs.poetry2nix.overrides.withDefaults (
-            self: super:
-            (lib.listToAttrs (
-              lib.map
-                (x: {
-                  name = x;
-                  value = super."${x}".overridePythonAttrs (old: {
-                    nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [
-                      self.setuptools
-                      pkgs.postgresql_16.dev
-                    ];
-                  });
-                })
-                [
-                  "types-cffi"
-                  "psycopg-c"
-                ]
-            ))
-          );
         };
       in
       {
