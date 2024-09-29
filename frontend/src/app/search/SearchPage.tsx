@@ -12,26 +12,16 @@ import { GoogleMap, LoadScript, Marker, DirectionsRenderer } from '@react-google
 import { ParkingSpace, SearchRequest } from '@/types/type';
 import {searchSpots} from '@/features/search/searchSlice';
 import { useRouter } from 'next/navigation';
-import { UnknownAction } from '@reduxjs/toolkit';
-
-// Static Mock API since I can't figure MSW out right now
-const fetchSpots = async () => {
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  return [
-    { id: 1, name: 'Parking Spot 1', lat: 40.7128, lng: -74.0060 },
-    { id: 2, name: 'Parking Spot 2', lat: 40.7129, lng: -74.0061 },
-    { id: 3, name: 'Parking Spot 3', lat: 40.7130, lng: -74.0062 },
-  ]
-}
 
 const mapContainerStyle = {
   width: '100%',
   height: '400px'
 }
 
+// Purdue University
 const center = {
-  lat: 40.7128,
-  lng: -74.0060
+  lat: 40.4237,
+  lng: -86.9212
 }
 
 export default function ParkingFinder() {
@@ -39,11 +29,11 @@ export default function ParkingFinder() {
   const dispatch = useAppDispatch();
 
   const parkingSpots = useAppSelector((state) => state.search.spots);
-  const userLocation = useAppSelector((state) => state.user.location);
-
+  
+  const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null)
-  // const [searchRadius, setSearchRadius] = useState<number>(5);
+  const [searchRadius, setSearchRadius] = useState<number>(5);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -53,8 +43,7 @@ export default function ParkingFinder() {
             lat: position.coords.latitude,
             lng: position.coords.longitude
           }
-          // setUserLocation(location);
-          // searchParking(location);
+          setUserLocation(location);
         },
         () => {
           console.error("Error: The Geolocation service failed.");
@@ -66,19 +55,26 @@ export default function ParkingFinder() {
   }, []);
 
   const onSearch = async () => {
-    const request: SearchRequest = {
-      latitude: 40.7128,
-      longitude: -74.0060,
-      radius: 5
+    if (!userLocation) {
+      console.error("User location is not available yet.");
+      return; // if location is unavailable
     }
-    
+
+    console.log("userLocation", userLocation);
+  
+    const request: SearchRequest = {
+      latitude: userLocation.lat,
+      longitude: userLocation.lng,
+      radius: searchRadius,
+    };
+   
     try {
       // @ts-ignore
       dispatch(searchSpots(request));
     } catch (error) {
       console.error('Search failed:', error);
     }
-  }
+  };  
 
   // const searchParking = async (location: google.maps.LatLngLiteral) => {
   //   const searchRequest: SearchRequest = {
@@ -103,9 +99,17 @@ export default function ParkingFinder() {
   // }
 
   const handleSpotSelect = (spot: ParkingSpace) => {
-    setSelectedSpot(spot);
+    if (selectedSpot && selectedSpot.id === spot.id) {
+        setSelectedSpot(null);
+        console.log("Deselected:", spot);
+    } else {
+        setSelectedSpot(spot);
+        console.log("Selected:", spot);
+    }
     setDirections(null);
-  }
+};
+
+  
 
   const getDirections = () => {
     if (userLocation && selectedSpot) {
@@ -138,36 +142,48 @@ export default function ParkingFinder() {
           <h1 className="text-4xl font-bold mb-6">Find Parking</h1>
           <Button onClick={() => {
             history.push('/dashboard');
-          }} className="ml-4">
+          }} className="ml-6 bg-purple-500 hover:bg-purple-700 text-white">
             Back to Dashboard
           </Button>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          <Card>
-            <div className="flex justify-between items-center">
-              <CardHeader>
-                <CardTitle>Available Parking Spots</CardTitle>
-              </CardHeader>
-              <Button onClick={onSearch}>
-                Search
-              </Button>
+        <Card>
+          <div className="flex justify-between items-center">
+            <CardHeader>
+              <CardTitle>Available Parking Spots</CardTitle>
+            </CardHeader>
+            <div className="flex items-center">
+              <Label htmlFor="radius" className="mr-4">Search Radius:</Label>
+              <Input
+                id="radius"
+                type="number"
+                value={searchRadius}
+                onChange={(e) => setSearchRadius(parseInt(e.target.value))}
+                className="w-20"
+              />
             </div>
+            <Button onClick={onSearch} className="mr-6">
+              Search
+            </Button>
+          </div>
 
-            <CardContent>
+          <CardContent>
+            <div className="max-h-[400px] overflow-y-auto"> 
               <ul className="space-y-2">
-                {parkingSpots.map((spot: ParkingSpace) => (
-                  <li key={spot.id} className="flex justify-between items-center border-b pb-2">
-                    <span>{spot.owner_id}</span>
-                    <Button onClick={() => handleSpotSelect(spot)}>
-                      <MapPin className="mr-2 h-4 w-4" />
-                      Select
-                    </Button>
-                  </li>
-                ))}
+              {parkingSpots.map((spot: ParkingSpace) => (
+                <li key={spot.id} className="flex justify-between items-center border-b pb-2">
+                  <span>{spot.owner_id}</span>
+                  <Button onClick={() => handleSpotSelect(spot)} data-testid={`select-${spot.id}`}>
+                    <MapPin className="mr-2 h-4 w-4" />
+                    Select
+                  </Button>
+                </li>
+              ))}
               </ul>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
           <Card>
             <CardHeader>
@@ -195,21 +211,27 @@ export default function ParkingFinder() {
           </Card>
         </div>
 
-        {selectedSpot && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Selected Parking Spot: {selectedSpot.owner_id}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Latitude: {selectedSpot.location.latitude}</p>
-              <p>Longitude: {selectedSpot.location.longitude}</p>
-              <Button onClick={getDirections} className="mt-4">
-                <Navigation className="mr-2 h-4 w-4" />
-                Get Directions
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>
+              Selected Parking Spot: {selectedSpot ? selectedSpot.owner_id : 'None'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {selectedSpot ? (
+              <>
+                <p>Latitude: {selectedSpot.location.latitude}</p>
+                <p>Longitude: {selectedSpot.location.longitude}</p>
+                <Button onClick={getDirections} className="mt-4">
+                  <Navigation className="mr-2 h-4 w-4" />
+                  Get Directions
+                </Button>
+              </>
+            ) : (
+              <p>No parking spot selected.</p>
+            )}
+          </CardContent>
+        </Card>
       </motion.div>
     </div>
   )

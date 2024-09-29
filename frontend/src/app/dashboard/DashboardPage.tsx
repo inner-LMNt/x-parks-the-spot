@@ -94,7 +94,7 @@ export default function Dashboard() {
                             {userData.permissions.canRent && <TabsTrigger value="bookings">My Bookings</TabsTrigger>}
                             {userData.permissions.canSpot && <TabsTrigger value="spots">Spotted Spots</TabsTrigger>}
                         </TabsList>
-                        <Button onClick={() => history.push('/search')} className="ml-4">
+                        <Button onClick={() => history.push('/search')} className="ml-6 bg-purple-500 hover:bg-purple-700 text-white">
                             Find Parking
                         </Button>
                     </div>
@@ -159,7 +159,6 @@ export default function Dashboard() {
                                             </li>
                                         ))}
                                     </ul>
-                                    <Button className="mt-4">Find Parking</Button>
                                 </CardContent>
                             </Card>
                         </TabsContent>

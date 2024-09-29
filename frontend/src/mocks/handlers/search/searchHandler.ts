@@ -3,6 +3,7 @@
 import { http, HttpResponse } from "msw";
 import { ParkingSpace, SearchRequest, SearchResponse } from "@/types/type";
 import { findParking } from "../../data/parking/parkingData";
+import { parse } from "path";
 
 /**
  * Handler for POST /parking/search
@@ -10,20 +11,21 @@ import { findParking } from "../../data/parking/parkingData";
 export const searchHandler = http.get<never, SearchRequest, SearchResponse>(
   "v1/search/spots",
   async ({ request }) => {
-    const data = await request.json();
-    console.log("Search request:", data);
+    const url = new URL(request.url);
+    const latitude = parseFloat(url.searchParams.get("latitude") || "0");
+    const longitude = parseFloat(url.searchParams.get("longitude") || "0");
+    const radius = parseFloat(url.searchParams.get("radius") || "0");
 
-    // Simulate finding parking spots based on the search criteria
-    // empty array of parking spaces for search response
-    let result: ParkingSpace[] = [];
+    console.log("Search request:", { latitude, longitude, radius });
 
-    if (
-      data.latitude !== undefined &&
-      data.longitude !== undefined &&
-      data.radius !== undefined
-    ) {
-        result = findParking(data.latitude, data.longitude, data.radius);
+    if (isNaN(latitude) || isNaN(longitude) || isNaN(radius)) {
+      return HttpResponse.json(
+        { spots: [] },
+        { status: 400 }
+      );
     }
+    
+    const result = findParking(latitude, longitude, radius);
 
     console.log("Search result:", result);
 
