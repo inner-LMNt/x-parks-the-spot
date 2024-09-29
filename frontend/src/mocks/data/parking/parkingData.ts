@@ -2,10 +2,10 @@ import { ParkingSpace } from '@/types/type'
 
 // Mock database of parking spots
 const spaces: ParkingSpace[] = [
-  {id: '1', location: {latitude: 40.7128, longitude: -74.0060}},
-  {id: '2', location: {latitude: 40.7829, longitude: -73.9654}},
-  {id: '3', location: {latitude: 40.7580, longitude: -73.9855}},
-  {id: '4', location: {latitude: 40.7128, longitude: -74.0060}},
+  {id: '1', owner_id: '1001', location: {latitude: 40.7128, longitude: -74.0060}},
+  {id: '2', owner_id: '1002', location: {latitude: 40.7829, longitude: -73.9654}},
+  {id: '3', owner_id: '1003', location: {latitude: 40.7580, longitude: -73.9855}},
+  {id: '4', owner_id: '1004', location: {latitude: 40.7128, longitude: -74.0060}},
 ]
 
 /**
@@ -16,8 +16,7 @@ const spaces: ParkingSpace[] = [
  * @returns Array of parking spots within the radius
  */
 export function findParking(lat: number, lng: number, radius: number): ParkingSpace[] {
-  // This is a simplified version. In a real application, you'd use a more accurate
-  // distance calculation (like the Haversine formula) and possibly a spatial index.
+    console.log("Finding parking spots within radius", radius, "km of", lat, lng);
   return spaces.filter(space => {
     const distance = Math.sqrt(
       Math.pow(space.location.latitude - lat, 2) + Math.pow(space.location.longitude - lng, 2)

@@ -53,11 +53,8 @@ export type ReservationUpdateRequest = components["schemas"]["ReservationUpdateR
  * **Search Type**
  */
 export type SearchRequest = {
-    /** Format: float */
     latitude: number;
-    /** Format: float */
     longitude: number;
-    /** Format: float */
     radius?: number;
 };
 

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import axios from '../../api/axiosInstance';
+import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { MapPin, Navigation } from 'lucide-react';
 import { GoogleMap, LoadScript, Marker, DirectionsRenderer } from '@react-google-maps/api';
 import { ParkingSpace, SearchRequest } from '@/types/type';
+import {searchSpots} from '@/features/search/searchSlice';
 import { useRouter } from 'next/navigation';
 import { set } from 'react-hook-form';
 
@@ -48,20 +49,29 @@ export default function ParkingFinder() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const location = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          }
-          // setUserLocation(location);
-          // searchParking(location);
+          console.log("Geolocation success:", position);
+          const request = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            radius: 5
+          };
+          
+          const fetchData = async () => {
+            try {
+              const result = await axios.post('v1/search/spots', request); // ????
+              // dispatch(searchSpots(request));
+              console.log(result.data);
+            } catch (error) {
+              console.error('Error fetching parking spots:', error);
+            }
+          };
+
+          fetchData();
         },
-        () => {
-          console.error("Error: The Geolocation service failed.");
+        (error) => {
+          console.error("Error: The Geolocation service failed.", error);
         }
-      )
-
-      dispatch({type: 'search/spots', payload: {latitude: 40.7128, longitude: -74.0060, radius: 5}})
-
+      );
     } else {
       console.error("Error: Your browser doesn't support geolocation.");
     }

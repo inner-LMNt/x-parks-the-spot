@@ -1,7 +1,7 @@
 // src/features/search/searchSlice.ts
 
 import {createSlice, createAsyncThunk, UnknownAction, PayloadAction, isAnyOf} from '@reduxjs/toolkit';
-import axios from '../../api/axiosInstance'; // Ensure the path is correct
+import axios from '../../api/axiosInstance';
 import {ParkingSpace, SearchRequest, SearchResponse} from '@/types/type';
 
 interface SearchState {
@@ -24,7 +24,7 @@ export const searchSpots = createAsyncThunk<
     'search/spots',
     async (searchRequest, { rejectWithValue }) => {
         try {
-            const response = await axios.post<SearchResponse>('search', searchRequest);
+            const response = await axios.post<SearchResponse>('search/spots', searchRequest);
             return response.data;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Search failed');
@@ -45,6 +45,7 @@ const searchSlice = createSlice({
         builder
             .addCase(searchSpots.pending, (state) => {
                 state.loading = true;
+                state.error = null;
             })
             .addCase(searchSpots.fulfilled, (state, action) => {
                 state.loading = false;
