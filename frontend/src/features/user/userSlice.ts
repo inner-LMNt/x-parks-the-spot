@@ -3,6 +3,7 @@
 import {createSlice, createAsyncThunk, UnknownAction, PayloadAction, isAnyOf} from '@reduxjs/toolkit';
 import axios from '../../api/axiosInstance'; // Ensure the path is correct
 import {LoginRequest, RegisterRequest, AuthResponse, User, PasswordResetRequest} from '@/types/type';
+import Any = jasmine.Any;
 
 /**
  * Interface for the user slice state
@@ -39,6 +40,33 @@ export const login = createAsyncThunk<
         }
     }
 );
+
+export const deleteAccount = createAsyncThunk<
+    void, // Return type (no response expected beyond success)
+    { userId: string, password: string }, // Argument type (an object with userId and password)
+    { rejectValue: string } // ThunkAPI config with state
+>(
+    'user/deleteAccount',
+    //@ts-ignore
+    async ({ userId, password }, { rejectWithValue }) => {
+        try {
+            // Make the API call using both userId and password
+            const response = await axios.post<Object>('auth/delete', {
+                userId,
+                password,
+            });
+
+            return response.data; // Handle success response
+        } catch (error: any) {
+            console.log(error)
+            return rejectWithValue(error.response?.data?.message || 'Account deletion failed');
+        }
+    }
+);
+
+
+
+
 
 /**
  * Define the register thunk
@@ -95,6 +123,8 @@ export const reset = createAsyncThunk<
         }
     }
 );
+
+
 // @ts-ignore
 const userSlice = createSlice<UserState, {}, 'user'>({
     name: 'user',
@@ -135,7 +165,7 @@ const userSlice = createSlice<UserState, {}, 'user'>({
                 (state, action: PayloadAction<AuthResponse>) => {
                     state.loading = false;
                     state.isLoggedIn = true;
-                    state.userId = action.payload.userId;
+                    state.userId = action.payload.access_token ? action.payload.access_token : null;
                 }
             )
 
