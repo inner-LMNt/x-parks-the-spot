@@ -73,7 +73,7 @@ export default function SettingsPage() {
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-start bg-gray-50 p-4 md:p-8 text-gray-900">
-            <div className="w-full max-w-md bg-white shadow-md rounded-lg p-6 md:p-8">
+            <div className="w-full max-w-md bg-gray-50 rounded-lg p-6 md:p-8">
                 <h2 className="text-2xl font-semibold mb-6">Settings</h2>
 
                 {/* Notification Settings */}
@@ -101,7 +101,7 @@ export default function SettingsPage() {
                     </p>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="destructive" className="w-full">
+                            <Button variant="destructive" className="w-full shadow-md">
                                 Delete My Account
                             </Button>
                         </AlertDialogTrigger>

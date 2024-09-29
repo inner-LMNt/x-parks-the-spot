@@ -14,12 +14,11 @@ function ProfileStats({ label, value }: { label: string; value: number }) {
 }
 
 // Achievement card component supporting both Tailwind colors and hex codes
-// Achievement card component supporting Tailwind class names directly
 function AchievementCard({ colorClass, label }: { colorClass: string; label: string }) {
     return (
         <div className="flex flex-col items-center">
             <div
-                className={`w-12 h-12 rounded-full mb-2 ${colorClass}`} // Using full Tailwind class names
+                className={`w-12 h-12 rounded-full mb-2 ${colorClass} drop-shadow-lg`} // Added drop shadow here
                 role="img"
                 aria-label={label}
             ></div>
@@ -27,7 +26,6 @@ function AchievementCard({ colorClass, label }: { colorClass: string; label: str
         </div>
     );
 }
-
 
 // Comment card component
 function CommentCard({
@@ -40,7 +38,7 @@ function CommentCard({
     sentiment: string;
 }) {
     return (
-        <div className="bg-gray-100 p-4 rounded-lg shadow-sm flex justify-between items-start">
+        <div className="bg-gray-100 p-4 rounded-lg shadow-sm flex justify-between items-start drop-shadow-lg"> {/* Added drop shadow here */}
             <div>
                 <p className="text-sm font-bold text-gray-900">{user}</p>
                 <p className="text-sm text-gray-700">{comment}</p>
@@ -69,15 +67,15 @@ export default function ProfilePage() {
     const maxElo = 3000; // Maximum Elo value for the bar
 
     const comments = [
-        { user: 'User1', comment: 'Great experience, quick response!', sentiment: 'positive' },
+        { user: 'User1', comment: 'Logged many good spots!', sentiment: 'positive' },
         { user: 'User2', comment: 'Found a great spot, thanks!', sentiment: 'positive' },
-        { user: 'User3', comment: 'Driver was late, very disappointed.', sentiment: 'negative' },
+        { user: 'User3', comment: 'Logged a spot that was on private property', sentiment: 'negative' },
         { user: 'User4', comment: 'Helpful and friendly service!', sentiment: 'positive' },
     ];
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-between bg-gray-50 p-4 md:p-8 text-gray-900">
-            <div className="relative w-full max-w-md md:max-w-lg lg:max-w-xl text-center bg-white shadow-md rounded-lg p-6 md:p-8">
+            <div className="relative w-full max-w-md md:max-w-lg lg:max-w-xl text-center white rounded-lg p-6 md:p-8">
                 {/* Settings Icon in the corner */}
                 <Link href="/settings" passHref>
                     <div className="absolute top-4 right-4" aria-label="Settings">
@@ -87,7 +85,7 @@ export default function ProfilePage() {
 
                 {/* Profile Section */}
                 <div className="flex flex-col items-center mb-4">
-                    <div className="w-24 h-24 rounded-full bg-gray-300 mb-4" />
+                    <div className="w-24 h-24 rounded-full bg-gray-300 mb-4 drop-shadow-lg" /> {/* Added drop shadow here */}
                     <h1 className="text-2xl md:text-3xl font-bold mb-1">{userProfile.username}</h1>
                     <div className="flex justify-center items-center space-x-8">
                         <ProfileStats label="Rating" value={eloRating} />
@@ -97,7 +95,7 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Elo Rating Bar */}
-                <div className="w-full bg-gray-300 rounded-full h-4 mb-6">
+                <div className="w-full bg-gray-300 rounded-full h-4 mb-6 drop-shadow-lg"> {/* Added drop shadow here */}
                     <div className="bg-green-500 h-4 rounded-full" style={{ width: `${(eloRating / maxElo) * 100}%` }}></div>
                 </div>
 
