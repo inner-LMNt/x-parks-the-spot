@@ -1,8 +1,8 @@
 // src/features/search/searchSlice.ts
 
-import {createSlice, createAsyncThunk, UnknownAction, PayloadAction, isAnyOf} from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from '../../api/axiosInstance';
-import {ParkingSpace, SearchRequest, SearchResponse} from '@/types/type';
+import { ParkingSpace, SearchRequest, SearchResponse } from '@/types/type';
 
 interface SearchState {
     loading: boolean;

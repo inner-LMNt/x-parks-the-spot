@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { MapPin, Navigation } from 'lucide-react';
 import { GoogleMap, LoadScript, Marker, DirectionsRenderer } from '@react-google-maps/api';
 import { ParkingSpace, SearchRequest } from '@/types/type';
-import {searchSpots} from '@/features/search/searchSlice';
+import { searchSpots } from '@/features/search/searchSlice';
 import { useRouter } from 'next/navigation';
 
 const mapContainerStyle = {
@@ -18,8 +18,8 @@ const mapContainerStyle = {
   height: '400px'
 }
 
-// Purdue University
-const center = {
+const default_center = {
+  // Purdue University coords
   lat: 40.4237,
   lng: -86.9212
 }
@@ -29,7 +29,7 @@ export default function ParkingFinder() {
   const dispatch = useAppDispatch();
 
   const parkingSpots = useAppSelector((state) => state.search.spots);
-  
+
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null)
@@ -61,55 +61,33 @@ export default function ParkingFinder() {
     }
 
     console.log("userLocation", userLocation);
-  
+
     const request: SearchRequest = {
       latitude: userLocation.lat,
       longitude: userLocation.lng,
       radius: searchRadius,
     };
-   
+
     try {
       // @ts-ignore
       dispatch(searchSpots(request));
     } catch (error) {
       console.error('Search failed:', error);
     }
-  };  
-
-  // const searchParking = async (location: google.maps.LatLngLiteral) => {
-  //   const searchRequest: SearchRequest = {
-  //     latitude: location.lat,
-  //     longitude: location.lng,
-  //     radius: searchRadius
-  //   }
-
-  //   const response = await fetch('search/spots', {
-  //     method: 'GET',
-  //     headers: {
-  //       'Content-Type': 'application/json'
-  //     },
-  //   });
-
-  //   if (response.ok) {
-  //     const data = await response.json()
-  //     setParkingSpots(data);
-  //   } else {
-  //     console.error('Error fetching parking spots:', response.statusText);
-  //   }
-  // }
+  };
 
   const handleSpotSelect = (spot: ParkingSpace) => {
     if (selectedSpot && selectedSpot.id === spot.id) {
-        setSelectedSpot(null);
-        console.log("Deselected:", spot);
+      setSelectedSpot(null);
+      console.log("Deselected:", spot);
     } else {
-        setSelectedSpot(spot);
-        console.log("Selected:", spot);
+      setSelectedSpot(spot);
+      console.log("Selected:", spot);
     }
     setDirections(null);
-};
+  };
 
-  
+
 
   const getDirections = () => {
     if (userLocation && selectedSpot) {
@@ -148,42 +126,42 @@ export default function ParkingFinder() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
-        <Card>
-          <div className="flex justify-between items-center">
-            <CardHeader>
-              <CardTitle>Available Parking Spots</CardTitle>
-            </CardHeader>
-            <div className="flex items-center">
-              <Label htmlFor="radius" className="mr-4">Search Radius:</Label>
-              <Input
-                id="radius"
-                type="number"
-                value={searchRadius}
-                onChange={(e) => setSearchRadius(parseInt(e.target.value))}
-                className="w-20"
-              />
+          <Card>
+            <div className="flex justify-between items-center">
+              <CardHeader>
+                <CardTitle>Available Parking Spots</CardTitle>
+              </CardHeader>
+              <div className="flex items-center">
+                <Label htmlFor="radius" className="mr-4">Search Radius:</Label>
+                <Input
+                  id="radius"
+                  type="number"
+                  value={searchRadius}
+                  onChange={(e) => setSearchRadius(parseInt(e.target.value))}
+                  className="w-20"
+                />
+              </div>
+              <Button onClick={onSearch} className="mr-6">
+                Search
+              </Button>
             </div>
-            <Button onClick={onSearch} className="mr-6">
-              Search
-            </Button>
-          </div>
 
-          <CardContent>
-            <div className="max-h-[400px] overflow-y-auto"> 
-              <ul className="space-y-2">
-              {parkingSpots.map((spot: ParkingSpace) => (
-                <li key={spot.id} className="flex justify-between items-center border-b pb-2">
-                  <span>{spot.owner_id}</span>
-                  <Button onClick={() => handleSpotSelect(spot)} data-testid={`select-${spot.id}`}>
-                    <MapPin className="mr-2 h-4 w-4" />
-                    Select
-                  </Button>
-                </li>
-              ))}
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
+            <CardContent>
+              <div className="max-h-[400px] overflow-y-auto">
+                <ul className="space-y-2">
+                  {parkingSpots.map((spot: ParkingSpace) => (
+                    <li key={spot.id} className="flex justify-between items-center border-b pb-2">
+                      <span>{spot.owner_id}</span>
+                      <Button onClick={() => handleSpotSelect(spot)} data-testid={`select-${spot.id}`}>
+                        <MapPin className="mr-2 h-4 w-4" />
+                        Select
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>
@@ -193,7 +171,7 @@ export default function ParkingFinder() {
               <LoadScript googleMapsApiKey="GOOGLE_MAPS_API_KEY">
                 <GoogleMap
                   mapContainerStyle={mapContainerStyle}
-                  center={center}
+                  center={default_center}
                   zoom={12}
                 >
                   {parkingSpots.map((spot: ParkingSpace) => (

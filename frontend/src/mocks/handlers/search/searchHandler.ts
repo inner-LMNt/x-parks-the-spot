@@ -1,9 +1,8 @@
 // src/mocks/handlers/search/searchHandler.ts
 
 import { http, HttpResponse } from "msw";
-import { ParkingSpace, SearchRequest, SearchResponse } from "@/types/type";
+import { SearchRequest, SearchResponse } from "@/types/type";
 import { findParking } from "../../data/parking/parkingData";
-import { parse } from "path";
 
 /**
  * Handler for POST /parking/search
@@ -24,7 +23,7 @@ export const searchHandler = http.get<never, SearchRequest, SearchResponse>(
         { status: 400 }
       );
     }
-    
+
     const result = findParking(latitude, longitude, radius);
 
     console.log("Search result:", result);

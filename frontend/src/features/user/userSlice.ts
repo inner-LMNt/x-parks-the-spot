@@ -1,8 +1,8 @@
 // src/features/user/userSlice.ts
 
-import {createSlice, createAsyncThunk, UnknownAction, PayloadAction, isAnyOf} from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, UnknownAction, PayloadAction, isAnyOf } from '@reduxjs/toolkit';
 import axios from '../../api/axiosInstance'; // Ensure the path is correct
-import {LoginRequest, RegisterRequest, AuthResponse, User, PasswordResetRequest} from '@/types/type';
+import { LoginRequest, RegisterRequest, AuthResponse, User, PasswordResetRequest } from '@/types/type';
 
 /**
  * Interface for the user slice state
@@ -13,7 +13,7 @@ interface UserState {
     location: {
         latitude: number | null;
         longitude: number | null;
-    }; 
+    };
     loading: boolean;
     error: string | null;
 }
@@ -133,7 +133,7 @@ const userSlice = createSlice<UserState, {}, 'user'>({
                     // Note: because the type of the action could be different, I need to simply
                     // parse it as a json string and back to json to get the field out
 
-                    const actionmessage  = JSON.parse(JSON.stringify(action, null, 2)).payload;
+                    const actionmessage = JSON.parse(JSON.stringify(action, null, 2)).payload;
                     state.error = actionmessage || 'An error occurred';
                 }
             )
@@ -159,7 +159,7 @@ const userSlice = createSlice<UserState, {}, 'user'>({
             )
 
             .addMatcher(
-                (action: {type: string}): action is {type: 'user/errorReset'} => action.type === 'user/errorReset',
+                (action: { type: string }): action is { type: 'user/errorReset' } => action.type === 'user/errorReset',
                 (state) => {
                     state.error = null;
                 }

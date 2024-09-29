@@ -60,18 +60,18 @@ describe('SearchPage', () => {
                 <SearchPage />
             </Provider>
         );
-    
+
         console.log(screen.debug());
-    
+
         const selectButton = await screen.findByTestId('select-1');
-    
+
         fireEvent.click(selectButton);
         expect(screen.getByText(/Selected Parking Spot: 1001/i)).toBeInTheDocument();
-    
+
         fireEvent.click(selectButton);
         expect(screen.getByText(/Selected Parking Spot: None/i)).toBeInTheDocument();
     });
-    
+
 
     it('searches for parking spots with the user location', async () => {
         render(
