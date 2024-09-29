@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import {RegisterRequest} from "@/types/type";
-import { useAppDispatch } from '@/store/hooks'; // Use typed hooks
+import {useAppDispatch, useAppSelector} from '@/store/hooks'; // Use typed hooks
 import {deleteAccount} from "@/features/user/userSlice";
 
 interface FormData {
@@ -41,6 +41,9 @@ export default function SettingsPage() {
     const [accountDeleted, setAccountDeleted] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
+    const userID = useAppSelector((state) => state.user.userId);
+    console.log("brodaj")
+    console.log(userID)
     // Initialize React Hook Form
     const {
         watch,
@@ -48,12 +51,12 @@ export default function SettingsPage() {
         handleSubmit,
         formState: { errors },
     } = useForm<FormData>();
-
     // Handle delete account
     const handleDeleteAccount = async (data: { password: string, confirmPassword: string }) => {
         try {
             // Dispatch the deleteAccount thunk with the password from the form
-            const resultAction = await dispatch(deleteAccount(data.password)); // Use `data.password`
+            //@ts-ignore
+            const resultAction = await dispatch(deleteAccount({userId: userID, password: data.password})); // Use `data.password`
 
             if (deleteAccount.fulfilled.match(resultAction)) {
                 // Account successfully deleted
@@ -197,7 +200,7 @@ export default function SettingsPage() {
                     <Button
                         variant="primary"
                         onClick={() => router.push('/login')}
-                        className="w-full mt-6"
+                        className="w-full mt-6 text-gray-900"
                     >
                         Go to Login
                     </Button>

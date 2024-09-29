@@ -43,27 +43,26 @@ export const login = createAsyncThunk<
 
 export const deleteAccount = createAsyncThunk<
     void, // Return type (no response expected beyond success)
-    string, // Argument type (password)
-    { rejectValue: string; state: { user: { userId: string | null } } } // ThunkAPI config with state
+    { userId: string, password: string }, // Argument type (an object with userId and password)
+    { rejectValue: string } // ThunkAPI config with state
 >(
     'user/deleteAccount',
-    async (password, { rejectWithValue, getState }) => {
-        const { userId } = getState().user;
-        console.log("hi" + userId)
-        if (!userId) {
-            return rejectWithValue('User ID not found');
-        }
+    async ({ userId, password }, { rejectWithValue }) => {
         try {
-            const response = await axios.post('http://localhost:3000/v1/user/delete', {
-                userId, // Ensure userId is passed correctly
+            // Make the API call using both userId and password
+            const response = await axios.post<Object>('auth/delete', {
+                userId,
                 password,
             });
+
             return response.data; // Handle success response
         } catch (error: any) {
+            console.log(error)
             return rejectWithValue(error.response?.data?.message || 'Account deletion failed');
         }
     }
 );
+
 
 
 
@@ -165,7 +164,7 @@ const userSlice = createSlice<UserState, {}, 'user'>({
                 (state, action: PayloadAction<AuthResponse>) => {
                     state.loading = false;
                     state.isLoggedIn = true;
-                    state.userId = action.payload.userId;
+                    state.userId = action.payload.access_token;
                 }
             )
 

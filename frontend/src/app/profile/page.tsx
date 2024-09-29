@@ -27,7 +27,7 @@ export default function ProfilePage() {
         <div className="min-h-screen flex flex-col items-center justify-between bg-gray-50 p-4 md:p-8 text-gray-900">
             <div className="relative w-full max-w-md md:max-w-lg lg:max-w-xl text-center bg-white shadow-md rounded-lg p-6 md:p-8">
                 {/* Settings Icon in the corner */}
-                <Link href="/profilesetting" passHref>
+                <Link href="/settings" passHref>
                     <div className="absolute top-4 right-4">
                         <Settings className="w-6 h-6 text-gray-400 cursor-pointer hover:text-gray-600" />
                     </div>
