@@ -1,3 +1,5 @@
+// src/mocks/data/parking/parkingData.ts
+
 import { ParkingSpace } from '@/types/type'
 
 // Mock database of parking spots
@@ -16,7 +18,9 @@ const spaces: ParkingSpace[] = [
  * @returns Array of parking spots within the radius
  */
 export function findParking(lat: number, lng: number, radius: number): ParkingSpace[] {
-    console.log("Finding parking spots within radius", radius, "km of", lat, lng);
+  return spaces
+  
+  console.log("Finding parking spots within radius", radius, "km of", lat, lng);
   return spaces.filter(space => {
     const distance = Math.sqrt(
       Math.pow(space.location.latitude - lat, 2) + Math.pow(space.location.longitude - lng, 2)

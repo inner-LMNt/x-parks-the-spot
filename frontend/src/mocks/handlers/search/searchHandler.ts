@@ -7,7 +7,7 @@ import { findParking } from "../../data/parking/parkingData";
 /**
  * Handler for POST /parking/search
  */
-export const searchHandler = http.get<SearchResponse, SearchRequest>(
+export const searchHandler = http.get<never, SearchRequest, SearchResponse>(
   "v1/search/spots",
   async ({ request }) => {
     const data = await request.json();

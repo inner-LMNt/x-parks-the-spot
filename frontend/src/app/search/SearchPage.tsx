@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,7 @@ import { GoogleMap, LoadScript, Marker, DirectionsRenderer } from '@react-google
 import { ParkingSpace, SearchRequest } from '@/types/type';
 import {searchSpots} from '@/features/search/searchSlice';
 import { useRouter } from 'next/navigation';
-import { set } from 'react-hook-form';
+import { UnknownAction } from '@reduxjs/toolkit';
 
 // Static Mock API since I can't figure MSW out right now
 const fetchSpots = async () => {
@@ -40,8 +39,9 @@ export default function ParkingFinder() {
   const dispatch = useAppDispatch();
 
   const parkingSpots = useAppSelector((state) => state.search.spots);
-  const [selectedSpot, setSelectedSpot] = useState<{ id: number; owner_id: string; lat: number; lng: number; } | null>(null)
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; } | null>(null)
+  const userLocation = useAppSelector((state) => state.user.location);
+
+  const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null)
   // const [searchRadius, setSearchRadius] = useState<number>(5);
 
@@ -49,33 +49,36 @@ export default function ParkingFinder() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          console.log("Geolocation success:", position);
-          const request = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            radius: 5
-          };
-          
-          const fetchData = async () => {
-            try {
-              const result = await axios.post('v1/search/spots', request); // ????
-              // dispatch(searchSpots(request));
-              console.log(result.data);
-            } catch (error) {
-              console.error('Error fetching parking spots:', error);
-            }
-          };
-
-          fetchData();
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          }
+          // setUserLocation(location);
+          // searchParking(location);
         },
-        (error) => {
-          console.error("Error: The Geolocation service failed.", error);
+        () => {
+          console.error("Error: The Geolocation service failed.");
         }
-      );
+      )
     } else {
       console.error("Error: Your browser doesn't support geolocation.");
     }
   }, []);
+
+  const onSearch = async () => {
+    const request: SearchRequest = {
+      latitude: 40.7128,
+      longitude: -74.0060,
+      radius: 5
+    }
+    
+    try {
+      // @ts-ignore
+      dispatch(searchSpots(request));
+    } catch (error) {
+      console.error('Search failed:', error);
+    }
+  }
 
   // const searchParking = async (location: google.maps.LatLngLiteral) => {
   //   const searchRequest: SearchRequest = {
@@ -99,7 +102,7 @@ export default function ParkingFinder() {
   //   }
   // }
 
-  const handleSpotSelect = (spot: React.SetStateAction<{ id: number; owner_id: string; lat: number; lng: number; } | null>) => {
+  const handleSpotSelect = (spot: ParkingSpace) => {
     setSelectedSpot(spot);
     setDirections(null);
   }
@@ -110,7 +113,7 @@ export default function ParkingFinder() {
       directionsService.route(
         {
           origin: userLocation,
-          destination: { lat: selectedSpot.lat, lng: selectedSpot.lng },
+          destination: { lat: selectedSpot.location.latitude, lng: selectedSpot.location.longitude },
           travelMode: window.google.maps.TravelMode.DRIVING,
         },
         (result, status) => {
@@ -142,12 +145,18 @@ export default function ParkingFinder() {
 
         <div className="grid md:grid-cols-2 gap-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Available Parking Spots</CardTitle>
-            </CardHeader>
+            <div className="flex justify-between items-center">
+              <CardHeader>
+                <CardTitle>Available Parking Spots</CardTitle>
+              </CardHeader>
+              <Button onClick={onSearch}>
+                Search
+              </Button>
+            </div>
+
             <CardContent>
               <ul className="space-y-2">
-                {parkingSpots.map((spot: { id: number; owner_id: string; lat: number; lng: number; }) => (
+                {parkingSpots.map((spot: ParkingSpace) => (
                   <li key={spot.id} className="flex justify-between items-center border-b pb-2">
                     <span>{spot.owner_id}</span>
                     <Button onClick={() => handleSpotSelect(spot)}>
@@ -171,10 +180,10 @@ export default function ParkingFinder() {
                   center={center}
                   zoom={12}
                 >
-                  {parkingSpots.map((spot: { id: number; owner_id: string; lat: number; lng: number; }) => (
+                  {parkingSpots.map((spot: ParkingSpace) => (
                     <Marker
                       key={spot.id}
-                      position={{ lat: spot.lat, lng: spot.lng }}
+                      position={{ lat: spot.location.latitude, lng: spot.location.longitude }}
                       onClick={() => handleSpotSelect(spot)}
                     />
                   ))}
@@ -192,8 +201,8 @@ export default function ParkingFinder() {
               <CardTitle>Selected Parking Spot: {selectedSpot.owner_id}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>Latitude: {selectedSpot.lat}</p>
-              <p>Longitude: {selectedSpot.lng}</p>
+              <p>Latitude: {selectedSpot.location.latitude}</p>
+              <p>Longitude: {selectedSpot.location.longitude}</p>
               <Button onClick={getDirections} className="mt-4">
                 <Navigation className="mr-2 h-4 w-4" />
                 Get Directions

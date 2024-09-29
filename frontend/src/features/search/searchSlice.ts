@@ -24,7 +24,7 @@ export const searchSpots = createAsyncThunk<
     'search/spots',
     async (searchRequest, { rejectWithValue }) => {
         try {
-            const response = await axios.post<SearchResponse>('search/spots', searchRequest);
+            const response = await axios.get<SearchResponse>('/search/spots', { params: searchRequest });
             return response.data;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Search failed');
@@ -33,7 +33,7 @@ export const searchSpots = createAsyncThunk<
 );
 
 // @ts-ignore
-const searchSlice = createSlice({
+const searchSlice = createSlice<SearchState, { errorReset: (state: SearchState) => void }>({
     name: 'search',
     initialState,
     reducers: {

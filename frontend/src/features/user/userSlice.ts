@@ -10,6 +10,8 @@ import {LoginRequest, RegisterRequest, AuthResponse, User, PasswordResetRequest}
 interface UserState {
     isLoggedIn: boolean;
     access_token: string | null;
+    latitude: number | null;
+    longitude: number | null;
     loading: boolean;
     error: string | null;
 }
@@ -17,6 +19,8 @@ interface UserState {
 const initialState: UserState = {
     isLoggedIn: false, // Maybe redundant, just check if access_token is null
     access_token: null,
+    latitude: null,
+    longitude: null,
     loading: false,
     error: null,
 };
