@@ -1316,7 +1316,7 @@ export interface components {
             id?: string;
             /** Format: uuid */
             owner_id?: string;
-            location: components["schemas"]["Location"]; // required
+            location: components["schemas"]["Location"];
             features?: string[];
             availability_schedule?: components["schemas"]["TimeSlot"][];
             pricing_info?: components["schemas"]["PricingInfo"];
