@@ -62,6 +62,8 @@ paths:
                 $ref: '#/components/schemas/AuthResponse'
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
   /auth/logout:
     post:
       tags:
@@ -74,6 +76,8 @@ paths:
           description: Logout successful
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
   /auth/password-reset:
     post:
       tags:
@@ -88,8 +92,6 @@ paths:
       responses:
         '200':
           description: Password reset email sent
-        '400':
-          description: Invalid email
   /auth/password-reset/confirm:
     post:
       tags:
@@ -105,7 +107,11 @@ paths:
         '200':
           description: Password reset successful
         '400':
-          description: Invalid token or password
+          description: Invalid password
+        '401':
+          description: No token given
+        '403':
+          description: Incorrect token given
   /users/me:
     get:
       tags:
@@ -122,6 +128,8 @@ paths:
                 $ref: '#/components/schemas/User'
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
     put:
       tags:
         - Users
@@ -145,6 +153,8 @@ paths:
           description: Invalid input
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
     delete:
       tags:
         - Users
@@ -153,31 +163,23 @@ paths:
         - bearerAuth: []
       responses:
         '200':
-          description: Account deleted
+          description: Email sent to confirm deletion
         '401':
           description: Unauthorized
-  /users/{userId}:
-    get:
+        '403':
+          description: Forbidden
+  /users/me/confirm-deletion:
+    post:
       tags:
         - Users
-      summary: Get user profile by ID
-      parameters:
-        - in: path
-          name: userId
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: User profile retrieved
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PublicUserProfile'
-        '404':
-          description: User not found
-  /users/me/car-info:
+      summary: Confirm deletion of account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserDeletionConfirm'
+  /users/me/cars:
     get:
       tags:
         - Users
@@ -192,13 +194,15 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/CarInfo'
+                  $ref: '#/components/schemas/CarInfoList'
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
     post:
       tags:
         - Users
-      summary: Add new car information
+      summary: Add new car
       security:
         - bearerAuth: []
       requestBody:
@@ -218,6 +222,17 @@ paths:
           description: Invalid input
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
+  /cars/{car_id}:
+    patch:
+      tags:
+        - Cars
+      summary: Update a car's information
+    delete:
+      tags:
+        - Users
+      summary: Delete a car
   /parking-spaces:
     post:
       tags:
@@ -313,6 +328,8 @@ paths:
                   $ref: '#/components/schemas/ParkingSpace'
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
     post:
       tags:
         - Owners
@@ -336,6 +353,8 @@ paths:
           description: Invalid input
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
   /owners/parking-spaces/{id}:
     put:
       tags:
@@ -407,6 +426,8 @@ paths:
                   $ref: '#/components/schemas/Reservation'
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
     post:
       tags:
         - Reservations
@@ -430,6 +451,8 @@ paths:
           description: Invalid input
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
   /reservations/{id}:
     get:
       tags:
@@ -453,6 +476,8 @@ paths:
                 $ref: '#/components/schemas/Reservation'
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
         '404':
           description: Not found
     put:
@@ -526,6 +551,8 @@ paths:
                   $ref: '#/components/schemas/SpotFinderSubmission'
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
     post:
       tags:
         - Spot Finder
@@ -559,6 +586,8 @@ paths:
           description: Invalid input
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
   /notifications:
     get:
       tags:
@@ -577,6 +606,8 @@ paths:
                   $ref: '#/components/schemas/Notification'
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
   /notifications/{id}/read:
     post:
       tags:
@@ -596,6 +627,8 @@ paths:
           description: Notification marked as read
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
         '404':
           description: Not found
   /admin/users:
@@ -1121,3 +1154,10 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/ParkingSpace'
+    UserDeletionConfirm:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
