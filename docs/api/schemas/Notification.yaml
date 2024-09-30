@@ -1,0 +1,17 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+  user_id:
+    type: string
+    format: uuid
+  type:
+    type: string
+  message:
+    type: string
+  read:
+    type: boolean
+  timestamp:
+    type: string
+    format: date-time

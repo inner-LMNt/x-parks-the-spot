@@ -1,0 +1,11 @@
+type: object
+properties:
+  car_info:
+    type: array
+    items:
+      $ref: './CarInfo.yaml'
+  favorites:
+    type: array
+    items:
+      type: string
+      format: uuid
