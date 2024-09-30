@@ -105,7 +105,7 @@ export default function Dashboard() {
                                 <CardTitle>Booking Overview</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <ResponsiveContainer width="100%" height={300}>
+                                <ResponsiveContainer width="60vw" height="50vh">
                                     <LineChart data={bookingData}>
                                         <CartesianGrid strokeDasharray="3 3" />
                                         <XAxis dataKey="date" />

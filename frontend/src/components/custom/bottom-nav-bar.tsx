@@ -3,22 +3,24 @@
 import { useState } from 'react';
 import { Home, Search, Calendar, User, Plus } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 export function BottomNavBar() {
   const [activeIcon, setActiveIcon] = useState<string | null>(null);
 
   const navItems = [
-    { icon: Home, label: 'Home' },
-    { icon: Search, label: 'Search' },
-    { icon: Plus, label: 'Add', isCenter: true },
-    { icon: Calendar, label: 'Bookings' },
-    { icon: User, label: 'Profile' },
+    { icon: Home, label: 'Home', href: '/home',isCenter: false },
+    { icon: Search, label: 'Search', href: '/search', isCenter: false },
+    { icon: Plus, label: 'Add', href: '/add', isCenter: true },
+    { icon: Calendar, label: 'Bookings', href: '/bookings', isCenter: false },
+    { icon: User, label: 'Profile', href: '/profile', isCenter: false },
   ];
 
   return (
       <nav className="sticky bottom-0 left-0 right-0 bg-gray-100 shadow-lg z-10 border-t border-gray-300"> {/* Added z-10 to ensure it stays on top */}
         <div className="flex justify-around items-center h-16 px-4">
           {navItems.map((item) => (
+              <Link href={item.href} passHref>
               <button
                   key={item.label}
                   onClick={() => setActiveIcon(item.label)}
@@ -41,6 +43,7 @@ export function BottomNavBar() {
                     <span className="text-xs mt-1">{item.label}</span>
                 )}
               </button>
+              </Link>
           ))}
         </div>
       </nav>

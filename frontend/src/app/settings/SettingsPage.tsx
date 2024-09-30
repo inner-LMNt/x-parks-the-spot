@@ -29,6 +29,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {RegisterRequest} from "@/types/type";
 import {useAppDispatch, useAppSelector} from '@/store/hooks'; // Use typed hooks
 import {deleteAccount} from "@/features/user/userSlice";
+import {ArrowLeft} from "lucide-react";
+import Link from "next/link";
 
 interface FormData {
     password: string;
@@ -42,8 +44,6 @@ export default function SettingsPage() {
     const [errorMessage, setErrorMessage] = useState('');
 
     const userID = useAppSelector((state) => state.user.userId);
-    console.log("brodaj")
-    console.log(userID)
     // Initialize React Hook Form
     const {
         watch,
@@ -73,7 +73,14 @@ export default function SettingsPage() {
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-start bg-gray-50 p-4 md:p-8 text-gray-900">
+            <Link href="/profile" passHref>
+                <Button variant="link" className="absolute top-2 left-0">
+                    <ArrowLeft className="w-5 h-5 text-gray-400"/>
+                </Button>
+            </Link>
+
             <div className="w-full max-w-md bg-gray-50 rounded-lg p-6 md:p-8">
+
                 <h2 className="text-2xl font-semibold mb-6">Settings</h2>
 
                 {/* Notification Settings */}
