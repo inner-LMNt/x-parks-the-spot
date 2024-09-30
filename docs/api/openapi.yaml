@@ -1,11 +1,11 @@
 openapi: 3.0.0
 info:
   title: Parking Space Sharing API
-  version: 1.0.0
+  version: unstable
   description: API specification for the parking space sharing application.
 servers:
-  - url: https://api.parkingapp.com/v1
-    description: Production server
+  - url: https://xpark-staging.ersei.net/api/unstable
+    description: Staging Server
 tags:
   - name: Authentication
     description: User authentication and account management
@@ -179,10 +179,13 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UserDeletionConfirm'
-  /users/me/cars:
+      responses:
+        '200':
+          description: "User deleted"
+  /cars:
     get:
       tags:
-        - Users
+        - Cars
       summary: Get current user's car information
       security:
         - bearerAuth: []
@@ -201,7 +204,7 @@ paths:
           description: Forbidden
     post:
       tags:
-        - Users
+        - Cars
       summary: Add new car
       security:
         - bearerAuth: []
@@ -224,16 +227,78 @@ paths:
           description: Unauthorized
         '403':
           description: Forbidden
-  /cars/{car_id}:
+  /cars/{id}:
     patch:
       tags:
         - Cars
       summary: Update a car's information
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Car updated
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Car not found
     delete:
       tags:
-        - Users
+        - Cars
       summary: Delete a car
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Car deleted
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Car not found
   /parking-spaces:
+    post:
+      tags:
+        - Parking Spaces
+      summary: Create a new parking space
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParkingSpaceCreateRequest'
+      responses:
+        '201':
+          description: Parking space created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParkingSpace'
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+  /parking-spaces/search:
     post:
       tags:
         - Parking Spaces
@@ -308,57 +373,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ParkingSpace'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
         '404':
           description: Not found
-  /owners/parking-spaces:
-    get:
+    patch:
       tags:
-        - Owners
-      summary: Get owner's parking spaces
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: List of parking spaces
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ParkingSpace'
-        '401':
-          description: Unauthorized
-        '403':
-          description: Forbidden
-    post:
-      tags:
-        - Owners
-      summary: Create a new parking space
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ParkingSpaceCreateRequest'
-      responses:
-        '201':
-          description: Parking space created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ParkingSpace'
-        '400':
-          description: Invalid input
-        '401':
-          description: Unauthorized
-        '403':
-          description: Forbidden
-  /owners/parking-spaces/{id}:
-    put:
-      tags:
-        - Owners
+        - Parking Spaces
       summary: Update parking space
       security:
         - bearerAuth: []
@@ -388,9 +411,11 @@ paths:
           description: Unauthorized
         '403':
           description: Forbidden
+        '404':
+          description: Parking space not found
     delete:
       tags:
-        - Owners
+        - Parking Spaces
       summary: Delete parking space
       security:
         - bearerAuth: []
@@ -408,6 +433,8 @@ paths:
           description: Unauthorized
         '403':
           description: Forbidden
+        '404':
+          description: Parking space not found
   /reservations:
     get:
       tags:
@@ -828,6 +855,10 @@ components:
           type: string
         default:
           type: boolean
+    CarInfoList:
+      type: array
+      items:
+        $ref: '#/components/schemas/CarInfo'
     RenterProfile:
       type: object
       properties:
