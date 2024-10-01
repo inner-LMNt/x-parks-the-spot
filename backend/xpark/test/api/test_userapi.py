@@ -76,6 +76,16 @@ def test_api_auth(client: FlaskClient) -> None:
     )
     assert response.status_code == 401
 
+    # Test bad email
+    response = client.post(
+        "/api/unstable/auth/login",
+        json={
+            "email": "bademail@example.com",
+            "password": "BobRocks123",
+        },
+    )
+    assert response.status_code == 401
+
     # Test logging out with no auth
     response = client.post("/api/unstable/auth/logout")
     assert response.status_code == 403

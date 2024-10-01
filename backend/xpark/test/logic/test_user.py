@@ -36,3 +36,28 @@ def test_create_user_already_exists() -> None:
         )
         is Err
     )
+
+
+def test_user_update_password_hash() -> None:
+    from xpark.utils.db import DB
+
+    user_id_create = create_user(
+        name="Test User",
+        email="testuser1@example.com",
+        password="password",
+    )
+
+    assert type(user_id_create) is Ok
+
+    with DB.pool.connection() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE users SET password_hash = '$argon2id$v=19$m=65536,t=2,p=4$Zo74ia9DL7+W1CSPqJTLpg$3Zcg/OLGGfZgsU64W7n2f57ZBX19dUI7psmfyQzb0Ys' WHERE email = 'testuser1@example.com'"
+        )
+
+    # Ensure coverage of password rehashing
+    user_id_login = check_username_password("testuser1@example.com", "password")
+
+    assert type(user_id_login) is Ok
+
+    assert user_id_create == user_id_login
