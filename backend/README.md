@@ -21,9 +21,9 @@
       1. Log into the Postgres database with `psql -h 127.0.0.1 -U admin`
       1. Run `CREATE DATABASE xpark;` to create the XPark database
       1. Run `\q` to exit
-   1. Configure the `.env` file (look at the `.env.sample` file)
 1. Run the app
-   1. From the `backend` directory, run `flask --app 'xpark:create_app()' run --debug`
+   1. Configure the `.env` file (look at the `.env.sample` file)
+   1. From the `backend` directory, run `flask run --debug`
 
 ## Testing
 
@@ -44,6 +44,7 @@ DATABASE_URI="unused" # unused but required
 TEST_DATABASE_NAME=test_xpark
 REDIS_URI="redis://redis?db=0"
 SECRET_KEY=test_key
+FLASK_APP="xpark:create_app()"
 ```
 
 For information on how to write tests, please visit the [tests](#test) section.
