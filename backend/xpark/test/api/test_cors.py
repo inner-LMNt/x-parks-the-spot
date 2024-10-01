@@ -3,8 +3,8 @@ from flask.testing import FlaskClient
 
 def test_cors(client: FlaskClient) -> None:
     # Ensure that if the route is not CORSified, then it won't have the headers
-    response = client.get("/api/somethingelse")
-    assert response.status_code == 404
+    response = client.get("/")
+    assert response.status_code == 200
     assert response.headers.get("Access-Control-Allow-Origin") is None
     assert response.headers.get("Access-Control-Allow-Headers") is None
     assert response.headers.get("Access-Control-Allow-Methods") is None

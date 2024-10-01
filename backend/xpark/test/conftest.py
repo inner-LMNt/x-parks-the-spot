@@ -40,6 +40,10 @@ def app() -> Generator[Any, Any, Any]:
 
         app.register_blueprint(unstable.bp)
 
+        @app.route("/")
+        def status() -> str:
+            return "running"
+
         yield app
 
         # Cleanup
