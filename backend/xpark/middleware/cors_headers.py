@@ -1,5 +1,5 @@
 from flask import Flask, Response, Blueprint
-from xpark import Config
+from xpark.config import Config
 
 
 class CORS(object):
