@@ -43,3 +43,16 @@ def test_cors(client: FlaskClient) -> None:
     assert response.headers.get("Access-Control-Allow-Origin") == "*"
     assert response.headers.get("Access-Control-Allow-Headers") == "*"
     assert response.headers.get("Access-Control-Allow-Methods") == "*"
+
+    # Ensure headers are set for 401 responses
+    response = client.post(
+        "/api/unstable/auth/login",
+        json={
+            "email": "goodemail@example.com",
+            "password": "badpassword",
+        },
+    )
+    assert response.status_code == 401
+    assert response.headers.get("Access-Control-Allow-Origin") == "*"
+    assert response.headers.get("Access-Control-Allow-Headers") == "*"
+    assert response.headers.get("Access-Control-Allow-Methods") == "*"
