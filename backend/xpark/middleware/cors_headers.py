@@ -1,4 +1,5 @@
 from flask import Flask, Response, Blueprint
+from xpark import Config
 
 
 class CORS(object):
@@ -7,7 +8,7 @@ class CORS(object):
 
 
 def corsify_response(response: Response) -> Response:
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    response.headers.add("Access-Control-Allow-Headers", "*")
-    response.headers.add("Access-Control-Allow-Methods", "*")
+    response.headers.add("Access-Control-Allow-Origin", Config.ALLOWED_ORIGIN)
+    response.headers.add("Access-Control-Allow-Headers", Config.ALLOWED_ORIGIN)
+    response.headers.add("Access-Control-Allow-Methods", Config.ALLOWED_ORIGIN)
     return response
