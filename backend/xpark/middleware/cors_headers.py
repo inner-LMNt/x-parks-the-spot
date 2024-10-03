@@ -9,6 +9,6 @@ class CORS(object):
 
 def corsify_response(response: Response) -> Response:
     response.headers.add("Access-Control-Allow-Origin", Config.ALLOWED_ORIGIN)
-    response.headers.add("Access-Control-Allow-Headers", Config.ALLOWED_ORIGIN)
-    response.headers.add("Access-Control-Allow-Methods", Config.ALLOWED_ORIGIN)
+    response.headers.add("Access-Control-Allow-Headers", Config.ALLOWED_HEADERS)
+    response.headers.add("Access-Control-Allow-Methods", Config.ALLOWED_METHODS)
     return response
