@@ -72,25 +72,87 @@ def change_password(id: uuid.UUID, new_password: str) -> Result[None, None]:
         return Ok(None)
 
 
-def create_token(user_id: uuid.UUID) -> str:
+"""def create_token(user_id: uuid.UUID) -> str:
     token = Config.TOKEN_PREFIX + secrets.token_urlsafe(32)
     DB.token_cache.set(token, user_id.bytes, ex=Config.TOKEN_EXPIRY_SECONDS)
+    return token"""
+
+# Function to create a new token and store it in PostgreSQL
+def create_token(user_id: uuid.UUID) -> str:
+    # Generate a random token string, prefixing it with a value from the config (e.g., 'Bearer')
+    token = Config.TOKEN_PREFIX + secrets.token_urlsafe(32)
+
+    # Use `with` to ensure the connection and transaction are handled properly
+    with DB.pool.connection() as conn:
+        # Use `with` for cursor to ensure it's closed correctly
+        with conn.cursor() as cur:
+            # Insert the token into the user_tokens table using parameterized query to avoid SQL injection
+            cur.execute(
+                "INSERT INTO user_tokens (user_id, token, expiry) VALUES (%s, %s, NOW() + INTERVAL '1 hour')",
+                (user_id, token)  # Use tuple for sanitization
+            )
+
+    # Return the generated token
     return token
 
-
-def validate_token_and_refresh(token: str) -> Result[uuid.UUID, str]:
+"""def validate_token_and_refresh(token: str) -> Result[uuid.UUID, str]:
     # Check if token exists
     # If it does, refresh it
     uuid_ret = DB.token_cache.getex(token, ex=Config.TOKEN_EXPIRY_SECONDS)
     if uuid_ret is not None:
         return Ok(uuid.UUID(bytes=uuid_ret))
-    return Err("Token expired")
+    return Err("Token expired")"""
 
+# Function to validate a token and refresh its expiration time in PostgreSQL
+def validate_token_and_refresh(token: str) -> Result[uuid.UUID, str]:
+    # Use `with` to ensure the connection and transaction are handled properly
+    with DB.pool.connection() as conn:
+        # Use `with` for cursor to ensure it's closed correctly
+        with conn.cursor() as cur:
+            # Check if the token exists and is not expired by querying the user_tokens table
+            cur.execute(
+                "SELECT user_id, expiry FROM user_tokens WHERE token = %s AND expiry > NOW()",
+                (token,)  # Use tuple for sanitization
+            )
+            # Fetch the result, which will contain the user_id and the token's expiry if it exists and is valid
+            result = cur.fetchone()
 
-def expire_valid_token(token: str) -> Result[None, None]:
+            if result:
+                # Token is valid, unpack the user_id and expiry
+                user_id, expiry = result
+
+                # Refresh the token expiry time by updating it to 1 hour from the current time
+                cur.execute(
+                    "UPDATE user_tokens SET expiry = NOW() + INTERVAL '1 hour' WHERE token = %s",
+                    (token,)  # Use tuple for sanitization
+                )
+
+                # Return the user_id associated with the token wrapped in an Ok result
+                return Ok(user_id)
+
+            # If the token is expired or doesn't exist, return an error
+            return Err("Token expired")
+
+"""def expire_valid_token(token: str) -> Result[None, None]:
     if DB.token_cache.delete(token) == 0:
         return Err(None)
-    return Ok(None)
+    return Ok(None)"""
+
+# Function to expire (delete) a valid token in PostgreSQL
+def expire_valid_token(token: str) -> Result[None, None]:
+    # Use `with` to ensure the connection and transaction are handled properly
+    with DB.pool.connection() as conn:
+        # Use `with` for cursor to ensure it's closed correctly
+        with conn.cursor() as cur:
+            # Delete the token from the user_tokens table using a parameterized query to avoid SQL injection
+            cur.execute("DELETE FROM user_tokens WHERE token = %s", (token,))  # Use tuple for sanitization
+
+            # If no rows were affected (i.e., the token didn't exist), return an error
+            if cur.rowcount == 0:
+                return Err(None)
+
+            # If the token was successfully deleted, return Ok
+            return Ok(None)
 
 
 # TODO: Delete all keys for a user
