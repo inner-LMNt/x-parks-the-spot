@@ -1,14 +1,9 @@
 type: object
 required:
-  - email
-  - password
-  - full_name
+  - userId
 properties:
-  email:
+  access_token:
     type: string
-    format: email
-  password:
+  userId:
     type: string
-    format: password
-  full_name:
-    type: string
+    format: uuid

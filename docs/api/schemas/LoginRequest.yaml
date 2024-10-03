@@ -2,7 +2,6 @@ type: object
 required:
   - email
   - password
-  - full_name
 properties:
   email:
     type: string
@@ -10,5 +9,3 @@ properties:
   password:
     type: string
     format: password
-  full_name:
-    type: string
