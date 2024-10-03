@@ -54,5 +54,5 @@ def test_cors(client: FlaskClient) -> None:
     )
     assert response.status_code == 401
     assert response.headers.get("Access-Control-Allow-Origin") == "*"
-    assert response.headers.get("Access-Control-Allow-Headers") == "*"
+    assert response.headers.get("Access-Control-Allow-Headers") == "X-PINGOTHER, Content-Type"
     assert response.headers.get("Access-Control-Allow-Methods") == "*"
