@@ -7,11 +7,14 @@ import { searchHandler } from './search/searchHandler';
 import { deleteHandler } from './auth/deleteHandler';
 import {
   getUserReservationsHandler,
+  getReservationByIdHandler,
   createReservationHandler,
-  getUserCarInfosHandler,
+  updateReservationHandler,
+  cancelReservationHandler,
   getParkingSpaceHandler,
   lockParkingSpaceHandler,
   unlockParkingSpaceHandler,
+  getUserCarInfosHandler,
 } from './reservations/reservationsHandler';
 
 

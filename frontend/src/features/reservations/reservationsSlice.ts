@@ -7,24 +7,29 @@ import {
     Reservation,
     ReservationCreateRequest,
     CarInfo,
+    ReservationUpdateRequest,
 } from '@/types/type';
 
+/**
+ * **Reservations State Interface**
+ */
 interface ReservationsState {
     loading: boolean;
     error: string | null;
     reservations: Reservation[];
-    reservationsForSpace: Reservation[];
     parkingSpace: ParkingSpace | null;
     lockStatus: 'idle' | 'locking' | 'locked' | 'failed';
     lockExpiresAt: number | null;
     carInfos: CarInfo[];
 }
 
+/**
+ * **Initial State**
+ */
 const initialState: ReservationsState = {
     loading: false,
     error: null,
     reservations: [],
-    reservationsForSpace: [],
     parkingSpace: null,
     lockStatus: 'idle',
     lockExpiresAt: null,
@@ -32,149 +37,279 @@ const initialState: ReservationsState = {
 };
 
 /**
- * Async Thunks
+ * **Async Thunks**
  */
 
-// Fetch user reservations
+/**
+ * Fetch Current User's Reservations
+ * GET /reservations
+ */
 export const fetchUserReservations = createAsyncThunk<
     Reservation[],
     void,
     { rejectValue: string }
->('reservations/fetchUserReservations', async (_, { rejectWithValue }) => {
-    try {
-        const response = await axios.get<Reservation[]>('/reservations');
-        return response.data;
-    } catch (error: any) {
-        if (error.status === 404) {
-            return rejectWithValue('Not found');
-        }
-        if (error.status === 401) {
-            return rejectWithValue('Email not found');
-        }
-        return rejectWithValue(error.status);
-    }
-});
-
-// Fetch reservations for a specific parking space
-export const fetchUserReservationsForSpace = createAsyncThunk<
-    Reservation[],
-    string,
-    { rejectValue: string }
 >(
-    'reservations/fetchUserReservationsForSpace',
-    async (parkingSpaceId, { rejectWithValue }) => {
+    'reservations/fetchUserReservations',
+    async (_, { rejectWithValue }) => {
         try {
-            const response = await axios.get<Reservation[]>('/reservations/spaces', {
-                params: { parking_space_id: parkingSpaceId },
-            });
+            const response = await axios.get<Reservation[]>('/reservations');
             return response.data;
         } catch (error: any) {
-            return rejectWithValue(
-                error.response?.data?.message || 'Failed to fetch reservations'
-            );
+            if (error.response?.status === 401) {
+                return rejectWithValue('Unauthorized');
+            }
+            if (error.response?.status === 403) {
+                return rejectWithValue('Forbidden');
+            }
+            if (error.response?.status === 404) {
+                return rejectWithValue('Not found');
+            }
+            return rejectWithValue('Failed to fetch reservations');
         }
     }
 );
 
-// Fetch parking space details
+/**
+ * Fetch Reservation Details by ID
+ * GET /reservations/{id}
+ */
+export const fetchReservationById = createAsyncThunk<
+    Reservation,
+    string,
+    { rejectValue: string }
+>(
+    'reservations/fetchReservationById',
+    async (reservationId, { rejectWithValue }) => {
+        try {
+            const response = await axios.get<Reservation>(`/reservations/${reservationId}`);
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.status === 401) {
+                return rejectWithValue('Unauthorized');
+            }
+            if (error.response?.status === 403) {
+                return rejectWithValue('Forbidden');
+            }
+            if (error.response?.status === 404) {
+                return rejectWithValue('Reservation not found');
+            }
+            return rejectWithValue('Failed to fetch reservation details');
+        }
+    }
+);
+
+/**
+ * Create a New Reservation
+ * POST /reservations
+ */
+export const bookParkingSpace = createAsyncThunk<
+    Reservation,
+    ReservationCreateRequest,
+    { rejectValue: string }
+>(
+    'reservations/bookParkingSpace',
+    async (reservationRequest, { rejectWithValue }) => {
+        try {
+            const response = await axios.post<Reservation>('/reservations', reservationRequest);
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.status === 400) {
+                return rejectWithValue('Invalid input');
+            }
+            if (error.response?.status === 401) {
+                return rejectWithValue('Unauthorized');
+            }
+            if (error.response?.status === 403) {
+                return rejectWithValue('Forbidden');
+            }
+            if (error.response?.status === 409) {
+                return rejectWithValue('Parking space is already locked or reserved');
+            }
+            return rejectWithValue('Failed to book parking space');
+        }
+    }
+);
+
+/**
+ * Update an Existing Reservation
+ * PUT /reservations/{id}
+ */
+export const updateReservation = createAsyncThunk<
+    Reservation,
+    { id: string; updateData: ReservationUpdateRequest },
+    { rejectValue: string }
+>(
+    'reservations/updateReservation',
+    async ({ id, updateData }, { rejectWithValue }) => {
+        try {
+            const response = await axios.put<Reservation>(`/reservations/${id}`, updateData);
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.status === 400) {
+                return rejectWithValue('Invalid input');
+            }
+            if (error.response?.status === 401) {
+                return rejectWithValue('Unauthorized');
+            }
+            if (error.response?.status === 403) {
+                return rejectWithValue('Forbidden');
+            }
+            if (error.response?.status === 404) {
+                return rejectWithValue('Reservation not found');
+            }
+            return rejectWithValue('Failed to update reservation');
+        }
+    }
+);
+
+/**
+ * Cancel a Reservation
+ * DELETE /reservations/{id}
+ */
+export const cancelReservation = createAsyncThunk<
+    void,
+    string,
+    { rejectValue: string }
+>(
+    'reservations/cancelReservation',
+    async (reservationId, { rejectWithValue }) => {
+        try {
+            await axios.delete(`/reservations/${reservationId}`);
+        } catch (error: any) {
+            if (error.response?.status === 401) {
+                return rejectWithValue('Unauthorized');
+            }
+            if (error.response?.status === 403) {
+                return rejectWithValue('Forbidden');
+            }
+            if (error.response?.status === 404) {
+                return rejectWithValue('Reservation not found');
+            }
+            return rejectWithValue('Failed to cancel reservation');
+        }
+    }
+);
+
+/**
+ * Fetch Parking Space Details
+ * GET /parking-spaces/{id}
+ */
 export const fetchParkingSpace = createAsyncThunk<
     ParkingSpace,
     string,
     { rejectValue: string }
->('reservations/fetchParkingSpace', async (parkingSpaceId, { rejectWithValue }) => {
-    try {
-        const response = await axios.get<ParkingSpace>('/parking-space', {
-            params: { parking_space_id: parkingSpaceId },
-        });
-        return response.data;
-    } catch (error: any) {
-        if (error.status === 404) {
-            return rejectWithValue('Not found');
+>(
+    'reservations/fetchParkingSpace',
+    async (parkingSpaceId, { rejectWithValue }) => {
+        try {
+            const response = await axios.get<ParkingSpace>(`/parking-spaces/${parkingSpaceId}`);
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.status === 401) {
+                return rejectWithValue('Unauthorized');
+            }
+            if (error.response?.status === 403) {
+                return rejectWithValue('Forbidden');
+            }
+            if (error.response?.status === 404) {
+                return rejectWithValue('Parking space not found');
+            }
+            return rejectWithValue('Failed to fetch parking space');
         }
-        if (error.status === 401) {
-            return rejectWithValue('Email not found');
-        }
-        return rejectWithValue(error.status);
     }
-});
+);
 
-// The following thunks are related to locking functionality.
-// Since locking is not being implemented yet, they are commented out.
-
- // Lock a parking space
- export const lockParkingSpace = createAsyncThunk<
- { expiresAt: number },
- string,
- { rejectValue: string }
- >(
- 'reservations/lockParkingSpace',
- async (parkingSpaceId, { rejectWithValue }) => {
- try {
- const response = await axios.post('/parking-space/lock', null, {
- params: { parking_space_id: parkingSpaceId },
- });
- return response.data; // { expiresAt: timestamp }
- } catch (error: any) {
- return rejectWithValue(
- error.response?.data?.message || 'Failed to lock parking space'
- );
- }
- }
- );
-
- // Unlock a parking space
- export const unlockParkingSpace = createAsyncThunk<
- void,
- string,
- { rejectValue: string }
- >(
- 'reservations/unlockParkingSpace',
- async (parkingSpaceId, { rejectWithValue }) => {
- try {
- await axios.post('/parking-space/unlock', null, {
- params: { parking_space_id: parkingSpaceId },
- });
- } catch (error: any) {
- return rejectWithValue(
- error.response?.data?.message || 'Failed to unlock parking space'
- );
- }
- }
- );
-
-// Book a parking space (create a reservation)
-export const bookParkingSpace = createAsyncThunk<
-    void,
-    ReservationCreateRequest,
+/**
+ * Lock a Parking Space
+ * POST /reservations/lock
+ */
+export const lockParkingSpace = createAsyncThunk<
+    { expiresAt: number },
+    { parking_space_id: string; lock_duration: string },
     { rejectValue: string }
->('reservations/bookParkingSpace', async (reservationRequest, { rejectWithValue }) => {
-    try {
-        await axios.post('/reservations', reservationRequest);
-    } catch (error: any) {
-        if (error.status === 404) {
-            return rejectWithValue('Not found');
+>(
+    'reservations/lockParkingSpace',
+    async ({ parking_space_id, lock_duration }, { rejectWithValue }) => {
+        try {
+            const response = await axios.post<{ expiresAt: number }>('/reservations/lock', {
+                parking_space_id,
+                lock_duration,
+            });
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.status === 400) {
+                return rejectWithValue('Invalid input data');
+            }
+            if (error.response?.status === 401) {
+                return rejectWithValue('Unauthorized');
+            }
+            if (error.response?.status === 403) {
+                return rejectWithValue('Forbidden');
+            }
+            if (error.response?.status === 409) {
+                return rejectWithValue('Parking space is already locked or reserved');
+            }
+            return rejectWithValue('Failed to lock parking space');
         }
-        if (error.status === 401) {
-            return rejectWithValue('Email not found');
-        }
-        return rejectWithValue(error.status);}}
-        );
+    }
+);
 
-// Fetch user's car information
+/**
+ * Unlock a Parking Space
+ * POST /reservations/unlock
+ */
+export const unlockParkingSpace = createAsyncThunk<
+    void,
+    string,
+    { rejectValue: string }
+>(
+    'reservations/unlockParkingSpace',
+    async (parkingSpaceId, { rejectWithValue }) => {
+        try {
+            await axios.post('/reservations/unlock', { parking_space_id: parkingSpaceId });
+        } catch (error: any) {
+            if (error.response?.status === 400) {
+                return rejectWithValue('Invalid input data');
+            }
+            if (error.response?.status === 401) {
+                return rejectWithValue('Unauthorized');
+            }
+            if (error.response?.status === 403) {
+                return rejectWithValue('Forbidden');
+            }
+            if (error.response?.status === 404) {
+                return rejectWithValue('Parking space not locked by user');
+            }
+            return rejectWithValue('Failed to unlock parking space');
+        }
+    }
+);
+
+/**
+ * Fetch User's Car Information
+ * GET /cars
+ */
 export const fetchUserCarInfos = createAsyncThunk<
     CarInfo[],
     void,
     { rejectValue: string }
->('reservations/fetchUserCarInfos', async (_, { rejectWithValue }) => {
-    try {
-        const response = await axios.get<CarInfo[]>('/cars');
-        return response.data;
-    } catch (error: any) {
-        return rejectWithValue(
-            error.response?.data?.message || 'Failed to fetch car information'
-        );
+>(
+    'reservations/fetchUserCarInfos',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await axios.get<CarInfo[]>('/cars');
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.status === 401) {
+                return rejectWithValue('Unauthorized');
+            }
+            if (error.response?.status === 403) {
+                return rejectWithValue('Forbidden');
+            }
+            return rejectWithValue('Failed to fetch car information');
+        }
     }
-});
+);
 
 /**
  * **Reservations Slice**
@@ -209,20 +344,82 @@ const reservationsSlice = createSlice({
             });
 
         /**
-         * Handle fetchUserReservationsForSpace actions
+         * Handle fetchReservationById actions
          */
         builder
-            .addCase(fetchUserReservationsForSpace.pending, (state) => {
+            .addCase(fetchReservationById.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchUserReservationsForSpace.fulfilled, (state, action) => {
+            .addCase(fetchReservationById.fulfilled, (state, action) => {
                 state.loading = false;
-                state.reservationsForSpace = action.payload;
+                // Optionally, handle the fetched reservation
+                const index = state.reservations.findIndex(r => r.id === action.payload.id);
+                if (index !== -1) {
+                    state.reservations[index] = action.payload;
+                } else {
+                    state.reservations.push(action.payload);
+                }
             })
-            .addCase(fetchUserReservationsForSpace.rejected, (state, action) => {
+            .addCase(fetchReservationById.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload || 'Failed to fetch reservations';
+                state.error = action.payload || 'Failed to fetch reservation details';
+            });
+
+        /**
+         * Handle bookParkingSpace actions
+         */
+        builder
+            .addCase(bookParkingSpace.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(bookParkingSpace.fulfilled, (state, action) => {
+                state.loading = false;
+                state.reservations.push(action.payload);
+            })
+            .addCase(bookParkingSpace.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || 'Failed to book parking space';
+            });
+
+        /**
+         * Handle updateReservation actions
+         */
+        builder
+            .addCase(updateReservation.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(updateReservation.fulfilled, (state, action) => {
+                state.loading = false;
+                const index = state.reservations.findIndex(r => r.id === action.payload.id);
+                if (index !== -1) {
+                    state.reservations[index] = action.payload;
+                }
+            })
+            .addCase(updateReservation.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || 'Failed to update reservation';
+            });
+
+        /**
+         * Handle cancelReservation actions
+         */
+        builder
+            .addCase(cancelReservation.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(cancelReservation.fulfilled, (state, action) => {
+                state.loading = false;
+                // Assuming reservationId is passed as action.meta.arg
+                const reservationId = action.meta.arg;
+                state.reservations = state.reservations.filter(r => r.id !== reservationId);
+            })
+            .addCase(cancelReservation.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || 'Failed to cancel reservation';
             });
 
         /**
@@ -243,45 +440,37 @@ const reservationsSlice = createSlice({
             });
 
         /**
-         * The following cases handle locking functionality.
-         * Since locking is not being implemented yet, they are commented out.
-         */
-        // Handle lockParkingSpace actions
-        builder
-          .addCase(lockParkingSpace.pending, (state) => {
-            state.lockStatus = 'locking';
-            state.error = null;
-          })
-          .addCase(lockParkingSpace.fulfilled, (state, action) => {
-            state.lockStatus = 'locked';
-            state.lockExpiresAt = action.payload.expiresAt;
-          })
-          .addCase(lockParkingSpace.rejected, (state, action) => {
-            state.lockStatus = 'failed';
-            state.error = action.payload || 'Failed to lock parking space';
-          });
-
-        // Handle unlockParkingSpace actions
-        builder.addCase(unlockParkingSpace.fulfilled, (state) => {
-          state.lockStatus = 'idle';
-          state.lockExpiresAt = null;
-        });
-
-        /**
-         * Handle bookParkingSpace actions
+         * Handle lockParkingSpace actions
          */
         builder
-            .addCase(bookParkingSpace.pending, (state) => {
-                state.loading = true;
+            .addCase(lockParkingSpace.pending, (state) => {
+                state.lockStatus = 'locking';
                 state.error = null;
             })
-            .addCase(bookParkingSpace.fulfilled, (state) => {
-                state.loading = false;
-                // Optionally, you can add the new reservation to the reservations array
+            .addCase(lockParkingSpace.fulfilled, (state, action) => {
+                state.lockStatus = 'locked';
+                state.lockExpiresAt = action.payload.expiresAt;
             })
-            .addCase(bookParkingSpace.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload || 'Failed to book parking space';
+            .addCase(lockParkingSpace.rejected, (state, action) => {
+                state.lockStatus = 'failed';
+                state.error = action.payload || 'Failed to lock parking space';
+            });
+
+        /**
+         * Handle unlockParkingSpace actions
+         */
+        builder
+            .addCase(unlockParkingSpace.pending, (state) => {
+                state.lockStatus = 'unlocking';
+                state.error = null;
+            })
+            .addCase(unlockParkingSpace.fulfilled, (state) => {
+                state.lockStatus = 'idle';
+                state.lockExpiresAt = null;
+            })
+            .addCase(unlockParkingSpace.rejected, (state, action) => {
+                state.lockStatus = 'failed';
+                state.error = action.payload || 'Failed to unlock parking space';
             });
 
         /**

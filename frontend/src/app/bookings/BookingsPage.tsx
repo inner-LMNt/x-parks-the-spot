@@ -22,7 +22,6 @@ export default function BookingsPage() {
     const error = useAppSelector((state) => state.reservations.error);
 
     useEffect(() => {
-        // @ts-ignore
         dispatch(fetchUserReservations());
     }, [dispatch]);
 
@@ -41,23 +40,6 @@ export default function BookingsPage() {
         (reservation) => new Date(reservation.end_time) < now
     );
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-screen">
-                <Loader2 className="animate-spin text-gray-500 w-10 h-10" />
-                <span className="ml-2 text-gray-500">Loading your reservations...</span>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="flex items-center justify-center h-screen">
-                <p className="text-center text-red-500">Error: {error}</p>
-            </div>
-        );
-    }
-
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
             <div className="flex-grow container mx-auto p-4 max-w-5xl">
@@ -71,8 +53,23 @@ export default function BookingsPage() {
                     </div>
                 </header>
 
+                {/* Global Loading Indicator */}
+                {loading && (
+                    <div className="flex items-center justify-center my-4">
+                        <Loader2 className="animate-spin text-gray-500 w-8 h-8" />
+                        <span className="ml-2 text-gray-500">Loading your reservations...</span>
+                    </div>
+                )}
+
+                {/* Global Error Message */}
+                {error && (
+                    <div className="flex items-center justify-center my-4">
+                        <p className="text-center text-red-500">Error: {error}</p>
+                    </div>
+                )}
+
                 {/* Current Reservations */}
-                {currentReservations.length > 0 && (
+                {!loading && !error && currentReservations.length > 0 && (
                     <section className="mb-8">
                         <SectionHeader title="Current Reservations" />
                         <div className="grid gap-6">
@@ -84,7 +81,7 @@ export default function BookingsPage() {
                 )}
 
                 {/* Upcoming Reservations */}
-                {upcomingReservations.length > 0 && (
+                {!loading && !error && upcomingReservations.length > 0 && (
                     <section className="mb-8">
                         <SectionHeader title="Upcoming Reservations" />
                         <div className="grid gap-6">
@@ -96,7 +93,7 @@ export default function BookingsPage() {
                 )}
 
                 {/* Past Reservations */}
-                {pastReservations.length > 0 && (
+                {!loading && !error && pastReservations.length > 0 && (
                     <section className="mb-8">
                         <SectionHeader title="Past Reservations" />
                         <div className="grid gap-6">
@@ -108,7 +105,7 @@ export default function BookingsPage() {
                 )}
 
                 {/* No Reservations */}
-                {reservations.length === 0 && (
+                {!loading && !error && reservations.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-64">
                         <MapPin className="w-12 h-12 text-gray-400 mb-4" />
                         <p className="text-gray-500">You have no reservations.</p>
@@ -160,17 +157,15 @@ function ReservationCard({
 
     return (
         <Card
-            className={`cursor-pointer transition-transform transform hover:scale-105 ${
-                isPast ? 'bg-gray-100' : 'bg-white'
-            }`}
-            onClick={isPast ? handleClick : undefined}
+            className="cursor-pointer transition-transform transform hover:scale-105"
+            onClick={handleClick}
         >
             <CardHeader className="flex justify-between items-center">
                 <CardTitle className="flex items-center text-lg font-medium text-gray-900">
                     <MapPin className="w-5 h-5 mr-2 text-blue-500" />
-                    {reservation.parking_space_name || 'Parking Space'}
+                    {reservation.parking_space_id /* Ideally, fetch parking_space_name */}
                 </CardTitle>
-                <Badge variant={isPast ? 'destructive' : 'secondary'}>
+                <Badge variant="secondary">
                     {reservation.status}
                 </Badge>
             </CardHeader>
@@ -178,14 +173,14 @@ function ReservationCard({
                 <div className="flex items-center mb-2">
                     <Calendar className="w-4 h-4 mr-2 text-gray-500" />
                     <p className="text-sm text-gray-700">
-                        {format(new Date(reservation.start_time), 'PPP')}
+                        {format(new Date(reservation.start_time ?? new Date()), 'PPP')}
                     </p>
                 </div>
                 <div className="flex items-center mb-2">
                     <Clock className="w-4 h-4 mr-2 text-gray-500" />
                     <p className="text-sm text-gray-700">
-                        {format(new Date(reservation.start_time), 'p')} -{' '}
-                        {format(new Date(reservation.end_time), 'p')}
+                        {format(new Date(reservation.start_time ?? new Date()), 'p')} -{' '}
+                        {format(new Date(reservation.end_time ?? new Date()), 'p')}
                     </p>
                 </div>
                 <div className="flex items-center mb-2">
