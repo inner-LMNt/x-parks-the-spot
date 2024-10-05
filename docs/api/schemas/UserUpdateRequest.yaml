@@ -1,0 +1,9 @@
+type: object
+properties:
+  email:
+    type: string
+    format: email
+  full_name:
+    type: string
+  notification_preferences:
+    $ref: './NotificationPreferences.yaml'

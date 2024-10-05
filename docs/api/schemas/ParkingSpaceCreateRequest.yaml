@@ -1,0 +1,29 @@
+type: object
+required:
+  - location
+  - features
+  - availability_schedule
+  - pricing_info
+properties:
+  request_id:
+    type: string
+    format: uuid
+  location:
+    $ref: './Location.yaml'
+  features:
+    type: array
+    items:
+      type: string
+  availability_schedule:
+    type: array
+    items:
+      $ref: './TimeSlot.yaml'
+  pricing_info:
+    $ref: './PricingInfo.yaml'
+  dynamic_pricing_enabled:
+    type: boolean # default: false, might be useful to toggle later?
+  cancellation_policy:
+    type: string
+  proof_of_ownership:
+    type: string
+    format: uri # is this how we can get a "link" to the binary? or would it be passed to the api in another way?

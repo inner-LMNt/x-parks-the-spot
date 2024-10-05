@@ -1,0 +1,9 @@
+type: object
+required:
+  - userId
+properties:
+  access_token:
+    type: string
+  userId:
+    type: string
+    format: uuid
