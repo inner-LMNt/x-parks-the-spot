@@ -559,6 +559,77 @@ paths:
           description: Unauthorized
         '403':
           description: Forbidden
+  /reservations/lock:
+    post:
+      tags:
+        - Reservations
+      summary: Lock a parking space by Parking Space ID
+      description: |
+        Locks a specified parking space for the authenticated user. The user ID is extracted from the authentication token.
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - parking_space_id
+                - lock_duration
+              properties:
+                parking_space_id:
+                  type: string
+                  format: uuid
+                  description: The unique identifier of the parking space to lock.
+                lock_duration:
+                  type: string
+                  format: duration
+                  description: Duration for which the parking space should be locked (e.g., "PT15M" for 15 minutes).
+      responses:
+        '200':
+          description: Parking space locked successfully.
+        '400':
+          description: Invalid input data.
+        '401':
+          description: Unauthorized. Authentication token is missing or invalid.
+        '403':
+          description: Forbidden. User does not have permission to lock this parking space.
+        '409':
+          description: Conflict. Parking space is already locked or reserved.
+  /reservations/unlock:
+    post:
+      tags:
+        - Reservations
+      summary: Unlock a previously locked parking space
+      description: |
+        Unlocks a specified parking space that was previously locked by the authenticated user. The user ID is extracted from the authentication token.
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - parking_space_id
+              properties:
+                parking_space_id:
+                  type: string
+                  format: uuid
+                  description: The unique identifier of the parking space to unlock.
+      responses:
+        '200':
+          description: Parking space unlocked successfully.
+        '400':
+          description: Invalid input data.
+        '401':
+          description: Unauthorized. Authentication token is missing or invalid.
+        '403':
+          description: Forbidden. User does not have permission to unlock this parking space.
+        '404':
+          description: Not Found. The parking space is not currently locked by the user.
 
   /spot-finder/submissions:
     get:

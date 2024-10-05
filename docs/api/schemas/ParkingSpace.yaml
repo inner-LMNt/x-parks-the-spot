@@ -35,6 +35,14 @@ properties:
     type: boolean
   cancellation_policy:
     type: string
+  locked:
+    type: boolean
+  locked_by:
+    type: string
+    format: uuid
+  locked_until:
+    type: string
+    format: date-time
   created_at:
     type: string
     format: date-time

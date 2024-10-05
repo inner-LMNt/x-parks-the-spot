@@ -13,6 +13,7 @@ properties:
     enum:
       - active
       - suspended
+      - deleted
   renter_profile:
     $ref: './RenterProfile.yaml'
   owner_profile:

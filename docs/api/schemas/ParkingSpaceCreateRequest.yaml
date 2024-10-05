@@ -5,6 +5,9 @@ required:
   - availability_schedule
   - pricing_info
 properties:
+  request_id:
+    type: string
+    format: uuid
   location:
     $ref: './Location.yaml'
   features:

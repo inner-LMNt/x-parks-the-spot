@@ -1,5 +1,8 @@
 type: object
 properties:
+  request_id:
+    type: string
+    format: uuid
   features:
     type: array
     items:
