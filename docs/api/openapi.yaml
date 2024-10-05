@@ -831,24 +831,33 @@ components:
     ParkingSpace:
       type: object
       required:
+        - id
+        - owner_id
         - location
+        - isLocked
       properties:
         id:
           type: string
           format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
         owner_id:
           type: string
           format: uuid
+          example: "owner1-uuid-4567-e89b-12d3-a456-426614174000"
         location:
           $ref: '#/components/schemas/Location'
         features:
           type: array
           items:
             type: string
+          example: [ "EV Charging", "Covered", "Security Cameras" ]
         availability_schedule:
           type: array
           items:
             $ref: '#/components/schemas/TimeSlot'
+          example:
+            - start_time: "2023-10-15T09:00:00Z"
+              end_time: "2023-10-15T11:00:00Z"
         pricing_info:
           $ref: '#/components/schemas/PricingInfo'
         photos:
@@ -856,41 +865,72 @@ components:
           items:
             type: string
             format: uri
+          example:
+            - "https://example.com/photos/parking1/photo1.jpg"
+            - "https://example.com/photos/parking1/photo2.jpg"
         verification_status:
           type: string
           enum:
             - verified
             - pending
             - rejected
+          example: "verified"
         dynamic_pricing_enabled:
           type: boolean
+          example: true
         cancellation_policy:
           type: string
+          example: "Free cancellation up to 24 hours before booking."
+        isLocked:
+          type: boolean
+          example: false
+        lockExpiresAt:
+          type: integer
+          format: int64
+          nullable: true
+          description: "Timestamp in milliseconds when the lock expires. Null if not locked."
+          example: 1696545600000
         created_at:
           type: string
           format: date-time
+          example: "2023-09-01T12:00:00Z"
         updated_at:
           type: string
           format: date-time
+          example: "2023-09-15T12:00:00Z"
     ParkingSpaceSummary:
       type: object
       properties:
         id:
           type: string
           format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
         location:
           $ref: '#/components/schemas/Location'
         features:
           type: array
           items:
             type: string
+          example: [ "EV Charging", "Covered" ]
         average_rating:
           type: number
           format: float
           minimum: 0
           maximum: 5
+          example: 4.5
         availability:
           type: boolean
+          example: true
+        isLocked:
+          type: boolean
+          example: false
+        lockExpiresAt:
+          type: integer
+          format: int64
+          nullable: true
+          description: "Timestamp in milliseconds when the lock expires. Null if not locked."
+          example: 1696545600000
+
     ParkingSpaceCreateRequest:
       type: object
       required:

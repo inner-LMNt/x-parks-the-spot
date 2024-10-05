@@ -1312,32 +1312,91 @@ export interface components {
             points_accumulated?: number;
         };
         ParkingSpace: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            owner_id?: string;
-            location: components["schemas"]["Location"]; // required
+            /**
+             * Format: uuid
+             * @example 123e4567-e89b-12d3-a456-426614174000
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @example owner1-uuid-4567-e89b-12d3-a456-426614174000
+             */
+            owner_id: string;
+            location: components["schemas"]["Location"];
+            /** @example [
+             *       "EV Charging",
+             *       "Covered",
+             *       "Security Cameras"
+             *     ] */
             features?: string[];
+            /** @example [
+             *       {
+             *         "start_time": "2023-10-15T09:00:00Z",
+             *         "end_time": "2023-10-15T11:00:00Z"
+             *       }
+             *     ] */
             availability_schedule?: components["schemas"]["TimeSlot"][];
             pricing_info?: components["schemas"]["PricingInfo"];
+            /** @example [
+             *       "https://example.com/photos/parking1/photo1.jpg",
+             *       "https://example.com/photos/parking1/photo2.jpg"
+             *     ] */
             photos?: string[];
-            /** @enum {string} */
+            /**
+             * @example verified
+             * @enum {string}
+             */
             verification_status?: "verified" | "pending" | "rejected";
+            /** @example true */
             dynamic_pricing_enabled?: boolean;
+            /** @example Free cancellation up to 24 hours before booking. */
             cancellation_policy?: string;
-            /** Format: date-time */
+            /** @example false */
+            isLocked: boolean;
+            /**
+             * Format: int64
+             * @description Timestamp in milliseconds when the lock expires. Null if not locked.
+             * @example 1696545600000
+             */
+            lockExpiresAt?: number | null;
+            /**
+             * Format: date-time
+             * @example 2023-09-01T12:00:00Z
+             */
             created_at?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @example 2023-09-15T12:00:00Z
+             */
             updated_at?: string;
         };
         ParkingSpaceSummary: {
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @example 123e4567-e89b-12d3-a456-426614174000
+             */
             id?: string;
             location?: components["schemas"]["Location"];
+            /** @example [
+             *       "EV Charging",
+             *       "Covered"
+             *     ] */
             features?: string[];
-            /** Format: float */
+            /**
+             * Format: float
+             * @example 4.5
+             */
             average_rating?: number;
+            /** @example true */
             availability?: boolean;
+            /** @example false */
+            isLocked?: boolean;
+            /**
+             * Format: int64
+             * @description Timestamp in milliseconds when the lock expires. Null if not locked.
+             * @example 1696545600000
+             */
+            lockExpiresAt?: number | null;
         };
         ParkingSpaceCreateRequest: {
             location: components["schemas"]["Location"];
