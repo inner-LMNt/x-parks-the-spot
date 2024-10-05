@@ -69,6 +69,7 @@ export default function LoginPage() {
             const resultAction = dispatch(login(data));
             if (login.fulfilled.match(resultAction)) {
                 // Login successful
+                console.log('router trying to push')
                 router.push('/profile');
             } else if (login.rejected.match(resultAction)) {
                 // Login failed

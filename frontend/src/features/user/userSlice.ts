@@ -44,7 +44,10 @@ export const login = createAsyncThunk<
             const response = await axios.post<AuthResponse>('auth/login', credentials);
             return response.data;
         } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Login failed');
+            if (error.status === 401) {
+                return rejectWithValue('Invalid email or password');
+            }
+            return rejectWithValue('Login failed');
         }
     }
 );
@@ -66,8 +69,10 @@ export const deleteAccount = createAsyncThunk<
 
             return response.data; // Handle success response
         } catch (error: any) {
-            console.log(error)
-            return rejectWithValue(error.response?.data?.message || 'Account deletion failed');
+            if (error.status === 401) {
+                return rejectWithValue('Invalid password');
+            }
+            return rejectWithValue('Account deletion failed');
         }
     }
 );
@@ -87,11 +92,10 @@ export const register_acc = createAsyncThunk<
     'user/register',
     async (credentials, { rejectWithValue }) => {
         try {
-            console.log(credentials)
             const response = await axios.post<AuthResponse>('auth/register', credentials);
             return response.data;
         } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Registration failed');
+            return rejectWithValue('Registration failed');
         }
     }
 );
@@ -111,7 +115,7 @@ export const logout = createAsyncThunk<
             await axios.post('auth/logout');
             return;
         } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Logout failed');
+            return rejectWithValue('Logout failed');
         }
     }
 );
@@ -127,7 +131,10 @@ export const reset = createAsyncThunk<
             const response = await axios.post('auth/password-reset', { email } as PasswordResetRequest);
             return response.data;
         } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Password reset failed');
+            if (error.status === 409) {
+                return rejectWithValue('Email not found');
+            }
+            return rejectWithValue('Password reset failed');
         }
     }
 );

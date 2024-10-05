@@ -12,7 +12,7 @@ const NavBarWrapper = () => {
     const navBarPaths = ['/profile', '/home', '/search', '/add', '/bookings'];
 
     // Determine if the current path is in the list
-    const shouldShowNavBar = navBarPaths.includes(pathname);
+    const shouldShowNavBar = pathname !== null && navBarPaths.includes(pathname);
 
     // Render the BottomNavBar only if shouldShowNavBar is true
     return shouldShowNavBar ? <BottomNavBar /> : null;
