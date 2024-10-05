@@ -108,15 +108,9 @@ export const lockParkingSpaceHandler = http.post<
 export const unlockParkingSpaceHandler = http.post(
     '/v1/reservations/unlock',
     async ({ request }) => {
-        const body: string = await request.text();
-        const parking_space_id = JSON.parse(body);
+        const body = await request.json(); // Parse as JSON object
+        const parking_space_id = body.parking_space_id;
 
-        if (!parking_space_id || typeof parking_space_id !== 'string') {
-            return HttpResponse.json(
-                { message: 'Invalid input data' },
-                { status: 400 }
-            );
-        }
 
         const parkingSpace = spaces.find((space) => space.id === parking_space_id);
 
@@ -133,8 +127,8 @@ export const unlockParkingSpaceHandler = http.post(
             new Date(parkingSpace.locked_until).getTime() <= Date.now()
         ) {
             return HttpResponse.json(
-                { message: 'Parking space is not currently locked by the user' },
-                { status: 404 }
+                { message: 'Parking space already unlocked' },
+                { status: 200 }
             );
         }
 

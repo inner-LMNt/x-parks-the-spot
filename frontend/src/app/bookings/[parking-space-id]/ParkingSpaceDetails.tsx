@@ -3,22 +3,24 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, usePathname } from 'next/navigation';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MapPin, DollarSign, Clock, Star } from 'lucide-react';
+import { MapPin, DollarSign, Clock, Star, ArrowLeft } from 'lucide-react'; // Imported ArrowLeft
 import { format } from 'date-fns';
-import { fetchParkingSpace, resetError } from '@/features/parking-space/parkingSpaceSlice';
+import { fetchParkingSpace, resetError, lockParkingSpace } from '@/features/parking-space/parkingSpaceSlice'; // Import lockParkingSpace
+import { toast } from '@/hooks/use-toast'; // Assuming you have a toast hook
 
 export default function ParkingSpaceDetails() {
     const params = useParams();
     const parkingSpaceId = params['parking-space-id'] as string;
     const router = useRouter();
     const dispatch = useAppDispatch();
+    const currentUrl = usePathname();
 
     // Selectors from the parkingSpace slice
     const parkingSpace = useAppSelector((state) => state.parkingSpace.parkingSpace);
@@ -37,10 +39,22 @@ export default function ParkingSpaceDetails() {
         };
     }, [dispatch, parkingSpaceId]);
 
-    const handleReserveAndLock = () => {
-        // Navigate to the booking page with the current URL as the previous URL
-        const currentUrl = router.asPath;
-        router.push(`/bookings/${parkingSpaceId}/reserve?previousUrl=${encodeURIComponent(currentUrl)}`);
+    const handleReserveAndLock = async () => {
+        try {
+            router.push(`/bookings/${parkingSpaceId}/reserve?previousUrl=${encodeURIComponent(currentUrl)}`);
+        } catch (err: any) {
+            // Handle lock failure
+            console.error('Locking failed:', err);
+            toast({
+                title: 'Locking Failed',
+                description: err || 'Unable to lock the parking space.',
+                variant: 'destructive',
+            });
+        }
+    };
+
+    const handleBack = () => {
+        router.push('/bookings');
     };
 
     if (loading) {
@@ -73,7 +87,16 @@ export default function ParkingSpaceDetails() {
     return (
         <div className="container mx-auto p-4 max-w-md">
             <Card className="shadow-lg">
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-2 flex items-center">
+                    {/* Back Button */}
+                    <Button
+                        variant="ghost"
+                        onClick={handleBack}
+                        className="mr-2"
+                        aria-label="Go Back to Bookings"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                    </Button>
                     <div className="flex flex-col space-y-1.5">
                         <CardTitle className="text-2xl">{parkingSpace.location.address}</CardTitle>
                         <p className="text-sm text-muted-foreground flex items-center">
@@ -87,8 +110,8 @@ export default function ParkingSpaceDetails() {
                             <Star className="w-5 h-5 text-yellow-400 mr-1" />
                             <span className="font-semibold">{parkingSpace.verification_status}</span>
                         </div>
-                        <Badge variant={parkingSpace.locked ? 'destructive' : 'success'}>
-                            {parkingSpace.locked ? 'Locked' : 'Available'}
+                        <Badge variant={lockStatus !== 'idle' ? 'destructive' : 'success'}>
+                            {lockStatus !== 'idle' ? 'Locked' : 'Available'}
                         </Badge>
                     </div>
                     <Separator className="my-4" />

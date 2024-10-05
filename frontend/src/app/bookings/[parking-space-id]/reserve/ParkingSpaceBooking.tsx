@@ -1,8 +1,6 @@
-// src/app/bookings/[parking-space-id]/booking/ParkingSpaceBooking.tsx
-
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
@@ -15,7 +13,7 @@ import {
     unlockParkingSpace,
     lockParkingSpace
 } from "@/features/parking-space/parkingSpaceSlice";
-import { ReservationCreateRequest, CarInfo, Reservation } from '@/types/type';
+import { ReservationCreateRequest, Reservation, CarInfo } from '@/types/type';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,10 +34,10 @@ export default function ParkingSpaceBooking() {
     const previousUrl = searchParams.get('previousUrl') || '/bookings';
 
     const dispatch = useAppDispatch();
-    const parkingSpace = useAppSelector((state) => state.reservations.parkingSpace);
-    const lockStatus = useAppSelector((state) => state.reservations.lockStatus);
-    const lockExpiresAt = useAppSelector((state) => state.reservations.lockExpiresAt);
-    const bookingError = useAppSelector((state) => state.reservations.error);
+    const parkingSpace = useAppSelector((state) => state.parkingSpace.parkingSpace);
+    const lockStatus = useAppSelector((state) => state.parkingSpace.lockStatus);
+    const lockExpiresAt = useAppSelector((state) => state.parkingSpace.lockExpiresAt);
+    const bookingError = useAppSelector((state) => state.parkingSpace.error);
     const userReservations = useAppSelector((state) =>
         state.reservations.reservations.filter(r => r.parking_space_id === parkingSpaceId)
     );
@@ -47,13 +45,17 @@ export default function ParkingSpaceBooking() {
 
     const [booking, setBooking] = useState<ReservationCreateRequest>({
         parking_space_id: parkingSpaceId,
+        date: '',
         start_time: '',
         end_time: '',
         car_info_id: '',
-        renter_id: 'user1' // Assume 'user1' is the authenticated user
+        renter_id: 'user1' // Replace with actual authenticated user ID
     });
 
     const [timer, setTimer] = useState<number>(0); // Time left in milliseconds
+
+    const isMounted = useRef<boolean>(false);
+    const isLocked = useRef<boolean>(false); // Ref to track if parking space is locked
 
     // Fetch parking space details and user's car info
     useEffect(() => {
@@ -63,48 +65,89 @@ export default function ParkingSpaceBooking() {
 
     // Lock the parking space when the component mounts
     useEffect(() => {
-        if (lockStatus === 'idle') {
-            dispatch(lockParkingSpace({ parking_space_id: parkingSpaceId, lock_duration: 'PT15M' }));
+        isMounted.current = true;
+
+        if (!isLocked.current) {
+            // Dispatch lockParkingSpace on mount
+            dispatch(lockParkingSpace({ parking_space_id: parkingSpaceId, lock_duration: 'PT1M' }))
+                .unwrap()
+                .then(() => {
+                    console.log('Parking space locked successfully.');
+                    isLocked.current = true; // Mark as locked
+                })
+                .catch((error) => {
+                    toast({
+                        title: 'Lock Failed',
+                        description: error || 'Unable to lock the parking space.',
+                        variant: 'destructive',
+                    });
+                    router.push(previousUrl);
+                });
         }
 
-        // Unlock the parking space when the component unmounts
-        return () => {
-            dispatch(unlockParkingSpace(parkingSpaceId));
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            // Confirm that the space is locked and component is mounted before unlocking
+            if (isMounted.current && isLocked.current) {
+                e.preventDefault();
+                // Prevent double unlock by setting isLocked to false
+                isLocked.current = false;
+                dispatch(unlockParkingSpace(parkingSpaceId))
+                    .unwrap()
+                    .then(() => {
+                        console.log('Parking space unlocked successfully on unload.');
+                    })
+                    .catch((error) => {
+                        console.error('Failed to unlock on unload:', error);
+                    });
+            }
         };
-    }, [dispatch, parkingSpaceId, lockStatus]);
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            if (isMounted.current && isLocked.current) {
+                // Prevent double unlock by setting isLocked to false
+                isLocked.current = false;
+                dispatch(unlockParkingSpace(parkingSpaceId))
+                    .unwrap()
+                    .then(() => {
+                        console.log('Parking space unlocked successfully on unmount.');
+                    })
+                    .catch((error) => {
+                        console.error('Failed to unlock on unmount:', error);
+                    });
+            }
+            isMounted.current = false;
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [dispatch, parkingSpaceId, router, previousUrl]);
+
 
     // Handle lock expiration and set up timer
     useEffect(() => {
         if (lockExpiresAt) {
-            const timeLeft = lockExpiresAt - Date.now();
-            if (timeLeft > 0) {
-                setTimer(timeLeft);
+            const updateTimer = () => {
+                const timeLeft = lockExpiresAt - Date.now();
+                if (timeLeft <= 0) {
+                    setTimer(0);
+                    toast({
+                        title: 'Booking Session Expired',
+                        description: 'Your booking session has expired due to inactivity.',
+                        variant: 'destructive',
+                    });
+                    router.push(previousUrl);
+                } else {
+                    setTimer(timeLeft);
+                }
+            };
 
-                const interval = setInterval(() => {
-                    const newTimeLeft = lockExpiresAt - Date.now();
-                    if (newTimeLeft <= 0) {
-                        clearInterval(interval);
-                        toast({
-                            title: 'Booking Session Expired',
-                            description: 'Your booking session has expired due to inactivity.',
-                            variant: 'destructive',
-                        });
-                        router.push(previousUrl);
-                    } else {
-                        setTimer(newTimeLeft);
-                    }
-                }, 1000);
+            updateTimer();
 
-                return () => clearInterval(interval);
-            } else {
-                // If lock has already expired
-                toast({
-                    title: 'Booking Session Expired',
-                    description: 'Your booking session has expired.',
-                    variant: 'destructive',
-                });
-                router.push(previousUrl);
-            }
+            const interval = setInterval(() => {
+                updateTimer();
+            }, 1000);
+
+            return () => clearInterval(interval);
         }
     }, [lockExpiresAt, router, previousUrl]);
 
@@ -128,7 +171,6 @@ export default function ParkingSpaceBooking() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Ensure the user holds the lock
         if (parkingSpace?.locked_by !== booking.renter_id) {
             toast({
                 title: 'Booking Failed',
@@ -138,7 +180,15 @@ export default function ParkingSpaceBooking() {
             return;
         }
 
-        // Combine date and time into ISO 8601 date-time strings
+        if (new Date(`${booking.date}T${booking.end_time}`) <= new Date(`${booking.date}T${booking.start_time}`)) {
+            toast({
+                title: 'Invalid Time',
+                description: 'End time must be after start time.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
         const startDateTime = new Date(`${booking.date}T${booking.start_time}`).toISOString();
         const endDateTime = new Date(`${booking.date}T${booking.end_time}`).toISOString();
 
@@ -151,40 +201,49 @@ export default function ParkingSpaceBooking() {
         };
 
         try {
-            // Create the reservation
             const reservation: Reservation = await dispatch(bookParkingSpace(reservationRequest)).unwrap();
 
-            // Unlock the parking space
-            dispatch(unlockParkingSpace(parkingSpaceId));
+            dispatch(unlockParkingSpace(parkingSpaceId))
+                .unwrap()
+                .then(() => {
+                    console.log('Parking space unlocked after booking.');
+                    isLocked.current = false; // Mark as unlocked
+                })
+                .catch((error) => {
+                    console.error('Failed to unlock after booking:', error);
+                });
 
             toast({
                 title: 'Booking Successful',
                 description: 'Your reservation has been confirmed.',
             });
 
-            // Redirect to dashboard or previous page
             router.push('/bookings');
         } catch (error: any) {
             console.error('Booking failed:', error);
-            // Additional error handling if necessary
+            toast({
+                title: 'Booking Failed',
+                description: error || 'Unable to complete your booking.',
+                variant: 'destructive',
+            });
         }
     };
 
     const calculateTotal = () => {
-        if (!booking.start_time || !booking.end_time || !parkingSpace?.pricing_info?.base_price) return 0;
-        const start = new Date(booking.start_time);
-        const end = new Date(booking.end_time);
+        if (!booking.start_time || !booking.end_time || !parkingSpace?.pricing_info?.base_price || !booking.date)
+            return 0;
+        const start = new Date(`${booking.date}T${booking.start_time}`);
+        const end = new Date(`${booking.date}T${booking.end_time}`);
         const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
         let price = hours * parkingSpace.pricing_info.base_price;
 
-        // Implement dynamic pricing if enabled
         if (parkingSpace.pricing_info.dynamic_pricing && parkingSpace.pricing_info.dynamic_pricing_algorithm) {
             switch (parkingSpace.pricing_info.dynamic_pricing_algorithm) {
                 case 'peak_hours':
-                    price *= 1.2; // 20% increase during peak hours
+                    price *= 1.2;
                     break;
                 case 'off_peak':
-                    price *= 0.9; // 10% discount during off-peak hours
+                    price *= 0.9;
                     break;
                 default:
                     break;
@@ -206,6 +265,7 @@ export default function ParkingSpaceBooking() {
                         variant="ghost"
                         onClick={() => router.push(previousUrl)}
                         className="mr-2"
+                        aria-label="Go Back"
                     >
                         <ArrowLeft className="w-4 h-4" />
                     </Button>
@@ -222,8 +282,8 @@ export default function ParkingSpaceBooking() {
                             <Star className="w-5 h-5 text-yellow-400 mr-1" />
                             <span className="font-semibold">{parkingSpace.verification_status}</span>
                         </div>
-                        <Badge variant={parkingSpace.locked ? 'destructive' : 'success'}>
-                            {parkingSpace.locked ? 'Locked' : 'Available'}
+                        <Badge variant={parkingSpace.lockStatus !== 'idle' ? 'destructive' : 'success'}>
+                            {parkingSpace.lockStatus !== 'idle' ? 'Locked' : 'Available'}
                         </Badge>
                     </div>
                     <Separator className="my-4" />
@@ -236,8 +296,14 @@ export default function ParkingSpaceBooking() {
                             <div className="flex items-center">
                                 <Clock className="w-5 h-5 text-blue-500 mr-1" />
                                 <span className="text-sm">
-                                    {format(new Date(parkingSpace.availability_schedule[0].start_time), 'p')} -{' '}
-                                    {format(new Date(parkingSpace.availability_schedule[0].end_time), 'p')}
+                                    {parkingSpace.availability_schedule.length > 0 ? (
+                                        <>
+                                            {format(new Date(parkingSpace.availability_schedule[0].start_time), 'p')} -{' '}
+                                            {format(new Date(parkingSpace.availability_schedule[0].end_time), 'p')}
+                                        </>
+                                    ) : (
+                                        'No availability schedule'
+                                    )}
                                 </span>
                             </div>
                         </div>
@@ -257,7 +323,6 @@ export default function ParkingSpaceBooking() {
                     </div>
                 </CardContent>
                 <Separator className="my-2" />
-                {/* User's Previous Reservations for This Space */}
                 {userReservations.length > 0 && (
                     <CardContent>
                         <h3 className="font-semibold mb-2 text-lg">Your Previous Reservations:</h3>
@@ -282,7 +347,6 @@ export default function ParkingSpaceBooking() {
                 <Separator className="my-2" />
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Date Selection */}
                         <div className="space-y-2">
                             <Label htmlFor="date" className="text-sm font-medium">
                                 Date
@@ -302,7 +366,6 @@ export default function ParkingSpaceBooking() {
                             </div>
                         </div>
 
-                        {/* Start and End Time */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="start_time" className="text-sm font-medium">
@@ -340,7 +403,6 @@ export default function ParkingSpaceBooking() {
                             </div>
                         </div>
 
-                        {/* Car Selection */}
                         <div className="space-y-2">
                             <Label htmlFor="car_info_id" className="text-sm font-medium">
                                 Select Car
@@ -355,7 +417,7 @@ export default function ParkingSpaceBooking() {
                                     <SelectValue placeholder="Select your car" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {carInfos.map((car) => (
+                                    {carInfos.map((car: CarInfo) => (
                                         <SelectItem key={car.id} value={car.id}>
                                             {`${car.make} ${car.model} (${car.license_plate})`}
                                         </SelectItem>
@@ -364,13 +426,11 @@ export default function ParkingSpaceBooking() {
                             </Select>
                         </div>
 
-                        {/* Total Price Calculation */}
                         <div className="w-full flex justify-between items-center mt-4">
                             <div className="text-lg font-semibold">Total:</div>
                             <div className="text-2xl font-bold">${calculateTotal().toFixed(2)}</div>
                         </div>
 
-                        {/* Lock Timer */}
                         <div className="w-full flex justify-between items-center mt-4">
                             <div className="text-lg font-semibold">Time Left:</div>
                             <div className="text-xl font-bold">
