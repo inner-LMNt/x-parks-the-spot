@@ -6,10 +6,8 @@ import {
     ReservationCreateRequest,
     ReservationUpdateRequest,
     CarInfo,
-    ParkingSpace,
 } from '@/types/type';
 import { reservations } from '@/mocks/data/reservations/reservationsData';
-import { spaces } from '@/mocks/data/parking/parkingData';
 import { carInfos } from '@/mocks/data/cars/carInfoData';
 
 /**
@@ -24,10 +22,10 @@ const authenticatedUserId = 'user1';
  * Fetch Current User's Reservations
  */
 export const getUserReservationsHandler = http.get<never, never, Reservation[]>(
-    '/reservations',
+    '/v1/reservations',
     async ({ request }) => {
 
-        let userReservations = reservations.filter(a => a.renter_id != null);
+        let userReservations = reservations.filter(a => a.renter_id === authenticatedUserId);
 
         return HttpResponse.json(userReservations, { status: 200 });
     }
@@ -42,7 +40,7 @@ export const getReservationByIdHandler = http.get<
     { id: string },
     Reservation | { message: string }
 >(
-    '/reservations/:id',
+    '/v1/reservations/:id',
     async ({ params }) => {
         const { id } = params;
         const reservation = reservations.find((r) => r.id === id);
@@ -67,7 +65,7 @@ export const createReservationHandler = http.post<
     never,
     Reservation | { message: string }
 >(
-    '/reservations',
+    '/v1/reservations',
     async ({ request }) => {
         // Parse the request body
         const body: ReservationCreateRequest = await request.json();
@@ -82,7 +80,15 @@ export const createReservationHandler = http.post<
             );
         }
 
-        const parkingSpace = spaces.find((space) => space.id === parking_space_id);
+        // Assuming you have a way to fetch parkingSpace and carInfo
+        // For example, importing from mock data or another handler
+
+        // Placeholder: Replace with actual logic to fetch parkingSpace and carInfo
+        // const parkingSpace = spaces.find((space) => space.id === parking_space_id);
+        // const carInfo = carInfos.find((car) => car.id === car_info_id);
+
+        // Mock logic for demonstration
+        const parkingSpace = { id: parking_space_id, owner_id: 'owner1', locked: false } as any;
         const carInfo = carInfos.find((car) => car.id === car_info_id);
 
         if (!parkingSpace) {
@@ -158,11 +164,11 @@ export const updateReservationHandler = http.put<
     { id: string },
     Reservation | { message: string }
 >(
-    '/reservations/:id',
+    '/v1/reservations/:id',
     async ({ request, params }) => {
         const { id } = params;
         // Parse the request body
-        const body: { id: string } = await request.json();
+        const body: { start_time?: string; end_time?: string; status?: string } = await request.json();
 
         const { start_time, end_time, status } = body;
 
@@ -184,7 +190,8 @@ export const updateReservationHandler = http.put<
         }
 
         const existingReservation = reservations[reservationIndex];
-        const parkingSpace = spaces.find((space) => space.id === existingReservation.parking_space_id);
+        // Placeholder: Replace with actual logic to fetch parkingSpace
+        const parkingSpace = { id: existingReservation.parking_space_id } as any;
 
         if (!parkingSpace) {
             return HttpResponse.json(
@@ -230,151 +237,11 @@ export const updateReservationHandler = http.put<
 );
 
 /**
- * Handler for GET /parking-spaces/:id
- * Fetch Parking Space Details
- */
-export const getParkingSpaceHandler = http.get<
-    never,
-    { id: string },
-    ParkingSpace | { message: string }
->(
-    '/parking-spaces/:id',
-    async ({ params }) => {
-        const { id } = params;
-        const parkingSpace = spaces.find((space) => space.id === id);
-
-        if (parkingSpace) {
-            return HttpResponse.json(parkingSpace, { status: 200 });
-        } else {
-            return HttpResponse.json(
-                { message: 'Parking space not found' },
-                { status: 404 }
-            );
-        }
-    }
-);
-
-/**
- * Handler for POST /reservations/lock
- * Lock a Parking Space
- */
-export const lockParkingSpaceHandler = http.post<
-    never,
-    never,
-    { expiresAt: number } | { message: string }
->(
-    '/reservations/lock',
-    async ({ request }) => {
-        const body = await request.json();
-        const { parking_space_id, lock_duration } = body;
-
-        if (!parking_space_id || !lock_duration) {
-            return HttpResponse.json(
-                { message: 'Invalid input data' },
-                { status: 400 }
-            );
-        }
-
-        const parkingSpace = spaces.find((space) => space.id === parking_space_id);
-
-        if (!parkingSpace) {
-            return HttpResponse.json(
-                { message: 'Parking space not found' },
-                { status: 404 }
-            );
-        }
-
-        if (
-            parkingSpace.locked &&
-            parkingSpace.locked_until &&
-            new Date(parkingSpace.locked_until).getTime() > Date.now()
-        ) {
-            return HttpResponse.json(
-                { message: 'Parking space is already locked or reserved' },
-                { status: 409 }
-            );
-        }
-
-        // Parse lock_duration (e.g., "PT15M" for 15 minutes)
-        const durationMatch = lock_duration.match(/PT(\d+)M/);
-        const lockDurationMinutes = durationMatch ? parseInt(durationMatch[1], 10) : 15;
-        const lockDurationMs = lockDurationMinutes * 60 * 1000;
-
-        const expiresAtDate = new Date(Date.now() + lockDurationMs);
-        const expiresAt = expiresAtDate.toISOString();
-
-        // Lock the parking space
-        parkingSpace.locked = true;
-        parkingSpace.locked_by = authenticatedUserId; // Replace with actual user ID from auth context
-        parkingSpace.locked_until = expiresAt;
-
-        return HttpResponse.json(
-            { expiresAt: expiresAtDate.getTime() },
-            { status: 200 }
-        );
-    }
-);
-
-/**
- * Handler for POST /reservations/unlock
- * Unlock a Parking Space
- */
-export const unlockParkingSpaceHandler = http.post(
-    '/reservations/unlock',
-    async ({ request }) => {
-        const body: string = await request.text();
-        const parking_space_id = JSON.parse(body);
-
-        if (!parking_space_id || typeof parking_space_id !== 'string') {
-            return HttpResponse.json(
-                { message: 'Invalid input data' },
-                { status: 400 }
-            );
-        }
-
-        const parkingSpace = spaces.find((space) => space.id === parking_space_id);
-
-        if (!parkingSpace) {
-            return HttpResponse.json(
-                { message: 'Parking space not found' },
-                { status: 404 }
-            );
-        }
-
-        if (
-            !parkingSpace.locked ||
-            !parkingSpace.locked_until ||
-            new Date(parkingSpace.locked_until).getTime() <= Date.now()
-        ) {
-            return HttpResponse.json(
-                { message: 'Parking space is not currently locked by the user' },
-                { status: 404 }
-            );
-        }
-
-        // Ensure that only the user who locked can unlock
-        if (parkingSpace.locked_by !== authenticatedUserId) {
-            return HttpResponse.json(
-                { message: 'You do not have permission to unlock this parking space' },
-                { status: 403 }
-            );
-        }
-
-        // Unlock the parking space
-        parkingSpace.locked = false;
-        parkingSpace.locked_by = undefined;
-        parkingSpace.locked_until = undefined;
-
-        return HttpResponse.json({}, { status: 200 });
-    }
-);
-
-/**
  * Handler for GET /cars
  * Fetch User's Car Information
  */
 export const getUserCarInfosHandler = http.get<never, never, CarInfo[]>(
-    '/cars',
+    '/v1/cars',
     async () => {
         // Assuming all carInfos belong to the authenticated user
         return HttpResponse.json(carInfos, { status: 200 });
@@ -382,15 +249,12 @@ export const getUserCarInfosHandler = http.get<never, never, CarInfo[]>(
 );
 
 /**
- * **Export All Handlers**
+ * **Export Reservations Handlers**
  */
 export const reservationsHandlers = [
     getUserReservationsHandler,
     getReservationByIdHandler,
     createReservationHandler,
     updateReservationHandler,
-    getParkingSpaceHandler,
-    lockParkingSpaceHandler,
-    unlockParkingSpaceHandler,
     getUserCarInfosHandler,
 ];

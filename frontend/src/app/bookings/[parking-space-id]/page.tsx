@@ -1,3 +1,3 @@
-import ParkingSpacePage from "@/app/bookings/[parking-space-id]/ParkingSpaceBooking";
+import ParkingSpaceDetails from "@/app/bookings/[parking-space-id]/ParkingSpaceDetails";
 
-export default ParkingSpacePage;
+export default ParkingSpaceDetails;

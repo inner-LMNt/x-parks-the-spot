@@ -1,19 +1,21 @@
-// src/app/bookings/[parking-space-id]/ParkingSpaceBooking.tsx
+// src/app/bookings/[parking-space-id]/booking/ParkingSpaceBooking.tsx
 
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
-    fetchParkingSpace,
-    lockParkingSpace,
-    unlockParkingSpace,
     bookParkingSpace,
     resetError,
     fetchUserCarInfos,
 } from '@/features/reservations/reservationsSlice';
-import { ParkingSpace, ReservationCreateRequest, CarInfo, Reservation } from '@/types/type';
+import {
+    fetchParkingSpace,
+    unlockParkingSpace,
+    lockParkingSpace
+} from "@/features/parking-space/parkingSpaceSlice";
+import { ReservationCreateRequest, CarInfo, Reservation } from '@/types/type';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,7 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MapPin, DollarSign, Clock, Star, Calendar } from 'lucide-react';
+import { MapPin, DollarSign, Clock, Star, Calendar, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -30,6 +32,8 @@ export default function ParkingSpaceBooking() {
     const params = useParams();
     const parkingSpaceId = params['parking-space-id'] as string;
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const previousUrl = searchParams.get('previousUrl') || '/bookings';
 
     const dispatch = useAppDispatch();
     const parkingSpace = useAppSelector((state) => state.reservations.parkingSpace);
@@ -49,6 +53,8 @@ export default function ParkingSpaceBooking() {
         renter_id: 'user1' // Assume 'user1' is the authenticated user
     });
 
+    const [timer, setTimer] = useState<number>(0); // Time left in milliseconds
+
     // Fetch parking space details and user's car info
     useEffect(() => {
         dispatch(fetchParkingSpace(parkingSpaceId));
@@ -57,29 +63,39 @@ export default function ParkingSpaceBooking() {
 
     // Lock the parking space when the component mounts
     useEffect(() => {
-        dispatch(lockParkingSpace({ parking_space_id: parkingSpaceId, lock_duration: 'PT15M' }));
+        if (lockStatus === 'idle') {
+            dispatch(lockParkingSpace({ parking_space_id: parkingSpaceId, lock_duration: 'PT15M' }));
+        }
 
         // Unlock the parking space when the component unmounts
         return () => {
             dispatch(unlockParkingSpace(parkingSpaceId));
         };
-    }, [dispatch, parkingSpaceId]);
+    }, [dispatch, parkingSpaceId, lockStatus]);
 
-    // Handle lock expiration
+    // Handle lock expiration and set up timer
     useEffect(() => {
         if (lockExpiresAt) {
-            const timeout = lockExpiresAt - Date.now();
-            if (timeout > 0) {
-                const timer = setTimeout(() => {
-                    toast({
-                        title: 'Booking Session Expired',
-                        description: 'Your booking session has expired due to inactivity.',
-                        variant: 'destructive',
-                    });
-                    router.push('/bookings');
-                }, timeout);
+            const timeLeft = lockExpiresAt - Date.now();
+            if (timeLeft > 0) {
+                setTimer(timeLeft);
 
-                return () => clearTimeout(timer);
+                const interval = setInterval(() => {
+                    const newTimeLeft = lockExpiresAt - Date.now();
+                    if (newTimeLeft <= 0) {
+                        clearInterval(interval);
+                        toast({
+                            title: 'Booking Session Expired',
+                            description: 'Your booking session has expired due to inactivity.',
+                            variant: 'destructive',
+                        });
+                        router.push(previousUrl);
+                    } else {
+                        setTimer(newTimeLeft);
+                    }
+                }, 1000);
+
+                return () => clearInterval(interval);
             } else {
                 // If lock has already expired
                 toast({
@@ -87,10 +103,10 @@ export default function ParkingSpaceBooking() {
                     description: 'Your booking session has expired.',
                     variant: 'destructive',
                 });
-                router.push('/bookings');
+                router.push(previousUrl);
             }
         }
-    }, [lockExpiresAt, router]);
+    }, [lockExpiresAt, router, previousUrl]);
 
     // Handle booking errors
     useEffect(() => {
@@ -146,7 +162,7 @@ export default function ParkingSpaceBooking() {
                 description: 'Your reservation has been confirmed.',
             });
 
-            // Redirect to dashboard
+            // Redirect to dashboard or previous page
             router.push('/bookings');
         } catch (error: any) {
             console.error('Booking failed:', error);
@@ -185,7 +201,14 @@ export default function ParkingSpaceBooking() {
     return (
         <div className="container mx-auto p-4 max-w-md">
             <Card className="shadow-lg">
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-2 flex items-center">
+                    <Button
+                        variant="ghost"
+                        onClick={() => router.push(previousUrl)}
+                        className="mr-2"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                    </Button>
                     <div className="flex flex-col space-y-1.5">
                         <CardTitle className="text-2xl">{parkingSpace.location.address}</CardTitle>
                         <p className="text-sm text-muted-foreground flex items-center">
@@ -346,6 +369,15 @@ export default function ParkingSpaceBooking() {
                             <div className="text-lg font-semibold">Total:</div>
                             <div className="text-2xl font-bold">${calculateTotal().toFixed(2)}</div>
                         </div>
+
+                        {/* Lock Timer */}
+                        <div className="w-full flex justify-between items-center mt-4">
+                            <div className="text-lg font-semibold">Time Left:</div>
+                            <div className="text-xl font-bold">
+                                {Math.floor(timer / 60000)}:{('0' + Math.floor((timer % 60000) / 1000)).slice(-2)} mins
+                            </div>
+                        </div>
+
                         <Button
                             type="submit"
                             className="w-full mt-4"
@@ -358,4 +390,5 @@ export default function ParkingSpaceBooking() {
                 </CardContent>
             </Card>
         </div>
+    );
 }

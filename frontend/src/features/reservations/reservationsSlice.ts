@@ -3,11 +3,10 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from '@/api/axiosInstance';
 import {
-    ParkingSpace,
     Reservation,
     ReservationCreateRequest,
-    CarInfo,
     ReservationUpdateRequest,
+    CarInfo,
 } from '@/types/type';
 
 /**
@@ -17,9 +16,6 @@ interface ReservationsState {
     loading: boolean;
     error: string | null;
     reservations: Reservation[];
-    parkingSpace: ParkingSpace | null;
-    lockStatus: 'idle' | 'locking' | 'locked' | 'failed';
-    lockExpiresAt: number | null;
     carInfos: CarInfo[];
 }
 
@@ -30,9 +26,6 @@ const initialState: ReservationsState = {
     loading: false,
     error: null,
     reservations: [],
-    parkingSpace: null,
-    lockStatus: 'idle',
-    lockExpiresAt: null,
     carInfos: [],
 };
 
@@ -191,101 +184,6 @@ export const cancelReservation = createAsyncThunk<
 );
 
 /**
- * Fetch Parking Space Details
- * GET /parking-spaces/{id}
- */
-export const fetchParkingSpace = createAsyncThunk<
-    ParkingSpace,
-    string,
-    { rejectValue: string }
->(
-    'reservations/fetchParkingSpace',
-    async (parkingSpaceId, { rejectWithValue }) => {
-        try {
-            const response = await axios.get<ParkingSpace>(`/parking-spaces/${parkingSpaceId}`);
-            return response.data;
-        } catch (error: any) {
-            if (error.response?.status === 401) {
-                return rejectWithValue('Unauthorized');
-            }
-            if (error.response?.status === 403) {
-                return rejectWithValue('Forbidden');
-            }
-            if (error.response?.status === 404) {
-                return rejectWithValue('Parking space not found');
-            }
-            return rejectWithValue('Failed to fetch parking space');
-        }
-    }
-);
-
-/**
- * Lock a Parking Space
- * POST /reservations/lock
- */
-export const lockParkingSpace = createAsyncThunk<
-    { expiresAt: number },
-    { parking_space_id: string; lock_duration: string },
-    { rejectValue: string }
->(
-    'reservations/lockParkingSpace',
-    async ({ parking_space_id, lock_duration }, { rejectWithValue }) => {
-        try {
-            const response = await axios.post<{ expiresAt: number }>('/reservations/lock', {
-                parking_space_id,
-                lock_duration,
-            });
-            return response.data;
-        } catch (error: any) {
-            if (error.response?.status === 400) {
-                return rejectWithValue('Invalid input data');
-            }
-            if (error.response?.status === 401) {
-                return rejectWithValue('Unauthorized');
-            }
-            if (error.response?.status === 403) {
-                return rejectWithValue('Forbidden');
-            }
-            if (error.response?.status === 409) {
-                return rejectWithValue('Parking space is already locked or reserved');
-            }
-            return rejectWithValue('Failed to lock parking space');
-        }
-    }
-);
-
-/**
- * Unlock a Parking Space
- * POST /reservations/unlock
- */
-export const unlockParkingSpace = createAsyncThunk<
-    void,
-    string,
-    { rejectValue: string }
->(
-    'reservations/unlockParkingSpace',
-    async (parkingSpaceId, { rejectWithValue }) => {
-        try {
-            await axios.post('/reservations/unlock', { parking_space_id: parkingSpaceId });
-        } catch (error: any) {
-            if (error.response?.status === 400) {
-                return rejectWithValue('Invalid input data');
-            }
-            if (error.response?.status === 401) {
-                return rejectWithValue('Unauthorized');
-            }
-            if (error.response?.status === 403) {
-                return rejectWithValue('Forbidden');
-            }
-            if (error.response?.status === 404) {
-                return rejectWithValue('Parking space not locked by user');
-            }
-            return rejectWithValue('Failed to unlock parking space');
-        }
-    }
-);
-
-/**
  * Fetch User's Car Information
  * GET /cars
  */
@@ -420,57 +318,6 @@ const reservationsSlice = createSlice({
             .addCase(cancelReservation.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload || 'Failed to cancel reservation';
-            });
-
-        /**
-         * Handle fetchParkingSpace actions
-         */
-        builder
-            .addCase(fetchParkingSpace.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(fetchParkingSpace.fulfilled, (state, action) => {
-                state.loading = false;
-                state.parkingSpace = action.payload;
-            })
-            .addCase(fetchParkingSpace.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload || 'Failed to fetch parking space';
-            });
-
-        /**
-         * Handle lockParkingSpace actions
-         */
-        builder
-            .addCase(lockParkingSpace.pending, (state) => {
-                state.lockStatus = 'locking';
-                state.error = null;
-            })
-            .addCase(lockParkingSpace.fulfilled, (state, action) => {
-                state.lockStatus = 'locked';
-                state.lockExpiresAt = action.payload.expiresAt;
-            })
-            .addCase(lockParkingSpace.rejected, (state, action) => {
-                state.lockStatus = 'failed';
-                state.error = action.payload || 'Failed to lock parking space';
-            });
-
-        /**
-         * Handle unlockParkingSpace actions
-         */
-        builder
-            .addCase(unlockParkingSpace.pending, (state) => {
-                state.lockStatus = 'unlocking';
-                state.error = null;
-            })
-            .addCase(unlockParkingSpace.fulfilled, (state) => {
-                state.lockStatus = 'idle';
-                state.lockExpiresAt = null;
-            })
-            .addCase(unlockParkingSpace.rejected, (state, action) => {
-                state.lockStatus = 'failed';
-                state.error = action.payload || 'Failed to unlock parking space';
             });
 
         /**

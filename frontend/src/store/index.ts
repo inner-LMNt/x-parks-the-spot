@@ -3,6 +3,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import userReducer from '@/features/user/userSlice';
 import searchReducer from '@/features/search/searchSlice';
 import reservationsReducer from "@/features/reservations/reservationsSlice";
+import parkingSpaceReducer from "@/features/parking-space/parkingSpaceSlice";
 import { customMiddleware } from './middleware'; // Import your custom middleware
 
 // @ts-ignore
@@ -11,6 +12,7 @@ export const store = configureStore({
         user: userReducer,
         search: searchReducer,
         reservations: reservationsReducer,
+        parkingSpace: parkingSpaceReducer
         // Add other reducers here
     },
     // @ts-ignore

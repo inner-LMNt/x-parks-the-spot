@@ -10,12 +10,13 @@ import {
   getReservationByIdHandler,
   createReservationHandler,
   updateReservationHandler,
-  cancelReservationHandler,
+  getUserCarInfosHandler,
+} from './reservations/reservationsHandler';
+import {
   getParkingSpaceHandler,
   lockParkingSpaceHandler,
   unlockParkingSpaceHandler,
-  getUserCarInfosHandler,
-} from './reservations/reservationsHandler';
+} from './parking-space/parkingSpaceHandler';
 
 
 export const handlers = [
@@ -26,11 +27,11 @@ export const handlers = [
   resetConfirmHandler,
   searchHandler,
   getUserReservationsHandler,
+  getReservationByIdHandler,
   createReservationHandler,
-  getUserCarInfosHandler,
+  updateReservationHandler,
   getParkingSpaceHandler,
   lockParkingSpaceHandler,
   unlockParkingSpaceHandler,
-
-  // Additional handlers
+  getUserCarInfosHandler,
 ];

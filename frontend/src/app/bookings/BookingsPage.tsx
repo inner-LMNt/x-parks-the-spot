@@ -61,15 +61,8 @@ export default function BookingsPage() {
                     </div>
                 )}
 
-                {/* Global Error Message */}
-                {error && (
-                    <div className="flex items-center justify-center my-4">
-                        <p className="text-center text-red-500">Error: {error}</p>
-                    </div>
-                )}
-
                 {/* Current Reservations */}
-                {!loading && !error && currentReservations.length > 0 && (
+                {!loading&& currentReservations.length > 0 && (
                     <section className="mb-8">
                         <SectionHeader title="Current Reservations" />
                         <div className="grid gap-6">
@@ -81,7 +74,7 @@ export default function BookingsPage() {
                 )}
 
                 {/* Upcoming Reservations */}
-                {!loading && !error && upcomingReservations.length > 0 && (
+                {!loading && upcomingReservations.length > 0 && (
                     <section className="mb-8">
                         <SectionHeader title="Upcoming Reservations" />
                         <div className="grid gap-6">
@@ -93,7 +86,7 @@ export default function BookingsPage() {
                 )}
 
                 {/* Past Reservations */}
-                {!loading && !error && pastReservations.length > 0 && (
+                {!loading && pastReservations.length > 0 && (
                     <section className="mb-8">
                         <SectionHeader title="Past Reservations" />
                         <div className="grid gap-6">
@@ -105,11 +98,11 @@ export default function BookingsPage() {
                 )}
 
                 {/* No Reservations */}
-                {!loading && !error && reservations.length === 0 && (
+                {!loading && reservations.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-64">
                         <MapPin className="w-12 h-12 text-gray-400 mb-4" />
                         <p className="text-gray-500">You have no reservations.</p>
-                        <Link href="/book" passHref>
+                        <Link href="/search" passHref>
                             <button className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition">
                                 Make a Reservation
                             </button>
