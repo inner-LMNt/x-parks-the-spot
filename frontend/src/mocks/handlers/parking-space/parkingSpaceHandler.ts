@@ -122,21 +122,11 @@ export const unlockParkingSpaceHandler = http.post(
         }
 
         if (
-            !parkingSpace.locked ||
-            !parkingSpace.locked_until ||
-            new Date(parkingSpace.locked_until).getTime() <= Date.now()
+            !parkingSpace.locked
         ) {
             return HttpResponse.json(
                 { message: 'Parking space already unlocked' },
-                { status: 200 }
-            );
-        }
-
-        // Ensure that only the user who locked can unlock
-        if (parkingSpace.locked_by !== authenticatedUserId) {
-            return HttpResponse.json(
-                { message: 'You do not have permission to unlock this parking space' },
-                { status: 403 }
+                { status: 409 }
             );
         }
 

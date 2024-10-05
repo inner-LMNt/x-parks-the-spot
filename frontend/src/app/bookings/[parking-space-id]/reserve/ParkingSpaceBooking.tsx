@@ -69,7 +69,7 @@ export default function ParkingSpaceBooking() {
 
         if (!isLocked.current) {
             // Dispatch lockParkingSpace on mount
-            dispatch(lockParkingSpace({ parking_space_id: parkingSpaceId, lock_duration: 'PT1M' }))
+            dispatch(lockParkingSpace({ parking_space_id: parkingSpaceId, lock_duration: 'PT5M' }))
                 .unwrap()
                 .then(() => {
                     console.log('Parking space locked successfully.');
