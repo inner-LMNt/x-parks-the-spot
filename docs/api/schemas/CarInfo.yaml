@@ -1,0 +1,21 @@
+type: object
+required:
+  - make
+  - model
+  - license_plate
+properties:
+  id:
+    type: string
+    format: uuid
+  make:
+    type: string
+  model:
+    type: string
+  color:
+    type: string
+  license_plate:
+    type: string
+  state:
+    type: string
+  default:
+    type: boolean

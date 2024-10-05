@@ -1,11 +1,11 @@
 openapi: 3.0.0
 info:
   title: Parking Space Sharing API
-  version: 1.0.0
+  version: unstable
   description: API specification for the parking space sharing application.
 servers:
-  - url: https://api.parkingapp.com/v1
-    description: Production server
+  - url: https://xpark-staging.ersei.net/api/unstable
+    description: Staging Server
 tags:
   - name: Authentication
     description: User authentication and account management
@@ -32,14 +32,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterRequest'
+              $ref: './schemas/RegisterRequest.yaml'
       responses:
         '201':
           description: User registered successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
+                $ref: './schemas/AuthResponse.yaml'
         '400':
           description: Invalid input
   /auth/login:
@@ -52,16 +52,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              $ref: './schemas/LoginRequest.yaml'
       responses:
         '200':
           description: Login successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
+                $ref: './schemas/AuthResponse.yaml'
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
   /auth/logout:
     post:
       tags:
@@ -74,6 +76,8 @@ paths:
           description: Logout successful
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
   /auth/password-reset:
     post:
       tags:
@@ -84,12 +88,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PasswordResetRequest'
+              $ref: './schemas/PasswordResetRequest.yaml'
       responses:
         '200':
           description: Password reset email sent
-        '400':
-          description: Invalid email
   /auth/password-reset/confirm:
     post:
       tags:
@@ -100,12 +102,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+              $ref: './schemas/PasswordResetConfirmRequest.yaml'
       responses:
         '200':
           description: Password reset successful
         '400':
-          description: Invalid token or password
+          description: Invalid password
+        '401':
+          description: No token given
+        '403':
+          description: Incorrect token given
   /users/me:
     get:
       tags:
@@ -119,9 +125,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: './schemas/User.yaml'
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
     put:
       tags:
         - Users
@@ -133,18 +141,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserUpdateRequest'
+              $ref: './schemas/UserUpdateRequest.yaml'
       responses:
         '200':
           description: User profile updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: './schemas/User.yaml'
         '400':
           description: Invalid input
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
     delete:
       tags:
         - Users
@@ -153,34 +163,29 @@ paths:
         - bearerAuth: []
       responses:
         '200':
-          description: Account deleted
+          description: Email sent to confirm deletion
         '401':
           description: Unauthorized
-  /users/{userId}:
-    get:
+        '403':
+          description: Forbidden
+  /users/me/confirm-deletion:
+    post:
       tags:
         - Users
-      summary: Get user profile by ID
-      parameters:
-        - in: path
-          name: userId
-          required: true
-          schema:
-            type: string
-            format: uuid
+      summary: Confirm deletion of account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/UserDeletionConfirm.yaml'
       responses:
         '200':
-          description: User profile retrieved
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PublicUserProfile'
-        '404':
-          description: User not found
-  /users/me/car-info:
+          description: "User deleted"
+  /cars:
     get:
       tags:
-        - Users
+        - Cars
       summary: Get current user's car information
       security:
         - bearerAuth: []
@@ -192,13 +197,15 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/CarInfo'
+                  $ref: './schemas/CarInfoList.yaml'
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
     post:
       tags:
-        - Users
-      summary: Add new car information
+        - Cars
+      summary: Add new car
       security:
         - bearerAuth: []
       requestBody:
@@ -206,19 +213,92 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CarInfo'
+              $ref: './schemas/CarInfo.yaml'
       responses:
         '201':
           description: Car information added
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CarInfo'
+                $ref: './schemas/CarInfo.yaml'
         '400':
           description: Invalid input
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
+  /cars/{id}:
+    patch:
+      tags:
+        - Cars
+      summary: Update a car's information
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Car updated
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Car not found
+    delete:
+      tags:
+        - Cars
+      summary: Delete a car
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Car deleted
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Car not found
   /parking-spaces:
+    post:
+      tags:
+        - Parking Spaces
+      summary: Create a new parking space
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/ParkingSpaceCreateRequest.yaml'
+      responses:
+        '201':
+          description: Parking space created
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/ParkingSpace.yaml'
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+  /parking-spaces/search:
     post:
       tags:
         - Parking Spaces
@@ -273,7 +353,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ParkingSpaceSummary'
+                  $ref: './schemas/ParkingSpaceSummary.yaml'
   /parking-spaces/{id}:
     get:
       tags:
@@ -292,54 +372,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParkingSpace'
+                $ref: './schemas/ParkingSpace.yaml'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
         '404':
           description: Not found
-  /owners/parking-spaces:
-    get:
+    patch:
       tags:
-        - Owners
-      summary: Get owner's parking spaces
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: List of parking spaces
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ParkingSpace'
-        '401':
-          description: Unauthorized
-    post:
-      tags:
-        - Owners
-      summary: Create a new parking space
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ParkingSpaceCreateRequest'
-      responses:
-        '201':
-          description: Parking space created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ParkingSpace'
-        '400':
-          description: Invalid input
-        '401':
-          description: Unauthorized
-  /owners/parking-spaces/{id}:
-    put:
-      tags:
-        - Owners
+        - Parking Spaces
       summary: Update parking space
       security:
         - bearerAuth: []
@@ -355,23 +397,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ParkingSpaceUpdateRequest'
+              $ref: './schemas/ParkingSpaceUpdateRequest.yaml'
       responses:
         '200':
           description: Parking space updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParkingSpace'
+                $ref: './schemas/ParkingSpace.yaml'
         '400':
           description: Invalid input
         '401':
           description: Unauthorized
         '403':
           description: Forbidden
+        '404':
+          description: Parking space not found
     delete:
       tags:
-        - Owners
+        - Parking Spaces
       summary: Delete parking space
       security:
         - bearerAuth: []
@@ -389,6 +433,8 @@ paths:
           description: Unauthorized
         '403':
           description: Forbidden
+        '404':
+          description: Parking space not found
   /reservations:
     get:
       tags:
@@ -404,9 +450,11 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Reservation'
+                  $ref: './schemas/Reservation.yaml'
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
     post:
       tags:
         - Reservations
@@ -418,18 +466,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReservationCreateRequest'
+              $ref: './schemas/ReservationCreateRequest.yaml'
       responses:
         '201':
           description: Reservation created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Reservation'
+                $ref: './schemas/Reservation.yaml'
         '400':
           description: Invalid input
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
   /reservations/{id}:
     get:
       tags:
@@ -450,9 +500,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Reservation'
+                $ref: './schemas/Reservation.yaml'
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
         '404':
           description: Not found
     put:
@@ -473,14 +525,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReservationUpdateRequest'
+              $ref: './schemas/ReservationUpdateRequest.yaml'
       responses:
         '200':
           description: Reservation updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Reservation'
+                $ref: './schemas/Reservation.yaml'
         '400':
           description: Invalid input
         '401':
@@ -507,6 +559,77 @@ paths:
           description: Unauthorized
         '403':
           description: Forbidden
+  /reservations/lock:
+    post:
+      tags:
+        - Reservations
+      summary: Lock a parking space by Parking Space ID
+      description: |
+        Locks a specified parking space for the authenticated user. The user ID is extracted from the authentication token.
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - parking_space_id
+                - lock_duration
+              properties:
+                parking_space_id:
+                  type: string
+                  format: uuid
+                  description: The unique identifier of the parking space to lock.
+                lock_duration:
+                  type: string
+                  format: duration
+                  description: Duration for which the parking space should be locked (e.g., "PT15M" for 15 minutes).
+      responses:
+        '200':
+          description: Parking space locked successfully.
+        '400':
+          description: Invalid input data.
+        '401':
+          description: Unauthorized. Authentication token is missing or invalid.
+        '403':
+          description: Forbidden. User does not have permission to lock this parking space.
+        '409':
+          description: Conflict. Parking space is already locked or reserved.
+  /reservations/unlock:
+    post:
+      tags:
+        - Reservations
+      summary: Unlock a previously locked parking space
+      description: |
+        Unlocks a specified parking space that was previously locked by the authenticated user. The user ID is extracted from the authentication token.
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - parking_space_id
+              properties:
+                parking_space_id:
+                  type: string
+                  format: uuid
+                  description: The unique identifier of the parking space to unlock.
+      responses:
+        '200':
+          description: Parking space unlocked successfully.
+        '400':
+          description: Invalid input data.
+        '401':
+          description: Unauthorized. Authentication token is missing or invalid.
+        '403':
+          description: Forbidden. User does not have permission to unlock this parking space.
+        '404':
+          description: Not Found. The parking space is not currently locked by the user.
 
   /spot-finder/submissions:
     get:
@@ -523,9 +646,11 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/SpotFinderSubmission'
+                  $ref: './schemas/SpotFinderSubmission.yaml'
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
     post:
       tags:
         - Spot Finder
@@ -554,11 +679,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SpotFinderSubmission'
+                $ref: './schemas/SpotFinderSubmission.yaml'
         '400':
           description: Invalid input
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
   /notifications:
     get:
       tags:
@@ -574,9 +701,11 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Notification'
+                  $ref: './schemas/Notification.yaml'
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
   /notifications/{id}/read:
     post:
       tags:
@@ -596,6 +725,8 @@ paths:
           description: Notification marked as read
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
         '404':
           description: Not found
   /admin/users:
@@ -623,7 +754,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/PublicUserProfile'
+                  $ref: './schemas/PublicUserProfile.yaml'
         '401':
           description: Unauthorized
         '403':
@@ -654,470 +785,3 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
-  schemas:
-    RegisterRequest:
-      type: object
-      required:
-        - email
-        - password
-        - full_name
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          format: password
-        full_name:
-          type: string
-    AuthResponse:
-      type: object
-      required:
-        - userId
-      properties:
-        access_token:
-          type: string
-        userId:
-          type: string
-          format: uuid
-    LoginRequest:
-      type: object
-      required:
-        - email
-        - password
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          format: password
-    PasswordResetRequest:
-      type: object
-      required:
-        - email
-      properties:
-        email:
-          type: string
-          format: email
-    PasswordResetConfirmRequest:
-      type: object
-      required:
-        - token
-        - new_password
-      properties:
-        token:
-          type: string
-        new_password:
-          type: string
-          format: password
-    User:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        email:
-          type: string
-          format: email
-        full_name:
-          type: string
-        account_status:
-          type: string
-          enum:
-            - active
-            - suspended
-        renter_profile:
-          $ref: '#/components/schemas/RenterProfile'
-        owner_profile:
-          $ref: '#/components/schemas/OwnerProfile'
-        spot_finder_profile:
-          $ref: '#/components/schemas/SpotFinderProfile'
-        notification_preferences:
-          $ref: '#/components/schemas/NotificationPreferences'
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    PublicUserProfile:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        full_name:
-          type: string
-        roles:
-          type: array
-          items:
-            type: string
-            enum:
-              - renter
-              - owner
-              - spot_finder
-    UserUpdateRequest:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-        full_name:
-          type: string
-        notification_preferences:
-          $ref: '#/components/schemas/NotificationPreferences'
-    NotificationPreferences:
-      type: object
-      properties:
-        email_notifications:
-          type: boolean
-        push_notifications:
-          type: boolean
-    CarInfo:
-      type: object
-      required:
-        - make
-        - model
-        - license_plate
-      properties:
-        id:
-          type: string
-          format: uuid
-        make:
-          type: string
-        model:
-          type: string
-        color:
-          type: string
-        license_plate:
-          type: string
-        default:
-          type: boolean
-    RenterProfile:
-      type: object
-      properties:
-        car_info:
-          type: array
-          items:
-            $ref: '#/components/schemas/CarInfo'
-        favorites:
-          type: array
-          items:
-            type: string
-            format: uuid
-    OwnerProfile:
-      type: object
-      properties:
-        parking_spaces:
-          type: array
-          items:
-            $ref: '#/components/schemas/ParkingSpace'
-
-        earnings:
-          type: number
-          format: float
-    SpotFinderProfile:
-      type: object
-      properties:
-        submissions:
-          type: array
-          items:
-            type: string
-            format: uuid
-        points_accumulated:
-          type: integer
-    ParkingSpace:
-      type: object
-      required:
-        - location
-      properties:
-        id:
-          type: string
-          format: uuid
-        owner_id:
-          type: string
-          format: uuid
-        location:
-          $ref: '#/components/schemas/Location'
-        features:
-          type: array
-          items:
-            type: string
-        availability_schedule:
-          type: array
-          items:
-            $ref: '#/components/schemas/TimeSlot'
-        pricing_info:
-          $ref: '#/components/schemas/PricingInfo'
-        photos:
-          type: array
-          items:
-            type: string
-            format: uri
-        verification_status:
-          type: string
-          enum:
-            - verified
-            - pending
-            - rejected
-        dynamic_pricing_enabled:
-          type: boolean
-        cancellation_policy:
-          type: string
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    ParkingSpaceSummary:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        location:
-          $ref: '#/components/schemas/Location'
-        features:
-          type: array
-          items:
-            type: string
-        average_rating:
-          type: number
-          format: float
-          minimum: 0
-          maximum: 5
-        availability:
-          type: boolean
-    ParkingSpaceCreateRequest:
-      type: object
-      required:
-        - location
-        - features
-        - availability_schedule
-        - pricing_info
-      properties:
-        location:
-          $ref: '#/components/schemas/Location'
-        features:
-          type: array
-          items:
-            type: string
-        availability_schedule:
-          type: array
-          items:
-            $ref: '#/components/schemas/TimeSlot'
-        pricing_info:
-          $ref: '#/components/schemas/PricingInfo'
-        dynamic_pricing_enabled:
-          type: boolean # default: false, might be useful to toggle later?
-        cancellation_policy:
-          type: string
-        proof_of_ownership:
-          type: string
-          format: uri # is this how we can get a "link" to the binary? or would it be passed to the api in another way?
-    ParkingSpaceUpdateRequest:
-      type: object
-      properties:
-        features:
-          type: array
-          items:
-            type: string
-        availability_schedule:
-          type: array
-          items:
-            $ref: '#/components/schemas/TimeSlot'
-        pricing_info:
-          $ref: '#/components/schemas/PricingInfo'
-        dynamic_pricing_enabled:
-          type: boolean
-        cancellation_policy:
-          type: string
-    Location:
-      type: object
-      required:
-        - latitude
-        - longitude
-      properties:
-        latitude:
-          type: number
-          format: float
-        longitude:
-          type: number
-          format: float
-        address:
-          type: string
-    TimeSlot:
-      type: object
-      required:
-        - day_of_week
-        - start_time
-        - end_time
-      properties:
-        day_of_week:
-          type: string
-          enum:
-            - Monday
-            - Tuesday
-            - Wednesday
-            - Thursday
-            - Friday
-            - Saturday
-            - Sunday
-        start_time:
-          type: string
-          pattern: date-time
-        end_time:
-          type: string
-          pattern: date-time
-    PricingInfo:
-      type: object
-      required:
-        - base_price
-      properties:
-        base_price:
-          type: number
-          format: float
-        dynamic_pricing:
-          type: boolean
-        dynamic_pricing_algorithm:
-          type: string
-    Reservation:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        parking_space_id:
-          type: string
-          format: uuid
-        renter_id:
-          type: string
-          format: uuid
-        owner_id:
-          type: string
-          format: uuid
-        start_time:
-          type: string
-          format: date-time
-        end_time:
-          type: string
-          format: date-time
-        status:
-          type: string
-          enum:
-            - booked
-            - active
-            - completed
-            - canceled
-        car_info:
-          $ref: '#/components/schemas/CarInfo'
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    ReservationCreateRequest:
-      type: object
-      required:
-        - parking_space_id
-        - start_time
-        - end_time
-        - car_info_id
-        - renter_id
-      properties:
-        parking_space_id:
-          type: string
-          format: uuid
-        start_time:
-          type: string
-          format: date-time
-        end_time:
-          type: string
-          format: date-time
-        car_info_id:
-          type: string
-          format: uuid
-        renter_id:
-          type: string
-          format: uuid
-    ReservationUpdateRequest:
-      type: object
-      required:
-        - end_time
-        - reservation_id
-      properties:
-        reservation_id:
-          type: string
-          format: uuid
-        end_time:
-          type: string
-          format: date-time
-    SpotFinderSubmission:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        spot_finder_id:
-          type: string
-          format: uuid
-        location:
-          $ref: '#/components/schemas/Location'
-        photo_url:
-          type: string
-          format: uri
-        time:
-          type: string
-          format: date-time
-        status:
-          type: string
-          enum:
-            - verified
-            - pending
-            - rejected
-        points_awarded:
-          type: integer
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    Notification:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        user_id:
-          type: string
-          format: uuid
-        type:
-          type: string
-        message:
-          type: string
-        read:
-          type: boolean
-        timestamp:
-          type: string
-          format: date-time
-    SearchRequest:
-      type: object
-      properties:
-        latitude:
-          type: number
-          format: float
-        longitude:
-          type: number
-          format: float
-        radius:
-          type: number
-          format: float
-    SearchResponse:
-      type: array
-      items:
-        $ref: '#/components/schemas/ParkingSpace'

@@ -1,0 +1,51 @@
+type: object
+required:
+  - location
+properties:
+  id:
+    type: string
+    format: uuid
+  owner_id:
+    type: string
+    format: uuid
+  location:
+    $ref: './Location.yaml'
+  features:
+    type: array
+    items:
+      type: string
+  availability_schedule:
+    type: array
+    items:
+      $ref: './TimeSlot.yaml'
+  pricing_info:
+    $ref: './PricingInfo.yaml'
+  photos:
+    type: array
+    items:
+      type: string
+      format: uri
+  verification_status:
+    type: string
+    enum:
+      - verified
+      - pending
+      - rejected
+  dynamic_pricing_enabled:
+    type: boolean
+  cancellation_policy:
+    type: string
+  locked:
+    type: boolean
+  locked_by:
+    type: string
+    format: uuid
+  locked_until:
+    type: string
+    format: date-time
+  created_at:
+    type: string
+    format: date-time
+  updated_at:
+    type: string
+    format: date-time

@@ -1,0 +1,35 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+  parking_space_id:
+    type: string
+    format: uuid
+  renter_id:
+    type: string
+    format: uuid
+  owner_id:
+    type: string
+    format: uuid
+  start_time:
+    type: string
+    format: date-time
+  end_time:
+    type: string
+    format: date-time
+  status:
+    type: string
+    enum:
+      - booked
+      - active
+      - completed
+      - canceled
+  car_info:
+    $ref: './CarInfo.yaml'
+  created_at:
+    type: string
+    format: date-time
+  updated_at:
+    type: string
+    format: date-time

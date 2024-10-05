@@ -1,0 +1,19 @@
+type: object
+properties:
+  request_id:
+    type: string
+    format: uuid
+  features:
+    type: array
+    items:
+      type: string
+  availability_schedule:
+    type: array
+    items:
+      $ref: './TimeSlot.yaml'
+  pricing_info:
+    $ref: './PricingInfo.yaml'
+  dynamic_pricing_enabled:
+    type: boolean
+  cancellation_policy:
+    type: string

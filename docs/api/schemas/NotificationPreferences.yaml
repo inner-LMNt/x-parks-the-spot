@@ -1,0 +1,6 @@
+type: object
+properties:
+  email_notifications:
+    type: boolean
+  push_notifications:
+    type: boolean

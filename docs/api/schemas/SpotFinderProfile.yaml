@@ -1,0 +1,9 @@
+type: object
+properties:
+  submissions:
+    type: array
+    items:
+      type: string
+      format: uuid
+  points_accumulated:
+    type: integer

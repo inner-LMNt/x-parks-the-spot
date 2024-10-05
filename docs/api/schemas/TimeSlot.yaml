@@ -1,0 +1,22 @@
+type: object
+required:
+  - day_of_week
+  - start_time
+  - end_time
+properties:
+  day_of_week:
+    type: string
+    enum:
+      - Monday
+      - Tuesday
+      - Wednesday
+      - Thursday
+      - Friday
+      - Saturday
+      - Sunday
+  start_time:
+    type: string
+    pattern: date-time
+  end_time:
+    type: string
+    pattern: date-time
