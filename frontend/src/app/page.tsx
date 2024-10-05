@@ -1,18 +1,18 @@
 'use client';
 
-// app/page.tsx
-
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAppSelector } from '@/store/hooks';
+import { useRouter } from 'next/navigation'; // Correct for App Router
+import { useAppSelector } from '@/store/hooks'; // Adjust the path as necessary
 
 export default function HomePage() {
   const router = useRouter();
   const isLoggedIn = useAppSelector((state) => state.user.isLoggedIn);
+  const noauthPages = ['/login', '/register', '/about', '/contact'];
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      router.replace('/login');
+    // Check if the current path is not in noauthPages and user is not logged in
+    if (!isLoggedIn && !noauthPages.includes(window.location.pathname)) {
+      router.push('/login');
     }
   }, [isLoggedIn, router]);
 
@@ -21,9 +21,9 @@ export default function HomePage() {
   }
 
   return (
-      <div className="container mx-auto p-4">
-        <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-        {/* Dashboard content */}
+      <div>
+        {/* Your protected content goes here */}
+        <h1>Welcome to the Home Page</h1>
       </div>
   );
 }

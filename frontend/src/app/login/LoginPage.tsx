@@ -66,10 +66,10 @@ export default function LoginPage() {
     const onSubmit = async (data: LoginRequest) => {
         try {
             // @ts-ignore
-            const resultAction = dispatch(login(data));
+            const resultAction = await dispatch(login(data));
             if (login.fulfilled.match(resultAction)) {
                 // Login successful
-                console.log('router trying to push')
+                console.log('router trying to push');
                 router.push('/profile');
             } else if (login.rejected.match(resultAction)) {
                 // Login failed
@@ -81,6 +81,7 @@ export default function LoginPage() {
             // Handle any unexpected errors
         }
     };
+
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-4 overflow-hidden">
