@@ -72,11 +72,6 @@ def change_password(id: uuid.UUID, new_password: str) -> Result[None, None]:
         return Ok(None)
 
 
-"""def create_token(user_id: uuid.UUID) -> str:
-    token = Config.TOKEN_PREFIX + secrets.token_urlsafe(32)
-    DB.token_cache.set(token, user_id.bytes, ex=Config.TOKEN_EXPIRY_SECONDS)
-    return token"""
-
 # Function to create a new token and store it in PostgreSQL
 def create_token(user_id: uuid.UUID) -> str:
     # Generate a random token string, prefixing it with a value from the config (e.g., 'Bearer')
@@ -95,48 +90,38 @@ def create_token(user_id: uuid.UUID) -> str:
     # Return the generated token
     return token
 
-"""def validate_token_and_refresh(token: str) -> Result[uuid.UUID, str]:
-    # Check if token exists
-    # If it does, refresh it
-    uuid_ret = DB.token_cache.getex(token, ex=Config.TOKEN_EXPIRY_SECONDS)
-    if uuid_ret is not None:
-        return Ok(uuid.UUID(bytes=uuid_ret))
-    return Err("Token expired")"""
-
-# Function to validate a token and refresh its expiration time in PostgreSQL
 def validate_token_and_refresh(token: str) -> Result[uuid.UUID, str]:
-    # Use `with` to ensure the connection and transaction are handled properly
+    # Open a connection to the database and ensure it's properly closed when done
     with DB.pool.connection() as conn:
-        # Use `with` for cursor to ensure it's closed correctly
+        # Open a cursor to execute SQL queries within this connection
         with conn.cursor() as cur:
-            # Check if the token exists and is not expired by querying the user_tokens table
+            # Clean up any expired tokens in the database
+            # This query removes all tokens from the 'user_tokens' table that have an expiry time
+            # that is before or equal to the current time (i.e., expired tokens)
+            cur.execute("DELETE FROM user_tokens WHERE expiry <= NOW()")
+
+            # Check if the given token is still valid (not expired) and refresh its expiry time
+            # This query updates the 'expiry' of the given token by setting it to the current time (NOW)
+            # plus a configured amount of seconds (from Config.TOKEN_EXPIRY_SECONDS).
+            # If the token exists and is still valid, it returns the associated 'user_id'.
             cur.execute(
-                "SELECT user_id, expiry FROM user_tokens WHERE token = %s AND expiry > NOW()",
-                (token,)  # Use tuple for sanitization
+                """
+                UPDATE user_tokens
+                SET expiry = NOW() + INTERVAL '%s seconds'
+                WHERE token = %s AND expiry > NOW()
+                RETURNING user_id
+                """,
+                (Config.TOKEN_EXPIRY_SECONDS, token)  # The expiration time and token are passed as parameters
             )
-            # Fetch the result, which will contain the user_id and the token's expiry if it exists and is valid
+            # Fetch the result from the UPDATE query
             result = cur.fetchone()
-
+            # If the result exists, it means the token is valid, so we return the user_id
             if result:
-                # Token is valid, unpack the user_id and expiry
-                user_id, expiry = result
-
-                # Refresh the token expiry time by updating it to 1 hour from the current time
-                cur.execute(
-                    "UPDATE user_tokens SET expiry = NOW() + INTERVAL '1 hour' WHERE token = %s",
-                    (token,)  # Use tuple for sanitization
-                )
-
-                # Return the user_id associated with the token wrapped in an Ok result
+                user_id = result[0]
                 return Ok(user_id)
-
-            # If the token is expired or doesn't exist, return an error
+            # If no result was returned, the token is either expired or doesn't exist, so return an error
             return Err("Token expired")
 
-"""def expire_valid_token(token: str) -> Result[None, None]:
-    if DB.token_cache.delete(token) == 0:
-        return Err(None)
-    return Ok(None)"""
 
 # Function to expire (delete) a valid token in PostgreSQL
 def expire_valid_token(token: str) -> Result[None, None]:
@@ -155,4 +140,22 @@ def expire_valid_token(token: str) -> Result[None, None]:
             return Ok(None)
 
 
+
 # TODO: Delete all keys for a user
+
+#function for when I delete the tokens, repalcing the delete on cascade stuff
+def delete_all_tokens_for_user(user_id: uuid.UUID) -> Result[None, str]:
+    # Open a connection to the database
+    with DB.pool.connection() as conn:
+        # Open a cursor to execute SQL queries
+        with conn.cursor() as cur:
+            # Delete all tokens associated with the given user_id
+            cur.execute("DELETE FROM user_tokens WHERE user_id = %s", (user_id,))
+            # Check if any tokens were deleted
+            if cur.rowcount > 0:
+                # If tokens were deleted, return success
+                return Ok(None)
+            else:
+                # If no tokens were found for this user, return an error
+                return Err("No tokens found for this user")
+
