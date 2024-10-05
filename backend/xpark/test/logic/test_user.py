@@ -1,5 +1,6 @@
 from xpark.logic.user import check_username_password, create_user
 from result import Ok, Err
+from argon2 import PasswordHasher
 
 
 def test_successful_create_user() -> None:
@@ -36,3 +37,33 @@ def test_create_user_already_exists() -> None:
         )
         is Err
     )
+
+
+def test_user_update_password_hash() -> None:
+    from xpark.utils.db import DB
+
+    user_id_create = create_user(
+        name="Test User",
+        email="testuser1@example.com",
+        password="password",
+    )
+
+    assert type(user_id_create) is Ok
+
+    password_hasher = PasswordHasher(time_cost=2)
+    weakly_hashed_password = password_hasher.hash("password")
+
+    with DB.pool.connection() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE users SET password_hash = %s WHERE email = 'testuser1@example.com'",
+            (weakly_hashed_password,),
+        )
+
+    # Ensure coverage of password rehashing
+    # The current system has a default time_cost of 3, so this should trigger the rehash mechanism
+    user_id_login = check_username_password("testuser1@example.com", "password")
+
+    assert type(user_id_login) is Ok
+
+    assert user_id_create == user_id_login

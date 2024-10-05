@@ -17,3 +17,6 @@ class Config:
         or "user=admin password=password host=127.0.0.1 port=5432"
     )
     TEST_DATABASE_NAME = os.environ.get("TEST_DATABASE_NAME") or "test_xpark"
+    ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN") or "*"
+    ALLOWED_HEADERS = os.environ.get("ALLOWED_HEADERS") or "X-PINGOTHER, Content-Type"
+    ALLOWED_METHODS = os.environ.get("ALLOWED_METHODS") or "*"

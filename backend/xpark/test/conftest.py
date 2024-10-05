@@ -1,17 +1,13 @@
 import pytest
 from xpark.config import Config
+import xpark
 import psycopg
-from psycopg_pool import ConnectionPool
 from typing import Any, Generator, cast
 from flask import Flask
 
 
 @pytest.fixture(scope="function", autouse=True)
 def app() -> Generator[Any, Any, Any]:
-
-    app = Flask(__name__)
-    app.config.from_object(Config)
-
     with psycopg.connect(Config.TEST_DATABASE_URI, autocommit=True) as conn:
         cur = conn.cursor()
 
@@ -25,22 +21,11 @@ def app() -> Generator[Any, Any, Any]:
         )
         cur.execute(cast(Any, "CREATE DATABASE %s" % Config.TEST_DATABASE_NAME))
 
-        from xpark.utils.db import DB, makemigrate
-
         Config.DATABASE_URI = (
             Config.TEST_DATABASE_URI + " dbname=" + Config.TEST_DATABASE_NAME
         )
-        DB.pool = ConnectionPool(conninfo=Config.DATABASE_URI, open=True)
 
-        with DB.pool.connection() as pool_conn:
-            makemigrate(pool_conn)
-
-        # Continue with application setup
-        import xpark.api.unstable as unstable
-
-        app.register_blueprint(unstable.bp)
-
-        yield app
+        yield xpark.create_app()
 
         # Cleanup
         cur.execute(

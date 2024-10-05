@@ -10,6 +10,7 @@ import { LoginRequest, AuthResponse } from '@/types/type';
 export const loginHandler = http.post<never, LoginRequest>('v1/auth/login', async ({ params, request })=>{
 
     // Find user by email
+
     const data = await request.json();
     console.log(data)
     const user = findUserByEmail(data.email);

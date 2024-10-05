@@ -12,6 +12,7 @@ import { components } from './generated';
 export type RegisterRequest = components["schemas"]["RegisterRequest"];
 export type AuthResponse = components["schemas"]["AuthResponse"];
 export type LoginRequest = components["schemas"]["LoginRequest"];
+
 export type PasswordResetRequest = components["schemas"]["PasswordResetRequest"];
 export type PasswordResetConfirmRequest = components["schemas"]["PasswordResetConfirmRequest"];
 
@@ -48,6 +49,19 @@ export type PricingInfo = components["schemas"]["PricingInfo"];
 export type Reservation = components["schemas"]["Reservation"];
 export type ReservationCreateRequest = components["schemas"]["ReservationCreateRequest"];
 export type ReservationUpdateRequest = components["schemas"]["ReservationUpdateRequest"];
+
+/**
+ * **Search Type**
+ */
+export type SearchRequest = {
+    latitude: number;
+    longitude: number;
+    radius?: number;
+};
+
+export type SearchResponse = {
+    spots: ParkingSpace[];
+};
 
 /**
  * **Spot Finder Types**
