@@ -1,0 +1,13 @@
+type: object
+required:
+  - latitude
+  - longitude
+properties:
+  latitude:
+    type: number
+    format: float
+  longitude:
+    type: number
+    format: float
+  address:
+    type: string

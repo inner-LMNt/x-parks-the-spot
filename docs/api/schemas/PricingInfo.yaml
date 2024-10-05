@@ -1,0 +1,11 @@
+type: object
+required:
+  - base_price
+properties:
+  base_price:
+    type: number
+    format: float
+  dynamic_pricing:
+    type: boolean
+  dynamic_pricing_algorithm:
+    type: string

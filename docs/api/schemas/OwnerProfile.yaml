@@ -1,0 +1,9 @@
+type: object
+properties:
+  parking_spaces:
+    type: array
+    items:
+      $ref: './ParkingSpace.yaml'
+  earnings:
+    type: number
+    format: float

@@ -1,0 +1,30 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+  email:
+    type: string
+    format: email
+  full_name:
+    type: string
+  account_status:
+    type: string
+    enum:
+      - active
+      - suspended
+      - deleted
+  renter_profile:
+    $ref: './RenterProfile.yaml'
+  owner_profile:
+    $ref: './OwnerProfile.yaml'
+  spot_finder_profile:
+    $ref: './SpotFinderProfile.yaml'
+  notification_preferences:
+    $ref: './NotificationPreferences.yaml'
+  created_at:
+    type: string
+    format: date-time
+  updated_at:
+    type: string
+    format: date-time

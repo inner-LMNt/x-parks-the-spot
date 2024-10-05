@@ -1,0 +1,23 @@
+type: object
+required:
+  - parking_space_id
+  - start_time
+  - end_time
+  - car_info_id
+  - renter_id
+properties:
+  parking_space_id:
+    type: string
+    format: uuid
+  start_time:
+    type: string
+    format: date-time
+  end_time:
+    type: string
+    format: date-time
+  car_info_id:
+    type: string
+    format: uuid
+  renter_id:
+    type: string
+    format: uuid
