@@ -1,6 +1,8 @@
+'use client'
+
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useAppSelector } from '../store/hooks'; // Adjust the path as necessary
+import { useAppSelector } from '@/store/hooks'; // Adjust the path as necessary
 
 export default function HomePage() {
   const router = useRouter();
