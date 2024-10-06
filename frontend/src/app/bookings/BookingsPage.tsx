@@ -102,7 +102,10 @@ export default function BookingsPage() {
                 {!loading && reservations.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-64">
                         <MapPin className="w-12 h-12 text-gray-400 mb-4" />
+                        {error && <p className="text-red-500">Failed to fetch reservations at this time.</p>}
+                        : {
                         <p className="text-gray-500">You have no reservations.</p>
+                    }
                         <Link href="/search" passHref>
                             <button className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition">
                                 Make a Reservation
