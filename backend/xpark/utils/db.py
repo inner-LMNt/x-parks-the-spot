@@ -14,7 +14,6 @@ MIGRATION_BASEDIR = os.path.join(
 
 class DB:
     pool = ConnectionPool(conninfo=Config.DATABASE_URI, open=False)
-    #token_cache = redis.Redis().from_url(Config.REDIS_URI)
 
 
 def run_migration(conn: Connection, file_name: str) -> None:

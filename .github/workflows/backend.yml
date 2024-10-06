@@ -16,10 +16,6 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      redis:
-        image: redis
-        ports:
-          - 6379:6379
       postgres:
         image: postgres
         env:
@@ -58,7 +54,6 @@ jobs:
           TEST_DATABASE_URI: "user=postgres password=postgres host=127.0.0.1 port=5432"
           DATABASE_URI: "unused"
           TEST_DATABASE_NAME: test_xpark
-          REDIS_URI: "redis://127.0.0.1?db=0"
           SECRET_KEY: test_key
           SENDER_PASSWORD: password
 

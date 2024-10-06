@@ -12,9 +12,8 @@
          1. With Poetry: `poetry env use 3.12`
          1. Or install any other way
       1. Run `pip install -e .` in the backend directory
-1. Spin up Postgres and Redis
+1. Spin up Postgres
    1. [Install Podman](https://podman.io/docs/installation) or Docker (if using Docker, replace all `podman` commands with `docker`)
-   1. Run `podman run -it -p 127.0.0.1:6379:6379 --name parkingpass_redis docker.io/redis:latest` in another terminal window
    1. Run `podman run -it --name parkingpass_db -p 127.0.0.1:5432:5432 -v parkingpass_postgres_data:/var/lib/postgresql/data -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=password docker.io/postgres:16` in another terminal window
    1. For the first time setting up Postgres, create a database
       1. [Install `psql`, the Postgres command-line utility](https://www.postgresql.org/download)
@@ -42,7 +41,6 @@ Unit and E2E testing require a database set up properly for testing. Set these e
 TEST_DATABASE_URI="user=postgres password=postgres host=postgres port=5432"
 DATABASE_URI="unused" # unused but required
 TEST_DATABASE_NAME=test_xpark
-REDIS_URI="redis://redis?db=0"
 SECRET_KEY=test_key
 FLASK_APP="xpark:create_app()"
 ```
