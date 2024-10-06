@@ -41,17 +41,7 @@ export default function ParkingSpaceDetails() {
     }, [dispatch, parkingSpaceId]);
 
     const handleReserveAndLock = async () => {
-        try {
-            router.push(`/bookings/${parkingSpaceId}/reserve?previousUrl=${encodeURIComponent(currentUrl ?? '/bookings')}`);
-        } catch (err: any) {
-            // Handle lock failure
-            console.error('Locking failed:', err);
-            toast({
-                title: 'Locking Failed',
-                description: err || 'Unable to lock the parking space.',
-                variant: 'destructive',
-            });
-        }
+        router.push(`/bookings/${parkingSpaceId}/reserve?previousUrl=${encodeURIComponent(currentUrl ?? '/bookings')}`);
     };
 
     const handleBack = () => {
