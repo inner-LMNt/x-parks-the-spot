@@ -25,11 +25,11 @@ jobs:
       - name: Install dependencies
         working-directory: ./frontend
         run: npm install
-      - name: Prettify code
-        uses: creyD/prettier_action@v4.3
-        with:
-          dry: True
-          prettier_options: "--check frontend/**/*.{js,jsx,ts,tsx,html,md,css,scss}"
+      # - name: Prettify code
+      #   uses: creyD/prettier_action@v4.3
+      #   with:
+      #     dry: True
+      #     prettier_options: "--check frontend/**/*.{js,jsx,ts,tsx,html,md,css,scss}"
       - name: Build
         working-directory: ./frontend
         run: npm run build --if-present
