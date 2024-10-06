@@ -2,8 +2,7 @@
 
 import { createSlice, createAsyncThunk, UnknownAction, PayloadAction, isAnyOf } from '@reduxjs/toolkit';
 import axios from '../../api/axiosInstance'; // Ensure the path is correct
-import { LoginRequest, RegisterRequest, AuthResponse, User, PasswordResetRequest } from '@/types/type';
-import Any = jasmine.Any;
+import { LoginRequest, RegisterRequest, AuthResponse, User, PasswordResetRequest, ParkingSpace, SpotFinderProfile, OwnerProfile} from '@/types/type';
 
 /**
  * Interface for the user slice state
@@ -17,6 +16,8 @@ interface UserState {
     };
     loading: boolean;
     error: string | null;
+    myFreeSpots: ParkingSpace[];
+    myPaidSpots: ParkingSpace[];
 }
 
 const initialState: UserState = {
@@ -28,6 +29,8 @@ const initialState: UserState = {
     },
     loading: false,
     error: null,
+    myFreeSpots: [],
+    myPaidSpots: [],
 };
 
 /**
@@ -139,6 +142,37 @@ export const reset = createAsyncThunk<
     }
 );
 
+export const getFreeSpots = createAsyncThunk<
+    ParkingSpace[], // Return type
+    User, // Argument type
+    { rejectValue: string } // ThunkAPI config
+>(
+    'user/getFreeSpots',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await axios.get<ParkingSpace[]>('v1/user/getFreeSpots');
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue('Failed to get user\'s free spots');
+        }
+    }
+);
+
+export const getPaidSpots = createAsyncThunk<
+    ParkingSpace[], // Return type
+    User, // Argument type
+    { rejectValue: string } // ThunkAPI config
+>(
+    'user/getPaidSpots',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await axios.get<ParkingSpace[]>('v1/user/getPaidSpots');
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue('Failed to get user\'s paid spots');
+        }
+    }
+);
 
 // @ts-ignore
 const userSlice = createSlice<UserState, {}, 'user'>({
@@ -151,7 +185,7 @@ const userSlice = createSlice<UserState, {}, 'user'>({
         builder
             // Handle all pending actions
             .addMatcher(
-                (action: UnknownAction): action is ReturnType<typeof login.pending | typeof register_acc.pending | typeof logout.pending | typeof reset.pending> =>
+                (action: UnknownAction): action is ReturnType<typeof login.pending | typeof register_acc.pending | typeof logout.pending | typeof reset.pending | typeof getFreeSpots.pending | typeof getPaidSpots.pending> =>
                     action.type.endsWith('/pending'),
                 (state) => {
                     state.loading = true;
@@ -161,7 +195,7 @@ const userSlice = createSlice<UserState, {}, 'user'>({
 
             // Handle all rejected actions
             .addMatcher(
-                (action: UnknownAction): action is ReturnType<typeof login.rejected | typeof register_acc.rejected | typeof logout.rejected | typeof reset.rejected> =>
+                (action: UnknownAction): action is ReturnType<typeof login.rejected | typeof register_acc.rejected | typeof logout.rejected | typeof reset.rejected | typeof getFreeSpots.rejected | typeof getPaidSpots.rejected> =>
                     action.type.endsWith('/rejected'),
                 (state, action) => {
                     state.loading = false;
@@ -202,6 +236,15 @@ const userSlice = createSlice<UserState, {}, 'user'>({
                     state.loading = false;
                 }
             );
+
+        builder
+            .addCase(getFreeSpots.fulfilled, (state, action) => {
+                state.myFreeSpots = action.payload;
+            })
+            .addCase(getPaidSpots.fulfilled, (state, action) => {
+                state.myPaidSpots = action.payload;
+            }
+        );
     },
 });
 

@@ -10,6 +10,11 @@ properties:
     format: uuid
   location:
     $ref: './Location.yaml'
+  type:
+    type: string
+    enum:
+      - free
+      - paid
   features:
     type: array
     items:

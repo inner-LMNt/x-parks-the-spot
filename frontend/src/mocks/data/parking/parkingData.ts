@@ -33,3 +33,7 @@ export function findParking(lat: number, lng: number, radius: number): ParkingSp
     return distance * 111 <= radius
   })
 }
+
+export function userSubmissions(owner_id: string): ParkingSpace[] {
+  return spaces.filter(space => space.owner_id === owner_id)
+}

@@ -5,36 +5,44 @@ import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { MapPin, Edit, Trash2 } from 'lucide-react'
+import { ParkingSpace } from '@/types/type'
+import { useAppDispatch, useAppSelector } from '@/store/hooks'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-
-interface Spot {
-  id: string
-  name: string
-  address: string
-  type: 'free' | 'rental'
-  isAvailable: boolean
-  price?: number
-}
+import { getFreeSpots } from '@/features/user/userSlice'
 
 export default function MySpotsPage() {
-  const [spots, setSpots] = useState<Spot[]>([])
+  const history = useRouter()
+  const dispatch = useAppDispatch()
+
+  const freeParkingSpots = useAppSelector(state => state.user.myFreeSpots)
+
+  const [spots, setSpots] = useState<ParkingSpace[]>([])
 
   useEffect(() => {
-    const fetchSpots = async () => {
+    // const fetchSpots = async () => {
+    //   try {
+    //     const response = await fetch('/api/myspots')
+    //     if (response.ok) {
+    //       const data = await response.json()
+    //       setSpots(data)
+    //     } else {
+    //       throw new Error('Failed to fetch spots')
+    //     }
+    //   } catch (error) {
+    //     console.error('Error fetching spots:', error)
+    //   }
+    // }
+
+    // fetchSpots()
+
+    const fetchFreeSpots = async () => {
       try {
-        const response = await fetch('/api/myspots')
-        if (response.ok) {
-          const data = await response.json()
-          setSpots(data)
-        } else {
-          throw new Error('Failed to fetch spots')
-        }
+        dispatch(getFreeSpots({id: '1001'}))
       } catch (error) {
-        console.error('Error fetching spots:', error)
+        console.error('Error fetching free spots:', error)
       }
     }
-
-    fetchSpots()
   }, [])
 
   const handleDelete = async (id: string) => {
@@ -61,19 +69,19 @@ export default function MySpotsPage() {
       >
         <h1 className="text-4xl font-bold mb-6">My Parking Spots</h1>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {spots.map((spot) => (
+          {freeParkingSpots.map((spot) => (
             <Card key={spot.id}>
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
-                  {spot.name}
-                  <MapPin className={spot.isAvailable ? "text-green-500" : "text-red-500"} />
+                  {spot.id}
+                  <MapPin className={spot.availability_schedule ? "text-green-500" : "text-red-500"} />
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-500 mb-2">{spot.address}</p>
+                <p className="text-sm text-gray-500 mb-2">{spot.location.longitude}, {spot.location.latitude}</p>
                 <p className="mb-2">Type: {spot.type}</p>
-                {spot.type === 'rental' && <p className="mb-2">Price: ${spot.price}/hour</p>}
-                <p className="mb-4">Status: {spot.isAvailable ? 'Available' : 'Unavailable'}</p>
+                {spot.type === 'paid' && <p className="mb-2">Price: ${spot.pricing_info?.base_price}/hour</p>}
+                <p className="mb-4">Status: {spot.availability_schedule ? 'Available' : 'Unavailable'}</p>
                 <div className="flex justify-between">
                   <Button variant="outline" size="sm">
                     <Edit className="w-4 h-4 mr-2" />
