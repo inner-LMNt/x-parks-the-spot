@@ -29,10 +29,11 @@ def app(mocker: MockerFixture) -> Generator[Any, Any, Any]:
         # Mail mock
         # We mock here, then mock again in the test because otherwise the SMTP connection would happen before the mock prevents it
         # Mocking the mock is fine
-        mock_SMTP = mocker.MagicMock(name="xpark.utils.mailer.SMTPConn")
-        mocker.patch("xpark.utils.mailer.SMTPConn", new=mock_SMTP)
+        mock_SMTP = mocker.MagicMock(name="xpark.smtplib.SMTP")
+        mocker.patch("xpark.smtplib.SMTP", new=mock_SMTP)
 
         Config.SMTP_ENABLED = "yes"
+        Config.SMTP_TLS = "no"
 
         yield xpark.create_app()
 

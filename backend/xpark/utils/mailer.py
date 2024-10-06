@@ -16,10 +16,6 @@ MAILTEMPLATE_BASEDIR = os.path.join(
 
 class SMTPConn:
     conn: Union[smtplib.SMTP, smtplib.SMTP_SSL]
-    if Config.SMTP_TLS == "yes":
-        conn = smtplib.SMTP_SSL(Config.SMTP_HOST)
-    else:
-        conn = smtplib.SMTP(Config.SMTP_HOST)
 
 
 def send_email(to: str, subject: str, content: str) -> None:

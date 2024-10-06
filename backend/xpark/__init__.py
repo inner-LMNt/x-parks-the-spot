@@ -1,6 +1,7 @@
 from flask import Flask
 from .config import Config
 from psycopg_pool import ConnectionPool
+import smtplib
 
 
 def create_app(config_class: type[Config] = Config) -> Flask:
@@ -16,6 +17,11 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     from .utils.mailer import SMTPConn
 
     if Config.SMTP_ENABLED:
+        if Config.SMTP_TLS == "yes":
+            SMTPConn.conn = smtplib.SMTP_SSL(Config.SMTP_HOST)
+        else:
+            SMTPConn.conn = smtplib.SMTP()
+
         SMTPConn.conn.connect(host=Config.SMTP_HOST)
         SMTPConn.conn.login(user=Config.SMTP_USERNAME, password=Config.SMTP_PASSWORD)
 
