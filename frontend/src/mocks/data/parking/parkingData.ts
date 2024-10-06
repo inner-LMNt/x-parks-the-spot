@@ -13,6 +13,7 @@ export const spaces: ParkingSpace[] = [
       longitude: -86.9217,
       address: '123 Main St, Indianapolis, IN',
     } as Location,
+    is_paid: true,
     features: ['EV Charging', 'Covered', 'Security Cameras'],
     availability_schedule: [
       {
@@ -54,6 +55,7 @@ export const spaces: ParkingSpace[] = [
       longitude: -86.9237,
       address: '456 Elm St, Indianapolis, IN',
     } as Location,
+    is_paid: true,
     features: ['Covered', 'Security Cameras'],
     availability_schedule: [
       {
@@ -95,6 +97,7 @@ export const spaces: ParkingSpace[] = [
       longitude: -86.9257,
       address: '789 Oak St, Indianapolis, IN',
     } as Location,
+    is_paid: true,
     features: ['EV Charging', 'Covered'],
     availability_schedule: [
       {
@@ -136,6 +139,7 @@ export const spaces: ParkingSpace[] = [
       longitude: -86.9277,
       address: '321 Pine St, Indianapolis, IN',
     } as Location,
+    is_paid: true,
     features: ['Security Cameras'],
     availability_schedule: [
       {
@@ -173,10 +177,11 @@ export const spaces: ParkingSpace[] = [
     id: '5a2b3c4d-5678-90ab-cdef-1234567890ef',
     owner_id: '523e4567-e89b-12d3-a456-426614174004',
     location: {
-      latitude: 40.4316,
-      longitude: -86.9297,
-      address: '654 Cedar St, Indianapolis, IN',
+      latitude: 38.373340,
+      longitude: -85.596661,
+      address: '3212 Deer Pointe Pl, Prospect, KY',
     } as Location,
+    is_paid: true,
     features: ['Covered', 'EV Charging'],
     availability_schedule: [
       {
@@ -214,10 +219,11 @@ export const spaces: ParkingSpace[] = [
     id: '6a2b3c4d-5678-90ab-cdef-1234567890fa',
     owner_id: '623e4567-e89b-12d3-a456-426614174005',
     location: {
-      latitude: 40.4336,
-      longitude: -86.9317,
-      address: '987 Birch St, Indianapolis, IN',
+      latitude: 38.376391,
+      longitude: -85.593005,
+      address: '12613 Ridgemoor Dr, Prospect, KY',
     } as Location,
+    is_paid: true,
     features: ['Security Cameras', 'EV Charging'],
     availability_schedule: [
       {
@@ -259,6 +265,7 @@ export const spaces: ParkingSpace[] = [
       longitude: -86.9337,
       address: '159 Walnut St, Indianapolis, IN',
     } as Location,
+    is_paid: true,
     features: ['Covered'],
     availability_schedule: [
       {
@@ -300,6 +307,7 @@ export const spaces: ParkingSpace[] = [
       longitude: -86.9357,
       address: '753 Poplar St, Indianapolis, IN',
     } as Location,
+    is_paid: true,
     features: ['EV Charging'],
     availability_schedule: [
       {
@@ -341,6 +349,7 @@ export const spaces: ParkingSpace[] = [
       longitude: -86.9377,
       address: '852 Chestnut St, Indianapolis, IN',
     } as Location,
+    is_paid: true,
     features: ['Covered', 'Security Cameras'],
     availability_schedule: [
       {
@@ -382,6 +391,7 @@ export const spaces: ParkingSpace[] = [
       longitude: -86.9397,
       address: '951 Spruce St, Indianapolis, IN',
     } as Location,
+    is_paid: true,
     features: ['EV Charging', 'Covered', 'Security Cameras'],
     availability_schedule: [
       {

@@ -1652,6 +1652,7 @@ export interface components {
         ParkingSpace: {
             /** Format: uuid */
             id?: string;
+            is_paid: boolean;
             /** Format: uuid */
             owner_id?: string;
             location: components["schemas"]["Location"];

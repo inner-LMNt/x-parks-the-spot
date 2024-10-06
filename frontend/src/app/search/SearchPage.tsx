@@ -8,7 +8,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from '@/components/ui/slider';
-import { MapPin, Navigation, ChevronUp, ChevronDown, ArrowDown, ArrowUp } from 'lucide-react';
+import {MapPin, Navigation, ChevronUp, ChevronDown, ArrowDown, ArrowUp, DollarSign} from 'lucide-react';
 import {
   Autocomplete,
   GoogleMap,
@@ -19,7 +19,7 @@ import {
 } from '@react-google-maps/api';
 import { ParkingSpace, SearchRequest } from '@/types/type';
 import { searchSpots } from '@/features/search/searchSlice';
-import { useRouter } from 'next/navigation';
+import {usePathname, useRouter} from 'next/navigation';
 import axios from 'axios';
 
 const default_center = {
@@ -29,7 +29,7 @@ const default_center = {
 };
 
 export default function SearchPage() {
-  const history = useRouter();
+  const router = useRouter();
   const dispatch = useAppDispatch();
 
   const parkingSpots = useAppSelector((state) => state.search.spots);
@@ -52,6 +52,7 @@ export default function SearchPage() {
 
   const mapRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const currentUrl = usePathname();
 
   // Fetch user location on component mount
   useEffect(() => {
@@ -265,6 +266,13 @@ export default function SearchPage() {
     setSearchRadius(value);
   };
 
+  const reserveSpot = (parkingSpaceId: string | undefined) => {
+    if (!parkingSpaceId) {
+      return;
+    }
+    router.push(`/bookings/${parkingSpaceId}/reserve?previousUrl=${encodeURIComponent(currentUrl ?? '/search')}`);
+  }
+
   return (
     <div
       className="min-h-screen bg-gray-50 text-gray-900 flex flex-col"
@@ -423,13 +431,21 @@ export default function SearchPage() {
                 onCloseClick={() => setSelectedSpot(null)}
               >
                 <div className="text-sm">
-                  <h2 className="font-semibold">Owner ID: {selectedSpot.owner_id}</h2>
+                  <h2 className="font-semibold">Address: {selectedSpot.location.address}</h2>
                   <p>Latitude: {selectedSpot.location.latitude.toFixed(4)}</p>
                   <p>Longitude: {selectedSpot.location.longitude.toFixed(4)}</p>
-                  <Button onClick={getDirections} className="mt-2 text-xs px-3 py-1">
-                    <Navigation className="mr-1 h-4 w-4" />
-                    Directions
-                  </Button>
+                  <div className="flex items-center space-x-2">
+                    <Button onClick={getDirections} className="mt-2 text-xs px-3 py-1">
+                      <Navigation className="mr-1 h-4 w-4" />
+                      Directions
+                    </Button>
+                    {selectedSpot.is_paid &&
+                      <Button onClick={() => {reserveSpot(selectedSpot.id)}} className="mt-2 text-xs px-3 py-1">
+                        <DollarSign className="mr-1 h-4 w-4" />
+                        Reserve
+                      </Button>
+                    }
+                  </div>
                 </div>
               </InfoWindow>
             )}
