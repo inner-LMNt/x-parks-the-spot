@@ -3,17 +3,12 @@ from xpark.logic.user import (
     expire_valid_token,
     create_token,
     check_username_password,
-    get_user_email_by_id,
-    soft_delete_user_account,
-    store_deletion_request,
-    generate_deletion_token,
-    check_deletion_request_validity,
-    validate_deletion_token,
-    delete_all_tokens_for_user,
     is_user_deleted,
     handle_user_registration,
+    handle_delete_account_request,
+    handle_confirm_delete,
 )
-from xpark.utils.email_sender import send_deletion_email
+
 from flask import request
 from result import Ok, Err
 from xpark.middleware.token_auth_middleware import require_logged_in_user
@@ -69,55 +64,30 @@ def logout(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         case Err(e):
             return {"err": e}, 401
 
-
 @bp.post("request_delete_account", endpoint="auth/request_delete_account")
 @require_logged_in_user
 def request_delete_account(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    data = request.get_json()
-    password = data.get('password')
+    #data = request.get_json()
+    #password = data.get('password')
+    password = request.json.get('password')
 
-    match get_user_email_by_id(user_id):
-        case Ok(user_email):
-            match check_username_password(user_email, password):
-                case Ok(_):
-                    match generate_deletion_token():
-                        case Ok((delete_token)):
-                            match store_deletion_request(user_id, delete_token):
-                                case Ok(_):
-                                    delete_link = f"http://localhost:3000/confirm-deletion/{delete_token}"
-                                    send_deletion_email(user_email, delete_link)
-                                    return {"message": "Account deletion email sent"}, 200
-                                case Err(e):
-                                    return {"err": e}, 500
-                        case Err(e):
-                            return {"err": "Token generation failed"}, 500
-                case Err(e):
-                    return {"err": "Invalid password"}, 401
-        case Err(e):
-            return {"err": "User not found"}, 404
-    return {"err": "Unexpected error"}, 500  # Ensure all paths return
+    # Call the helper function to handle the request
+    result = handle_delete_account_request(user_id, password)
+
+    if isinstance(result, Ok):
+        return {"message": "Account deletion email sent"}, 200
+    else:
+        return {"err": result.value}, 500 if "failed" in result.value.lower() else 401
+
 
 @bp.route("confirm-delete/<token>", methods=['GET'])
 def confirm_delete_account(token: str) -> Tuple[Any, int]:
-    # Validate the token received in the URL
-    print(f"Token received: {token}")
-    match validate_deletion_token(token):  # Ensure the token is valid
-        case Ok(user_id):  # If the token is valid, proceed with user deletion
-            # Check if the deletion request is still valid within the 30-minute window
-            match check_deletion_request_validity(user_id):
-                case Ok(_):
-                    # Perform the account deletion (soft delete)
-                    match soft_delete_user_account(user_id):
-                        case Ok(_):
-                            # After deletion, remove all user tokens to log them out
-                            delete_all_tokens_for_user(user_id)
-                            return {"message": "Account deleted successfully"}, 200
-                        case Err(e):
-                            return {"err": f"Failed to delete account: {e}"}, 500
-                case Err(e):
-                    return {"err": f"Deletion request expired: {e}"}, 400
+    match handle_confirm_delete(token):
+        case Ok(_):
+            return {"message": "Account deleted successfully"}, 200
         case Err(e):
-            return {"err": f"Invalid or expired token: {e}"}, 400
+            return {"err": e}, 400
+
 
 
 # @bp.get("id")

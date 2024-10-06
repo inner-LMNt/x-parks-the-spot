@@ -7,6 +7,7 @@ from result import Result, Ok, Err
 from typing import cast, Tuple
 import datetime
 import secrets
+from xpark.utils.email_sender import send_deletion_email
 
 def handle_user_registration(name: str, email: str, password: str) -> Result[uuid.UUID, str]:
     with DB.pool.connection() as conn:
@@ -289,3 +290,65 @@ def is_user_deleted(user_id: uuid.UUID) -> bool:
             if result:
                 return bool(result[0])  # Assuming result[0] is the "deleted" status (True/False)
             return False  # User not found, treat as not deleted
+
+def handle_confirm_delete(token: str) -> Result[None, str]:
+    # Step 1: Validate the deletion token
+    match validate_deletion_token(token):
+        case Err(e):
+            return Err(f"Invalid or expired token: {e}")
+        case Ok(user_id):
+            pass  # Proceed to next step
+
+    # Step 2: Check if the deletion request is still valid
+    match check_deletion_request_validity(user_id):
+        case Err(e):
+            return Err(f"Deletion request expired: {e}")
+        case Ok(_):
+            pass  # Proceed to next step
+
+    # Step 3: Perform the account deletion (soft delete)
+    match soft_delete_user_account(user_id):
+        case Err(e):
+            return Err(f"Failed to delete account: {e}")
+        case Ok(_):
+            pass  # Proceed to next step
+
+    # Step 4: Log the user out by deleting all tokens
+    delete_all_tokens_for_user(user_id)
+
+    return Ok(None)
+
+def handle_delete_account_request(user_id: uuid.UUID, password: str) -> Result[None, str]:
+    # Step 1: Get the user's email by ID
+    match get_user_email_by_id(user_id):
+        case Err(e):
+            return Err("User not found")
+        case Ok(user_email):
+            pass  # Proceed to next step
+
+    # Step 2: Check if the password is correct
+    match check_username_password(user_email, password):
+        case Err(e):
+            return Err("Invalid password")
+        case Ok(_):
+            pass  # Proceed to next step
+
+    # Step 3: Generate a deletion token
+    match generate_deletion_token():
+        case Err(e):
+            return Err("Token generation failed")
+        case Ok(delete_token):
+            pass  # Proceed to next step
+
+    # Step 4: Store the deletion request
+    match store_deletion_request(user_id, delete_token):
+        case Err(e):
+            return Err("Failed to store deletion request")
+        case Ok(_):
+            pass  # Proceed to next step
+
+    # Step 5: Send the email with the deletion link
+    delete_link = f"http://localhost:3000/confirm-deletion/{delete_token}"
+    send_deletion_email(user_email, delete_link)
+
+    return Ok(None)
