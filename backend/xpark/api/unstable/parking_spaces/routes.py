@@ -1,5 +1,5 @@
 from . import bp
-from xpark.logic.parkingspace import search_parking_space, create_parking_space
+from xpark.logic.parkingspace import create_parking_space
 from flask import request
 from result import Ok, Err
 from xpark.middleware.token_auth_middleware import require_logged_in_user
@@ -19,5 +19,3 @@ def create(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return {}, 201
         case Err(_):
             return {}, 500
-
-

@@ -1,9 +1,7 @@
 from xpark.utils.db import DB
 import uuid
-from xpark.config import Config
-from result import Result, Ok, Err
-from typing import cast, Tuple
-import uuid
+from result import Result, Ok
+from typing import cast
 
 
 # TODO: Return parking space JSON and not just the space IDs
@@ -21,7 +19,9 @@ def search_parking_space(
             return [cast(uuid.UUID, id) for x in cur.fetchall() for id in x]
 
 
-def create_parking_space(owner: uuid.UUID, lat: float, long: float) -> Result[None, None]:
+def create_parking_space(
+    owner: uuid.UUID, lat: float, long: float
+) -> Result[None, None]:
     with DB.pool.connection() as conn:
         conn.execute(
             "INSERT INTO parking_spaces (owner, location) VALUES (%s, ST_MakePoint(%s, %s))",

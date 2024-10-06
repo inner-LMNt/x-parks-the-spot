@@ -23,7 +23,7 @@ def test_api_create_parking_spot(client: FlaskClient) -> None:
     response = client.post(
         "/api/unstable/search",
         headers={"Authorization": "Bearer " + token},
-        json={"lat": 40.4237, "long": -86.9249, 'radius': 100},
+        json={"lat": 40.4237, "long": -86.9249, "radius": 100},
     )
     assert response.status_code == 200
     assert len(cast(list[Any], response.json)) == 1
@@ -31,7 +31,7 @@ def test_api_create_parking_spot(client: FlaskClient) -> None:
     response = client.post(
         "/api/unstable/search",
         headers={"Authorization": "Bearer " + token},
-        json={"lat": 40.4237, "long": -87.9249, 'radius': 100},
+        json={"lat": 40.4237, "long": -87.9249, "radius": 100},
     )
     assert response.status_code == 200
     assert len(cast(list[Any], response.json)) == 0

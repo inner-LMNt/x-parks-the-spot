@@ -1,7 +1,6 @@
 from . import bp
 from xpark.logic.parkingspace import search_parking_space
 from flask import request
-from xpark.middleware.token_auth_middleware import require_logged_in_user
 from typing import Tuple, Any
 
 
