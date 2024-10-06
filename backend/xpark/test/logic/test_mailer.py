@@ -1,4 +1,5 @@
 from xpark.utils.mailer import generate_templated_email, send_email
+from pytest_mock import MockerFixture
 
 
 def test_templater() -> None:
@@ -10,7 +11,7 @@ def test_templater() -> None:
     )
 
 
-def test_mailer(mocker) -> None:
+def test_mailer(mocker: MockerFixture) -> None:
     # Mail mock
     mock_SMTP = mocker.MagicMock(name="xpark.utils.mailer.SMTPConn")
     mocker.patch("xpark.utils.mailer.SMTPConn", new=mock_SMTP)

@@ -4,10 +4,11 @@ import xpark
 import psycopg
 from typing import Any, Generator, cast
 from flask import Flask
+from pytest_mock import MockerFixture
 
 
 @pytest.fixture(scope="function", autouse=True)
-def app(mocker) -> Generator[Any, Any, Any]:
+def app(mocker: MockerFixture) -> Generator[Any, Any, Any]:
     with psycopg.connect(Config.TEST_DATABASE_URI, autocommit=True) as conn:
         cur = conn.cursor()
 
