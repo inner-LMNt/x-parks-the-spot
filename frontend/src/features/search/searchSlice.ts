@@ -30,11 +30,13 @@ export const searchSpots = createAsyncThunk<
     return rejectWithValue(error.response?.data?.message || "Search failed");
   }
 });
-
 // @ts-ignore
 const searchSlice = createSlice<
-  SearchState,
-  { errorReset: (state: SearchState) => void }
+    // @ts-ignore
+    SearchState,
+    // @ts-ignore
+    { errorReset: (state: SearchState) => void }
+    // @ts-ignore
 >({
   name: "search",
   initialState,
