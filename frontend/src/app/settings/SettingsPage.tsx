@@ -43,7 +43,6 @@ export default function SettingsPage() {
     const [accountDeleted, setAccountDeleted] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
-    const userID = useAppSelector((state) => state.user.userId);
     // Initialize React Hook Form
     const {
         watch,

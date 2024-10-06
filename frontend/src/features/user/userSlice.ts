@@ -181,6 +181,7 @@ const userSlice = createSlice<UserState, {}, 'user'>({
 
                     const actionmessage = JSON.parse(JSON.stringify(action, null, 2)).payload;
                     state.error = actionmessage || 'An error occurred';
+                    state.loading = false;
                 }
             )
 
@@ -208,6 +209,7 @@ const userSlice = createSlice<UserState, {}, 'user'>({
                 (action: { type: string }): action is { type: 'user/errorReset' } => action.type === 'user/errorReset',
                 (state) => {
                     state.error = null;
+                    state.loading = false;
                 }
             );
     },
