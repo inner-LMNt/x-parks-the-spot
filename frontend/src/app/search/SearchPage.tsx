@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from '@/components/ui/slider';
+import { Slider } from '@/components/custom/new-slider';
 import { MapPin, Navigation, ChevronUp, ChevronDown, ArrowDown, ArrowUp } from 'lucide-react';
 import {
   Autocomplete,
@@ -292,7 +292,7 @@ export default function SearchPage() {
               </Button>
             </div>
           </CardHeader>
-          
+
           <motion.div
             // card animation
             initial={{ height: 0, opacity: 0 }}
@@ -305,11 +305,11 @@ export default function SearchPage() {
                 <div className="flex flex-col">
                   <div className="flex items-center mb-4">
                     <input
-                        type="checkbox"
-                        id="use-current-location"
-                        checked={useCurrentLocation}
-                        onChange={(e) => setUseCurrentLocation(e.target.checked)}
-                        className="mr-2"
+                      type="checkbox"
+                      id="use-current-location"
+                      checked={useCurrentLocation}
+                      onChange={(e) => setUseCurrentLocation(e.target.checked)}
+                      className="mr-2"
                     />
                     <Label htmlFor="use-current-location" className="text-sm">Use Current Location</Label>
                   </div>
@@ -319,45 +319,45 @@ export default function SearchPage() {
                       Radius (km):
                     </Label>
                     <div className="flex items-center space-x-4">
-                      {/* Slider Component */}
-                      <Slider
+                      <div className="flex-grow">
+                        <Slider
                           id="radius-slider"
                           value={[searchRadius]}
                           onValueChange={handleSliderChange}
-                          min={0}
+                          min={0.1}
                           max={5}
                           step={0.1}
-                          className="w-40"
+                          className="w-full opacity-100"
                           aria-label="Radius Slider"
-                      />
+                        />
+                      </div>
 
-                      {/* Number Input */}
                       <Input
-                          id="radius-input"
-                          type="number"
-                          value={searchRadius}
-                          onChange={handleInputChange}
-                          className="w-20 text-sm"
-                          min={0}
-                          max={5}
-                          aria-label="Radius Input"
+                        id="radius-input"
+                        type="number"
+                        value={searchRadius}
+                        onChange={handleInputChange}
+                        className="w-20 text-sm"
+                        min={0.1}
+                        max={5}
+                        aria-label="Radius Input"
                       />
                     </div>
                   </div>
 
                   {!useCurrentLocation && (
-                      <div className="flex flex-col mb-4">
-                        <Label htmlFor="address" className="text-sm mb-1">Near (Address):</Label>
-                        <Autocomplete onPlaceChanged={() => handlePlaceSelect()} className="w-full">
-                          <Input
-                              id="address"
-                              type="text"
-                              value={address}
-                              onChange={(e) => setAddress(e.target.value)}
-                              className="w-full text-sm"
-                          />
-                        </Autocomplete>
-                      </div>
+                    <div className="flex flex-col mb-4">
+                      <Label htmlFor="address" className="text-sm mb-1">Near (Address):</Label>
+                      <Autocomplete onPlaceChanged={() => handlePlaceSelect()} className="w-full">
+                        <Input
+                          id="address"
+                          type="text"
+                          value={address}
+                          onChange={(e) => setAddress(e.target.value)}
+                          className="w-full text-sm"
+                        />
+                      </Autocomplete>
+                    </div>
                   )}
 
                   <Button onClick={onSearch} className="w-auto text-sm px-4 py-2">
@@ -366,9 +366,9 @@ export default function SearchPage() {
                 </div>
               </CardContent>
             ) : (
-                <CardContent className="pt-2">
-                  {enableGeolocation}
-                </CardContent>
+              <CardContent className="pt-2">
+                {enableGeolocation}
+              </CardContent>
             )}
           </motion.div>
         </Card>
@@ -376,17 +376,17 @@ export default function SearchPage() {
 
       {/* Map */}
       <div
-          ref={mapRef}
-          className={`transition-all duration-300`}
-          style={{
-            height: isMapExpanded ? `calc(100vh - 64px)` : '50vh',
-            flexShrink: 0,
-            position: 'relative',
-          }}
+        ref={mapRef}
+        className={`transition-all duration-300`}
+        style={{
+          height: isMapExpanded ? `calc(100vh - 64px)` : '50vh',
+          flexShrink: 0,
+          position: 'relative',
+        }}
       >
         {/* @ts-ignore */}
         <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
-                    libraries={['places']}
+          libraries={['places']}
         >
           <GoogleMap
             mapContainerStyle={{ width: '100%', height: '100%' }}
