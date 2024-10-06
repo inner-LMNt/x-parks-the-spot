@@ -71,9 +71,7 @@ export const lockParkingSpaceHandler = http.post<
         }
 
         if (
-            parkingSpace.locked &&
-            parkingSpace.locked_until &&
-            new Date(parkingSpace.locked_until).getTime() > Date.now()
+            parkingSpace.locked
         ) {
             return HttpResponse.json(
                 { message: 'Parking space is already locked or reserved' },

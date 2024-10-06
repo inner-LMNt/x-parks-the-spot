@@ -82,9 +82,9 @@ export const spaces: ParkingSpace[] = [
     verification_status: 'pending',
     dynamic_pricing_enabled: false,
     cancellation_policy: 'No cancellations allowed.',
-    locked: true,
-    locked_by: 'user1-uuid', // UUID of the user who locked
-    locked_until: '2024-10-15T14:00:00Z', // ISO 8601 date-time string
+    locked: false,
+    locked_by: undefined, // UUID of the user who locked
+    locked_until: undefined, // ISO 8601 date-time string
     created_at: '2024-09-05T12:00:00Z',
     updated_at: '2024-09-20T12:00:00Z',
   } as ParkingSpace,
@@ -166,9 +166,9 @@ export const spaces: ParkingSpace[] = [
     verification_status: 'rejected',
     dynamic_pricing_enabled: false,
     cancellation_policy: 'No refunds available.',
-    locked: true,
-    locked_by: 'user2-uuid', // UUID of the user who locked
-    locked_until: '2024-10-16T16:00:00Z',
+    locked: false,
+    locked_by: undefined, // UUID of the user who locked
+    locked_until: undefined,
     created_at: '2024-09-15T12:00:00Z',
     updated_at: '2024-09-30T12:00:00Z',
   } as ParkingSpace,
@@ -250,9 +250,9 @@ export const spaces: ParkingSpace[] = [
     verification_status: 'pending',
     dynamic_pricing_enabled: false,
     cancellation_policy: 'No cancellations allowed.',
-    locked: true,
-    locked_by: 'user3-uuid', // UUID of the user who locked
-    locked_until: '2024-10-19T18:00:00Z',
+    locked: false,
+    locked_by: undefined, // UUID of the user who locked
+    locked_until: undefined,
     created_at: '2024-09-25T12:00:00Z',
     updated_at: '2024-10-10T12:00:00Z',
   } as ParkingSpace,
@@ -334,9 +334,9 @@ export const spaces: ParkingSpace[] = [
     verification_status: 'rejected',
     dynamic_pricing_enabled: false,
     cancellation_policy: 'No refunds available.',
-    locked: true,
-    locked_by: 'user4-uuid', // UUID of the user who locked
-    locked_until: '2024-10-24T20:00:00Z',
+    locked: false,
+    locked_by: undefined,
+    locked_until: undefined,
     created_at: '2024-10-05T12:00:00Z',
     updated_at: '2024-10-20T12:00:00Z',
   } as ParkingSpace,
@@ -419,8 +419,8 @@ export const spaces: ParkingSpace[] = [
     dynamic_pricing_enabled: false,
     cancellation_policy: 'No cancellations allowed.',
     locked: true,
-    locked_by: 'user5-uuid', // UUID of the user who locked
-    locked_until: '2024-10-28T18:00:00Z',
+    locked_by: undefined, // UUID of the user who locked
+    locked_until: undefined,
     created_at: '2024-10-15T12:00:00Z',
     updated_at: '2024-10-30T12:00:00Z',
   } as ParkingSpace,
