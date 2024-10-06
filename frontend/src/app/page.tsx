@@ -12,7 +12,7 @@ export default function HomePage() {
 
   useEffect(() => {
     // Check if the current path is not in noauthPages and user is not logged in
-    if (!isLoggedIn && !noauthPages.includes(pathname)) {
+    if (!isLoggedIn && !noauthPages.includes(pathname ?? '')) {
       router.push('/login');
     }
     else if(pathname === '/' && isLoggedIn){

@@ -11,7 +11,9 @@ const throttledSaveState = throttle(() => saveState(store.getState()), 1000);
 // @ts-ignore
 export const store = configureStore({
     reducer: {
+        // @ts-ignore
         user: userReducer,
+        // @ts-ignore
         search: searchReducer,
         // Add other reducers here
     },
