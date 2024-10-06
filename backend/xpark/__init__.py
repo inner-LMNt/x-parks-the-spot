@@ -12,6 +12,13 @@ def create_app(config_class: type[Config] = Config) -> Flask:
 
     DB.pool = ConnectionPool(conninfo=Config.DATABASE_URI, open=True)
 
+    # Initialize Mailer
+    from .utils.mailer import SMTPConn
+
+    if Config.SMTP_ENABLED:
+        SMTPConn.conn.connect(host=Config.SMTP_HOST)
+        SMTPConn.conn.login(user=Config.SMTP_USERNAME, password=Config.SMTP_PASSWORD)
+
     # Run SQL migrations in one transaction. Any failures will not modify the database
     with DB.pool.connection() as conn:
         makemigrate(conn)
