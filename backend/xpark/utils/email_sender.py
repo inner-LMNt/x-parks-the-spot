@@ -5,7 +5,7 @@ from email.utils import formataddr
 from xpark.config import Config
 
 def send_deletion_email(recipient_email: str, deletion_link: str) -> None:
-    sender_email = "xparksthespot@gmail.com"
+    sender_email = "xparkthespot@gmail.com"  # Replace with your email
     sender_name = "XParks"
     sender_password = Config.SENDER_PASSWORD
 

@@ -15,14 +15,13 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
     (config) => {
         // Get the current Redux state
-        //throw new Error("Redux store is not initialized. Did you forget to call injectStore?");
         if (store) {
             const state = store.getState();
             const token = state.user.access_token;
 
-
             // If token is present, add it to the request headers
             if (token) {
+                console.log("token: ", token)
                 config.headers['Authorization'] = `Bearer ${token}`;
             }
         }

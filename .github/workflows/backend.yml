@@ -55,7 +55,6 @@ jobs:
           DATABASE_URI: "unused"
           TEST_DATABASE_NAME: test_xpark
           SECRET_KEY: test_key
-          SENDER_PASSWORD: password
 
       - name: "Report Code Coverage"
         if: github.event_name == 'pull_request'

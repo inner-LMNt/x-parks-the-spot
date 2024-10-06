@@ -15,7 +15,6 @@ class AuthParams(TypedDict):
 class AuthFunction(Protocol):
     def __call__(self, **kwargs: Unpack[AuthParams]) -> Tuple[Any, int]: ...
 
-
 def require_logged_in_user(next_fn: AuthFunction) -> Callable[..., Tuple[Any, int]]:
     @wraps(next_fn)
     def wrapper(*args: Any, **kwargs: Any) -> Tuple[Any, int]:
@@ -28,7 +27,6 @@ def require_logged_in_user(next_fn: AuthFunction) -> Callable[..., Tuple[Any, in
         if not token_to_check.startswith("Bearer "):
             return {"err": "Bad authentication"}, 400
         token = token_to_check[7:]
-
         match validate_token_and_refresh(token):
             case Ok(user_id):
                 kwargs["user_id"] = user_id

@@ -64,9 +64,10 @@ def logout(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         case Err(e):
             return {"err": e}, 401
 
-@bp.post("request_delete_account", endpoint="auth/request_delete_account")
+@bp.post("request_delete_account")
 @require_logged_in_user
 def request_delete_account(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    return {"message": "Account deletion email sent"}, 200
     #data = request.get_json()
     #password = data.get('password')
     password = request.json['password']
