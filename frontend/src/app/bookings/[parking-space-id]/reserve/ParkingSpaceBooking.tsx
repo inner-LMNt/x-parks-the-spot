@@ -27,6 +27,7 @@ import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function ParkingSpaceBooking() {
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const params = useParams();
     const parkingSpaceId = params['parking-space-id'] as string;
     const router = useRouter();
@@ -68,11 +69,9 @@ export default function ParkingSpaceBooking() {
         isMounted.current = true;
 
         if (!isLocked.current) {
-            // Dispatch lockParkingSpace on mount
             dispatch(lockParkingSpace({ parking_space_id: parkingSpaceId, lock_duration: 'PT5M' }))
                 .unwrap()
                 .then(() => {
-                    console.log('Parking space locked successfully.');
                     isLocked.current = true; // Mark as locked
                 })
                 .catch((error) => {
@@ -86,19 +85,12 @@ export default function ParkingSpaceBooking() {
         }
 
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            // Confirm that the space is locked and component is mounted before unlocking
             if (isMounted.current && isLocked.current) {
                 e.preventDefault();
-                // Prevent double unlock by setting isLocked to false
                 isLocked.current = false;
                 dispatch(unlockParkingSpace(parkingSpaceId))
                     .unwrap()
-                    .then(() => {
-                        console.log('Parking space unlocked successfully on unload.');
-                    })
-                    .catch((error) => {
-                        console.error('Failed to unlock on unload:', error);
-                    });
+                    .catch((error) => console.error('Failed to unlock on unload:', error));
             }
         };
 
@@ -106,22 +98,15 @@ export default function ParkingSpaceBooking() {
 
         return () => {
             if (isMounted.current && isLocked.current) {
-                // Prevent double unlock by setting isLocked to false
                 isLocked.current = false;
                 dispatch(unlockParkingSpace(parkingSpaceId))
                     .unwrap()
-                    .then(() => {
-                        console.log('Parking space unlocked successfully on unmount.');
-                    })
-                    .catch((error) => {
-                        console.error('Failed to unlock on unmount:', error);
-                    });
+                    .catch((error) => console.error('Failed to unlock on unmount:', error));
             }
             isMounted.current = false;
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };
     }, [dispatch, parkingSpaceId, router, previousUrl]);
-
 
     // Handle lock expiration and set up timer
     useEffect(() => {
@@ -143,9 +128,7 @@ export default function ParkingSpaceBooking() {
 
             updateTimer();
 
-            const interval = setInterval(() => {
-                updateTimer();
-            }, 1000);
+            const interval = setInterval(updateTimer, 1000);
 
             return () => clearInterval(interval);
         }
@@ -170,13 +153,16 @@ export default function ParkingSpaceBooking() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSubmitting(true); // Mark the form as submitting
 
-        if (parkingSpace?.locked_by !== booking.renter_id) {
+        // Validate input fields
+        if (!booking.car_info_id) {
             toast({
-                title: 'Booking Failed',
-                description: 'You do not hold the lock for this parking space.',
+                title: 'Car Not Selected',
+                description: 'Please select a car before proceeding with the booking.',
                 variant: 'destructive',
             });
+            setIsSubmitting(false);
             return;
         }
 
@@ -186,6 +172,7 @@ export default function ParkingSpaceBooking() {
                 description: 'End time must be after start time.',
                 variant: 'destructive',
             });
+            setIsSubmitting(false);
             return;
         }
 
@@ -201,37 +188,28 @@ export default function ParkingSpaceBooking() {
         };
 
         try {
-            const reservation: Reservation = await dispatch(bookParkingSpace(reservationRequest)).unwrap();
-
-            dispatch(unlockParkingSpace(parkingSpaceId))
-                .unwrap()
-                .then(() => {
-                    console.log('Parking space unlocked after booking.');
-                    isLocked.current = false; // Mark as unlocked
-                })
-                .catch((error) => {
-                    console.error('Failed to unlock after booking:', error);
-                });
-
+            await dispatch(bookParkingSpace(reservationRequest)).unwrap();
             toast({
                 title: 'Booking Successful',
                 description: 'Your reservation has been confirmed.',
+                variant: 'success',
             });
-
             router.push('/bookings');
         } catch (error: any) {
-            console.error('Booking failed:', error);
             toast({
                 title: 'Booking Failed',
-                description: error || 'Unable to complete your booking.',
+                description: error.message || 'Unable to complete your booking.',
                 variant: 'destructive',
             });
+        } finally {
+            setIsSubmitting(false); // Reset the submitting state
         }
     };
 
     const calculateTotal = () => {
-        if (!booking.start_time || !booking.end_time || !parkingSpace?.pricing_info?.base_price || !booking.date)
+        if (!booking.start_time || !booking.end_time || !parkingSpace?.pricing_info?.base_price || !booking.date) {
             return 0;
+        }
         const start = new Date(`${booking.date}T${booking.start_time}`);
         const end = new Date(`${booking.date}T${booking.end_time}`);
         const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
@@ -442,9 +420,9 @@ export default function ParkingSpaceBooking() {
                             type="submit"
                             className="w-full mt-4"
                             size="lg"
-                            disabled={lockStatus !== 'locked'}
+                            disabled={isSubmitting}
                         >
-                            {lockStatus === 'locked' ? 'Book Now' : 'Locking...'}
+                            {isSubmitting ? 'Submitting...' : 'Book Now'}
                         </Button>
                     </form>
                 </CardContent>
