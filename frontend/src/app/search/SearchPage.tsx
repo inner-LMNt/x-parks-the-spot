@@ -12,7 +12,7 @@ import { MapPin, Navigation, ChevronUp, ChevronDown, ArrowDown, ArrowUp } from '
 import {
   Autocomplete,
   GoogleMap,
-  LoadScript,
+  LoadScriptNext,
   Marker,
   DirectionsRenderer,
   InfoWindow,
@@ -29,7 +29,7 @@ const default_center = {
 };
 
 export default function SearchPage() {
-  const history = useRouter();
+  const router = useRouter();
   const dispatch = useAppDispatch();
 
   const parkingSpots = useAppSelector((state) => state.search.spots);
@@ -68,8 +68,7 @@ export default function SearchPage() {
           setMapCenter(location);
           setGeoEnabled(true);
 
-          // Fetch the address from the location
-          fetchAddressFromLocation(location);
+          fetchAddressFromLocation(location); // Runtime error with this line, need to fix
         },
         () => {
           console.error("Error: The Geolocation service failed.");
@@ -272,7 +271,7 @@ export default function SearchPage() {
     setSearchRadius(value);
   };
 
-  return ( domLoaded &&
+  return (domLoaded &&
     <div
       className="min-h-screen bg-gray-50 text-gray-900 flex flex-col"
       style={{ height: '100vh', overflow: 'hidden' }}
@@ -392,7 +391,7 @@ export default function SearchPage() {
         }}
       >
         {/* @ts-ignore */}
-        <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+        <LoadScriptNext googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
           libraries={['places']}
         >
           <GoogleMap
@@ -442,7 +441,7 @@ export default function SearchPage() {
             )}
             {directions && <DirectionsRenderer directions={directions} />}
           </GoogleMap>
-        </LoadScript>
+        </LoadScriptNext>
 
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
           <button onClick={handleArrowClick} className="focus:outline-none">
