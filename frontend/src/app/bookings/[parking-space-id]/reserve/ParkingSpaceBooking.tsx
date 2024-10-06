@@ -265,8 +265,8 @@ export default function ParkingSpaceBooking() {
                             <Star className="w-5 h-5 text-yellow-400 mr-1" />
                             <span className="font-semibold">{parkingSpace.verification_status}</span>
                         </div>
-                        <Badge variant={parkingSpace.lockStatus !== 'idle' ? 'destructive' : 'default'}>
-                            {parkingSpace.lockStatus !== 'idle' ? 'Locked' : 'Available'}
+                        <Badge variant={lockStatus !== 'idle' ? 'destructive' : 'default'}>
+                            {lockStatus !== 'idle' ? 'Locked' : 'Available'}
                         </Badge>
                     </div>
                     <Separator className="my-4" />
@@ -274,14 +274,16 @@ export default function ParkingSpaceBooking() {
                         <div className="flex justify-between items-center">
                             <div className="flex items-center">
                                 <DollarSign className="w-5 h-5 text-green-600 mr-1" />
-                                <span className="font-semibold">${parkingSpace.pricing_info.base_price}/hour</span>
+                                <span className="font-semibold">${parkingSpace.pricing_info?.base_price ?? '???'}/hour</span>
                             </div>
                             <div className="flex items-center">
                                 <Clock className="w-5 h-5 text-blue-500 mr-1" />
                                 <span className="text-sm">
-                                    {parkingSpace.availability_schedule.length > 0 ? (
+                                    {parkingSpace.availability_schedule?.length ?? -1 > 0 ? (
                                         <>
+                                            {/* @ts-ignore */}
                                             {format(new Date(parkingSpace.availability_schedule[0].start_time), 'p')} -{' '}
+                                            {/* @ts-ignore */}
                                             {format(new Date(parkingSpace.availability_schedule[0].end_time), 'p')}
                                         </>
                                     ) : (
