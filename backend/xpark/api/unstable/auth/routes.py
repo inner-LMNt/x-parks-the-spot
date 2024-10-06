@@ -69,7 +69,7 @@ def logout(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 def request_delete_account(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     #data = request.get_json()
     #password = data.get('password')
-    password = request.json.get('password')
+    password = request.json['password']
 
     # Call the helper function to handle the request
     result = handle_delete_account_request(user_id, password)
