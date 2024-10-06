@@ -1620,6 +1620,7 @@ export interface components {
             id?: string;
             make: string;
             model: string;
+            year?: number;
             color?: string;
             license_plate: string;
             state?: string;
@@ -1651,6 +1652,7 @@ export interface components {
         ParkingSpace: {
             /** Format: uuid */
             id?: string;
+            is_paid: boolean;
             /** Format: uuid */
             owner_id?: string;
             location: components["schemas"]["Location"];

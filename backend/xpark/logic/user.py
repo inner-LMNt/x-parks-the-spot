@@ -15,7 +15,6 @@ def check_if_user_exists(email: str) -> bool:
             return cur.fetchone() != (0,)
 
 
-# If it returns None, then the user already exists
 def create_user(name: str, email: str, password: str) -> Result[uuid.UUID, str]:
     if check_if_user_exists(email):
         return Err("Email already exists")
@@ -59,7 +58,7 @@ def check_username_password(email: str, password: str) -> Result[uuid.UUID, str]
             except VerifyMismatchError:
                 return Err("Wrong Password")
             except VerificationError:
-                # Do we need special handling?
+                # Do we need special handling? When will this ever run?
                 return Err("Wrong Password")
 
 
@@ -74,23 +73,64 @@ def change_password(id: uuid.UUID, new_password: str) -> Result[None, None]:
 
 def create_token(user_id: uuid.UUID) -> str:
     token = Config.TOKEN_PREFIX + secrets.token_urlsafe(32)
-    DB.token_cache.set(token, user_id.bytes, ex=Config.TOKEN_EXPIRY_SECONDS)
-    return token
+
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO user_tokens (user_id, token, expiry) VALUES (%s, %s, NOW() + INTERVAL '%s seconds')",
+                (
+                    user_id,
+                    token,
+                    Config.TOKEN_EXPIRY_SECONDS,
+                ),
+            )
+
+            # Clean up any expired tokens in the database
+            # FIXME: Move to a background job so that it doesn't run on every login
+            cur.execute("DELETE FROM user_tokens WHERE expiry <= NOW()")
+
+            return token
 
 
 def validate_token_and_refresh(token: str) -> Result[uuid.UUID, str]:
-    # Check if token exists
-    # If it does, refresh it
-    uuid_ret = DB.token_cache.getex(token, ex=Config.TOKEN_EXPIRY_SECONDS)
-    if uuid_ret is not None:
-        return Ok(uuid.UUID(bytes=uuid_ret))
-    return Err("Token expired")
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            # Check if the given token is still valid (not expired) and refresh its expiry time
+            cur.execute(
+                """
+                UPDATE user_tokens
+                SET expiry = NOW() + INTERVAL '%s seconds'
+                WHERE token = %s AND expiry > NOW()
+                RETURNING user_id
+                """,
+                (
+                    Config.TOKEN_EXPIRY_SECONDS,
+                    token,
+                ),
+            )
+            result = cur.fetchone()
+            if result:
+                user_id = result[0]
+                return Ok(user_id)
+
+            return Err("Token expired")
 
 
 def expire_valid_token(token: str) -> Result[None, None]:
-    if DB.token_cache.delete(token) == 0:
-        return Err(None)
-    return Ok(None)
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM user_tokens WHERE token = %s", (token,)
+            )
+
+            if cur.rowcount == 0:
+                return Err(None)
+
+            return Ok(None)
 
 
-# TODO: Delete all keys for a user
+def expire_all_tokens_for_user(user_id: uuid.UUID) -> Result[None, str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM user_tokens WHERE user_id = %s", (user_id,))
+            return Ok(None)
