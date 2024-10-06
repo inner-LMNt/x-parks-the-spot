@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from '@/components/custom/new-slider';
+import { Slider } from '@/components/ui/slider';
 import { MapPin, Navigation, ChevronUp, ChevronDown, ArrowDown, ArrowUp } from 'lucide-react';
 import {
   Autocomplete,

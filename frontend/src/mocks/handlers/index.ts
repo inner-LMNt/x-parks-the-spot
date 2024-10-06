@@ -5,6 +5,7 @@ import { registerHandler } from './auth/registerHandler';
 import { resetHandler, resetConfirmHandler } from './auth/resetHandler';
 import { searchHandler } from './search/searchHandler';
 import { deleteHandler } from './auth/deleteHandler';
+import { addSpotHandler } from './spots/addSpotsHandler';
 
 export const handlers = [
   loginHandler,
@@ -12,6 +13,7 @@ export const handlers = [
   registerHandler,
   resetHandler,
   resetConfirmHandler,
-  searchHandler
+  searchHandler,
+  addSpotHandler,
   // Additional handlers
 ];
