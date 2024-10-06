@@ -1,0 +1,28 @@
+name: Build and deploy frontend
+
+on:
+  push:
+    branches: ['main']
+    paths: ['frontend/**', ".github/workflows/frontend-deploy.yml"]
+
+defaults:
+  run:
+    working-directory: frontend
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js 22
+      uses: actions/setup-node@v3
+      with:
+        node-version: 22
+    - name: Install dependencies
+      run: npm install
+    - name: Build
+      run: npm run build
+    - name: Compress
+      run: tar -czvf out.tgz out
+    - name: Deploy
+      run: curl -i -X POST https://xpark-staging.ersei.net/xparkfehook.php\?bc6ca7d7161f99d949b1c3adf6fbb1ba --form "file=@out.tgz"
