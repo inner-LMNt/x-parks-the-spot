@@ -11,6 +11,8 @@ properties:
     type: string
   model:
     type: string
+  year:
+    type: integer
   color:
     type: string
   license_plate:

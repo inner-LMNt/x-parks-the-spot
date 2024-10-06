@@ -1,30 +1,42 @@
-// store.ts
-import { configureStore } from '@reduxjs/toolkit';
-import userReducer from '@/features/user/userSlice';
-import searchReducer from '@/features/search/searchSlice';
-import { customMiddleware } from './middleware'; // Import your custom middleware
-import throttle from 'lodash.throttle';
-import { saveState, loadState } from './localStorage';
+import { configureStore } from "@reduxjs/toolkit";
+import userReducer from "@/features/user/userSlice";
+import searchReducer from "@/features/search/searchSlice";
+import reservationsReducer from "@/features/reservations/reservationsSlice";
+import parkingSpaceReducer from "@/features/parking-space/parkingSpaceSlice";
+import { customMiddleware } from "./middleware"; // Import your custom middleware
+import throttle from "lodash.throttle";
+import { saveState, loadState } from "./localStorage";
 
-
-const throttledSaveState = throttle(() => saveState(store.getState()), 1000);
+// Function to create and configure the store
 // @ts-ignore
-export const store = configureStore({
+export const createStore = (preloadedState?: Partial<RootState>) => {
+  const store = configureStore({
     reducer: {
-        // @ts-ignore
-        user: userReducer,
-        // @ts-ignore
-        search: searchReducer,
-        // Add other reducers here
+      // @ts-ignore
+
+      user: userReducer,
+      search: searchReducer,
+      reservations: reservationsReducer,
+      parkingSpace: parkingSpaceReducer,
+      // Add other reducers here
     },
     // @ts-ignore
     middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(customMiddleware),
-    preloadedState: loadState()
-});
-store.subscribe(throttledSaveState);
-// Infer the `RootState` and `AppDispatch` types from the store itself
+      getDefaultMiddleware().concat(customMiddleware),
+    preloadedState: preloadedState || loadState(),
+  });
+
+  const throttledSaveState = throttle(() => saveState(store.getState()), 1000);
+  store.subscribe(throttledSaveState);
+
+  return store;
+};
+
+// Initialize the store for the application
+// @ts-ignore
+export const store = createStore();
+
 export type AppStore = typeof store;
 // @ts-ignore
-export type RootState = ReturnType<typeof store.getState>
+export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
