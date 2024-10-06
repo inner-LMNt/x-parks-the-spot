@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { store } from '@/store';
 import {ReactNode, useEffect} from 'react';
 import { setUpMocks } from '@/mocks/browser';
+import { injectStore } from '@/api/axiosInstance';
 
 export function Providers({ children }: { children: ReactNode }) {
     useEffect(() => {
@@ -11,6 +12,6 @@ export function Providers({ children }: { children: ReactNode }) {
             setUpMocks().catch(console.error);
         }
     }, []);
-
+    injectStore(store);
     return <Provider store={store}>{children}</Provider>;
 }
