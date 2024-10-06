@@ -80,7 +80,7 @@ def request_delete_account(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         return {"err": result.value}, 500 if "failed" in result.value.lower() else 401
 
 
-@bp.route("confirm-delete/<token>", methods=['GET'])
+@bp.route("confirm-delete/<token>")
 def confirm_delete_account(token: str) -> Tuple[Any, int]:
     match handle_confirm_delete(token):
         case Ok(_):
