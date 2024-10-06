@@ -34,6 +34,7 @@ export default function SearchPage() {
 
   const parkingSpots = useAppSelector((state) => state.search.spots);
 
+  const [domLoaded, setDomLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
@@ -55,6 +56,7 @@ export default function SearchPage() {
 
   // Fetch user location on component mount
   useEffect(() => {
+    setDomLoaded(true);
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -79,6 +81,12 @@ export default function SearchPage() {
       setGeoEnabled(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (useCurrentLocation && userLocation) {
+      setMapCenter(userLocation);
+    }
+  }, [useCurrentLocation, userLocation]);
 
   const fetchAddressFromLocation = async (location: google.maps.LatLngLiteral) => {
     try {
@@ -111,9 +119,9 @@ export default function SearchPage() {
 
   // Handle search action
   const onSearch = async () => {
-    let location = userLocation;
+    let location = mapCenter;
 
-    if (address) {
+    if (address && !useCurrentLocation) {
       try {
         const geocodeResult = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json`, {
           params: {
@@ -183,20 +191,19 @@ export default function SearchPage() {
           lat: place.geometry.location.lat(),
           lng: place.geometry.location.lng(),
         };
-        setUserLocation(location);
         setMapCenter(location);
+        setAddress(place.formatted_address || ''); // Update the address state
       }
     }
   };
 
-
   // Get directions to the selected parking spot
   const getDirections = () => {
-    if (userLocation && selectedSpot) {
+    if (mapCenter && selectedSpot) {
       const directionsService = new window.google.maps.DirectionsService();
       directionsService.route(
         {
-          origin: userLocation,
+          origin: mapCenter,
           destination: {
             lat: selectedSpot.location.latitude,
             lng: selectedSpot.location.longitude,
@@ -265,7 +272,7 @@ export default function SearchPage() {
     setSearchRadius(value);
   };
 
-  return (
+  return ( domLoaded &&
     <div
       className="min-h-screen bg-gray-50 text-gray-900 flex flex-col"
       style={{ height: '100vh', overflow: 'hidden' }}
@@ -348,7 +355,7 @@ export default function SearchPage() {
                   {!useCurrentLocation && (
                     <div className="flex flex-col mb-4">
                       <Label htmlFor="address" className="text-sm mb-1">Near (Address):</Label>
-                      <Autocomplete onPlaceChanged={() => handlePlaceSelect()} className="w-full">
+                      <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={handlePlaceSelect} className="w-full">
                         <Input
                           id="address"
                           type="text"
@@ -408,9 +415,9 @@ export default function SearchPage() {
                 onClick={() => handleSpotSelect(spot)}
               />
             ))}
-            {userLocation && (
+            {mapCenter && (
               <Marker
-                position={userLocation}
+                position={mapCenter}
                 icon="https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
               />
             )}

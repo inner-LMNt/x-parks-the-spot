@@ -28,13 +28,6 @@ export const searchHandler = http.get<never, SearchRequest, SearchResponse>(
 
     console.log("Search result:", result);
 
-    if (result.length > 0) {
-      return HttpResponse.json<SearchResponse>({ spots: result }, { status: 200 });
-    } else {
-      return HttpResponse.json(
-        { spots: [] },
-        { status: 404 }
-      );
-    }
+    return HttpResponse.json<SearchResponse>({ spots: result }, { status: 200 });
   }
 );
