@@ -1,4 +1,10 @@
-from xpark.logic.user import check_username_password, create_user
+from xpark.logic.user import (
+    check_username_password,
+    create_user,
+    create_token,
+    expire_valid_token,
+    expire_all_tokens_for_user,
+)
 from result import Ok, Err
 from argon2 import PasswordHasher
 
@@ -67,3 +73,23 @@ def test_user_update_password_hash() -> None:
     assert type(user_id_login) is Ok
 
     assert user_id_create == user_id_login
+
+
+def test_delete_all_tokens_for_user() -> None:
+    user_id_create = create_user(
+        name="Test User",
+        email="testuser1@example.com",
+        password="password",
+    )
+
+    assert type(user_id_create) is Ok
+
+    token0 = create_token(user_id_create.ok_value)
+    token1 = create_token(user_id_create.ok_value)
+    token2 = create_token(user_id_create.ok_value)
+
+    assert type(expire_valid_token(token0)) is Ok
+    assert type(expire_valid_token(token0)) is Err
+    assert type(expire_all_tokens_for_user(user_id_create.ok_value)) is Ok
+    assert type(expire_valid_token(token1)) is Err
+    assert type(expire_valid_token(token2)) is Err
