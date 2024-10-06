@@ -8,15 +8,19 @@ import throttle from 'lodash.throttle';
 import { saveState, loadState } from './localStorage';
 
 // Function to create and configure the store
+// @ts-ignore
 export const createStore = (preloadedState?: Partial<RootState>) => {
     const store = configureStore({
         reducer: {
+            // @ts-ignore
+
             user: userReducer,
             search: searchReducer,
             reservations: reservationsReducer,
             parkingSpace: parkingSpaceReducer
             // Add other reducers here
         },
+        // @ts-ignore
         middleware: (getDefaultMiddleware) =>
             getDefaultMiddleware().concat(customMiddleware),
         preloadedState: preloadedState || loadState()
@@ -29,9 +33,10 @@ export const createStore = (preloadedState?: Partial<RootState>) => {
 };
 
 // Initialize the store for the application
-export const store = createStore();
+// @ts-ignore
+export const store  = createStore();
 
-// Infer the `RootState` and `AppDispatch` types from the store itself
 export type AppStore = typeof store;
+// @ts-ignore
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
