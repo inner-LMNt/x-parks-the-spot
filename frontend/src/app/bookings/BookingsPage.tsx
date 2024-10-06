@@ -29,7 +29,7 @@ export default function BookingsPage() {
     const now = new Date();
 
     const upcomingReservations = reservations.filter(
-        (reservation : Reservation ) => new Date(reservation.start_time ?? now) > now
+        (reservation: Reservation) => new Date(reservation.start_time ?? now) > now
     );
 
     const currentReservations = reservations.filter(
@@ -63,7 +63,7 @@ export default function BookingsPage() {
                 )}
 
                 {/* Current Reservations */}
-                {!loading&& currentReservations.length > 0 && (
+                {!loading && currentReservations.length > 0 && (
                     <section className="mb-8">
                         <SectionHeader title="Current Reservations" />
                         <div className="grid gap-6">
@@ -104,8 +104,8 @@ export default function BookingsPage() {
                         <MapPin className="w-12 h-12 text-gray-400 mb-4" />
                         {error && <p className="text-red-500">Failed to fetch reservations at this time.</p>}
                         : {
-                        <p className="text-gray-500">You have no reservations.</p>
-                    }
+                            <p className="text-gray-500">You have no reservations.</p>
+                        }
                         <Link href="/search" passHref>
                             <button className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition">
                                 Make a Reservation
@@ -140,9 +140,9 @@ function SectionHeader({ title }: { title: string }) {
 
 // ReservationCard Component
 function ReservationCard({
-                             reservation,
-                             isPast = false,
-                         }: {
+    reservation,
+    isPast = false,
+}: {
     reservation: Reservation;
     isPast?: boolean;
 }) {

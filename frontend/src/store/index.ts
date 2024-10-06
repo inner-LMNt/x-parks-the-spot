@@ -1,40 +1,40 @@
-import { configureStore } from '@reduxjs/toolkit';
-import userReducer from '@/features/user/userSlice';
-import searchReducer from '@/features/search/searchSlice';
+import { configureStore } from "@reduxjs/toolkit";
+import userReducer from "@/features/user/userSlice";
+import searchReducer from "@/features/search/searchSlice";
 import reservationsReducer from "@/features/reservations/reservationsSlice";
 import parkingSpaceReducer from "@/features/parking-space/parkingSpaceSlice";
-import { customMiddleware } from './middleware'; // Import your custom middleware
-import throttle from 'lodash.throttle';
-import { saveState, loadState } from './localStorage';
+import { customMiddleware } from "./middleware"; // Import your custom middleware
+import throttle from "lodash.throttle";
+import { saveState, loadState } from "./localStorage";
 
 // Function to create and configure the store
 // @ts-ignore
 export const createStore = (preloadedState?: Partial<RootState>) => {
-    const store = configureStore({
-        reducer: {
-            // @ts-ignore
+  const store = configureStore({
+    reducer: {
+      // @ts-ignore
 
-            user: userReducer,
-            search: searchReducer,
-            reservations: reservationsReducer,
-            parkingSpace: parkingSpaceReducer
-            // Add other reducers here
-        },
-        // @ts-ignore
-        middleware: (getDefaultMiddleware) =>
-            getDefaultMiddleware().concat(customMiddleware),
-        preloadedState: preloadedState || loadState()
-    });
+      user: userReducer,
+      search: searchReducer,
+      reservations: reservationsReducer,
+      parkingSpace: parkingSpaceReducer,
+      // Add other reducers here
+    },
+    // @ts-ignore
+    middleware: (getDefaultMiddleware) =>
+      getDefaultMiddleware().concat(customMiddleware),
+    preloadedState: preloadedState || loadState(),
+  });
 
-    const throttledSaveState = throttle(() => saveState(store.getState()), 1000);
-    store.subscribe(throttledSaveState);
+  const throttledSaveState = throttle(() => saveState(store.getState()), 1000);
+  store.subscribe(throttledSaveState);
 
-    return store;
+  return store;
 };
 
 // Initialize the store for the application
 // @ts-ignore
-export const store  = createStore();
+export const store = createStore();
 
 export type AppStore = typeof store;
 // @ts-ignore

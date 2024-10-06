@@ -17,7 +17,7 @@ import { toast } from '@/hooks/use-toast'; // Assuming you have a toast hook
 
 export default function ParkingSpaceDetails() {
     const params = useParams();
-    const parkingSpaceId = params?.['parking-space-id'] as string ?? "invalid" ;
+    const parkingSpaceId = params?.['parking-space-id'] as string ?? "invalid";
     const router = useRouter();
     const dispatch = useAppDispatch();
     const currentUrl = usePathname();
@@ -117,9 +117,9 @@ export default function ParkingSpaceDetails() {
                                 <span className="text-sm">
                                     {parkingSpace.availability_schedule?.length ?? -1 > 0 ? (
                                         <>
-                                            { /* @ts-ignore */ }
+                                            { /* @ts-ignore */}
                                             {format(new Date(parkingSpace.availability_schedule[0].start_time), 'p')} -{' '}
-                                            { /* @ts-ignore */ }
+                                            { /* @ts-ignore */}
                                             {format(new Date(parkingSpace.availability_schedule[0].end_time), 'p')}
                                         </>
                                     ) : (
