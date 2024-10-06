@@ -298,7 +298,7 @@ paths:
           description: Unauthorized
         '403':
           description: Forbidden
-  /parking-spaces/search:
+  /search:
     post:
       tags:
         - Parking Spaces
