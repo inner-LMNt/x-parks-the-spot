@@ -3,7 +3,11 @@ import { configureStore } from '@reduxjs/toolkit';
 import userReducer from '@/features/user/userSlice';
 import searchReducer from '@/features/search/searchSlice';
 import { customMiddleware } from './middleware'; // Import your custom middleware
+import throttle from 'lodash.throttle';
+import { saveState, loadState } from './localStorage';
 
+
+const throttledSaveState = throttle(() => saveState(store.getState()), 1000);
 // @ts-ignore
 export const store = configureStore({
     reducer: {
@@ -14,8 +18,9 @@ export const store = configureStore({
     // @ts-ignore
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware().concat(customMiddleware),
+    preloadedState: loadState()
 });
-
+store.subscribe(throttledSaveState);
 // Infer the `RootState` and `AppDispatch` types from the store itself
 export type AppStore = typeof store;
 // @ts-ignore
