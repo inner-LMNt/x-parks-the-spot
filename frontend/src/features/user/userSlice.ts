@@ -145,15 +145,16 @@ export const reset = createAsyncThunk<
 export const getFreeSpots = createAsyncThunk<
     ParkingSpace[], // Return type
     User, // Argument type
-    { rejectValue: string } // ThunkAPI config
+    { rejectValue: string }
 >(
     'user/getFreeSpots',
-    async (_, { rejectWithValue }) => {
+    async (user, { rejectWithValue }) => {
         try {
-            const response = await axios.get<ParkingSpace[]>('v1/user/getFreeSpots');
+            console.log("User: ", user);
+            const response = await axios.get<ParkingSpace[]>('user/getFreeSpots', { params: user });
             return response.data;
         } catch (error: any) {
-            return rejectWithValue('Failed to get user\'s free spots');
+            return rejectWithValue(error.response?.data?.message || 'Search failed');
         }
     }
 );
@@ -161,12 +162,12 @@ export const getFreeSpots = createAsyncThunk<
 export const getPaidSpots = createAsyncThunk<
     ParkingSpace[], // Return type
     User, // Argument type
-    { rejectValue: string } // ThunkAPI config
+    { rejectValue: string }
 >(
     'user/getPaidSpots',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await axios.get<ParkingSpace[]>('v1/user/getPaidSpots');
+            const response = await axios.get<ParkingSpace[]>('user/getPaidSpots');
             return response.data;
         } catch (error: any) {
             return rejectWithValue('Failed to get user\'s paid spots');
@@ -183,6 +184,13 @@ const userSlice = createSlice<UserState, {}, 'user'>({
     },
     extraReducers: (builder) => {
         builder
+            .addCase(getFreeSpots.fulfilled, (state, action) => {
+                state.myFreeSpots = action.payload;
+            })
+            .addCase(getPaidSpots.fulfilled, (state, action) => {
+                state.myPaidSpots = action.payload;
+            })
+
             // Handle all pending actions
             .addMatcher(
                 (action: UnknownAction): action is ReturnType<typeof login.pending | typeof register_acc.pending | typeof logout.pending | typeof reset.pending | typeof getFreeSpots.pending | typeof getPaidSpots.pending> =>
@@ -236,15 +244,6 @@ const userSlice = createSlice<UserState, {}, 'user'>({
                     state.loading = false;
                 }
             );
-
-        builder
-            .addCase(getFreeSpots.fulfilled, (state, action) => {
-                state.myFreeSpots = action.payload;
-            })
-            .addCase(getPaidSpots.fulfilled, (state, action) => {
-                state.myPaidSpots = action.payload;
-            }
-        );
     },
 });
 

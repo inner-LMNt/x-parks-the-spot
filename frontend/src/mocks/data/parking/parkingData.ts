@@ -14,6 +14,10 @@ const spaces: ParkingSpace[] = [
   { id: '8', owner_id: '1008', location: { latitude: 40.4376, longitude: -86.9357 } },
   { id: '9', owner_id: '1009', location: { latitude: 40.4396, longitude: -86.9377 } },
   { id: '10', owner_id: '1010', location: { latitude: 40.4416, longitude: -86.9397 } },
+  { id: '11', owner_id: '1001', location: { latitude: 40.4236, longitude: -86.9237} },
+  { id: '12', owner_id: '1001', location: { latitude: 40.4236, longitude: -86.9257} },
+  { id: '13', owner_id: '1001', location: { latitude: 40.4236, longitude: -86.9277} },
+  { id: '14', owner_id: '1001', location: { latitude: 40.4236, longitude: -86.9297} }, 
 ]
 
 /**
@@ -35,5 +39,6 @@ export function findParking(lat: number, lng: number, radius: number): ParkingSp
 }
 
 export function userSubmissions(owner_id: string): ParkingSpace[] {
+  console.log("Getting user submissions for owner_id", owner_id)
   return spaces.filter(space => space.owner_id === owner_id)
 }

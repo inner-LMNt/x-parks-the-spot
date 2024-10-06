@@ -19,30 +19,17 @@ export default function MySpotsPage() {
 
   const [spots, setSpots] = useState<ParkingSpace[]>([])
 
-  useEffect(() => {
-    // const fetchSpots = async () => {
-    //   try {
-    //     const response = await fetch('/api/myspots')
-    //     if (response.ok) {
-    //       const data = await response.json()
-    //       setSpots(data)
-    //     } else {
-    //       throw new Error('Failed to fetch spots')
-    //     }
-    //   } catch (error) {
-    //     console.error('Error fetching spots:', error)
-    //   }
-    // }
-
-    // fetchSpots()
-
-    const fetchFreeSpots = async () => {
-      try {
-        dispatch(getFreeSpots({id: '1001'}))
-      } catch (error) {
-        console.error('Error fetching free spots:', error)
-      }
+  const fetchFreeSpots = async () => {
+    try {
+      dispatch(getFreeSpots({id: '1001'}))
+    } catch (error) {
+      console.error('Error fetching free spots:', error)
     }
+  }
+
+  useEffect(() => {
+    fetchFreeSpots()
+    console.log("Free Spots:", freeParkingSpots)
   }, [])
 
   const handleDelete = async (id: string) => {
@@ -60,6 +47,12 @@ export default function MySpotsPage() {
     }
   }
 
+  const emptySpots = (
+    <div className="flex justify-center items-center h-32 w-full bg-gray-100 rounded-lg">
+      <p className="text-gray-500">No spots available</p>
+    </div>
+  )
+
   return (
     <div className="container mx-auto p-6">
       <motion.div
@@ -69,32 +62,36 @@ export default function MySpotsPage() {
       >
         <h1 className="text-4xl font-bold mb-6">My Parking Spots</h1>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {freeParkingSpots.map((spot) => (
-            <Card key={spot.id}>
-              <CardHeader>
-                <CardTitle className="flex justify-between items-center">
-                  {spot.id}
-                  <MapPin className={spot.availability_schedule ? "text-green-500" : "text-red-500"} />
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-500 mb-2">{spot.location.longitude}, {spot.location.latitude}</p>
-                <p className="mb-2">Type: {spot.type}</p>
-                {spot.type === 'paid' && <p className="mb-2">Price: ${spot.pricing_info?.base_price}/hour</p>}
-                <p className="mb-4">Status: {spot.availability_schedule ? 'Available' : 'Unavailable'}</p>
-                <div className="flex justify-between">
-                  <Button variant="outline" size="sm">
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => handleDelete(spot.id)}>
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {freeParkingSpots && freeParkingSpots.length > 0 ? (
+            freeParkingSpots.map((spot) => (
+              <Card key={spot.id}>
+                <CardHeader>
+                  <CardTitle className="flex justify-between items-center">
+                    {spot.id}
+                    <MapPin className={spot.availability_schedule ? "text-green-500" : "text-red-500"} />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-500 mb-2">{spot.location.latitude}, {spot.location.longitude}</p>
+                  <p className="mb-2">Type: {spot.type}</p>
+                  {spot.type === 'paid' && <p className="mb-2">Price: ${spot.pricing_info?.base_price}/hour</p>}
+                  <p className="mb-4">Status: {spot.availability_schedule ? 'Available' : 'Unavailable'}</p>
+                  <div className="flex justify-between">
+                    <Button variant="outline" size="sm">
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => spot.id && handleDelete(spot.id)}>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            emptySpots
+          )}
         </div>
         <div className="mt-6">
           <Link href="/add">
@@ -103,5 +100,5 @@ export default function MySpotsPage() {
         </div>
       </motion.div>
     </div>
-  )
-}
+  );
+};
