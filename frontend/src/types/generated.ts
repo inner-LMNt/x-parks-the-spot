@@ -1620,6 +1620,7 @@ export interface components {
             id?: string;
             make: string;
             model: string;
+            year?: number;
             color?: string;
             license_plate: string;
             state?: string;

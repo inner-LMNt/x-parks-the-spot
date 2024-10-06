@@ -29,10 +29,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 export default function ParkingSpaceBooking() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const params = useParams();
-    const parkingSpaceId = params['parking-space-id'] as string;
+    const parkingSpaceId = params?.['parking-space-id'] as string ?? "invalid";
     const router = useRouter();
     const searchParams = useSearchParams();
-    const previousUrl = searchParams.get('previousUrl') || '/bookings';
+    const previousUrl = searchParams?.get('previousUrl') ?? '/bookings';
 
     const dispatch = useAppDispatch();
     const parkingSpace = useAppSelector((state) => state.parkingSpace.parkingSpace);
@@ -40,13 +40,12 @@ export default function ParkingSpaceBooking() {
     const lockExpiresAt = useAppSelector((state) => state.parkingSpace.lockExpiresAt);
     const bookingError = useAppSelector((state) => state.parkingSpace.error);
     const userReservations = useAppSelector((state) =>
-        state.reservations.reservations.filter(r => r.parking_space_id === parkingSpaceId)
+        state.reservations.reservations.filter((r: Reservation) => r.parking_space_id === parkingSpaceId)
     );
     const carInfos = useAppSelector((state) => state.reservations.carInfos);
 
     const [booking, setBooking] = useState<ReservationCreateRequest>({
         parking_space_id: parkingSpaceId,
-        date: '',
         start_time: '',
         end_time: '',
         car_info_id: '',
@@ -60,7 +59,9 @@ export default function ParkingSpaceBooking() {
 
     // Fetch parking space details and user's car info
     useEffect(() => {
+        //@ts-ignore
         dispatch(fetchParkingSpace(parkingSpaceId));
+        //@ts-ignore
         dispatch(fetchUserCarInfos());
     }, [dispatch, parkingSpaceId]);
 
@@ -69,12 +70,13 @@ export default function ParkingSpaceBooking() {
         isMounted.current = true;
 
         if (!isLocked.current) {
+            //@ts-ignore
             dispatch(lockParkingSpace({ parking_space_id: parkingSpaceId, lock_duration: 'PT5M' }))
                 .unwrap()
                 .then(() => {
                     isLocked.current = true; // Mark as locked
                 })
-                .catch((error) => {
+                .catch((error: any) => {
                     toast({
                         title: 'Lock Failed',
                         description: error || 'Unable to lock the parking space.',
@@ -88,9 +90,10 @@ export default function ParkingSpaceBooking() {
             if (isMounted.current && isLocked.current) {
                 e.preventDefault();
                 isLocked.current = false;
+                //@ts-ignore
                 dispatch(unlockParkingSpace(parkingSpaceId))
                     .unwrap()
-                    .catch((error) => console.error('Failed to unlock on unload:', error));
+                    .catch((error: any) => console.error('Failed to unlock on unload:', error));
             }
         };
 
@@ -99,9 +102,10 @@ export default function ParkingSpaceBooking() {
         return () => {
             if (isMounted.current && isLocked.current) {
                 isLocked.current = false;
+                //@ts-ignore
                 dispatch(unlockParkingSpace(parkingSpaceId))
                     .unwrap()
-                    .catch((error) => console.error('Failed to unlock on unmount:', error));
+                    .catch((error: any) => console.error('Failed to unlock on unmount:', error));
             }
             isMounted.current = false;
             window.removeEventListener('beforeunload', handleBeforeUnload);
@@ -166,7 +170,7 @@ export default function ParkingSpaceBooking() {
             return;
         }
 
-        if (new Date(`${booking.date}T${booking.end_time}`) <= new Date(`${booking.date}T${booking.start_time}`)) {
+        if (new Date(booking.end_time) <= new Date(booking.start_time)) {
             toast({
                 title: 'Invalid Time',
                 description: 'End time must be after start time.',
@@ -176,8 +180,8 @@ export default function ParkingSpaceBooking() {
             return;
         }
 
-        const startDateTime = new Date(`${booking.date}T${booking.start_time}`).toISOString();
-        const endDateTime = new Date(`${booking.date}T${booking.end_time}`).toISOString();
+        const startDateTime = new Date(booking.start_time).toISOString();
+        const endDateTime = new Date(booking.end_time).toISOString();
 
         const reservationRequest: ReservationCreateRequest = {
             parking_space_id: booking.parking_space_id,
@@ -188,11 +192,12 @@ export default function ParkingSpaceBooking() {
         };
 
         try {
+            //@ts-ignore
             await dispatch(bookParkingSpace(reservationRequest)).unwrap();
             toast({
                 title: 'Booking Successful',
                 description: 'Your reservation has been confirmed.',
-                variant: 'success',
+                variant: 'default',
             });
             router.push('/bookings');
         } catch (error: any) {
@@ -207,11 +212,11 @@ export default function ParkingSpaceBooking() {
     };
 
     const calculateTotal = () => {
-        if (!booking.start_time || !booking.end_time || !parkingSpace?.pricing_info?.base_price || !booking.date) {
+        if (!booking.start_time || !booking.end_time || !parkingSpace?.pricing_info?.base_price) {
             return 0;
         }
-        const start = new Date(`${booking.date}T${booking.start_time}`);
-        const end = new Date(`${booking.date}T${booking.end_time}`);
+        const start = new Date(booking.start_time);
+        const end = new Date(booking.end_time);
         const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
         let price = hours * parkingSpace.pricing_info.base_price;
 
@@ -260,7 +265,7 @@ export default function ParkingSpaceBooking() {
                             <Star className="w-5 h-5 text-yellow-400 mr-1" />
                             <span className="font-semibold">{parkingSpace.verification_status}</span>
                         </div>
-                        <Badge variant={parkingSpace.lockStatus !== 'idle' ? 'destructive' : 'success'}>
+                        <Badge variant={parkingSpace.lockStatus !== 'idle' ? 'destructive' : 'default'}>
                             {parkingSpace.lockStatus !== 'idle' ? 'Locked' : 'Available'}
                         </Badge>
                     </div>
@@ -291,7 +296,7 @@ export default function ParkingSpaceBooking() {
                         <div>
                             <h3 className="font-semibold mb-2 text-sm">Features:</h3>
                             <div className="flex flex-wrap gap-2">
-                                {parkingSpace.features?.map((feature) => (
+                                {parkingSpace.features?.map((feature: string) => (
                                     <Badge key={feature} variant="outline" className="text-xs">
                                         {feature}
                                     </Badge>
@@ -308,14 +313,18 @@ export default function ParkingSpaceBooking() {
                             {userReservations.map((reservation: Reservation) => (
                                 <div key={reservation.id} className="text-sm border p-2 rounded-md">
                                     <p>
-                                        <strong>Date:</strong> {format(new Date(reservation.start_time), 'PPP')}
+                                        <strong>Date:</strong>{' '}
+                                        {reservation.start_time ? reservation.start_time : 'N/A'}
                                     </p>
                                     <p>
-                                        <strong>Time:</strong> {format(new Date(reservation.start_time), 'p')} -{' '}
-                                        {format(new Date(reservation.end_time), 'p')}
+                                        <strong>Time:</strong>{' '}
+                                        {reservation.start_time && reservation.end_time
+                                            ? `${reservation.start_time} - ${reservation.end_time}`
+                                            : 'N/A'}
                                     </p>
                                     <p>
-                                        <strong>License Plate:</strong> {reservation.car_info.license_plate}
+                                        <strong>License Plate:</strong>{' '}
+                                        {reservation.car_info?.license_plate || 'N/A'}
                                     </p>
                                 </div>
                             ))}
@@ -325,56 +334,39 @@ export default function ParkingSpaceBooking() {
                 <Separator className="my-2" />
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="date" className="text-sm font-medium">
-                                Date
-                            </Label>
-                            <div className="relative">
-                                <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    id="date"
-                                    name="date"
-                                    type="date"
-                                    value={booking.date}
-                                    onChange={handleChange}
-                                    className="pl-10"
-                                    min={format(new Date(), 'yyyy-MM-dd')}
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="start_time" className="text-sm font-medium">
-                                    Start Time
+                                    Start Date & Time
                                 </Label>
                                 <div className="relative">
-                                    <Clock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                     <Input
                                         id="start_time"
                                         name="start_time"
-                                        type="time"
+                                        type="datetime-local"
                                         value={booking.start_time}
                                         onChange={handleChange}
                                         className="pl-10"
+                                        min={new Date().toISOString().slice(0,16)}
                                         required
                                     />
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="end_time" className="text-sm font-medium">
-                                    End Time
+                                    End Date & Time
                                 </Label>
                                 <div className="relative">
-                                    <Clock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                     <Input
                                         id="end_time"
                                         name="end_time"
-                                        type="time"
+                                        type="datetime-local"
                                         value={booking.end_time}
                                         onChange={handleChange}
                                         className="pl-10"
+                                        min={booking.start_time || new Date().toISOString().slice(0,16)}
                                         required
                                     />
                                 </div>
@@ -388,7 +380,7 @@ export default function ParkingSpaceBooking() {
                             <Select
                                 name="car_info_id"
                                 value={booking.car_info_id}
-                                onValueChange={(value) => setBooking((prev) => ({ ...prev, car_info_id: value }))}
+                                onValueChange={(value) => setBooking((prev: ReservationCreateRequest) => ({ ...prev, car_info_id: value }))}
                                 required
                             >
                                 <SelectTrigger>
@@ -396,7 +388,7 @@ export default function ParkingSpaceBooking() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {carInfos.map((car: CarInfo) => (
-                                        <SelectItem key={car.id} value={car.id}>
+                                        <SelectItem key={car.id ?? 'no-id'} value={car.id ?? 'no-id'}>
                                             {`${car.make} ${car.model} (${car.license_plate})`}
                                         </SelectItem>
                                     ))}

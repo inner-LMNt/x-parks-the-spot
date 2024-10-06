@@ -46,7 +46,7 @@ export const getParkingSpaceHandler = http.get<
  */
 export const lockParkingSpaceHandler = http.post<
     never,
-    never,
+    any,
     { expiresAt: number } | { message: string }
 >(
     '/v1/reservations/lock',
@@ -108,8 +108,8 @@ export const lockParkingSpaceHandler = http.post<
 export const unlockParkingSpaceHandler = http.post(
     '/v1/reservations/unlock',
     async ({ request }) => {
-        const body = await request.json(); // Parse as JSON object
-        const parking_space_id = body.parking_space_id;
+        const body: any = await request.json(); // Parse as JSON object
+        const parking_space_id = body ? body.parking_space_id : undefined;
 
 
         const parkingSpace = spaces.find((space) => space.id === parking_space_id);

@@ -4,9 +4,9 @@ import { RootState } from '@/store/index'; // Adjust the import path as needed
 
 // @ts-ignore
 export const loggerMiddleware: Middleware<{}, RootState> = storeAPI => next => action => {
-    console.log('Dispatching action:', action);
+    //console.log('Dispatching action:', action);
     const result = next(action);
-    console.log('Next state:', storeAPI.getState());
+    //console.log('Next state:', storeAPI.getState());
     return result;
 };
 

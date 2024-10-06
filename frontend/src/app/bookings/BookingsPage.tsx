@@ -22,22 +22,23 @@ export default function BookingsPage() {
     const error = useAppSelector((state) => state.reservations.error);
 
     useEffect(() => {
+        // @ts-ignore
         dispatch(fetchUserReservations());
     }, [dispatch]);
 
     const now = new Date();
 
     const upcomingReservations = reservations.filter(
-        (reservation) => new Date(reservation.start_time) > now
+        (reservation : Reservation ) => new Date(reservation.start_time ?? now) > now
     );
 
     const currentReservations = reservations.filter(
-        (reservation) =>
-            new Date(reservation.start_time) <= now && new Date(reservation.end_time) >= now
+        (reservation: Reservation) =>
+            new Date(reservation.start_time ?? now) <= now && new Date(reservation.end_time ?? now) >= now
     );
 
     const pastReservations = reservations.filter(
-        (reservation) => new Date(reservation.end_time) < now
+        (reservation: Reservation) => new Date(reservation.end_time ?? now) < now
     );
 
     return (
@@ -66,7 +67,7 @@ export default function BookingsPage() {
                     <section className="mb-8">
                         <SectionHeader title="Current Reservations" />
                         <div className="grid gap-6">
-                            {currentReservations.map((reservation) => (
+                            {currentReservations.map((reservation: Reservation) => (
                                 <ReservationCard key={reservation.id} reservation={reservation} />
                             ))}
                         </div>
@@ -78,7 +79,7 @@ export default function BookingsPage() {
                     <section className="mb-8">
                         <SectionHeader title="Upcoming Reservations" />
                         <div className="grid gap-6">
-                            {upcomingReservations.map((reservation) => (
+                            {upcomingReservations.map((reservation: Reservation) => (
                                 <ReservationCard key={reservation.id} reservation={reservation} />
                             ))}
                         </div>
@@ -90,7 +91,7 @@ export default function BookingsPage() {
                     <section className="mb-8">
                         <SectionHeader title="Past Reservations" />
                         <div className="grid gap-6">
-                            {pastReservations.map((reservation) => (
+                            {pastReservations.map((reservation: Reservation) => (
                                 <ReservationCard key={reservation.id} reservation={reservation} isPast />
                             ))}
                         </div>
@@ -178,7 +179,7 @@ function ReservationCard({
                 </div>
                 <div className="flex items-center mb-2">
                     <p className="text-sm text-gray-700">
-                        <strong>License Plate:</strong> {reservation.car_info.license_plate}
+                        <strong>License Plate:</strong> {reservation.car_info?.license_plate ?? 'N/A'}
                     </p>
                 </div>
                 {isPast && (

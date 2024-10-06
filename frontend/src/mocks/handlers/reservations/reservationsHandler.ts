@@ -117,8 +117,8 @@ export const createReservationHandler = http.post<
         const overlappingReservation = reservations.find(
             (reservation) =>
                 reservation.parking_space_id === parking_space_id &&
-                reservation.start_time < end_time &&
-                reservation.end_time > start_time
+                (reservation.start_time ?? end_time) < end_time &&
+                (reservation.end_time?? start_time) > start_time
         );
 
         if (overlappingReservation) {
@@ -161,31 +161,27 @@ export const createReservationHandler = http.post<
  */
 export const updateReservationHandler = http.put<
     never,
-    { id: string },
+    any,
     Reservation | { message: string }
 >(
     '/v1/reservations/:id',
     async ({ request, params }) => {
         const { id } = params;
         // Parse the request body
-        const body: { start_time?: string; end_time?: string; status?: string } = await request.json();
-
+        const body: any = await request.json();
         const { start_time, end_time, status } = body;
-
+        if (!start_time || !end_time || !status) {
+            return HttpResponse.json(
+                { message: 'Invalid input' },
+                { status: 400 }
+            );
+        }
         const reservationIndex = reservations.findIndex((r) => r.id === id);
 
         if (reservationIndex === -1) {
             return HttpResponse.json(
                 { message: 'Reservation not found' },
                 { status: 404 }
-            );
-        }
-
-        // Validate input
-        if (!start_time && !end_time && !status) {
-            return HttpResponse.json(
-                { message: 'Invalid input' },
-                { status: 400 }
             );
         }
 
@@ -209,8 +205,8 @@ export const updateReservationHandler = http.put<
                 (reservation) =>
                     reservation.parking_space_id === existingReservation.parking_space_id &&
                     reservation.id !== id &&
-                    reservation.start_time < newEndTime &&
-                    reservation.end_time > newStartTime
+                    (reservation.start_time ?? newEndTime) < newEndTime &&
+                    (reservation.end_time ?? newStartTime) > newStartTime
             );
 
             if (overlappingReservation) {

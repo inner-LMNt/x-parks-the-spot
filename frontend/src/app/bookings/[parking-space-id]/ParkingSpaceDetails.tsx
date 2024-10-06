@@ -17,7 +17,7 @@ import { toast } from '@/hooks/use-toast'; // Assuming you have a toast hook
 
 export default function ParkingSpaceDetails() {
     const params = useParams();
-    const parkingSpaceId = params['parking-space-id'] as string;
+    const parkingSpaceId = params?.['parking-space-id'] as string ?? "invalid" ;
     const router = useRouter();
     const dispatch = useAppDispatch();
     const currentUrl = usePathname();
@@ -30,6 +30,7 @@ export default function ParkingSpaceDetails() {
 
     useEffect(() => {
         if (parkingSpaceId) {
+            //@ts-ignore
             dispatch(fetchParkingSpace(parkingSpaceId));
         }
 
@@ -41,7 +42,7 @@ export default function ParkingSpaceDetails() {
 
     const handleReserveAndLock = async () => {
         try {
-            router.push(`/bookings/${parkingSpaceId}/reserve?previousUrl=${encodeURIComponent(currentUrl)}`);
+            router.push(`/bookings/${parkingSpaceId}/reserve?previousUrl=${encodeURIComponent(currentUrl ?? '/bookings')}`);
         } catch (err: any) {
             // Handle lock failure
             console.error('Locking failed:', err);
@@ -110,7 +111,7 @@ export default function ParkingSpaceDetails() {
                             <Star className="w-5 h-5 text-yellow-400 mr-1" />
                             <span className="font-semibold">{parkingSpace.verification_status}</span>
                         </div>
-                        <Badge variant={lockStatus !== 'idle' ? 'destructive' : 'success'}>
+                        <Badge variant={lockStatus !== 'idle' ? 'destructive' : 'default'}>
                             {lockStatus !== 'idle' ? 'Locked' : 'Available'}
                         </Badge>
                     </div>
@@ -141,7 +142,7 @@ export default function ParkingSpaceDetails() {
                         <div>
                             <h3 className="font-semibold mb-2 text-sm">Features:</h3>
                             <div className="flex flex-wrap gap-2">
-                                {parkingSpace.features?.map((feature) => (
+                                {parkingSpace.features?.map((feature: string) => (
                                     <Badge key={feature} variant="outline" className="text-xs">
                                         {feature}
                                     </Badge>
