@@ -14,7 +14,7 @@
       1. Run `pip install -e .` in the backend directory
 1. Spin up Postgres
    1. [Install Podman](https://podman.io/docs/installation) or Docker (if using Docker, replace all `podman` commands with `docker`)
-   1. Run `podman run -it --name parkingpass_db -p 127.0.0.1:5432:5432 -v parkingpass_postgres_data:/var/lib/postgresql/data -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=password docker.io/postgres:16` in another terminal window
+   1. Run `podman run -it --name parkingpass_db -p 127.0.0.1:5432:5432 -v parkingpass_postgres_data:/var/lib/postgresql/data -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=password docker.io/postgis/postgis:16-3.4` in another terminal window
    1. For the first time setting up Postgres, create a database
       1. [Install `psql`, the Postgres command-line utility](https://www.postgresql.org/download)
       1. Log into the Postgres database with `psql -h 127.0.0.1 -U admin`

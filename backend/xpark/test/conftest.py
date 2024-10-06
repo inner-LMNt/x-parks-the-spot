@@ -4,10 +4,11 @@ import xpark
 import psycopg
 from typing import Any, Generator, cast
 from flask import Flask
+from pytest_mock import MockerFixture
 
 
 @pytest.fixture(scope="function", autouse=True)
-def app() -> Generator[Any, Any, Any]:
+def app(mocker: MockerFixture) -> Generator[Any, Any, Any]:
     with psycopg.connect(Config.TEST_DATABASE_URI, autocommit=True) as conn:
         cur = conn.cursor()
 
@@ -24,6 +25,15 @@ def app() -> Generator[Any, Any, Any]:
         Config.DATABASE_URI = (
             Config.TEST_DATABASE_URI + " dbname=" + Config.TEST_DATABASE_NAME
         )
+
+        # Mail mock
+        # We mock here, then mock again in the test because otherwise the SMTP connection would happen before the mock prevents it
+        # Mocking the mock is fine
+        mock_SMTP = mocker.MagicMock(name="xpark.smtplib.SMTP")
+        mocker.patch("xpark.smtplib.SMTP", new=mock_SMTP)
+
+        Config.SMTP_ENABLED = "yes"
+        Config.SMTP_TLS = "no"
 
         yield xpark.create_app()
 

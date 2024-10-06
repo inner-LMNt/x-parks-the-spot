@@ -15,7 +15,8 @@ import uuid
 @bp.post("register")
 def create() -> Tuple[Any, int]:
     # If we have a keyerror (param not sent), the app returns a 400 here
-    # FIXME: validate email address
+    # FIXME: validate email address and other user-submitted data that goes into the DB
+    # The user can POST a newline or something and it can cause problems
     match create_user(
         name=request.json["full_name"],  # type: ignore
         password=request.json["password"],  # type: ignore
