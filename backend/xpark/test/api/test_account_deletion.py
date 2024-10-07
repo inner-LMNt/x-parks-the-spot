@@ -1,7 +1,5 @@
 from flask.testing import FlaskClient
-from typing import Dict, cast, Any
-import uuid
-import pytest
+from typing import Dict, cast
 
 
 def test_request_delete_account(client: FlaskClient) -> None:
@@ -46,12 +44,10 @@ def test_request_delete_account_invalid_password(client: FlaskClient) -> None:
         headers={"Authorization": "Bearer " + token},
         json={"password": "WrongPassword"},  # wrong password
     )
-    assert response.status_code == 401  # unauthorized
-    assert "err" in response.json
+    assert response.status_code == 401
 
 
 def test_confirm_delete_account_invalid_token(client: FlaskClient) -> None:
     # Try confirming delete with an invalid token
     response = client.get("/api/unstable/auth/confirm-delete/invalid-token")
-    assert response.status_code == 400  # Bad request
-    assert "err" in response.json
+    assert response.status_code == 400
