@@ -8,7 +8,7 @@ on:
 # Defines two custom environment variables for the workflow. These are used for the Container registry domain, and a name for the Docker image that this workflow builds.
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}-backend
+  IMAGE_NAME: ${{ github.repository }}-frontend
 
 defaults:
   run:
@@ -52,4 +52,4 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
       - name: Trigger Deploy
-        run: curl https://ersei.net/xparkfehook.php?bc6ca7d7161f99d949b1c3adf6fbb1ba
+        run: curl https://xpark-staging.ersei.net/xparkfehook.php?bc6ca7d7161f99d949b1c3adf6fbb1ba
