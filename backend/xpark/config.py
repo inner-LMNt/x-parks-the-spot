@@ -8,7 +8,6 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config:
     SECRET_KEY = os.environ["SECRET_KEY"]  # Will fail if SECRET_KEY is not set
     DATABASE_URI = os.environ["DATABASE_URI"]
-    SENDER_PASSWORD = os.environ["SENDER_PASSWORD"]
     TOKEN_EXPIRY_SECONDS = 2592000
     TOKEN_PREFIX = "xpark_"
 

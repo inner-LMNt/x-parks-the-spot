@@ -344,3 +344,26 @@ def expire_all_tokens_for_user(user_id: uuid.UUID) -> Result[None, str]:
             cur.execute("DELETE FROM user_tokens WHERE user_id = %s", (user_id,))
             return Ok(None)
 
+def handle_password_reset(email: str) -> Result[None, str]:
+    # Check if the email exists in the database
+    if not check_if_user_exists(email):
+        return Err("Email not found")
+
+    # Generate a reset token
+    reset_token_result = generate_reset_token()
+    if isinstance(reset_token_result, Err):
+        return Err("Failed to generate reset token")
+
+    reset_token = reset_token_result.value
+
+    # Store the reset token in the database
+    store_result = store_reset_token(email, reset_token)
+    if isinstance(store_result, Err):
+        return Err("Failed to store reset token")
+
+    # Send the password reset email
+    send_email_result = send_password_reset_email(email, reset_token)
+    if isinstance(send_email_result, Err):
+        return Err("Failed to send reset email")
+
+    return Ok(None)

@@ -135,13 +135,31 @@ export const logout = createAsyncThunk<
   }
 });
 
-export const reset = createAsyncThunk<
+export const reset_password = createAsyncThunk<void, { token: string; newPassword: string }, { rejectValue: string }>(
+    "user/reset_password",
+    async ({ token, newPassword }, { rejectWithValue }) => {
+        try {
+            const response = await axios.post("auth/password-reset", {
+                token,
+                newPassword,
+            });
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.status === 400) {
+                return rejectWithValue("Invalid token or password");
+            }
+            return rejectWithValue("Password reset failed");
+        }
+    }
+);
+
+export const reset_request = createAsyncThunk<
   void, // Return type of the payload creator
   string, // First argument to the payload creator (email)
   { rejectValue: string } // Types for ThunkAPI
->("user/reset", async (email: string, { rejectWithValue }) => {
+>("user/reset_request", async (email: string, { rejectWithValue }) => {
   try {
-    const response = await axios.post("auth/password-reset", {
+    const response = await axios.post("auth/password-reset-request", {
       email,
     } as PasswordResetRequest);
     return response.data;
