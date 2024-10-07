@@ -14,9 +14,6 @@ import {
   AuthResponse,
   User,
   PasswordResetRequest,
-  ParkingSpace,
-  SpotFinderProfile,
-  OwnerProfile,
 } from "@/types/type";
 
 /**
@@ -31,8 +28,6 @@ interface UserState {
   };
   loading: boolean;
   error: string | null;
-  myFreeSpots: ParkingSpace[];
-  myPaidSpots: ParkingSpace[];
 }
 
 const initialState: UserState = {
@@ -44,8 +39,6 @@ const initialState: UserState = {
   },
   loading: false,
   error: null,
-  myFreeSpots: [],
-  myPaidSpots: [],
 };
 
 /**
@@ -146,35 +139,6 @@ export const reset = createAsyncThunk<
   }
 });
 
-export const getFreeSpots = createAsyncThunk<
-  ParkingSpace[], // Return type
-  User, // Argument type
-  { rejectValue: string }
->("user/getFreeSpots", async (user, { rejectWithValue }) => {
-  try {
-    console.log("User: ", user);
-    const response = await axios.get<ParkingSpace[]>("user/getFreeSpots", {
-      params: user,
-    });
-    return response.data;
-  } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Search failed");
-  }
-});
-
-export const getPaidSpots = createAsyncThunk<
-  ParkingSpace[], // Return type
-  User, // Argument type
-  { rejectValue: string }
->("user/getPaidSpots", async (_, { rejectWithValue }) => {
-  try {
-    const response = await axios.get<ParkingSpace[]>("user/getPaidSpots");
-    return response.data;
-  } catch (error: any) {
-    return rejectWithValue("Failed to get user's paid spots");
-  }
-});
-
 // @ts-ignore
 const userSlice = createSlice<UserState, {}, "user">({
   name: "user",
@@ -184,14 +148,7 @@ const userSlice = createSlice<UserState, {}, "user">({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(getFreeSpots.fulfilled, (state, action) => {
-        state.myFreeSpots = action.payload;
-      })
-      .addCase(getPaidSpots.fulfilled, (state, action) => {
-        state.myPaidSpots = action.payload;
-      })
 
-      // Handle all pending actions
       .addMatcher(
         (
           action: UnknownAction
@@ -200,8 +157,6 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof register_acc.pending
           | typeof logout.pending
           | typeof reset.pending
-          | typeof getFreeSpots.pending
-          | typeof getPaidSpots.pending
         > => action.type.endsWith("/pending"),
         (state) => {
           state.loading = true;
@@ -218,8 +173,6 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof register_acc.rejected
           | typeof logout.rejected
           | typeof reset.rejected
-          | typeof getFreeSpots.rejected
-          | typeof getPaidSpots.rejected
         > => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false;
