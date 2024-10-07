@@ -7,7 +7,7 @@ from result import Result, Ok, Err
 from typing import cast, Tuple
 import datetime
 import secrets
-from xpark.utils.email_sender import send_deletion_email
+from xpark.utils.mailer import generate_templated_email, send_email
 
 def handle_user_registration(name: str, email: str, password: str) -> Result[uuid.UUID, str]:
     with DB.pool.connection() as conn:
@@ -334,7 +334,11 @@ def handle_delete_account_request(user_id: uuid.UUID, password: str) -> Result[N
             pass  # Proceed to next step
     # Step 5: Send the email with the deletion link
     delete_link = f"http://localhost:3000/confirm-deletion/{delete_token}"
-    #send_deletion_email(user_email, delete_link)
+    send_email(to=user_email,
+                subject="Subject Here",
+                content=generate_templated_email(
+                    "delete_account", name="Name", delete_link=delete_link
+                ))
 
     return Ok(None)
 

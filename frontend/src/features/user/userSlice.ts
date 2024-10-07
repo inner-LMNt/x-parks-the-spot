@@ -146,7 +146,7 @@ export const reset = createAsyncThunk<
     } as PasswordResetRequest);
     return response.data;
   } catch (error: any) {
-    if (error.status === 409) {
+    if (error.status === 404) {
       return rejectWithValue("Email not found");
     }
     return rejectWithValue("Password reset failed");
