@@ -7,7 +7,8 @@ from xpark.logic.user import (
     handle_user_registration,
     handle_delete_account_request,
     handle_confirm_delete,
-    handle_password_reset,
+    handle_password_reset_request,
+    handle_password_reset_confirmation,
 )
 
 from flask import request
@@ -88,13 +89,15 @@ def confirm_delete_account(token: str) -> Tuple[Any, int]:
         case Err(e):
             return {"err": e}, 400
 
-
 @bp.post("password-reset-request")
-def reset_password_request() -> Tuple[dict, int]:
+def reset_password_request() -> Tuple[Any, int]:
     data = request.get_json()
+    if data is None:
+       return {"error": "Invalid JSON"}, 400  # Handle case where JSON is invalid
+
     email = data.get("email")
 
-    result = handle_password_reset(email)
+    result = handle_password_reset_request(email)
     match result:
         case Ok(_):
             return {"message": "Password reset email sent"}, 200
@@ -103,9 +106,20 @@ def reset_password_request() -> Tuple[dict, int]:
                 return {"error": "Email not found"}, 409  # Conflict
             return {"error": "Password reset failed"}, 500  # Internal server error
 
-@bp.post('reset-password/<token>')
-def reset_password():
-    return jsonify({"message": "Password reset successfully"}), 200
+@bp.post('/reset-password/<token>')
+def reset_password(token: str) -> Tuple[Any, int]:
+    data = request.json
+    if data is None:
+      return {"error": "Invalid JSON"}, 400  # Handle case where JSON is invalid
+
+    new_password = data.get('new_password')
+
+    match handle_password_reset_confirmation(token, new_password):
+        case Err(e):
+            return {"error": e}, 400
+        case Ok(_):
+            return {"message": "Password reset successfully"}, 200
+
 
 # @bp.get("id")
 # @require_logged_in_user

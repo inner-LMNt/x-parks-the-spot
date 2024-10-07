@@ -72,7 +72,7 @@ export default function ForgotPasswordPage() {
     const onSubmit = async (data: PasswordResetRequest) => {
         try {
             // @ts-ignore
-            const resultAction = await dispatch(reset(data.email));
+            const resultAction = await dispatch(reset_request(data.email));
 
             if (reset_request.fulfilled.match(resultAction)) {
                 // Password reset email sent successfully

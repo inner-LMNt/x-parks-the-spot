@@ -123,14 +123,11 @@ def create_token(user_id: uuid.UUID) -> str:
                     token,
                  ),
                 )
-
             # Clean up any expired tokens in the database
             # FIXME: Move to a background job so that it doesn't run on every login
             cur.execute("DELETE FROM user_tokens WHERE expiry <= NOW()")
 
             return token
-
-
 
 def validate_token_and_refresh(token: str) -> Result[uuid.UUID, str]:
     with DB.pool.connection() as conn:
@@ -182,6 +179,16 @@ def delete_all_tokens_for_user(user_id: uuid.UUID) -> Result[None, str]:
     except Exception as e:
         return Err(str(e))
 
+def get_user_id_by_email(email: str) -> Result[uuid.UUID, str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM users WHERE email = %s", (email,))
+            user_data = cur.fetchone()
+
+            if not user_data:
+                return Err("User not found")
+
+            return Ok(user_data[0])  # Return the user_id
 
 
 def get_user_email_by_id(user_id: uuid.UUID) -> Result[str, str]:
@@ -321,11 +328,11 @@ def handle_delete_account_request(user_id: uuid.UUID, password: str) -> Result[N
         case Ok(_):
             pass  # Proceed to next step
     # Step 5: Send the email with the deletion link
-    delete_link = f"http://localhost:3000/confirm-deletion/{delete_token}"
+    deletion_link = f"http://localhost:3000/confirm-deletion/{delete_token}"
     send_email(to=user_email,
                 subject="Subject Here",
                 content=generate_templated_email(
-                    "delete_account", name="Name", delete_link=delete_link
+                    "delete_account", name="Name", delete_link=deletion_link
                 ))
 
     return Ok(None)
@@ -336,25 +343,75 @@ def expire_all_tokens_for_user(user_id: uuid.UUID) -> Result[None, str]:
             cur.execute("DELETE FROM user_tokens WHERE user_id = %s", (user_id,))
             return Ok(None)
 
+def store_reset_request(user_id: uuid.UUID, reset_token: str) -> Result[None, str]:
+    try:
+        reset_requested_at = datetime.datetime.now()
+        with DB.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE users SET reset_requested_at = %s, reset_token = %s WHERE id = %s",
+                    (reset_requested_at, reset_token, user_id)
+                )
+                conn.commit()
+        return Ok(None)
 
-def handle_password_reset(email: str) -> Result[None, str]:
+    except Exception as e:
+        return Err(str(e))
+
+
+def handle_password_reset_request(email: str) -> Result[None, str]:
     # Check if the email exists in the database
     if not check_if_user_exists(email):
         return Err("Email not found")
 
-    # Generate a reset token
+    match get_user_id_by_email(email):
+       case Err(e):
+          return Err(f"Failed to retrieve user ID: {e}")
+       case Ok(user_id):
+          pass  # Proceed with user_id
+
     reset_token = secrets.token_urlsafe(32)
 
-    # Store the reset token in the database
-    store_result = store_reset_token(email, reset_token)
-    if isinstance(store_result, Err):
-        return Err("Failed to store reset token")
-    reset_link = f"http://localhost:3000/confirm-deletion/{reset_token}"
-    # Send the password reset email
-    send_email(to=user_email,
-                subject="Reset password",
-                content=generate_templated_email(
-                        "reset_password", name="Name", reset_link=reset_link
-                    ))
+    match store_reset_request(user_id, reset_token):
+        case Err(e):
+            return Err(f"Failed to store reset token: {e}")
+        case Ok(_):
+            pass  # Proceed to the next step
 
+    reset_link = f"http://localhost:3000/confirm-reset/{reset_token}"
+    send_email(to=email,
+               subject="Reset password",
+               content=generate_templated_email(
+                    "reset_password", name="Name", reset_link=reset_link
+                ))
     return Ok(None)
+
+def handle_password_reset_confirmation(token: str, new_password: str) -> Result[None, str]:
+    try:
+        # Step 1: Validate the reset token
+        with DB.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id FROM users WHERE reset_token = %s AND reset_requested_at > NOW() - INTERVAL '1 hour'", (token,))
+                user_data = cur.fetchone()
+
+                if not user_data:
+                    return Err("Invalid or expired reset token")
+
+                user_id = user_data[0]
+
+        # Step 2: Update the user's password
+        new_password_hash = password_hasher.hash(new_password)
+        with DB.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE users SET password_hash = %s, reset_token = NULL, reset_requested_at = NULL WHERE id = %s",
+                    (new_password_hash, user_id)
+                )
+                conn.commit()
+
+        # Step 3: Invalidate the reset token (already done by setting reset_token to NULL above)
+        return Ok(None)
+
+    except Exception as e:
+        return Err(f"Failed to reset password: {e}")
+

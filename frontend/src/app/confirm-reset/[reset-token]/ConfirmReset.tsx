@@ -27,6 +27,12 @@ export default function ConfirmResetPage() {
             return;
         }
 
+        // Check if the new password is at least 8 characters long
+        if (newPassword.length < 8) {
+            setError("Password must be at least 8 characters long");
+            return; // Early return if the password is too short
+        }
+
         if (newPassword !== confirmPassword) {
             setError("Passwords do not match");
             return; // Early return if passwords don't match
