@@ -8,28 +8,25 @@ on:
     branches: ["main"]
     paths: ['frontend/**', ".github/workflows/node.js.yml"]
 
+defaults:
+  run:
+    working-directory: frontend
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [22.x]
-
     steps:
     - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
+    - name: Use Node.js 22
       uses: actions/setup-node@v3
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: '22'
     - name: Install dependencies
-      working-directory: ./frontend
       run: npm install
     - name: Build
-      working-directory: ./frontend
       run: npm run build --if-present
     - name: Test
-      working-directory: ./frontend
       run: |
         npm run test:coverage | tail -n +6 | sed '$d' > coverage.md
         sed -i '2,$ s/^/| /; 2,$ s/$/ |/' coverage.md
@@ -37,8 +34,6 @@ jobs:
       if: github.event_name == 'pull_request'
       uses: thollander/actions-comment-pull-request@v2
       with:
-        filePath: frontend/coverage.md
+        filePath: coverage.md
         comment_tag: coverage_frontend
         mode: recreate
-    
-
