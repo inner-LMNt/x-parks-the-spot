@@ -1,0 +1,57 @@
+from flask.testing import FlaskClient
+from typing import Dict, cast, Any
+import uuid
+import pytest
+
+
+def test_request_delete_account(client: FlaskClient) -> None:
+    # Assuming you have a registered user to get the token
+    response = client.post(
+        "/api/unstable/auth/register",
+        json={
+            "email": "testuser@example.com",
+            "full_name": "Test User",
+            "password": "TestPassword123",
+        },
+    )
+    assert response.status_code == 201
+    token = cast(Dict[str, str], response.json)["access_token"]
+
+    # Simulate the request to delete the account
+    response = client.post(
+        "/api/unstable/auth/request_delete_account",
+        headers={"Authorization": "Bearer " + token},
+        json={"password": "TestPassword123"},  # include password in the request
+    )
+    assert response.status_code == 200
+    assert response.json == {"message": "Account deletion email sent"}
+
+
+def test_request_delete_account_invalid_password(client: FlaskClient) -> None:
+    # Register a user first
+    response = client.post(
+        "/api/unstable/auth/register",
+        json={
+            "email": "testuser@example.com",
+            "full_name": "Test User",
+            "password": "TestPassword123",
+        },
+    )
+    assert response.status_code == 201
+    token = cast(Dict[str, str], response.json)["access_token"]
+
+    # Attempt to delete the account with an invalid password
+    response = client.post(
+        "/api/unstable/auth/request_delete_account",
+        headers={"Authorization": "Bearer " + token},
+        json={"password": "WrongPassword"},  # wrong password
+    )
+    assert response.status_code == 401  # unauthorized
+    assert "err" in response.json
+
+
+def test_confirm_delete_account_invalid_token(client: FlaskClient) -> None:
+    # Try confirming delete with an invalid token
+    response = client.get("/api/unstable/auth/confirm-delete/invalid-token")
+    assert response.status_code == 400  # Bad request
+    assert "err" in response.json
