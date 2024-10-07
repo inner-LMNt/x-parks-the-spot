@@ -3,7 +3,8 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import { Providers } from './providers';
-import NavBarWrapper from '@/components/custom/nav-bar-wrapper'; // Import the NavBarWrapper
+import NavBarWrapper from '@/components/custom/nav-bar-wrapper';
+import {Toaster} from "@/components/ui/toaster"; // Import the NavBarWrapper
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
@@ -18,6 +19,7 @@ export default function RootLayout({ children }) {
         <Providers>
             {children}
             <NavBarWrapper /> {/* Include the NavBarWrapper */}
+            <Toaster />
         </Providers>
         </body>
         </html>

@@ -3,19 +3,18 @@ from xpark.logic.user import validate_token_and_refresh
 from result import Ok, Err
 from typing import Callable, Any, Tuple, Protocol, TypedDict, Unpack
 import uuid
-
+import functools
 
 # These two classes implement type-checking to ensure decorated functions have both the `token` and `user_id` arguments
 class AuthParams(TypedDict):
     token: str
     user_id: uuid.UUID
 
-
 class AuthFunction(Protocol):
     def __call__(self, **kwargs: Unpack[AuthParams]) -> Tuple[Any, int]: ...
 
-
 def require_logged_in_user(next_fn: AuthFunction) -> Callable[..., Tuple[Any, int]]:
+    @functools.wraps(next_fn)  # Add this line to preserve function metadata
     def wrapper(*args: Any, **kwargs: Any) -> Tuple[Any, int]:
         # Extract the bearer auth
         token_to_check = request.headers.get("Authorization")

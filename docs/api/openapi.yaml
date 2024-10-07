@@ -333,10 +333,13 @@ paths:
             type: string
             format: date-time
         - in: query
-          name: free_only
+          name: paid_status
           schema:
-            type: boolean
-            default: false
+            type: enum
+            enum:
+              - ALL
+              - PAID
+              - FREE
         - in: query
           name: features
           schema:

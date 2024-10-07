@@ -197,7 +197,7 @@ export default function ParkingSpaceBooking() {
             toast({
                 title: 'Booking Successful',
                 description: 'Your reservation has been confirmed.',
-                variant: 'default',
+                variant: "success",
             });
             router.push('/bookings');
         } catch (error: any) {
