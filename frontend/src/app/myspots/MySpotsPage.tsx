@@ -63,7 +63,7 @@ export default function MySpotsPage() {
         <h1 className="text-4xl font-bold mb-6">My Parking Spots</h1>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {freeParkingSpots && freeParkingSpots.length > 0 ? (
-            freeParkingSpots.map((spot) => (
+            freeParkingSpots.map((spot: ParkingSpace) => (
               <Card key={spot.id}>
                 <CardHeader>
                   <CardTitle className="flex justify-between items-center">
