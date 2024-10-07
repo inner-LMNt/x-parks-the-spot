@@ -683,7 +683,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/parking-spaces/search": {
+    "/search": {
         parameters: {
             query?: never;
             header?: never;
@@ -1656,8 +1656,6 @@ export interface components {
             /** Format: uuid */
             owner_id?: string;
             location: components["schemas"]["Location"];
-            /** @enum {string} */
-            type?: "free" | "paid";
             features?: string[];
             availability_schedule?: components["schemas"]["TimeSlot"][];
             pricing_info?: components["schemas"]["PricingInfo"];

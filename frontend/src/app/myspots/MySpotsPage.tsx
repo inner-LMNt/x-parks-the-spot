@@ -21,7 +21,7 @@ export default function MySpotsPage() {
 
   const fetchFreeSpots = async () => {
     try {
-      dispatch(getFreeSpots({id: '1001'}))
+      dispatch(getFreeSpots({id: '523e4567-e89b-12d3-a456-426614174004'}))
     } catch (error) {
       console.error('Error fetching free spots:', error)
     }
@@ -73,8 +73,8 @@ export default function MySpotsPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-gray-500 mb-2">{spot.location.latitude}, {spot.location.longitude}</p>
-                  <p className="mb-2">Type: {spot.type}</p>
-                  {spot.type === 'paid' && <p className="mb-2">Price: ${spot.pricing_info?.base_price}/hour</p>}
+                  <p className="mb-2">Type: {spot.is_paid ? 'Paid' : 'Free'}</p>
+                  {spot.is_paid && <p className="mb-2">Price: ${spot.pricing_info?.base_price}/hour</p>}
                   <p className="mb-4">Status: {spot.availability_schedule ? 'Available' : 'Unavailable'}</p>
                   <div className="flex justify-between">
                     <Button variant="outline" size="sm">
