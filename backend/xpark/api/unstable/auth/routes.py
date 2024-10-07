@@ -2,7 +2,6 @@ from . import bp
 from xpark.logic.user import (
     expire_valid_token,
     create_token,
-    create_user,
     check_username_password,
     is_user_deleted,
     handle_user_registration,
@@ -69,10 +68,8 @@ def logout(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 @bp.post("request_delete_account")
 @require_logged_in_user
 def request_delete_account(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    return {"message": "Account deletion email sent"}, 200
-    #data = request.get_json()
-    #password = data.get('password')
-    password = request.json['password']
+    data = request.get_json()
+    password = data.get('password')
 
     # Call the helper function to handle the request
     result = handle_delete_account_request(user_id, password)

@@ -7,7 +7,7 @@ from result import Result, Ok, Err
 from typing import cast, Tuple
 import datetime
 import secrets
-from xpark.utils.email_sender import send_deletion_email
+from xpark.utils.mailer import generate_templated_email, send_email
 
 def handle_user_registration(name: str, email: str, password: str) -> Result[uuid.UUID, str]:
     with DB.pool.connection() as conn:
@@ -303,13 +303,13 @@ def handle_delete_account_request(user_id: uuid.UUID, password: str) -> Result[N
     # Step 1: Get the user's email by ID
     match get_user_email_by_id(user_id):
         case Err(e):
-            return Err("User not found")
+            return Err(f"User not found: {e}")
         case Ok(user_email):
             pass  # Proceed to next step
     # Step 2: Check if the password is correct
     match check_username_password(user_email, password):
         case Err(e):
-            return Err("Invalid password")
+            return Err(f"Invalid password: {e}")
         case Ok(_):
             pass  # Proceed to next step
     # Step 3: Generate a deletion token
@@ -317,12 +317,16 @@ def handle_delete_account_request(user_id: uuid.UUID, password: str) -> Result[N
     # Step 4: Store the deletion request
     match store_deletion_request(user_id, delete_token):
         case Err(e):
-            return Err("Failed to store deletion request")
+            return Err(f"Failed to store deletion request: {e}")
         case Ok(_):
             pass  # Proceed to next step
     # Step 5: Send the email with the deletion link
     delete_link = f"http://localhost:3000/confirm-deletion/{delete_token}"
-    #send_deletion_email(user_email, delete_link)
+    send_email(to=user_email,
+                subject="Subject Here",
+                content=generate_templated_email(
+                    "delete_account", name="Name", delete_link=delete_link
+                ))
 
     return Ok(None)
 
