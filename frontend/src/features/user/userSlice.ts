@@ -139,7 +139,7 @@ export const reset_password = createAsyncThunk<void, { token: string; newPasswor
     "user/reset_password",
     async ({ token, newPassword }, { rejectWithValue }) => {
         try {
-            const response = await axios.post("auth/password-reset", {
+            const response = await axios.post("auth/reset-password", {
                 token,
                 newPassword,
             });
@@ -188,7 +188,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof login.pending
           | typeof register_acc.pending
           | typeof logout.pending
-          | typeof reset.pending
+          | typeof reset_password.pending
         > => action.type.endsWith("/pending"),
         (state) => {
           state.loading = true;
@@ -204,7 +204,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof login.rejected
           | typeof register_acc.rejected
           | typeof logout.rejected
-          | typeof reset.rejected
+          | typeof reset_password.rejected
         > => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false;
@@ -231,7 +231,7 @@ const userSlice = createSlice<UserState, {}, "user">({
       )
 
       // Handle fulfilled actions for logout and reset
-      .addMatcher(isAnyOf(logout.fulfilled, reset.fulfilled), (state) => {
+      .addMatcher(isAnyOf(logout.fulfilled, reset_password.fulfilled), (state) => {
         state.loading = false;
         state.isLoggedIn = false;
         state.access_token = null;

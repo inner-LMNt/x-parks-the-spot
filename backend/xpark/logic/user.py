@@ -195,14 +195,6 @@ def get_user_email_by_id(user_id: uuid.UUID) -> Result[str, str]:
 
             return Ok(user_data[0])
 
-
-def generate_deletion_token() -> Result[str, str]:
-    try:
-        delete_token = secrets.token_urlsafe(32)
-        return Ok(delete_token)
-    except Exception:
-        return Err("Token generation failed")
-
 def store_deletion_request(user_id: uuid.UUID, delete_token: str) -> Result[None, str]:
     try:
         deletion_requested_at = datetime.datetime.now()
@@ -321,11 +313,7 @@ def handle_delete_account_request(user_id: uuid.UUID, password: str) -> Result[N
         case Ok(_):
             pass  # Proceed to next step
     # Step 3: Generate a deletion token
-    match generate_deletion_token():
-        case Err(e):
-            return Err("Token generation failed")
-        case Ok(delete_token):
-            pass  # Proceed to next step
+    delete_token = secrets.token_urlsafe(32)
     # Step 4: Store the deletion request
     match store_deletion_request(user_id, delete_token):
         case Err(e):
@@ -344,26 +332,25 @@ def expire_all_tokens_for_user(user_id: uuid.UUID) -> Result[None, str]:
             cur.execute("DELETE FROM user_tokens WHERE user_id = %s", (user_id,))
             return Ok(None)
 
+
 def handle_password_reset(email: str) -> Result[None, str]:
     # Check if the email exists in the database
     if not check_if_user_exists(email):
         return Err("Email not found")
 
     # Generate a reset token
-    reset_token_result = generate_reset_token()
-    if isinstance(reset_token_result, Err):
-        return Err("Failed to generate reset token")
-
-    reset_token = reset_token_result.value
+    reset_token = secrets.token_urlsafe(32)
 
     # Store the reset token in the database
     store_result = store_reset_token(email, reset_token)
     if isinstance(store_result, Err):
         return Err("Failed to store reset token")
-
+    reset_link = f"http://localhost:3000/confirm-deletion/{reset_token}"
     # Send the password reset email
-    send_email_result = send_password_reset_email(email, reset_token)
-    if isinstance(send_email_result, Err):
-        return Err("Failed to send reset email")
+    send_email(to=user_email,
+                subject="Reset password",
+                content=generate_templated_email(
+                        "reset_password", name="Name", reset_link=reset_link
+                    ))
 
     return Ok(None)

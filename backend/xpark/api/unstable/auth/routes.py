@@ -61,8 +61,7 @@ def logout(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     # We know that the token is valid because the require_logged_in_user decorator validated it
     # We could get away with not checking
     match expire_valid_token(token):
-        case
-         Ok(_):
+        case Ok(_):
             return {}, 200
         case Err(e):
             return {"err": e}, 401
@@ -92,13 +91,13 @@ def confirm_delete_account(token: str) -> Tuple[Any, int]:
         case Err(e):
             return {"err": e}, 400
 
-@bp.post("auth/password-reset-request")
-def reset_password() -> Tuple[dict, int]:
+
+@bp.post("password-reset-request")
+def reset_password_request() -> Tuple[dict, int]:
     data = request.get_json()
     email = data.get("email")
 
     result = handle_password_reset(email)
-
     match result:
         case Ok(_):
             return {"message": "Password reset email sent"}, 200
@@ -107,26 +106,8 @@ def reset_password() -> Tuple[dict, int]:
                 return {"error": "Email not found"}, 409  # Conflict
             return {"error": "Password reset failed"}, 500  # Internal server error
 
-@app.route('/auth/password-reset', methods=['POST'])
+@bp.post('reset-password/<token>')
 def reset_password():
-    data = request.json
-    token = data.get('token')
-    new_password = data.get('newPassword')
-
-    if not token or not new_password:
-        return jsonify({"error": "Token and new password are required"}), 400
-
-    # Verify the token and retrieve the user
-    user = verify_reset_token(token)
-    if user is None:
-        return jsonify({"error": "Invalid or expired token"}), 400
-
-    # Update the user's password
-    user.password = generate_password_hash(new_password)
-    user.reset_token = None  # Clear the token
-    user.token_expiration = None  # Clear the expiration
-    db.session.commit()
-
     return jsonify({"message": "Password reset successfully"}), 200
 
 # @bp.get("id")

@@ -15,9 +15,9 @@ export default function ConfirmResetPage() {
     const [confirmed, setConfirmed] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [newPassword, setNewPassword] = useState<string>('');
+    const [confirmPassword, setConfirmPassword] = useState<string>(''); // New state for confirm password
 
     const dispatch = useAppDispatch();
-    const router = useRouter();
     const params = useParams();
     const token = params?.['reset-token'] as string ?? "invalid";
 
@@ -27,10 +27,15 @@ export default function ConfirmResetPage() {
             return;
         }
 
+        if (newPassword !== confirmPassword) {
+            setError("Passwords do not match");
+            return; // Early return if passwords don't match
+        }
+
         setLoading(true);
         setError(null);
         try {
-            const resultAction = await dispatch(reset_password({ token, newPassword })); // Ensure this is called correctly
+            const resultAction = await dispatch(reset_password({ token, newPassword }));
 
             if (reset_password.fulfilled.match(resultAction)) {
                 console.log("Password reset successfully");
@@ -60,23 +65,24 @@ export default function ConfirmResetPage() {
                             <CardTitle className="text-2xl text-center font-bold">Confirm Password Reset</CardTitle>
                         </motion.div>
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ stiffness: 100 }}>
-                            {!confirmed && !error ? (
+                            {!confirmed ? (
                                 <CardDescription className="text-center">
                                     Please enter your new password.
-                                </CardDescription>
-                            ) : error ? (
-                                <CardDescription className="text-center text-red-500">
-                                    {error}
                                 </CardDescription>
                             ) : (
                                 <CardDescription className="text-center text-green-500">
                                     Password reset confirmed. <br />
                                 </CardDescription>
                             )}
+                            {error && (
+                                <CardDescription className="text-center text-red-500">
+                                    {error}
+                                </CardDescription>
+                            )}
                         </motion.div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {!confirmed && !error ? (
+                        {!confirmed ? (
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -88,6 +94,13 @@ export default function ConfirmResetPage() {
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
                                     className="w-full p-2 border border-gray-300 rounded"
+                                />
+                                <input
+                                    type="password"
+                                    placeholder="Confirm Password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    className="w-full p-2 border border-gray-300 rounded mt-2"
                                 />
                                 <Button
                                     onClick={handleConfirmReset}
