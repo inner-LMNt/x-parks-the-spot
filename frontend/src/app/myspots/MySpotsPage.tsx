@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { MapPin, Edit, Trash2 } from 'lucide-react'
+import { MapPin, Edit, Trash2, Plus } from 'lucide-react'
 import { ParkingSpace } from '@/types/type'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { useRouter } from 'next/navigation'
@@ -12,93 +12,125 @@ import Link from 'next/link'
 import { getFreeSpots } from '@/features/user/userSlice'
 
 export default function MySpotsPage() {
-  const history = useRouter()
-  const dispatch = useAppDispatch()
+    const router = useRouter()
+    const dispatch = useAppDispatch()
 
-  const freeParkingSpots = useAppSelector(state => state.user.myFreeSpots)
+    const freeParkingSpots = useAppSelector(state => state.user.myFreeSpots)
 
-  const [spots, setSpots] = useState<ParkingSpace[]>([])
+    useEffect(() => {
+        dispatch(getFreeSpots({id: '523e4567-e89b-12d3-a456-426614174004'}))
+    }, [dispatch])
 
-  const fetchFreeSpots = async () => {
-    try {
-      dispatch(getFreeSpots({id: '523e4567-e89b-12d3-a456-426614174004'}))
-    } catch (error) {
-      console.error('Error fetching free spots:', error)
+    const handleDelete = async (id: string) => {
+        try {
+            const response = await fetch(`/api/spots/${id}`, {
+                method: 'DELETE',
+            })
+            if (response.ok) {
+                setSpots(spots.filter(spot => spot.id !== id))
+            } else {
+                throw new Error('Failed to delete spot')
+            }
+        } catch (error) {
+            console.error('Error deleting spot:', error)
+        }
     }
-  }
 
-  useEffect(() => {
-    fetchFreeSpots()
-    console.log("Free Spots:", freeParkingSpots)
-  }, [])
+    const emptySpots = (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="flex flex-col justify-center items-center h-64 w-full bg-white rounded-lg shadow-md"
+        >
+            <MapPin className="w-16 h-16 text-gray-400 mb-4" />
+            <p className="text-gray-500 text-lg">No spots available</p>
+            <Link href="/add" className="mt-4">
+                <Button variant="outline" className="flex items-center">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Your First Spot
+                </Button>
+            </Link>
+        </motion.div>
+    )
 
-  const handleDelete = async (id: string) => {
-    try {
-      const response = await fetch(`/api/spots/${id}`, {
-        method: 'DELETE',
-      })
-      if (response.ok) {
-        setSpots(spots.filter(spot => spot.id !== id))
-      } else {
-        throw new Error('Failed to delete spot')
-      }
-    } catch (error) {
-      console.error('Error deleting spot:', error)
-    }
-  }
+    return (
+        <div className="min-h-screen bg-gray-100 py-8">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="bg-white shadow-md rounded-lg p-6 mb-8"
+                >
+                    <h1 className="text-3xl font-bold mb-2 text-black">My Parking Spots</h1>
+                    <p className="text-gray-600 mb-6">Manage and track your parking locations</p>
 
-  const emptySpots = (
-    <div className="flex justify-center items-center h-32 w-full bg-gray-100 rounded-lg">
-      <p className="text-gray-500">No spots available</p>
-    </div>
-  )
+                    {freeParkingSpots && freeParkingSpots.length > 0 ? (
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                            {freeParkingSpots.map((spot: ParkingSpace) => (
+                                <motion.div key={spot.id}
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ duration: 0.3 }}
+                                >
+                                    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                                        <CardHeader className="bg-gray-50">
+                                            <div className="flex gap-4">
+                                                <CardTitle className="flex justify-between items-center">
+                                                    <span className="text-wrap">{spot.location.address || 'Unnamed Spot'}</span>
+                                                </CardTitle>
+                                                <MapPin className={`top-0 right-0 ${spot.availability_schedule ? 'text-green-500' : 'text-red-500'}`} />
+                                            </div>
 
-  return (
-    <div className="container mx-auto p-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1 className="text-4xl font-bold mb-6">My Parking Spots</h1>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {freeParkingSpots && freeParkingSpots.length > 0 ? (
-            freeParkingSpots.map((spot: ParkingSpace) => (
-              <Card key={spot.id}>
-                <CardHeader>
-                  <CardTitle className="flex justify-between items-center">
-                    {spot.id}
-                    <MapPin className={spot.availability_schedule ? "text-green-500" : "text-red-500"} />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-500 mb-2">{spot.location.latitude}, {spot.location.longitude}</p>
-                  <p className="mb-2">Type: {spot.is_paid ? 'Paid' : 'Free'}</p>
-                  {spot.is_paid && <p className="mb-2">Price: ${spot.pricing_info?.base_price}/hour</p>}
-                  <p className="mb-4">Status: {spot.availability_schedule ? 'Available' : 'Unavailable'}</p>
-                  <div className="flex justify-between">
-                    <Button variant="outline" size="sm">
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={() => spot.id && handleDelete(spot.id)}>
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            emptySpots
-          )}
+                                            <CardDescription>{`${spot.location.latitude.toFixed(4)}, ${spot.location.longitude.toFixed(4)}`}</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="pt-4">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <span className="text-sm font-medium">{spot.is_paid ? 'Paid' : 'Free'}</span>
+                                                <span className={`text-sm font-medium ${spot.availability_schedule ? 'text-green-600' : 'text-red-600'}`}>
+                          {spot.availability_schedule ? 'Available' : 'Unavailable'}
+                        </span>
+                                            </div>
+                                            {spot.is_paid && (
+                                                <p className="text-lg font-bold mb-4">${spot.pricing_info?.base_price}/hour</p>
+                                            )}
+                                            <div className="flex justify-between">
+                                                <Button variant="outline" size="sm" className="flex-1 mr-2" onClick={() => router.push(`/edit/${spot.id}`)}>
+                                                    <Edit className="w-4 h-4 mr-2" />
+                                                    Edit
+                                                </Button>
+                                                <Button variant="destructive" size="sm" className="flex-1" onClick={() => spot.id && handleDelete(spot.id)}>
+                                                    <Trash2 className="w-4 h-4 mr-2" />
+                                                    Delete
+                                                </Button>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
+                            ))}
+                        </div>
+                    ) : (
+                        emptySpots
+                    )}
+
+                    {freeParkingSpots && freeParkingSpots.length > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3, duration: 0.5 }}
+                            className="mt-8"
+                        >
+                            <Link href="/add">
+                                <Button className="w-full sm:w-auto">
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add New Spot
+                                </Button>
+                            </Link>
+                        </motion.div>
+                    )}
+                </motion.div>
+            </div>
         </div>
-        <div className="mt-6">
-          <Link href="/add">
-            <Button>Add New Spot</Button>
-          </Link>
-        </div>
-      </motion.div>
-    </div>
-  );
-};
+    )
+}
