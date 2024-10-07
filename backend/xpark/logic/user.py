@@ -113,17 +113,16 @@ def change_password(id: uuid.UUID, new_password: str) -> Result[None, None]:
 
 def create_token(user_id: uuid.UUID) -> str:
     token = Config.TOKEN_PREFIX + secrets.token_urlsafe(32)
-
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO user_tokens (user_id, token, expiry) VALUES (%s, %s, NOW() + INTERVAL '%s seconds')",
+
+                "INSERT INTO user_tokens (user_id, token, expiry) VALUES (%s, %s, NOW() + INTERVAL '2592000 seconds')",
                 (
                     user_id,
                     token,
-                    Config.TOKEN_EXPIRY_SECONDS,
-                ),
-            )
+                 ),
+                )
 
             # Clean up any expired tokens in the database
             # FIXME: Move to a background job so that it doesn't run on every login
@@ -168,8 +167,6 @@ def expire_valid_token(token: str) -> Result[None, None]:
                 return Err(None)
 
             return Ok(None)
-
-
 
 
 # Function to log out user from all sessions
