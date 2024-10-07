@@ -53,6 +53,7 @@ const searchSlice = createSlice<
       })
       .addCase(searchSpots.fulfilled, (state, action) => {
         state.loading = false;
+        //@ts-ignore
         state.spots = action.payload.spots;
       })
       .addCase(searchSpots.rejected, (state, action) => {

@@ -683,7 +683,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/parking-spaces/search": {
+    "/search": {
         parameters: {
             query?: never;
             header?: never;

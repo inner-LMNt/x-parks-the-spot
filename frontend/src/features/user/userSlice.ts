@@ -15,7 +15,6 @@ import {
   User,
   PasswordResetRequest,
 } from "@/types/type";
-import Any = jasmine.Any;
 
 /**
  * Interface for the user slice state
@@ -149,7 +148,7 @@ const userSlice = createSlice<UserState, {}, "user">({
   },
   extraReducers: (builder) => {
     builder
-      // Handle all pending actions
+
       .addMatcher(
         (
           action: UnknownAction

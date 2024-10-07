@@ -3,7 +3,7 @@
 import { loginHandler } from "./auth/loginHandler";
 import { registerHandler } from "./auth/registerHandler";
 import { resetHandler, resetConfirmHandler } from "./auth/resetHandler";
-import { searchHandler } from "./search/searchHandler";
+import { searchHandler, searchSpots } from "./search/searchHandler";
 import { deleteHandler } from "./auth/deleteHandler";
 import {
   getUserReservationsHandler,
@@ -13,7 +13,6 @@ import {
   getUserCarInfosHandler,
 } from "./reservations/reservationsHandler";
 import {
-  getParkingSpaceHandler,
   lockParkingSpaceHandler,
   unlockParkingSpaceHandler,
 } from "./parking-space/parkingSpaceHandler";
@@ -29,8 +28,9 @@ export const handlers = [
   getReservationByIdHandler,
   createReservationHandler,
   updateReservationHandler,
-  getParkingSpaceHandler,
+  searchSpots,
   lockParkingSpaceHandler,
   unlockParkingSpaceHandler,
   getUserCarInfosHandler,
+  // Additional handlers
 ];

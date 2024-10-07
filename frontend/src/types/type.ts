@@ -54,13 +54,13 @@ export type ReservationUpdateRequest = components["schemas"]["ReservationUpdateR
  * **Search Type**
  */
 export type SearchRequest = {
-    latitude: number;
-    longitude: number;
-    radius?: number;
+  latitude?: number;
+  longitude?: number;
+  radius?: number;
+  paid_status?: 'ALL' | 'PAID' | 'FREE';
 };
-
 export type SearchResponse = {
-    spots: ParkingSpace[];
+  spots: ParkingSpaceSummary[];
 };
 
 /**
