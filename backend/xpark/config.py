@@ -21,3 +21,9 @@ class Config:
     ALLOWED_HEADERS = os.environ.get("ALLOWED_HEADERS") or "Authorization, X-PINGOTHER, Content-Type"
     ALLOWED_METHODS = os.environ.get("ALLOWED_METHODS") or "*"
 
+    SMTP_FROM = os.environ.get("SMTP_FROM") or '"NoReply" <noreply@example.com>'
+    SMTP_USERNAME = os.environ.get("SMTP_USERNAME") or "noreply@example.com"
+    SMTP_TLS = os.environ.get("SMTP_TLS") or "no"
+    SMTP_HOST = os.environ.get("SMTP_HOST") or "localhost"
+    SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD") or ""
+    SMTP_ENABLED = os.environ.get("SMTP_ENABLED")

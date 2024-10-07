@@ -90,6 +90,13 @@ export interface paths {
                     };
                     content?: never;
                 };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
         delete?: never;
@@ -126,6 +133,13 @@ export interface paths {
                 };
                 /** @description Unauthorized */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -169,13 +183,6 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description Invalid email */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
             };
         };
         delete?: never;
@@ -214,8 +221,22 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description Invalid token or password */
+                /** @description Invalid password */
                 400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description No token given */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Incorrect token given */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -262,6 +283,13 @@ export interface paths {
                     };
                     content?: never;
                 };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
         /** Update current user's profile */
@@ -301,6 +329,13 @@ export interface paths {
                     };
                     content?: never;
                 };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
         post?: never;
@@ -314,7 +349,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Account deleted */
+                /** @description Email sent to confirm deletion */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -328,43 +363,8 @@ export interface paths {
                     };
                     content?: never;
                 };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/users/{userId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get user profile by ID */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    userId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description User profile retrieved */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["PublicUserProfile"];
-                    };
-                };
-                /** @description User not found */
-                404: {
+                /** @description Forbidden */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -372,15 +372,50 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/me/confirm-deletion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         put?: never;
-        post?: never;
+        /** Confirm deletion of account */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UserDeletionConfirm"];
+                };
+            };
+            responses: {
+                /** @description User deleted */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/users/me/car-info": {
+    "/cars": {
         parameters: {
             query?: never;
             header?: never;
@@ -403,7 +438,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["CarInfo"][];
+                        "application/json": components["schemas"]["CarInfoList"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -413,10 +448,17 @@ export interface paths {
                     };
                     content?: never;
                 };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
         put?: never;
-        /** Add new car information */
+        /** Add new car */
         post: {
             parameters: {
                 query?: never;
@@ -453,6 +495,13 @@ export interface paths {
                     };
                     content?: never;
                 };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
         delete?: never;
@@ -461,7 +510,180 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cars/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a car */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Car deleted */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Car not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Update a car's information */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Car updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Car not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        trace?: never;
+    };
     "/parking-spaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a new parking space */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ParkingSpaceCreateRequest"];
+                };
+            };
+            responses: {
+                /** @description Parking space created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ParkingSpace"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/parking-spaces/search": {
         parameters: {
             query?: never;
             header?: never;
@@ -533,6 +755,20 @@ export interface paths {
                         "application/json": components["schemas"]["ParkingSpace"];
                     };
                 };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
                 /** @description Not found */
                 404: {
                     headers: {
@@ -544,76 +780,23 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/owners/parking-spaces": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get owner's parking spaces */
-        get: {
+        /** Delete parking space */
+        delete: {
             parameters: {
                 query?: never;
                 header?: never;
-                path?: never;
+                path: {
+                    id: string;
+                };
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description List of parking spaces */
+                /** @description Parking space deleted */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": components["schemas"]["ParkingSpace"][];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        /** Create a new parking space */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["ParkingSpaceCreateRequest"];
-                };
-            };
-            responses: {
-                /** @description Parking space created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ParkingSpace"];
-                    };
-                };
-                /** @description Invalid input */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
                     content?: never;
                 };
                 /** @description Unauthorized */
@@ -623,24 +806,26 @@ export interface paths {
                     };
                     content?: never;
                 };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Parking space not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
-        delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/owners/parking-spaces/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
         /** Update parking space */
-        put: {
+        patch: {
             parameters: {
                 query?: never;
                 header?: never;
@@ -685,37 +870,8 @@ export interface paths {
                     };
                     content?: never;
                 };
-            };
-        };
-        post?: never;
-        /** Delete parking space */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Parking space deleted */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
+                /** @description Parking space not found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -723,9 +879,6 @@ export interface paths {
                 };
             };
         };
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/reservations": {
@@ -756,6 +909,13 @@ export interface paths {
                 };
                 /** @description Unauthorized */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -801,6 +961,13 @@ export interface paths {
                     };
                     content?: never;
                 };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
         delete?: never;
@@ -839,6 +1006,13 @@ export interface paths {
                 };
                 /** @description Unauthorized */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -942,6 +1116,163 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reservations/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lock a parking space by Parking Space ID
+         * @description Locks a specified parking space for the authenticated user. The user ID is extracted from the authentication token.
+         *
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /**
+                         * Format: uuid
+                         * @description The unique identifier of the parking space to lock.
+                         */
+                        parking_space_id: string;
+                        /**
+                         * Format: duration
+                         * @description Duration for which the parking space should be locked (e.g., "PT15M" for 15 minutes).
+                         */
+                        lock_duration: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Parking space locked successfully. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Invalid input data. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized. Authentication token is missing or invalid. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden. User does not have permission to lock this parking space. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Conflict. Parking space is already locked or reserved. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reservations/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unlock a previously locked parking space
+         * @description Unlocks a specified parking space that was previously locked by the authenticated user. The user ID is extracted from the authentication token.
+         *
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /**
+                         * Format: uuid
+                         * @description The unique identifier of the parking space to unlock.
+                         */
+                        parking_space_id: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Parking space unlocked successfully. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Invalid input data. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized. Authentication token is missing or invalid. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden. User does not have permission to unlock this parking space. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found. The parking space is not currently locked by the user. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/spot-finder/submissions": {
         parameters: {
             query?: never;
@@ -970,6 +1301,13 @@ export interface paths {
                 };
                 /** @description Unauthorized */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1022,6 +1360,13 @@ export interface paths {
                     };
                     content?: never;
                 };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
         delete?: never;
@@ -1058,6 +1403,13 @@ export interface paths {
                 };
                 /** @description Unauthorized */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1103,6 +1455,13 @@ export interface paths {
                 };
                 /** @description Unauthorized */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1256,105 +1615,20 @@ export interface components {
             /** Format: password */
             new_password: string;
         };
-        User: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: email */
-            email?: string;
-            full_name?: string;
-            /** @enum {string} */
-            account_status?: "active" | "suspended";
-            renter_profile?: components["schemas"]["RenterProfile"];
-            owner_profile?: components["schemas"]["OwnerProfile"];
-            spot_finder_profile?: components["schemas"]["SpotFinderProfile"];
-            notification_preferences?: components["schemas"]["NotificationPreferences"];
-            /** Format: date-time */
-            created_at?: string;
-            /** Format: date-time */
-            updated_at?: string;
-        };
-        PublicUserProfile: {
-            /** Format: uuid */
-            id?: string;
-            full_name?: string;
-            roles?: ("renter" | "owner" | "spot_finder")[];
-        };
-        UserUpdateRequest: {
-            /** Format: email */
-            email?: string;
-            full_name?: string;
-            notification_preferences?: components["schemas"]["NotificationPreferences"];
-        };
-        NotificationPreferences: {
-            email_notifications?: boolean;
-            push_notifications?: boolean;
-        };
         CarInfo: {
             /** Format: uuid */
             id?: string;
             make: string;
             model: string;
+            year?: number;
             color?: string;
             license_plate: string;
+            state?: string;
             default?: boolean;
         };
         RenterProfile: {
             car_info?: components["schemas"]["CarInfo"][];
             favorites?: string[];
-        };
-        OwnerProfile: {
-            parking_spaces?: components["schemas"]["ParkingSpace"][];
-            /** Format: float */
-            earnings?: number;
-        };
-        SpotFinderProfile: {
-            submissions?: string[];
-            points_accumulated?: number;
-        };
-        ParkingSpace: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            owner_id?: string;
-            location: components["schemas"]["Location"]; // required
-            features?: string[];
-            availability_schedule?: components["schemas"]["TimeSlot"][];
-            pricing_info?: components["schemas"]["PricingInfo"];
-            photos?: string[];
-            /** @enum {string} */
-            verification_status?: "verified" | "pending" | "rejected";
-            dynamic_pricing_enabled?: boolean;
-            cancellation_policy?: string;
-            /** Format: date-time */
-            created_at?: string;
-            /** Format: date-time */
-            updated_at?: string;
-        };
-        ParkingSpaceSummary: {
-            /** Format: uuid */
-            id?: string;
-            location?: components["schemas"]["Location"];
-            features?: string[];
-            /** Format: float */
-            average_rating?: number;
-            availability?: boolean;
-        };
-        ParkingSpaceCreateRequest: {
-            location: components["schemas"]["Location"];
-            features: string[];
-            availability_schedule: components["schemas"]["TimeSlot"][];
-            pricing_info: components["schemas"]["PricingInfo"];
-            dynamic_pricing_enabled?: boolean;
-            cancellation_policy?: string;
-            /** Format: uri */
-            proof_of_ownership?: string;
-        };
-        ParkingSpaceUpdateRequest: {
-            features?: string[];
-            availability_schedule?: components["schemas"]["TimeSlot"][];
-            pricing_info?: components["schemas"]["PricingInfo"];
-            dynamic_pricing_enabled?: boolean;
-            cancellation_policy?: string;
         };
         Location: {
             /** Format: float */
@@ -1374,6 +1648,101 @@ export interface components {
             base_price: number;
             dynamic_pricing?: boolean;
             dynamic_pricing_algorithm?: string;
+        };
+        ParkingSpace: {
+            /** Format: uuid */
+            id?: string;
+            is_paid: boolean;
+            /** Format: uuid */
+            owner_id?: string;
+            location: components["schemas"]["Location"];
+            features?: string[];
+            availability_schedule?: components["schemas"]["TimeSlot"][];
+            pricing_info?: components["schemas"]["PricingInfo"];
+            photos?: string[];
+            /** @enum {string} */
+            verification_status?: "verified" | "pending" | "rejected";
+            dynamic_pricing_enabled?: boolean;
+            cancellation_policy?: string;
+            locked?: boolean;
+            /** Format: uuid */
+            locked_by?: string;
+            /** Format: date-time */
+            locked_until?: string;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        OwnerProfile: {
+            parking_spaces?: components["schemas"]["ParkingSpace"][];
+            /** Format: float */
+            earnings?: number;
+        };
+        SpotFinderProfile: {
+            submissions?: string[];
+            points_accumulated?: number;
+        };
+        NotificationPreferences: {
+            email_notifications?: boolean;
+            push_notifications?: boolean;
+        };
+        User: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: email */
+            email?: string;
+            full_name?: string;
+            /** @enum {string} */
+            account_status?: "active" | "suspended" | "deleted";
+            renter_profile?: components["schemas"]["RenterProfile"];
+            owner_profile?: components["schemas"]["OwnerProfile"];
+            spot_finder_profile?: components["schemas"]["SpotFinderProfile"];
+            notification_preferences?: components["schemas"]["NotificationPreferences"];
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        UserUpdateRequest: {
+            /** Format: email */
+            email?: string;
+            full_name?: string;
+            notification_preferences?: components["schemas"]["NotificationPreferences"];
+        };
+        UserDeletionConfirm: {
+            token: string;
+        };
+        CarInfoList: components["schemas"]["CarInfo"][];
+        ParkingSpaceCreateRequest: {
+            /** Format: uuid */
+            request_id?: string;
+            location: components["schemas"]["Location"];
+            features: string[];
+            availability_schedule: components["schemas"]["TimeSlot"][];
+            pricing_info: components["schemas"]["PricingInfo"];
+            dynamic_pricing_enabled?: boolean;
+            cancellation_policy?: string;
+            /** Format: uri */
+            proof_of_ownership?: string;
+        };
+        ParkingSpaceSummary: {
+            /** Format: uuid */
+            id?: string;
+            location?: components["schemas"]["Location"];
+            features?: string[];
+            /** Format: float */
+            average_rating?: number;
+            availability?: boolean;
+        };
+        ParkingSpaceUpdateRequest: {
+            /** Format: uuid */
+            request_id?: string;
+            features?: string[];
+            availability_schedule?: components["schemas"]["TimeSlot"][];
+            pricing_info?: components["schemas"]["PricingInfo"];
+            dynamic_pricing_enabled?: boolean;
+            cancellation_policy?: string;
         };
         Reservation: {
             /** Format: uuid */
@@ -1443,15 +1812,11 @@ export interface components {
             /** Format: date-time */
             timestamp?: string;
         };
-        SearchRequest: {
-            /** Format: float */
-            latitude?: number;
-            /** Format: float */
-            longitude?: number;
-            /** Format: float */
-            radius?: number;
+        PublicUserProfile: {
+            /** Format: uuid */
+            id?: string;
+            full_name?: string;
         };
-        SearchResponse: components["schemas"]["ParkingSpace"][];
     };
     responses: never;
     parameters: never;

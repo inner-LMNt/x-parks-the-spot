@@ -2,6 +2,7 @@ from . import bp
 from xpark.logic.user import (
     expire_valid_token,
     create_token,
+    create_user,
     check_username_password,
     is_user_deleted,
     handle_user_registration,
