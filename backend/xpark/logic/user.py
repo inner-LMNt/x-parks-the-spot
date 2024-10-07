@@ -311,25 +311,25 @@ def handle_delete_account_request(user_id: uuid.UUID, password: str) -> Result[N
     # Step 1: Get the user's email by ID
     match get_user_email_by_id(user_id):
         case Err(e):
-            return Err("User not found")
+            return Err(f"User not found: {e}")
         case Ok(user_email):
             pass  # Proceed to next step
     # Step 2: Check if the password is correct
     match check_username_password(user_email, password):
         case Err(e):
-            return Err("Invalid password")
+            return Err(f"Invalid password: {e}")
         case Ok(_):
             pass  # Proceed to next step
     # Step 3: Generate a deletion token
     match generate_deletion_token():
         case Err(e):
-            return Err("Token generation failed")
+            return Err(f"Token generation failed: {e}")
         case Ok(delete_token):
             pass  # Proceed to next step
     # Step 4: Store the deletion request
     match store_deletion_request(user_id, delete_token):
         case Err(e):
-            return Err("Failed to store deletion request")
+            return Err(f"Failed to store deletion request: {e}")
         case Ok(_):
             pass  # Proceed to next step
     # Step 5: Send the email with the deletion link
