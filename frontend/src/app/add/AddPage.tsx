@@ -24,25 +24,46 @@ import Webcam from 'react-webcam';
 import { v4 as uuidv4 } from 'uuid';
 import { TimeSlot } from '@/types/type';
 
+// Define days of the week
+const daysOfWeek = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+
+// Helper function to format time
+const formatTime = (time: string): string => {
+  return time; // Keeping time as "HH:mm" since backend expects time-only strings
+};
+
 export default function AddPage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { toast } = useToast();
   const { loading, error } = useSelector((state: RootState) => state.add);
 
-  const [spotType, setSpotType] = useState('free');
+  const [spotType, setSpotType] = useState<'free' | 'rental'>('free');
   const [image, setImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const webcamRef = useRef<Webcam>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [availability, setAvailability] = useState<Array<TimeSlot & { id: string; is24Seven: boolean }>>([]);
+  const [availability, setAvailability] = useState<
+      Array<TimeSlot & { id: string; is24Seven: boolean }>
+  >([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [geoEnabled, setGeoEnabled] = useState(true);
   const [locationLoading, setLocationLoading] = useState(false);
   const [availabilityErrors, setAvailabilityErrors] = useState<{ [key: string]: string }>({});
 
+  /**
+   * **Handle Image Selection**
+   */
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -55,10 +76,16 @@ export default function AddPage() {
     }
   };
 
+  /**
+   * **Trigger File Input Click**
+   */
   const handleImageClick = () => {
     fileInputRef.current?.click();
   };
 
+  /**
+   * **Remove Selected Image**
+   */
   const handleRemoveImage = () => {
     setImage(null);
     setPreviewUrl(null);
@@ -67,6 +94,9 @@ export default function AddPage() {
     }
   };
 
+  /**
+   * **Capture Image from Camera**
+   */
   const handleCameraCapture = useCallback(() => {
     const imageSrc = webcamRef.current?.getScreenshot();
     if (imageSrc) {
@@ -79,8 +109,11 @@ export default function AddPage() {
           });
       setShowCamera(false);
     }
-  }, [webcamRef]);
+  }, []);
 
+  /**
+   * **Add New Availability Slot**
+   */
   const handleAddAvailability = () => {
     setAvailability((prev) => [
       ...prev,
@@ -88,6 +121,9 @@ export default function AddPage() {
     ]);
   };
 
+  /**
+   * **Remove Availability Slot by ID**
+   */
   const handleRemoveAvailability = (id: string) => {
     setAvailability((prev) => prev.filter((slot) => slot.id !== id));
     setAvailabilityErrors((prev) => {
@@ -97,6 +133,9 @@ export default function AddPage() {
     });
   };
 
+  /**
+   * **Handle Changes in Availability Slots**
+   */
   const handleAvailabilityChange = (
       id: string,
       field: keyof TimeSlot | 'is24Seven',
@@ -120,7 +159,9 @@ export default function AddPage() {
     }
   };
 
-  // Function to get user's current location
+  /**
+   * **Get User's Current Location**
+   */
   const getUserLocation = () => {
     setLocationLoading(true);
     if (navigator.geolocation) {
@@ -147,7 +188,10 @@ export default function AddPage() {
     }
   };
 
-  // Helper function to calculate difference in minutes considering day wrap
+  /**
+   * **Calculate Time Difference in Minutes**
+   * Returns the difference between end and start times in minutes.
+   */
   const calculateTimeDifference = (start: string, end: string): number => {
     const [startHour, startMinute] = start.split(':').map(Number);
     const [endHour, endMinute] = end.split(':').map(Number);
@@ -162,30 +206,42 @@ export default function AddPage() {
     return diff;
   };
 
+  /**
+   * **Validate Availability Slots**
+   * Ensures each slot has valid days and durations.
+   */
   const validateAvailability = () => {
     let isValid = true;
     const errors: { [key: string]: string } = {};
 
     availability.forEach((slot) => {
       if (slot.is24Seven) {
-        // No validation needed for 24/7
-        return;
+        // For 24/7, ensure start_time and end_time are '00:00'
+        if (slot.start_time !== '00:00' || slot.end_time !== '00:00') {
+          isValid = false;
+          errors[slot.id] = '24/7 slots must have start and end times set to 00:00.';
+        }
+        return; // No further validation needed
       }
 
+      // Check if at least one day is selected
       if (slot.day_of_week.length === 0) {
         isValid = false;
         errors[slot.id] = 'Please select at least one day of the week.';
       }
 
+      // Validate time durations
       if (slot.start_time && slot.end_time) {
         const diffMinutes = calculateTimeDifference(slot.start_time, slot.end_time);
 
-        if (diffMinutes > 0 && diffMinutes < 60) {
+        // Accept if duration is exactly 0 (invalid, handled below) or >=60 minutes
+        if (diffMinutes !== 0 && diffMinutes < 60) {
           isValid = false;
           errors[slot.id] = 'Each time slot must allow for at least one hour of parking.';
         }
-        // If diffMinutes === 0, it's valid (full day)
-        // If diffMinutes >= 60, it's valid
+      } else {
+        isValid = false;
+        errors[slot.id] = 'Please provide both start and end times.';
       }
     });
 
@@ -193,6 +249,9 @@ export default function AddPage() {
     return isValid;
   };
 
+  /**
+   * **Handle Form Submission**
+   */
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
@@ -232,7 +291,19 @@ export default function AddPage() {
       latitude = userLocation.lat;
       longitude = userLocation.lng;
 
-      price = parseFloat(formData.get('price') as string);
+      const priceValue = formData.get('price');
+      if (priceValue) {
+        price = parseFloat(priceValue as string);
+        if (isNaN(price) || price < 0) {
+          toast({
+            title: 'Invalid Price',
+            description: 'Please enter a valid price.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
     } else {
       if (!userLocation) {
         toast({
@@ -248,30 +319,27 @@ export default function AddPage() {
     }
 
     // Build the availability_schedule array
-    let availability_schedule = [];
+    let availability_schedule: any[] = [];
     if (spotType === 'rental') {
       availability_schedule = availability
           .filter(
               (slot) =>
                   slot.is24Seven ||
-                  (slot.day_of_week.length > 0 &&
-                      slot.start_time &&
-                      slot.end_time)
+                  (slot.day_of_week.length > 0 && slot.start_time && slot.end_time)
           )
           .flatMap((slot) => {
             if (slot.is24Seven) {
-              return [
-                {
-                  day_of_week: "Everyday",
-                  start_time: "00:00",
-                  end_time: "00:00",
-                },
-              ];
+              // Generate an entry for each day of the week with 00:00 - 00:00
+              return daysOfWeek.map((day) => ({
+                day_of_week: day,
+                start_time: formatTime('00:00'),
+                end_time: formatTime('00:00'),
+              }));
             } else {
               return slot.day_of_week.map((day) => ({
                 day_of_week: day,
-                start_time: slot.start_time,
-                end_time: slot.end_time,
+                start_time: formatTime(slot.start_time),
+                end_time: formatTime(slot.end_time),
               }));
             }
           });
@@ -284,8 +352,8 @@ export default function AddPage() {
         longitude,
         address,
       },
-      features: [],
-      photos: [],
+      features: [], // Assuming features are handled elsewhere
+      photos: [], // Assuming photos are handled via 'image' upload
     };
 
     if (spotType === 'rental') {
@@ -293,7 +361,7 @@ export default function AddPage() {
       data.availability_schedule = availability_schedule;
       data.pricing_info = {
         base_price: price,
-        dynamic_pricing: false,
+        dynamic_pricing: false, // Modify if dynamic pricing is needed
       };
     }
 
@@ -307,32 +375,21 @@ export default function AddPage() {
     try {
       await dispatch(addParkingSpot(formSubmitData)).unwrap();
       toast({
-        title: 'Spot added successfully!',
+        title: 'Spot Added Successfully!',
         description: 'Your new parking spot has been added.',
       });
       dispatch(resetState());
       router.push('/myspots');
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Error',
-        description: error as string,
+        description: error?.message || 'Failed to add parking spot.',
         variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  // Days of the week options
-  const daysOfWeek = [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday',
-  ];
 
   return (
       <div className="flex flex-col min-h-screen bg-gray-100">
@@ -361,12 +418,13 @@ export default function AddPage() {
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Spot Type Selection */}
                     <div className="space-y-2">
                       <Label>Spot Type</Label>
                       <RadioGroup
                           defaultValue="free"
                           onValueChange={(value) => {
-                            setSpotType(value);
+                            setSpotType(value as 'free' | 'rental');
                             setUserLocation(null);
                             if (value !== 'rental') {
                               setAvailability([]);
@@ -385,20 +443,20 @@ export default function AddPage() {
                       </RadioGroup>
                     </div>
 
+                    {/* Spot Name (Only for Rental) */}
                     {spotType === 'rental' && (
-                        <>
-                          <div className="space-y-2">
-                            <Label htmlFor="name">Spot Name</Label>
-                            <Input
-                                id="name"
-                                name="name"
-                                required
-                                placeholder="e.g. Downtown Parking"
-                            />
-                          </div>
-                        </>
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Spot Name</Label>
+                          <Input
+                              id="name"
+                              name="name"
+                              required
+                              placeholder="e.g. Downtown Parking"
+                          />
+                        </div>
                     )}
 
+                    {/* Address (Only for Rental) */}
                     {spotType === 'rental' && (
                         <div className="space-y-2">
                           <Label htmlFor="address">Address</Label>
@@ -438,13 +496,14 @@ export default function AddPage() {
                       )}
                     </div>
 
+                    {/* Availability Schedule (Only for Rental) */}
                     {spotType === 'rental' && (
                         <>
-                          {/* Availability Schedule */}
                           <div className="space-y-4">
                             <Label>Availability Schedule</Label>
                             {availability.map((slot) => (
                                 <div key={slot.id} className="space-y-2 border p-4 rounded-md">
+                                  {/* Slot Header with Remove Button */}
                                   <div className="flex justify-between items-center">
                                     <Label>Time Slot</Label>
                                     <Button
@@ -455,6 +514,8 @@ export default function AddPage() {
                                       <Trash2 className="w-4 h-4" />
                                     </Button>
                                   </div>
+
+                                  {/* 24/7 Checkbox */}
                                   <div className="flex items-center space-x-2">
                                     <Checkbox
                                         id={`24seven-${slot.id}`}
@@ -470,12 +531,15 @@ export default function AddPage() {
                                     />
                                     <Label htmlFor={`24seven-${slot.id}`}>24/7</Label>
                                   </div>
+
+                                  {/* Time Inputs (Only if Not 24/7) */}
                                   {!slot.is24Seven && (
                                       <>
                                         <div className="grid grid-cols-2 gap-4">
                                           <div className="space-y-2">
-                                            <Label>Start Time</Label>
+                                            <Label htmlFor={`start_time-${slot.id}`}>Start Time</Label>
                                             <Input
+                                                id={`start_time-${slot.id}`}
                                                 type="time"
                                                 value={slot.start_time}
                                                 onChange={(e) =>
@@ -485,8 +549,9 @@ export default function AddPage() {
                                             />
                                           </div>
                                           <div className="space-y-2">
-                                            <Label>End Time</Label>
+                                            <Label htmlFor={`end_time-${slot.id}`}>End Time</Label>
                                             <Input
+                                                id={`end_time-${slot.id}`}
                                                 type="time"
                                                 value={slot.end_time}
                                                 onChange={(e) =>
@@ -496,6 +561,8 @@ export default function AddPage() {
                                             />
                                           </div>
                                         </div>
+
+                                        {/* Days of the Week */}
                                         <div className="space-y-2">
                                           <Label>Days of the Week</Label>
                                           <div className="grid grid-cols-2 gap-2">
@@ -518,12 +585,15 @@ export default function AddPage() {
                                         </div>
                                       </>
                                   )}
+
                                   {/* Display error message if any */}
                                   {availabilityErrors[slot.id] && (
                                       <p className="text-red-500 text-sm">{availabilityErrors[slot.id]}</p>
                                   )}
                                 </div>
                             ))}
+
+                            {/* Button to Add New Availability Slot */}
                             <Button
                                 type="button"
                                 variant="outline"
@@ -535,6 +605,7 @@ export default function AddPage() {
                             </Button>
                           </div>
 
+                          {/* Price Input (Only for Rental) */}
                           <div className="space-y-2">
                             <Label htmlFor="price">Price per Hour ($)</Label>
                             <Input
@@ -550,6 +621,7 @@ export default function AddPage() {
                         </>
                     )}
 
+                    {/* Spot Image Upload Section */}
                     <div className="space-y-2">
                       <Label>Spot Image</Label>
                       {showCamera ? (
@@ -630,6 +702,7 @@ export default function AddPage() {
                       </div>
                     </div>
 
+                    {/* Submit Button */}
                     <Button
                         type="submit"
                         className="w-full"
@@ -638,6 +711,7 @@ export default function AddPage() {
                       {isSubmitting || loading ? 'Adding Spot...' : 'Add Parking Spot'}
                     </Button>
 
+                    {/* Display Error Message if Any */}
                     {error && (
                         <p className="text-red-500 text-center mt-2">{error}</p>
                     )}
