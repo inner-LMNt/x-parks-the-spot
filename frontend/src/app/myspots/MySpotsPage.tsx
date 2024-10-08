@@ -11,7 +11,7 @@ import { ParkingSpace } from '@/types/type'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { getOwnerSpots } from '@/features/owner/ownerSlice' // Adjust the import path if necessary
+import { getOwnerSpots, deleteParkingSpot } from '@/features/owner/ownerSlice'
 
 export default function MySpotsPage() {
     const router = useRouter()
@@ -20,24 +20,13 @@ export default function MySpotsPage() {
     const { paidSpots, freeSpots, pendingSpots, loading, error } = useAppSelector(state => state.owner)
 
     useEffect(() => {
-        // Since owner_id is provided in the header, ensure your axios instance includes it
         dispatch(getOwnerSpots())
     }, [dispatch])
 
-    const handleDelete = async (id: string) => {
-        try {
-            const response = await fetch(`/api/spots/${id}`, {
-                method: 'DELETE',
-            })
-            if (response.ok) {
-                console.log('Spot deleted successfully')
-                // Refresh the spots list after deletion
-                dispatch(getOwnerSpots())
-            } else {
-                throw new Error('Failed to delete spot')
-            }
-        } catch (error) {
-            console.error('Error deleting spot:', error)
+    const handleDelete = (id: string) => {
+        const confirmDelete = window.confirm("Are you sure you want to delete this parking spot?");
+        if (confirmDelete) {
+            dispatch(deleteParkingSpot(id))
         }
     }
 
@@ -68,22 +57,43 @@ export default function MySpotsPage() {
                             transition={{ duration: 0.3 }}
                 >
                     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                        {/* Display Image if Exists */}
+                        {spot.image && (
+                            <div className="relative w-full h-48">
+                                <Image
+                                    src={spot.image}
+                                    alt={spot.name || 'Parking Spot Image'}
+                                    layout="fill"
+                                    objectFit="cover"
+                                    className="w-full h-48 object-cover"
+                                    placeholder="blur"
+                                    blurDataURL="/placeholder-image.png" // Ensure this path is correct and the image exists in /public
+                                />
+                            </div>
+                        )}
                         <CardHeader className="bg-gray-50">
                             <div className="flex justify-between items-center">
                                 <CardTitle className="flex items-center space-x-2">
-                                    <MapPin className={`w-5 h-5 ${spot.availability_schedule && spot.availability_schedule.length > 0 ? 'text-green-500' : 'text-red-500'}`} />
-                                    <span>{spot.location?.address || 'Unnamed Spot'}</span>
+                                    <MapPin className={`w-5 h-5 ${spot.is_paid ? 'text-green-500' : 'text-blue-500'}`} />
+                                    <span>{spot.name || (spot.is_paid ? "Unnamed Spot" : "Free Spot")}</span>
                                 </CardTitle>
                             </div>
                             <CardDescription>
-                                {spot.location ? `${spot.location.latitude.toFixed(4)}, ${spot.location.longitude.toFixed(4)}` : 'Location not available'}
+                                {/* Display Address if Exists, else Latitude and Longitude */}
+                                {spot.location?.address ? (
+                                    <span className="text-sm text-gray-600">{spot.location.address}</span>
+                                ) : (
+                                    spot.location ? `${spot.location.latitude.toFixed(4)}, ${spot.location.longitude.toFixed(4)}` : 'Location not available'
+                                )}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="pt-4">
                             <div className="flex justify-between items-center mb-4">
                                 <span className="text-sm font-medium">{spot.is_paid ? 'Paid' : 'Free'}</span>
                                 <span className={`text-sm font-medium ${spot.availability_schedule && spot.availability_schedule.length > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {spot.availability_schedule && spot.availability_schedule.length > 0 ? 'Available' : 'Unavailable'}
+                                    {spot.is_paid ?
+                                        (spot.availability_schedule && spot.availability_schedule.length > 0 ? 'Available' : 'Unavailable')
+                                        : 'Always Available'}
                                 </span>
                             </div>
                             {spot.is_paid && spot.pricing_info && (
@@ -94,7 +104,7 @@ export default function MySpotsPage() {
                                     <Edit className="w-4 h-4 mr-2" />
                                     Edit
                                 </Button>
-                                <Button variant="destructive" size="sm" className="flex-1" onClick={() => spot.id && handleDelete(spot.id)}>
+                                <Button variant="destructive" size="sm" className="flex-1" onClick={() => handleDelete(spot.id)}>
                                     <Trash2 className="w-4 h-4 mr-2" />
                                     Delete
                                 </Button>
@@ -122,7 +132,7 @@ export default function MySpotsPage() {
                         <p>Loading...</p>
                     ) : error ? (
                         <p className="text-red-500">Error: {error}</p>
-                    ) : (paidSpots.length === 0 && freeSpots.length === 0) ? (
+                    ) : (paidSpots.length === 0 && freeSpots.length === 0 && pendingSpots.length === 0) ? (
                         emptySpots
                     ) : (
                         <>

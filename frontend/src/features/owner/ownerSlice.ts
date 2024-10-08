@@ -4,6 +4,12 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "../../api/axiosInstance";
 import { ParkingSpace } from "@/types/type";
 
+interface OwnerSpotsResponse {
+    paidSpaces: ParkingSpace[];
+    freeSpots: ParkingSpace[];
+    pendingSpaces: ParkingSpace[];
+}
+
 interface OwnerState {
     loading: boolean;
     error: string | null;
@@ -20,6 +26,7 @@ const initialState: OwnerState = {
     pendingSpots: [],
 };
 
+// Async thunk to fetch owner spots
 export const getOwnerSpots = createAsyncThunk<
     OwnerSpotsResponse,
     void,
@@ -33,6 +40,24 @@ export const getOwnerSpots = createAsyncThunk<
     }
 });
 
+// Async thunk to delete a parking spot
+export const deleteParkingSpot = createAsyncThunk<
+    string, // Return the ID of the deleted spot
+    string, // Argument: ID of the spot to delete
+    { rejectValue: string }
+>("owner/deleteSpot", async (spotId, { rejectWithValue }) => {
+    try {
+        const response = await axios.delete(`/parking-spaces/${spotId}`);
+        if (response.status === 200) {
+            return spotId;
+        } else {
+            return rejectWithValue("Failed to delete the spot");
+        }
+    } catch (error: any) {
+        return rejectWithValue(error.response?.data?.error || "Failed to delete the spot");
+    }
+});
+
 const ownerSlice = createSlice({
     name: "owner",
     initialState,
@@ -43,6 +68,7 @@ const ownerSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
+            // Handle getOwnerSpots
             .addCase(getOwnerSpots.pending, (state) => {
                 state.loading = true;
                 state.error = null;
@@ -56,6 +82,23 @@ const ownerSlice = createSlice({
                 state.pendingSpots = pendingSpaces;
             })
             .addCase(getOwnerSpots.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+            })
+            // Handle deleteParkingSpot
+            .addCase(deleteParkingSpot.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(deleteParkingSpot.fulfilled, (state, action) => {
+                state.loading = false;
+                const deletedSpotId = action.payload;
+                // Remove the deleted spot from all categories
+                state.paidSpots = state.paidSpots.filter(spot => spot.id !== deletedSpotId);
+                state.freeSpots = state.freeSpots.filter(spot => spot.id !== deletedSpotId);
+                state.pendingSpots = state.pendingSpots.filter(spot => spot.id !== deletedSpotId);
+            })
+            .addCase(deleteParkingSpot.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
             });
