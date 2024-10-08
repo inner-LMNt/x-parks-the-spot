@@ -5,7 +5,7 @@ from flask import request
 from result import Ok, Err
 from typing import Tuple, Any
 
-@bp.post("/")
+@bp.post("")
 def search_parking_spaces_route() -> Tuple[Any, int]:
     # Extract required parameters
     try:

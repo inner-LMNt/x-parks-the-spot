@@ -47,7 +47,7 @@ export default function MySpotsPage() {
             <MapPin className="w-16 h-16 text-gray-400 mb-4" />
             <p className="text-gray-500 text-lg">No spots available</p>
             <Link href="/add" className="mt-4">
-                <Button variant="outline" className="flex items-center">
+                <Button variant="outline" className="flex items-center text-slate-900">
                     <Plus className="w-4 h-4 mr-2" />
                     Add Your First Spot
                 </Button>

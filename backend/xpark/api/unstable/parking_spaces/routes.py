@@ -9,7 +9,7 @@ from typing import Tuple, Any
 import uuid
 
 
-@bp.get("/")
+@bp.get("")
 @require_logged_in_user
 def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     match get_owned_parking_spaces(user_id):
@@ -18,7 +18,7 @@ def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any,
         case Err(e):
             return {'error': str(e)}, 500
 
-@bp.post("/")
+@bp.post("")
 @require_logged_in_user
 def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     data = request.get_json()
@@ -63,7 +63,7 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
         case Err(e):
             return {'error': str(e)}, 400
 
-@bp.get("/<parking_space_id>")
+@bp.get("<parking_space_id>")
 def get_parking_space_route(parking_space_id: str) -> Tuple[Any, int]:
     try:
         parking_space_uuid = uuid.UUID(parking_space_id)
@@ -76,7 +76,7 @@ def get_parking_space_route(parking_space_id: str) -> Tuple[Any, int]:
         case Err(e):
             return {"error": str(e)}, 404
 
-@bp.patch("/<parking_space_id>")
+@bp.patch("<parking_space_id>")
 @require_logged_in_user
 def update_parking_space_route(parking_space_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     data = request.get_json()
@@ -95,7 +95,7 @@ def update_parking_space_route(parking_space_id: str, token: str, user_id: uuid.
             status_code = 403 if "not authorized" in str(e) else 404 if "not found" in str(e) else 400
             return {'error': str(e)}, status_code
 
-@bp.delete("/<parking_space_id>")
+@bp.delete("<parking_space_id>")
 @require_logged_in_user
 def delete_parking_space_route(parking_space_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     try:

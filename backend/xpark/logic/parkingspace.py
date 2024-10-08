@@ -11,7 +11,7 @@ def get_owned_parking_spaces(
         with conn.cursor() as cur:
             try:
                 query = """
-                    SELECT id, name, is_paid, status, created_at, updated_at
+                    SELECT id, name, is_paid, verification_status, created_at, updated_at
                     FROM parking_spaces
                     WHERE owner = %s
                 """
