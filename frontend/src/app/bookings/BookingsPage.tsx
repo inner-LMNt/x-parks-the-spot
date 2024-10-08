@@ -15,6 +15,14 @@ import { Avatar } from '@/components/ui/avatar';
 import Link from 'next/link';
 
 export default function BookingsPage() {
+    const isLoggedIn = useAppSelector(state => state.user.isLoggedIn)
+    if (!isLoggedIn) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 text-slate-900">
+                <p className="text-xl">Please <Link href="/login" className="text-blue-500 underline">log in</Link> to view your spots.</p>
+            </div>
+        );
+    }
     const dispatch = useAppDispatch();
     const router = useRouter();
     const reservations = useAppSelector((state) => state.reservations.reservations);

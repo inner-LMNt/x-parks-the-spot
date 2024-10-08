@@ -14,6 +14,15 @@ import Link from 'next/link'
 import { getOwnerSpots, deleteParkingSpot } from '@/features/owner/ownerSlice'
 
 export default function MySpotsPage() {
+    const isLoggedIn = useAppSelector(state => state.user.isLoggedIn)
+    if (!isLoggedIn) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 text-slate-900">
+                <p className="text-xl">Please <Link href="/login" className="text-blue-500 underline">log in</Link> to view your spots.</p>
+            </div>
+        );
+    }
+
     const router = useRouter()
     const dispatch = useAppDispatch()
 
