@@ -10,10 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MapPin, DollarSign, Clock, Star, ArrowLeft } from 'lucide-react'; // Imported ArrowLeft
+import { MapPin, DollarSign, Clock, Star, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
-import { fetchParkingSpace, resetError, lockParkingSpace } from '@/features/parking-space/parkingSpaceSlice'; // Import lockParkingSpace
+import { fetchParkingSpace, resetError, lockParkingSpace } from '@/features/parking-space/parkingSpaceSlice';
 import { toast } from '@/hooks/use-toast'; // Assuming you have a toast hook
+import Image from 'next/image'; // Import Image for rendering images
 
 export default function ParkingSpaceDetails() {
     const params = useParams();
@@ -30,7 +31,6 @@ export default function ParkingSpaceDetails() {
 
     useEffect(() => {
         if (parkingSpaceId) {
-            //@ts-ignore
             dispatch(fetchParkingSpace(parkingSpaceId));
         }
 
@@ -40,12 +40,55 @@ export default function ParkingSpaceDetails() {
         };
     }, [dispatch, parkingSpaceId]);
 
+    useEffect(() => {
+        if (lockStatus === 'locked') {
+            toast({
+                title: 'Parking Space Locked',
+                description: 'Your reservation has been locked successfully.',
+                variant: 'success',
+            });
+        } else if (lockStatus === 'failed') {
+            toast({
+                title: 'Locking Failed',
+                description: error || 'Failed to lock the parking space.',
+                variant: 'destructive',
+            });
+        }
+    }, [lockStatus, error, toast]);
+
     const handleReserveAndLock = async () => {
-        router.push(`/bookings/${parkingSpaceId}/reserve?previousUrl=${encodeURIComponent(currentUrl ?? '/bookings')}`);
+        const confirmLock = window.confirm("Are you sure you want to reserve and lock this parking space?");
+        if (confirmLock) {
+            router.push(`/bookings/${parkingSpaceId}/reserve?previousUrl=${encodeURIComponent(currentUrl ?? '/bookings')}`);
+        }
     };
 
     const handleBack = () => {
         router.push('/bookings');
+    };
+
+    // Helper function to validate date strings
+    const isValidDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return !isNaN(date.getTime());
+    };
+
+    // Safely extract availability times
+    const getAvailabilityTimes = () => {
+        if (
+            parkingSpace.availability_schedule &&
+            parkingSpace.availability_schedule.length > 0
+        ) {
+            const { start_time, end_time } = parkingSpace.availability_schedule[0];
+
+            const startDate = isValidDate(start_time) ? new Date(start_time) : null;
+            const endDate = isValidDate(end_time) ? new Date(end_time) : null;
+
+            if (startDate && endDate) {
+                return `${format(startDate, 'p')} - ${format(endDate, 'p')}`;
+            }
+        }
+        return 'No availability schedule';
     };
 
     if (loading) {
@@ -96,6 +139,21 @@ export default function ParkingSpaceDetails() {
                     </div>
                 </CardHeader>
                 <CardContent>
+                    {/* Render Image if Exists */}
+                    {parkingSpace.image && (
+                        <div className="relative w-full h-48 mb-4">
+                            <Image
+                                src={parkingSpace.image}
+                                alt={parkingSpace.name || 'Parking Spot Image'}
+                                layout="fill"
+                                objectFit="cover"
+                                className="rounded-md"
+                                placeholder="blur"
+                                blurDataURL="/placeholder-image.png" // Ensure this path is correct and the image exists in /public
+                            />
+                        </div>
+                    )}
+
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center">
                             <Star className="w-5 h-5 text-yellow-400 mr-1" />
@@ -114,18 +172,7 @@ export default function ParkingSpaceDetails() {
                             </div>
                             <div className="flex items-center">
                                 <Clock className="w-5 h-5 text-blue-500 mr-1" />
-                                <span className="text-sm">
-                                    {parkingSpace.availability_schedule?.length ?? -1 > 0 ? (
-                                        <>
-                                            { /* @ts-ignore */}
-                                            {format(new Date(parkingSpace.availability_schedule[0].start_time), 'p')} -{' '}
-                                            { /* @ts-ignore */}
-                                            {format(new Date(parkingSpace.availability_schedule[0].end_time), 'p')}
-                                        </>
-                                    ) : (
-                                        'No availability schedule'
-                                    )}
-                                </span>
+                                <span className="text-sm">{getAvailabilityTimes()}</span>
                             </div>
                         </div>
                         <ScrollArea className="h-20 rounded-md border p-2">

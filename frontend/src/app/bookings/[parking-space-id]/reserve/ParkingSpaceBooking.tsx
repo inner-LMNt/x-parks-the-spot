@@ -36,6 +36,8 @@ export default function ParkingSpaceBooking() {
 
     const dispatch = useAppDispatch();
     const parkingSpace = useAppSelector((state) => state.parkingSpace.parkingSpace);
+    const loading = useAppSelector((state) => state.parkingSpace.loading);
+    const error = useAppSelector((state) => state.parkingSpace.error);
     const lockStatus = useAppSelector((state) => state.parkingSpace.lockStatus);
     const lockExpiresAt = useAppSelector((state) => state.parkingSpace.lockExpiresAt);
     const bookingError = useAppSelector((state) => state.parkingSpace.error);
@@ -59,9 +61,7 @@ export default function ParkingSpaceBooking() {
 
     // Fetch parking space details and user's car info
     useEffect(() => {
-        //@ts-ignore
         dispatch(fetchParkingSpace(parkingSpaceId));
-        //@ts-ignore
         dispatch(fetchUserCarInfos());
     }, [dispatch, parkingSpaceId]);
 
@@ -70,7 +70,6 @@ export default function ParkingSpaceBooking() {
         isMounted.current = true;
 
         if (!isLocked.current) {
-            //@ts-ignore
             dispatch(lockParkingSpace({ parking_space_id: parkingSpaceId, lock_duration: 'PT5M' }))
                 .unwrap()
                 .then(() => {
@@ -90,7 +89,6 @@ export default function ParkingSpaceBooking() {
             if (isMounted.current && isLocked.current) {
                 e.preventDefault();
                 isLocked.current = false;
-                //@ts-ignore
                 dispatch(unlockParkingSpace(parkingSpaceId))
                     .unwrap()
                     .catch((error: any) => console.error('Failed to unlock on unload:', error));
@@ -102,7 +100,6 @@ export default function ParkingSpaceBooking() {
         return () => {
             if (isMounted.current && isLocked.current) {
                 isLocked.current = false;
-                //@ts-ignore
                 dispatch(unlockParkingSpace(parkingSpaceId))
                     .unwrap()
                     .catch((error: any) => console.error('Failed to unlock on unmount:', error));
@@ -170,6 +167,16 @@ export default function ParkingSpaceBooking() {
             return;
         }
 
+        if (!isValidDate(booking.start_time) || !isValidDate(booking.end_time)) {
+            toast({
+                title: 'Invalid Date',
+                description: 'Please enter valid start and end times.',
+                variant: 'destructive',
+            });
+            setIsSubmitting(false);
+            return;
+        }
+
         if (new Date(booking.end_time) <= new Date(booking.start_time)) {
             toast({
                 title: 'Invalid Time',
@@ -192,7 +199,6 @@ export default function ParkingSpaceBooking() {
         };
 
         try {
-            //@ts-ignore
             await dispatch(bookParkingSpace(reservationRequest)).unwrap();
             toast({
                 title: 'Booking Successful',
@@ -236,8 +242,61 @@ export default function ParkingSpaceBooking() {
         return price > 0 ? price : 0;
     };
 
+    const isValidDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return !isNaN(date.getTime());
+    };
+
+    const renderAvailability = () => {
+        if (parkingSpace.availability_schedule && parkingSpace.availability_schedule.length > 0) {
+            return parkingSpace.availability_schedule.map((schedule, index) => {
+                const { day_of_week, start_time, end_time } = schedule;
+
+                const startDate = isValidDate(start_time) ? new Date(start_time) : null;
+                const endDate = isValidDate(end_time) ? new Date(end_time) : null;
+
+                const timeRange = startDate && endDate
+                    ? `${format(startDate, 'p')} - ${format(endDate, 'p')}`
+                    : 'Invalid time';
+
+                return (
+                    <div key={index} className="flex items-center">
+                        <Clock className="w-5 h-5 text-blue-500 mr-1" />
+                        <span className="text-sm">
+                            {day_of_week}: {timeRange}
+                        </span>
+                    </div>
+                );
+            });
+        }
+        return 'No availability schedule';
+    };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <p>Loading parking space details...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex flex-col justify-center items-center h-screen">
+                <p className="text-red-500">Error: {error}</p>
+                <Button onClick={() => dispatch(fetchParkingSpace(parkingSpaceId))}>
+                    Retry
+                </Button>
+            </div>
+        );
+    }
+
     if (!parkingSpace) {
-        return <p>Loading...</p>;
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <p>No parking space found.</p>
+            </div>
+        );
     }
 
     return (
@@ -278,18 +337,7 @@ export default function ParkingSpaceBooking() {
                             </div>
                             <div className="flex items-center">
                                 <Clock className="w-5 h-5 text-blue-500 mr-1" />
-                                <span className="text-sm">
-                                    {parkingSpace.availability_schedule?.length ?? -1 > 0 ? (
-                                        <>
-                                            {/* @ts-ignore */}
-                                            {format(new Date(parkingSpace.availability_schedule[0].start_time), 'p')} -{' '}
-                                            {/* @ts-ignore */}
-                                            {format(new Date(parkingSpace.availability_schedule[0].end_time), 'p')}
-                                        </>
-                                    ) : (
-                                        'No availability schedule'
-                                    )}
-                                </span>
+                                <span className="text-sm">See availability below</span>
                             </div>
                         </div>
                         <ScrollArea className="h-20 rounded-md border p-2">
@@ -305,6 +353,11 @@ export default function ParkingSpaceBooking() {
                                 ))}
                             </div>
                         </div>
+                        {/* Optional: Render All Availability Schedules */}
+                        <div>
+                            <h3 className="font-semibold mb-2 text-sm">Availability:</h3>
+                            {renderAvailability()}
+                        </div>
                     </div>
                 </CardContent>
                 <Separator className="my-2" />
@@ -316,12 +369,12 @@ export default function ParkingSpaceBooking() {
                                 <div key={reservation.id} className="text-sm border p-2 rounded-md">
                                     <p>
                                         <strong>Date:</strong>{' '}
-                                        {reservation.start_time ? reservation.start_time : 'N/A'}
+                                        {isValidDate(reservation.start_time) ? format(new Date(reservation.start_time), 'PPP') : 'N/A'}
                                     </p>
                                     <p>
                                         <strong>Time:</strong>{' '}
-                                        {reservation.start_time && reservation.end_time
-                                            ? `${reservation.start_time} - ${reservation.end_time}`
+                                        {isValidDate(reservation.start_time) && isValidDate(reservation.end_time)
+                                            ? `${format(new Date(reservation.start_time), 'p')} - ${format(new Date(reservation.end_time), 'p')}`
                                             : 'N/A'}
                                     </p>
                                     <p>
