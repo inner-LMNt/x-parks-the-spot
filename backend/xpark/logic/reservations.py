@@ -12,6 +12,11 @@ from xpark import Config
 from xpark.utils.db import DB
 from result import Result, Ok, Err
 import datetime
+from datetime import timezone
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
+logger = logging.getLogger(__name__)
 
 
 def get_user_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], str]:
@@ -482,61 +487,114 @@ def lock_parking_space(user_id: uuid.UUID, parking_space_id: uuid.UUID, lock_dur
         if not lock_duration.startswith('PT'):
             return Err("Invalid lock_duration format. Use ISO 8601 duration, e.g., 'PT15M'.")
 
-        # For simplicity, handle only minutes
+        # Handle only minutes for simplicity
         minutes_str = lock_duration[2:-1]  # Remove 'PT' and 'M'
         try:
             minutes = int(minutes_str)
         except ValueError:
             return Err("Invalid lock_duration value. Minutes must be an integer.")
 
-        lock_until = datetime.datetime.utcnow() + datetime.timedelta(minutes=minutes)
+        # Use timezone-aware datetime
+        now_utc = datetime.datetime.now(timezone.utc)
+        lock_until = now_utc + datetime.timedelta(minutes=minutes)
+        logger.debug("Attempting to lock parking space until %s", lock_until)
 
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
-                # Check if parking space exists
+                # Begin transaction
+                cur.execute("BEGIN;")
+                logger.debug("Transaction started.")
+
+                # Lock the row for update to prevent race conditions
                 cur.execute(
                     """
-                    SELECT is_locked, locked_by, locked_until, is_reserved
+                    SELECT locked, locked_by, locked_until
                     FROM parking_spaces
                     WHERE id = %s
+                    FOR UPDATE
                     """,
                     (str(parking_space_id),)
                 )
                 parking_space = cur.fetchone()
+                logger.debug("Fetched parking space: %s", parking_space)
+
                 if not parking_space:
+                    conn.rollback()
+                    logger.error("Parking space not found.")
                     return Err("Parking space not found.")
 
-                is_locked, locked_by, locked_until, is_reserved = parking_space
+                locked, locked_by, locked_until = parking_space
 
-                if is_locked and locked_by != str(user_id):
+                # Check if parking space is already locked by another user
+                if locked and str(locked_by) != str(user_id):
+                    conn.rollback()
+                    logger.error("Parking space is already locked by another user.")
+                    logger.error("Locked by:",locked_by," Req by:" ,user_id)
+
                     return Err("Parking space is already locked by another user.")
 
-                if is_reserved:
-                    return Err("Parking space is already reserved.")
+                # Check for overlapping reservations
+                cur.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM reservations
+                    WHERE parking_space_id = %s
+                      AND status = 'active'
+                      AND (
+                          (start_time <= %s AND end_time > %s) OR
+                          (start_time < %s AND end_time >= %s) OR
+                          (start_time >= %s AND end_time <= %s)
+                      )
+                    """,
+                    (
+                        str(parking_space_id),
+                        lock_until, now_utc,
+                        lock_until, now_utc,
+                        now_utc, lock_until
+                    )
+                )
+                reservation_count = cur.fetchone()[0]
+                logger.debug("Active reservations overlapping with lock period: %d", reservation_count)
+
+                if reservation_count > 0:
+                    conn.rollback()
+                    logger.error("Parking space is reserved during the desired lock period.")
+                    return Err("Parking space is reserved during the desired lock period.")
+
+                # If already locked by the same user, update the lock_until
+                if locked and str(locked_by) == str(user_id):
+                    logger.debug("Parking space already locked by the user. Extending lock.")
+                else:
+                    logger.debug("Locking the parking space.")
 
                 # Lock the parking space
                 cur.execute(
                     """
                     UPDATE parking_spaces
-                    SET is_locked = TRUE,
+                    SET locked = TRUE,
                         locked_by = %s,
                         locked_until = %s
                     WHERE id = %s
                     """,
                     (str(user_id), lock_until, str(parking_space_id))
                 )
+                logger.debug("Updated parking space to locked until %s.", lock_until)
 
+                # Commit transaction
                 conn.commit()
+                logger.debug("Transaction committed.")
 
                 response_data = {
-                    "message": "Parking space locked successfully.",
-                    "lock_until": lock_until.isoformat() + 'Z'
+                    "lock_until": lock_until
                 }
 
                 return Ok(response_data)
 
     except Exception as e:
+        logger.exception("Exception during locking parking space: %s", e)
         return Err(str(e))
+
+
 
 
 def unlock_parking_space(user_id: uuid.UUID, parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str]:
@@ -546,40 +604,56 @@ def unlock_parking_space(user_id: uuid.UUID, parking_space_id: uuid.UUID) -> Res
     try:
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
-                # Fetch parking space
+                # Begin transaction
+                cur.execute("BEGIN;")
+                logger.debug("Transaction started for unlocking.")
+
+                # Fetch parking space with row lock
                 cur.execute(
                     """
-                    SELECT is_locked, locked_by
+                    SELECT locked, locked_by
                     FROM parking_spaces
                     WHERE id = %s
+                    FOR UPDATE
                     """,
                     (str(parking_space_id),)
                 )
                 parking_space = cur.fetchone()
+                logger.debug("Fetched parking space for unlocking: %s", parking_space)
+
                 if not parking_space:
+                    conn.rollback()
+                    logger.error("Parking space not found.")
                     return Err("Parking space not found.")
 
-                is_locked, locked_by = parking_space
+                locked, locked_by = parking_space
 
-                if not is_locked:
+                if not locked:
+                    conn.rollback()
+                    logger.error("Parking space is not currently locked.")
                     return Err("Parking space is not currently locked.")
 
-                if locked_by != str(user_id):
+                if str(locked_by) != str(user_id):
+                    conn.rollback()
+                    logger.error("Parking space is not locked by the user.")
                     return Err("Parking space is not locked by the user.")
 
                 # Unlock the parking space
                 cur.execute(
                     """
                     UPDATE parking_spaces
-                    SET is_locked = FALSE,
+                    SET locked = FALSE,
                         locked_by = NULL,
                         locked_until = NULL
                     WHERE id = %s
                     """,
                     (str(parking_space_id),)
                 )
+                logger.debug("Updated parking space to unlocked.")
 
+                # Commit transaction
                 conn.commit()
+                logger.debug("Transaction committed for unlocking.")
 
                 response_data = {
                     "message": "Parking space unlocked successfully."
@@ -587,4 +661,5 @@ def unlock_parking_space(user_id: uuid.UUID, parking_space_id: uuid.UUID) -> Res
 
                 return Ok(response_data)
     except Exception as e:
+        logger.exception("Exception during unlocking parking space: %s", e)
         return Err(str(e))

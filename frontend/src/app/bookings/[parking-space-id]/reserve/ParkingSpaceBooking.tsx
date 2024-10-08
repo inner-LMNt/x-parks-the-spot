@@ -26,6 +26,20 @@ import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+/**
+ * **Assumed Authentication Hook**
+ * Replace this with your actual authentication logic.
+ * It should provide the current user's ID.
+ */
+const useAuth = () => {
+    // Placeholder implementation. Replace with your auth logic.
+    const user = {
+        id: '00c90ae6-0428-4081-98c6-70f3f480992a', // Example UUID
+        // ... other user properties
+    };
+    return { user };
+};
+
 export default function ParkingSpaceBooking() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const params = useParams();
@@ -46,51 +60,101 @@ export default function ParkingSpaceBooking() {
     );
     const carInfos = useAppSelector((state) => state.reservations.carInfos);
 
+    const { user } = useAuth(); // Obtain the current user
     const [booking, setBooking] = useState<ReservationCreateRequest>({
         parking_space_id: parkingSpaceId,
         start_time: '',
         end_time: '',
         car_info_id: '',
-        renter_id: 'user1' // Replace with actual authenticated user ID
+        renter_id: user.id // Dynamically set the authenticated user ID
     });
 
     const [timer, setTimer] = useState<number>(0); // Time left in milliseconds
 
     const isMounted = useRef<boolean>(false);
-    const isLocked = useRef<boolean>(false); // Ref to track if parking space is locked
+    const isLocked = useRef<boolean>(false); // Ref to track if parking space is locked by the current user
 
-    // Fetch parking space details and user's car info
+    /**
+     * **Fetch Parking Space Details and User's Car Info**
+     */
     useEffect(() => {
         dispatch(fetchParkingSpace(parkingSpaceId));
         dispatch(fetchUserCarInfos());
     }, [dispatch, parkingSpaceId]);
 
-    // Lock the parking space when the component mounts
+    /**
+     * **Handle Locking Based on Fetched Parking Space Details**
+     */
     useEffect(() => {
+        if (!parkingSpace) return; // Ensure parkingSpace is loaded
+
         isMounted.current = true;
 
-        if (!isLocked.current) {
-            dispatch(lockParkingSpace({ parking_space_id: parkingSpaceId, lock_duration: 'PT5M' }))
-                .unwrap()
-                .then(() => {
-                    isLocked.current = true; // Mark as locked
-                })
-                .catch((error: any) => {
+        const attemptLock = async () => {
+            if (parkingSpace.locked) {
+                if (parkingSpace.locked_by === user.id) {
+                    // Already locked by the same user
+                    isLocked.current = true;
+                    setTimer(parkingSpace.lock_until ? parkingSpace.lock_until - Date.now() : 0);
+                } else {
+                    // Locked by another user
                     toast({
                         title: 'Lock Failed',
-                        description: error || 'Unable to lock the parking space.',
+                        description: 'This parking space is already locked by another user.',
                         variant: 'destructive',
                     });
                     router.push(previousUrl);
-                });
-        }
+                }
+            } else {
+                // Attempt to lock
+                try {
+                    const response = await dispatch(lockParkingSpace({
+                        parking_space_id: parkingSpaceId,
+                        lock_duration: 'PT5M'
+                    })).unwrap();
+                    isLocked.current = true;
+                    setTimer(response.expiresAt - Date.now());
+                    toast({
+                        title: 'Parking Space Locked',
+                        description: 'You have successfully locked this parking space.',
+                        variant: 'success',
+                    });
+                } catch (error: any) {
+                    if (error === "Parking space is already locked or reserved") {
+                        toast({
+                            title: 'Lock Failed',
+                            description: 'This parking space is already locked by another user or reserved.',
+                            variant: 'destructive',
+                        });
+                    } else {
+                        toast({
+                            title: 'Lock Failed',
+                            description: error || 'Unable to lock the parking space.',
+                            variant: 'destructive',
+                        });
+                    }
+                    router.push(previousUrl);
+                }
+            }
+        };
 
+        attemptLock();
+
+        /**
+         * **Handle Unlocking on Component Unmount or Page Reload**
+         */
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
             if (isMounted.current && isLocked.current) {
-                e.preventDefault();
-                isLocked.current = false;
+                // Proceed to unlock without blocking the unload
                 dispatch(unlockParkingSpace(parkingSpaceId))
                     .unwrap()
+                    .then(() => {
+                        toast({
+                            title: 'Parking Space Unlocked',
+                            description: 'You have successfully unlocked this parking space.',
+                            variant: 'success',
+                        });
+                    })
                     .catch((error: any) => console.error('Failed to unlock on unload:', error));
             }
         };
@@ -99,17 +163,25 @@ export default function ParkingSpaceBooking() {
 
         return () => {
             if (isMounted.current && isLocked.current) {
-                isLocked.current = false;
                 dispatch(unlockParkingSpace(parkingSpaceId))
                     .unwrap()
+                    .then(() => {
+                        toast({
+                            title: 'Parking Space Unlocked',
+                            description: 'You have successfully unlocked this parking space.',
+                            variant: 'success',
+                        });
+                    })
                     .catch((error: any) => console.error('Failed to unlock on unmount:', error));
             }
             isMounted.current = false;
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };
-    }, [dispatch, parkingSpaceId, router, previousUrl]);
+    }, [parkingSpace, dispatch, parkingSpaceId, user.id, router, previousUrl]);
 
-    // Handle lock expiration and set up timer
+    /**
+     * **Handle Lock Expiration and Set Up Timer**
+     */
     useEffect(() => {
         if (lockExpiresAt) {
             const updateTimer = () => {
@@ -117,10 +189,17 @@ export default function ParkingSpaceBooking() {
                 if (timeLeft <= 0) {
                     setTimer(0);
                     toast({
-                        title: 'Booking Session Expired',
-                        description: 'Your booking session has expired due to inactivity.',
+                        title: 'Lock Expired',
+                        description: 'Your parking space lock has expired.',
                         variant: 'destructive',
                     });
+                    // Automatically unlock
+                    if (isLocked.current) {
+                        dispatch(unlockParkingSpace(parkingSpaceId))
+                            .unwrap()
+                            .catch((error: any) => console.error('Failed to unlock on expiration:', error));
+                        isLocked.current = false;
+                    }
                     router.push(previousUrl);
                 } else {
                     setTimer(timeLeft);
@@ -133,9 +212,11 @@ export default function ParkingSpaceBooking() {
 
             return () => clearInterval(interval);
         }
-    }, [lockExpiresAt, router, previousUrl]);
+    }, [lockExpiresAt, dispatch, parkingSpaceId, router, previousUrl]);
 
-    // Handle booking errors
+    /**
+     * **Handle Booking Errors**
+     */
     useEffect(() => {
         if (bookingError) {
             toast({
@@ -147,11 +228,17 @@ export default function ParkingSpaceBooking() {
         }
     }, [bookingError, dispatch]);
 
+    /**
+     * **Handle Input Changes**
+     */
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setBooking((prev) => ({ ...prev, [name]: value }));
     };
 
+    /**
+     * **Handle Form Submission**
+     */
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true); // Mark the form as submitting
@@ -217,6 +304,9 @@ export default function ParkingSpaceBooking() {
         }
     };
 
+    /**
+     * **Calculate Total Price**
+     */
     const calculateTotal = () => {
         if (!booking.start_time || !booking.end_time || !parkingSpace?.pricing_info?.base_price) {
             return 0;
@@ -242,11 +332,17 @@ export default function ParkingSpaceBooking() {
         return price > 0 ? price : 0;
     };
 
+    /**
+     * **Validate Date String**
+     */
     const isValidDate = (dateString: string) => {
         const date = new Date(dateString);
         return !isNaN(date.getTime());
     };
 
+    /**
+     * **Render Availability Schedule**
+     */
     const renderAvailability = () => {
         if (parkingSpace.availability_schedule && parkingSpace.availability_schedule.length > 0) {
             return parkingSpace.availability_schedule.map((schedule, index) => {
@@ -272,6 +368,9 @@ export default function ParkingSpaceBooking() {
         return 'No availability schedule';
     };
 
+    /**
+     * **Render Loading State**
+     */
     if (loading) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -280,6 +379,9 @@ export default function ParkingSpaceBooking() {
         );
     }
 
+    /**
+     * **Render Error State**
+     */
     if (error) {
         return (
             <div className="flex flex-col justify-center items-center h-screen">
@@ -291,6 +393,9 @@ export default function ParkingSpaceBooking() {
         );
     }
 
+    /**
+     * **Render No Parking Space Found**
+     */
     if (!parkingSpace) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -299,6 +404,9 @@ export default function ParkingSpaceBooking() {
         );
     }
 
+    /**
+     * **Main Component Render**
+     */
     return (
         <div className="container mx-auto p-4 max-w-md">
             <Card className="shadow-lg">
@@ -324,8 +432,8 @@ export default function ParkingSpaceBooking() {
                             <Star className="w-5 h-5 text-yellow-400 mr-1" />
                             <span className="font-semibold">{parkingSpace.verification_status}</span>
                         </div>
-                        <Badge variant={lockStatus !== 'idle' ? 'destructive' : 'default'}>
-                            {lockStatus !== 'idle' ? 'Locked' : 'Available'}
+                        <Badge variant={lockStatus === 'locked' ? 'destructive' : 'default'}>
+                            {lockStatus === 'locked' ? 'Locked' : 'Available'}
                         </Badge>
                     </div>
                     <Separator className="my-4" />
@@ -467,7 +575,7 @@ export default function ParkingSpaceBooking() {
                             type="submit"
                             className="w-full mt-4"
                             size="lg"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || lockStatus !== 'locked'}
                         >
                             {isSubmitting ? 'Submitting...' : 'Book Now'}
                         </Button>

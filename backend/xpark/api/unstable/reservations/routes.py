@@ -1,14 +1,16 @@
-import json
-
-from xpark import Config
+from xpark.logic.reservations import unlock_parking_space, lock_parking_space, update_reservation_logic, \
+    get_reservation, create_reservation, get_user_reservations, cancel_reservation_logic
 from . import bp
-from xpark.logic.parkingspace import create_parking_space, get_parking_space, update_parking_space, \
-    delete_parking_space, get_owned_parking_spaces, save_image
 from flask import request
 from result import Ok, Err
 from xpark.middleware.token_auth_middleware import require_logged_in_user
 from typing import Tuple, Any
 import uuid
+
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 @bp.get("")
 @require_logged_in_user
@@ -125,33 +127,41 @@ def cancel_reservation_route(reservation_id: str, token: str, user_id: uuid.UUID
                 return {'error': str(e)}, 404
             else:
                 return {'error': str(e)}, 400
-
-
 @bp.post("/lock")
 @require_logged_in_user
 def lock_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    """
-    Lock a parking space by Parking Space ID.
-    """
+    logger.debug("Received /lock request from user_id: %s", user_id)
     data = request.get_json()
+    logger.debug("Request JSON data: %s", data)
     if not data:
+        logger.error("Invalid input: No JSON data received.")
         return {'error': 'Invalid input'}, 400
 
     parking_space_id = data.get('parking_space_id')
     lock_duration = data.get('lock_duration')
 
     if not parking_space_id or not lock_duration:
+        logger.error("Missing required fields: parking_space_id or lock_duration.")
         return {'error': 'Missing required fields'}, 400
 
     try:
         parking_space_uuid = uuid.UUID(parking_space_id)
     except ValueError:
+        logger.error("Invalid parking space ID format: %s", parking_space_id)
         return {"error": "Invalid parking space ID"}, 400
 
-    match lock_parking_space(user_id, parking_space_uuid, lock_duration):
+    result = lock_parking_space(user_id, parking_space_uuid, lock_duration)
+    match result:
         case Ok(response_data):
+            # Convert lock_until to Unix timestamp in milliseconds
+            expires_at_timestamp = int(response_data['lock_until'].timestamp() * 1000)
+            response_data = {
+                "expiresAt": expires_at_timestamp
+            }
+            logger.debug("Parking space locked successfully until %s.", expires_at_timestamp)
             return response_data, 200
         case Err(e):
+            logger.error("Locking failed: %s", e)
             if "already locked" in str(e) or "reserved" in str(e):
                 return {'error': str(e)}, 409
             elif "not authorized" in str(e):
