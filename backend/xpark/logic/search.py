@@ -5,6 +5,11 @@ from result import Result, Ok, Err
 import datetime
 import json
 
+import uuid
+from typing import List, Dict, Any, Optional
+from xpark.utils.db import DB
+from result import Result, Ok, Err
+
 def search_parking_space(
     latitude: float,
     longitude: float,
@@ -14,11 +19,16 @@ def search_parking_space(
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             try:
-                # Start building the query
                 query = """
                     SELECT id, name, ST_X(location::geometry) AS longitude, ST_Y(location::geometry) AS latitude,
-                           features, is_paid
+                           address, features, COALESCE(AVG(r.rating), 0) as average_rating,
+                           EXISTS (
+                               SELECT 1 FROM availability_schedules as a
+                               WHERE a.parking_space_id = parking_spaces.id
+                               AND a.start_time <= NOW() AND a.end_time > NOW()
+                           ) as availability
                     FROM parking_spaces
+                    LEFT JOIN reviews r ON parking_spaces.id = r.parking_space_id
                     WHERE ST_DWithin(
                         location,
                         ST_SetSRID(ST_MakePoint(%(longitude)s, %(latitude)s), 4326),
@@ -31,54 +41,31 @@ def search_parking_space(
                     'radius_meters': radius_meters
                 }
 
-                # Dynamic filters
-                where_clauses = []
-                for key, value in filters.items():
-                    if key == 'paid_status':
-                        if value == 'PAID':
-                            where_clauses.append("is_paid = TRUE")
-                        elif value == 'FREE':
-                            where_clauses.append("is_paid = FALSE")
-                        # If 'ALL', no filter is added
-                    elif key == 'features':
-                        where_clauses.append("features @> %(features)s::text[]")
-                        params['features'] = value
-                    elif key == 'available_from' or key == 'available_to':
-                        # Handle availability filters
-                        availability_clause, availability_params = handle_availability_filter(
-                            filters.get('available_from'),
-                            filters.get('available_to')
-                        )
-                        if availability_clause:
-                            where_clauses.append(availability_clause)
-                            params.update(availability_params)
-                        # No need to process 'available_to' separately
-                    else:
-                        # For any other fields, add a generic filter
-                        where_clauses.append(f"{key} = %({key})s")
-                        params[key] = value
+                if 'paid_status' in filters:
+                    if filters['paid_status'] == 'PAID':
+                        query += " AND is_paid = TRUE"
+                    elif filters['paid_status'] == 'FREE':
+                        query += " AND is_paid = FALSE"
 
-                # Append dynamic where clauses
-                if where_clauses:
-                    query += " AND " + " AND ".join(where_clauses)
+                query += " GROUP BY parking_spaces.id"
 
-                # Execute the query
                 cur.execute(query, params)
                 results = cur.fetchall()
 
-                # Prepare the response
                 parking_spaces = []
                 for row in results:
-                    id, name, longitude, latitude, features, is_paid = row
+                    id, name, longitude, latitude, address, features, average_rating, availability = row
                     parking_space = {
                         "id": str(id),
                         "name": name,
                         "location": {
                             "latitude": latitude,
                             "longitude": longitude,
+                            "address": address
                         },
                         "features": features,
-                        "is_paid": is_paid,
+                        "average_rating": float(average_rating) if average_rating is not None else None,
+                        "availability": availability
                     }
                     parking_spaces.append(parking_space)
 
