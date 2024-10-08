@@ -17,6 +17,8 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {router} from "next/client";
+import {useRouter} from "next/navigation";
 
 // Profile stats component
 function ProfileStats({ label, value }: { label: string; value: number }) {
@@ -73,9 +75,11 @@ export default function ProfilePage() {
     const dispatch = useDispatch();
     const isLoggedIn = useSelector(state => state.user.isLoggedIn);
     const [eloRating] = React.useState(1200);
+    const router = useRouter();
 
-    const handleLogout = () => {
-        dispatch(logout());
+    const handleLogout = async () => {
+        await dispatch(logout());
+        router.push('/login');
     };
 
     const userProfile = {
