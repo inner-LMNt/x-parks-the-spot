@@ -16,7 +16,6 @@ interface ReservationsState {
   loading: boolean;
   error: string | null;
   reservations: Reservation[];
-  carInfos: CarInfo[];
 }
 
 /**
@@ -26,7 +25,6 @@ const initialState: ReservationsState = {
   loading: false,
   error: null,
   reservations: [],
-  carInfos: [],
 };
 
 /**
@@ -184,29 +182,6 @@ export const cancelReservation = createAsyncThunk<
 );
 
 /**
- * Fetch User's Car Information
- * GET /cars
- */
-export const fetchUserCarInfos = createAsyncThunk<
-    CarInfo[],
-    void,
-    { rejectValue: string }
->("reservations/fetchUserCarInfos", async (_, { rejectWithValue }) => {
-  try {
-    const response = await axios.get<CarInfo[]>("/cars");
-    return response.data;
-  } catch (error: any) {
-    if (error.response?.status === 401) {
-      return rejectWithValue("Unauthorized");
-    }
-    if (error.response?.status === 403) {
-      return rejectWithValue("Forbidden");
-    }
-    return rejectWithValue("Failed to fetch car information");
-  }
-});
-
-/**
  * **Reservations Slice**
  */
 const reservationsSlice = createSlice({
@@ -315,23 +290,6 @@ const reservationsSlice = createSlice({
         .addCase(cancelReservation.rejected, (state, action) => {
           state.loading = false;
           state.error = action.payload || "Failed to cancel reservation";
-        });
-
-    /**
-     * Handle fetchUserCarInfos actions
-     */
-    builder
-        .addCase(fetchUserCarInfos.pending, (state) => {
-          state.loading = true;
-          state.error = null;
-        })
-        .addCase(fetchUserCarInfos.fulfilled, (state, action) => {
-          state.loading = false;
-          state.carInfos = action.payload;
-        })
-        .addCase(fetchUserCarInfos.rejected, (state, action) => {
-          state.loading = false;
-          state.error = action.payload || "Failed to fetch car information";
         });
   },
 });

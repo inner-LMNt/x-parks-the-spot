@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { MapPin, DollarSign, Clock, Star, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { fetchParkingSpace, resetError, lockParkingSpace } from '@/features/parking-space/parkingSpaceSlice';
+import { fetchUserCars, resetCarError } from '@/features/cars/carSlice';
 import { toast } from '@/hooks/use-toast'; // Assuming you have a toast hook
 import Image from 'next/image'; // Import Image for rendering images
 
@@ -23,20 +24,31 @@ export default function ParkingSpaceDetails() {
     const dispatch = useAppDispatch();
     const currentUrl = usePathname();
 
+    // State to manage selected car
+    const [selectedCarId, setSelectedCarId] = useState<string>('');
+
     // Selectors from the parkingSpace slice
     const parkingSpace = useAppSelector((state) => state.parkingSpace.parkingSpace);
     const lockStatus = useAppSelector((state) => state.parkingSpace.lockStatus);
     const loading = useAppSelector((state) => state.parkingSpace.loading);
     const error = useAppSelector((state) => state.parkingSpace.error);
 
+    const cars = useAppSelector((state) => state.cars.cars);
+    const carsLoading = useAppSelector((state) => state.cars.loading);
+    const carsError = useAppSelector((state) => state.cars.error);
+
     useEffect(() => {
         if (parkingSpaceId) {
             dispatch(fetchParkingSpace(parkingSpaceId));
         }
 
+        // Dispatch action to fetch user's cars
+        dispatch(fetchUserCars());
+
         // Optional: Cleanup on unmount
         return () => {
             dispatch(resetError());
+            dispatch(resetCarError());
         };
     }, [dispatch, parkingSpaceId]);
 
@@ -59,7 +71,7 @@ export default function ParkingSpaceDetails() {
     const handleReserveAndLock = async () => {
         const confirmLock = window.confirm("Are you sure you want to reserve and lock this parking space?");
         if (confirmLock) {
-            router.push(`/bookings/${parkingSpaceId}/reserve?previousUrl=${encodeURIComponent(currentUrl ?? '/bookings')}`);
+            router.push(`/bookings/${parkingSpaceId}/reserve?car_id=${selectedCarId}&previousUrl=${encodeURIComponent(currentUrl ?? '/bookings')}`);
         }
     };
 
