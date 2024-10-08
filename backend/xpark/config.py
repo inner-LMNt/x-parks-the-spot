@@ -15,6 +15,7 @@ class Config:
         os.environ.get("TEST_DATABASE_URI")
         or "user=admin password=password host=127.0.0.1 port=5432"
     )
+    STATIC_FOLDER = os.path.join(basedir, 'static')
     TEST_DATABASE_NAME = os.environ.get("TEST_DATABASE_NAME") or "test_xpark"
     ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN") or "*"
     ALLOWED_HEADERS = os.environ.get("ALLOWED_HEADERS") or "*"

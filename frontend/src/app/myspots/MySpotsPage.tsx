@@ -1,3 +1,5 @@
+// src/pages/MySpotsPage.tsx
+
 'use client'
 
 import React, { useEffect } from 'react'
@@ -9,16 +11,17 @@ import { ParkingSpace } from '@/types/type'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { getOwnerSpots } from '@/features/owner/ownerSlice'
+import { getOwnerSpots } from '@/features/owner/ownerSlice' // Adjust the import path if necessary
 
 export default function MySpotsPage() {
     const router = useRouter()
     const dispatch = useAppDispatch()
 
-    const { freeSpots, paidSpots, loading, error } = useAppSelector(state => state.owner)
+    const { paidSpots, freeSpots, pendingSpots, loading, error } = useAppSelector(state => state.owner)
 
     useEffect(() => {
-        dispatch(getOwnerSpots({ paid_status: 'ALL' }))
+        // Since owner_id is provided in the header, ensure your axios instance includes it
+        dispatch(getOwnerSpots())
     }, [dispatch])
 
     const handleDelete = async (id: string) => {
@@ -27,8 +30,9 @@ export default function MySpotsPage() {
                 method: 'DELETE',
             })
             if (response.ok) {
-                // You might want to dispatch an action to remove the spot from the state
                 console.log('Spot deleted successfully')
+                // Refresh the spots list after deletion
+                dispatch(getOwnerSpots())
             } else {
                 throw new Error('Failed to delete spot')
             }
@@ -65,19 +69,21 @@ export default function MySpotsPage() {
                 >
                     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
                         <CardHeader className="bg-gray-50">
-                            <div className="flex gap-4">
-                                <CardTitle className="flex justify-between items-center">
-                                    <span className="text-wrap">{spot.location.address || 'Unnamed Spot'}</span>
+                            <div className="flex justify-between items-center">
+                                <CardTitle className="flex items-center space-x-2">
+                                    <MapPin className={`w-5 h-5 ${spot.availability_schedule && spot.availability_schedule.length > 0 ? 'text-green-500' : 'text-red-500'}`} />
+                                    <span>{spot.location?.address || 'Unnamed Spot'}</span>
                                 </CardTitle>
-                                <MapPin className={`top-0 right-0 ${spot.availability_schedule ? 'text-green-500' : 'text-red-500'}`} />
                             </div>
-                            <CardDescription>{`${spot.location.latitude.toFixed(4)}, ${spot.location.longitude.toFixed(4)}`}</CardDescription>
+                            <CardDescription>
+                                {spot.location ? `${spot.location.latitude.toFixed(4)}, ${spot.location.longitude.toFixed(4)}` : 'Location not available'}
+                            </CardDescription>
                         </CardHeader>
                         <CardContent className="pt-4">
                             <div className="flex justify-between items-center mb-4">
                                 <span className="text-sm font-medium">{spot.is_paid ? 'Paid' : 'Free'}</span>
-                                <span className={`text-sm font-medium ${spot.availability_schedule ? 'text-green-600' : 'text-red-600'}`}>
-                                    {spot.availability_schedule ? 'Available' : 'Unavailable'}
+                                <span className={`text-sm font-medium ${spot.availability_schedule && spot.availability_schedule.length > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {spot.availability_schedule && spot.availability_schedule.length > 0 ? 'Available' : 'Unavailable'}
                                 </span>
                             </div>
                             {spot.is_paid && spot.pricing_info && (
@@ -115,8 +121,8 @@ export default function MySpotsPage() {
                     {loading ? (
                         <p>Loading...</p>
                     ) : error ? (
-                        <p>Error: {error}</p>
-                    ) : freeSpots.length === 0 && paidSpots.length === 0 ? (
+                        <p className="text-red-500">Error: {error}</p>
+                    ) : (paidSpots.length === 0 && freeSpots.length === 0) ? (
                         emptySpots
                     ) : (
                         <>
@@ -133,11 +139,17 @@ export default function MySpotsPage() {
                                     {renderSpots(paidSpots)}
                                 </>
                             )}
+
+                            {pendingSpots.length > 0 && (
+                                <>
+                                    <h2 className="text-2xl font-bold mb-4 mt-8 text-gray-900">Pending Spots</h2>
+                                    {renderSpots(pendingSpots)}
+                                </>
+                            )}
                         </>
                     )}
 
-
-                    {(freeSpots.length > 0 || paidSpots.length > 0) && (
+                    {(freeSpots.length > 0 || paidSpots.length > 0 || pendingSpots.length > 0) && (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}

@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from .config import Config
 from psycopg_pool import ConnectionPool
 import smtplib
@@ -32,6 +32,10 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     import xpark.api.unstable as unstable
 
     app.register_blueprint(unstable.bp)
+
+    @app.route('/static/<path:filename>')
+    def static_files(filename):
+        return send_from_directory(app.static_folder, filename)
 
     @app.route("/")
     def status() -> str:

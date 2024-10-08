@@ -1,97 +1,255 @@
-'use client'
+// src/pages/AddSpotPage.tsx
 
-import React, { useState, useRef, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Switch } from "@/components/ui/switch"
-import { useToast } from "@/components/ui/use-toast"
-import { Camera, X, Upload, ArrowLeft } from 'lucide-react'
-import Webcam from 'react-webcam'
+'use client';
 
-export default function AddSpotPage() {
-  const router = useRouter()
-  const { toast } = useToast()
-  const [spotType, setSpotType] = useState('free')
-  const [isAvailable, setIsAvailable] = useState(true)
-  const [image, setImage] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const webcamRef = useRef<Webcam>(null)
-  const [showCamera, setShowCamera] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/store';
+import { addParkingSpot, resetState } from '@/features/add/addSlice';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/components/ui/use-toast';
+import { Camera, X, Upload, ArrowLeft, PlusCircle, Trash2, MapPin } from 'lucide-react';
+import Webcam from 'react-webcam';
+import { v4 as uuidv4 } from 'uuid';
+import { TimeSlot } from '@/types/type';
+
+export default function AddPage() {
+  const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
+  const { toast } = useToast();
+  const { loading, error } = useSelector((state: RootState) => state.add);
+
+  const [spotType, setSpotType] = useState('free');
+  const [image, setImage] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const webcamRef = useRef<Webcam>(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availability, setAvailability] = useState<Array<TimeSlot & { id: string }>>([]);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoEnabled, setGeoEnabled] = useState(true);
+  const [locationLoading, setLocationLoading] = useState(false);
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+    const file = event.target.files?.[0];
     if (file) {
-      setImage(file)
-      const reader = new FileReader()
+      setImage(file);
+      const reader = new FileReader();
       reader.onloadend = () => {
-        setPreviewUrl(reader.result as string)
-      }
-      reader.readAsDataURL(file)
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const handleImageClick = () => {
-    fileInputRef.current?.click()
-  }
+    fileInputRef.current?.click();
+  };
 
   const handleRemoveImage = () => {
-    setImage(null)
-    setPreviewUrl(null)
+    setImage(null);
+    setPreviewUrl(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+      fileInputRef.current.value = '';
     }
-  }
+  };
 
   const handleCameraCapture = useCallback(() => {
-    const imageSrc = webcamRef.current?.getScreenshot()
+    const imageSrc = webcamRef.current?.getScreenshot();
     if (imageSrc) {
-      setPreviewUrl(imageSrc)
+      setPreviewUrl(imageSrc);
       fetch(imageSrc)
-          .then(res => res.blob())
-          .then(blob => {
-            const file = new File([blob], "camera_capture.jpg", { type: "image/jpeg" })
-            setImage(file)
-          })
-      setShowCamera(false)
+          .then((res) => res.blob())
+          .then((blob) => {
+            const file = new File([blob], 'camera_capture.jpg', { type: 'image/jpeg' });
+            setImage(file);
+          });
+      setShowCamera(false);
     }
-  }, [webcamRef])
+  }, [webcamRef]);
+
+  const handleAddAvailability = () => {
+    setAvailability((prev) => [
+      ...prev,
+      { id: uuidv4(), day_of_week: [], start_time: '', end_time: '' },
+    ]);
+  };
+
+  const handleRemoveAvailability = (id: string) => {
+    setAvailability((prev) => prev.filter((slot) => slot.id !== id));
+  };
+
+  const handleAvailabilityChange = (
+      id: string,
+      field: keyof TimeSlot,
+      value: any
+  ) => {
+    setAvailability((prev) =>
+        prev.map((slot) =>
+            slot.id === id ? { ...slot, [field]: value } : slot
+        )
+    );
+  };
+
+  // Function to get user's current location
+  const getUserLocation = () => {
+    setLocationLoading(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const location = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            setUserLocation(location);
+            setGeoEnabled(true);
+            setLocationLoading(false);
+          },
+          () => {
+            console.error("Error: The Geolocation service failed.");
+            setGeoEnabled(false);
+            setLocationLoading(false);
+          }
+      );
+    } else {
+      console.error("Error: Your browser doesn't support geolocation.");
+      setGeoEnabled(false);
+      setLocationLoading(false);
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setIsSubmitting(true)
-    const formData = new FormData(event.currentTarget)
+    event.preventDefault();
+    setIsSubmitting(true);
+
+    const formData = new FormData(event.currentTarget);
+    let name = '';
+    let latitude: number | undefined;
+    let longitude: number | undefined;
+    let price: number | null = null;
+
+    let address = '';
+
+    if (spotType === 'rental') {
+      name = formData.get('name') as string;
+      address = formData.get('address') as string;
+
+      if (!userLocation) {
+        toast({
+          title: 'Error',
+          description: 'Please use your location.',
+          variant: 'destructive',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      latitude = userLocation.lat;
+      longitude = userLocation.lng;
+
+      price = parseFloat(formData.get('price') as string);
+    } else {
+      if (!userLocation) {
+        toast({
+          title: 'Error',
+          description: 'Location is not available. Please enable location services.',
+          variant: 'destructive',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      latitude = userLocation.lat;
+      longitude = userLocation.lng;
+    }
+
+    // Build the availability_schedule array
+    let availability_schedule = [];
+    if (spotType === 'rental') {
+      availability_schedule = availability
+          .filter(
+              (slot) =>
+                  slot.day_of_week.length > 0 &&
+                  slot.start_time &&
+                  slot.end_time
+          )
+          .flatMap((slot) =>
+              slot.day_of_week.map((day) => ({
+                day_of_week: day,
+                start_time: slot.start_time,
+                end_time: slot.end_time,
+              }))
+          );
+    }
+
+    const data: any = {
+      is_paid: spotType === 'rental',
+      location: {
+        latitude,
+        longitude,
+        address,
+      },
+      features: [],
+      photos: [],
+    };
+
+    if (spotType === 'rental') {
+      data.name = name;
+      data.availability_schedule = availability_schedule;
+      data.pricing_info = {
+        base_price: price,
+        dynamic_pricing: false,
+      };
+    }
+
+    const formSubmitData = new FormData();
+    formSubmitData.append('data', JSON.stringify(data));
 
     if (image) {
-      formData.append('image', image)
+      formSubmitData.append('image', image);
     }
-
-    formData.append('type', spotType)
-    formData.append('isAvailable', isAvailable.toString())
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await dispatch(addParkingSpot(formSubmitData)).unwrap();
       toast({
-        title: "Spot added successfully!",
-        description: "Your new parking spot has been added.",
-      })
-      router.push('/myspots')
+        title: 'Spot added successfully!',
+        description: 'Your new parking spot has been added.',
+      });
+      dispatch(resetState());
+      router.push('/myspots');
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to add the parking spot. Please try again.",
-        variant: "destructive",
-      })
+        title: 'Error',
+        description: error as string,
+        variant: 'destructive',
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
+
+  // Days of the week options
+  const daysOfWeek = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
 
   return (
       <div className="flex flex-col min-h-screen bg-gray-100">
@@ -113,14 +271,26 @@ export default function AddSpotPage() {
                   </Button>
                   <div className="text-center">
                     <CardTitle className="text-2xl">Add a Parking Spot</CardTitle>
-                    <CardDescription>Fill in the details to list your parking spot</CardDescription>
+                    <CardDescription>
+                      Fill in the details to list your parking spot
+                    </CardDescription>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
                       <Label>Spot Type</Label>
-                      <RadioGroup defaultValue="free" onValueChange={setSpotType} className="flex space-x-4">
+                      <RadioGroup
+                          defaultValue="free"
+                          onValueChange={(value) => {
+                            setSpotType(value);
+                            setUserLocation(null);
+                            if (value !== 'rental') {
+                              setAvailability([]);
+                            }
+                          }}
+                          className="flex space-x-4"
+                      >
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="free" id="free" />
                           <Label htmlFor="free">Free</Label>
@@ -132,42 +302,147 @@ export default function AddSpotPage() {
                       </RadioGroup>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Spot Name</Label>
-                      <Input id="name" name="name" required placeholder="e.g. Downtown Parking" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Address</Label>
-                      <Input id="address" name="address" required placeholder="Full street address" />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="latitude">Latitude</Label>
-                        <Input id="latitude" name="latitude" type="number" step="any" required placeholder="e.g. 40.7128" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="longitude">Longitude</Label>
-                        <Input id="longitude" name="longitude" type="number" step="any" required placeholder="e.g. -74.0060" />
-                      </div>
-                    </div>
+                    {spotType === 'rental' && (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="name">Spot Name</Label>
+                            <Input
+                                id="name"
+                                name="name"
+                                required
+                                placeholder="e.g. Downtown Parking"
+                            />
+                          </div>
+                        </>
+                    )}
 
                     {spotType === 'rental' && (
                         <div className="space-y-2">
-                          <Label htmlFor="price">Price per Hour ($)</Label>
-                          <Input id="price" name="price" type="number" step="0.01" min="0" required placeholder="e.g. 5.00" />
+                          <Label htmlFor="address">Address</Label>
+                          <Input
+                              id="address"
+                              name="address"
+                              required
+                              placeholder="Full street address"
+                          />
                         </div>
                     )}
 
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                          id="available"
-                          checked={isAvailable}
-                          onCheckedChange={setIsAvailable}
-                      />
-                      <Label htmlFor="available">Available Now</Label>
+                    {/* Location Section */}
+                    <div className="space-y-2">
+                      <Label>Location</Label>
+                      <Button
+                          type="button"
+                          variant="outline"
+                          onClick={getUserLocation}
+                          disabled={locationLoading}
+                          className="flex items-center space-x-2"
+                      >
+                        <MapPin className="w-4 h-4" />
+                        <span>{locationLoading ? 'Locating...' : 'Use My Location'}</span>
+                      </Button>
+                      {geoEnabled ? (
+                          userLocation ? (
+                              <div>
+                                <p>Latitude: {userLocation.lat}</p>
+                                <p>Longitude: {userLocation.lng}</p>
+                              </div>
+                          ) : (
+                              <p>Your current location will be used for the spot.</p>
+                          )
+                      ) : (
+                          <p>Geolocation is not enabled. Please enable location services.</p>
+                      )}
                     </div>
+
+                    {spotType === 'rental' && (
+                        <>
+                          {/* Availability Schedule */}
+                          <div className="space-y-4">
+                            <Label>Availability Schedule</Label>
+                            {availability.map((slot) => (
+                                <div key={slot.id} className="space-y-2 border p-4 rounded-md">
+                                  <div className="flex justify-between items-center">
+                                    <Label>Time Slot</Label>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        onClick={() => handleRemoveAvailability(slot.id)}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label>Start Time</Label>
+                                      <Input
+                                          type="time"
+                                          value={slot.start_time}
+                                          onChange={(e) =>
+                                              handleAvailabilityChange(slot.id, 'start_time', e.target.value)
+                                          }
+                                          required
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>End Time</Label>
+                                      <Input
+                                          type="time"
+                                          value={slot.end_time}
+                                          onChange={(e) =>
+                                              handleAvailabilityChange(slot.id, 'end_time', e.target.value)
+                                          }
+                                          required
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Days of the Week</Label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      {daysOfWeek.map((day) => (
+                                          <div key={day} className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id={`${slot.id}-${day}`}
+                                                checked={slot.day_of_week.includes(day)}
+                                                onCheckedChange={(checked) => {
+                                                  const updatedDays = checked
+                                                      ? [...slot.day_of_week, day]
+                                                      : slot.day_of_week.filter((d) => d !== day);
+                                                  handleAvailabilityChange(slot.id, 'day_of_week', updatedDays);
+                                                }}
+                                            />
+                                            <Label htmlFor={`${slot.id}-${day}`}>{day}</Label>
+                                          </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                            ))}
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleAddAvailability}
+                                className="flex items-center space-x-2"
+                            >
+                              <PlusCircle className="w-4 h-4" />
+                              <span>Add Availability Slot</span>
+                            </Button>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="price">Price per Hour ($)</Label>
+                            <Input
+                                id="price"
+                                name="price"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                required
+                                placeholder="e.g. 5.00"
+                            />
+                          </div>
+                        </>
+                    )}
 
                     <div className="space-y-2">
                       <Label>Spot Image</Label>
@@ -195,12 +470,16 @@ export default function AddSpotPage() {
                           >
                             {previewUrl ? (
                                 <div className="relative">
-                                  <img src={previewUrl} alt="Preview" className="max-w-full h-auto mx-auto rounded-lg" />
+                                  <img
+                                      src={previewUrl}
+                                      alt="Preview"
+                                      className="max-w-full h-auto mx-auto rounded-lg"
+                                  />
                                   <button
                                       type="button"
                                       onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleRemoveImage()
+                                        e.stopPropagation();
+                                        handleRemoveImage();
                                       }}
                                       className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                                   >
@@ -210,7 +489,9 @@ export default function AddSpotPage() {
                             ) : (
                                 <div className="flex flex-col items-center py-8">
                                   <Upload size={48} className="text-gray-400 mb-2" />
-                                  <p className="text-sm text-gray-500">Click to upload an image or use camera</p>
+                                  <p className="text-sm text-gray-500">
+                                    Click to upload an image or use camera
+                                  </p>
                                 </div>
                             )}
                           </div>
@@ -223,7 +504,11 @@ export default function AddSpotPage() {
                           className="hidden"
                       />
                       <div className="flex justify-center mt-2">
-                        <Button type="button" variant="outline" onClick={() => setShowCamera(!showCamera)}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setShowCamera(!showCamera)}
+                        >
                           {showCamera ? (
                               <>
                                 <X className="w-4 h-4 mr-2" />
@@ -242,10 +527,14 @@ export default function AddSpotPage() {
                     <Button
                         type="submit"
                         className="w-full"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || loading}
                     >
-                      {isSubmitting ? 'Adding Spot...' : 'Add Parking Spot'}
+                      {isSubmitting || loading ? 'Adding Spot...' : 'Add Parking Spot'}
                     </Button>
+
+                    {error && (
+                        <p className="text-red-500 text-center mt-2">{error}</p>
+                    )}
                   </form>
                 </CardContent>
               </Card>
@@ -253,5 +542,5 @@ export default function AddSpotPage() {
           </div>
         </div>
       </div>
-  )
+  );
 }

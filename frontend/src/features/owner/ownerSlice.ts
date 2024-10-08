@@ -21,10 +21,10 @@ const initialState: OwnerState = {
 };
 
 export const getOwnerSpots = createAsyncThunk<
-    { paidSpaces: ParkingSpace[]; freeSpaces: ParkingSpace[]; pendingSpaces: ParkingSpace[] },
+    OwnerSpotsResponse,
     void,
     { rejectValue: string }
->("owner/getSpots", async (_, { rejectWithValue, getState }) => {
+>("owner/getSpots", async (_, { rejectWithValue }) => {
     try {
         const response = await axios.get("/parking-spaces");
         return response.data;
@@ -49,10 +49,10 @@ const ownerSlice = createSlice({
             })
             .addCase(getOwnerSpots.fulfilled, (state, action) => {
                 state.loading = false;
-                const { paidSpaces, freeSpaces, pendingSpaces } = action.payload;
+                const { paidSpaces, freeSpots, pendingSpaces } = action.payload;
 
                 state.paidSpots = paidSpaces;
-                state.freeSpots = freeSpaces;
+                state.freeSpots = freeSpots;
                 state.pendingSpots = pendingSpaces;
             })
             .addCase(getOwnerSpots.rejected, (state, action) => {
