@@ -14,6 +14,7 @@ from result import Result, Ok, Err
 import datetime
 from datetime import timezone
 import logging
+from datetime import timezone, time as dt_time
 logging.basicConfig(level=logging.DEBUG)
 
 logger = logging.getLogger(__name__)
@@ -103,9 +104,10 @@ def create_reservation(user_id: uuid.UUID, data: Dict[str, Any]) -> Result[Dict[
         # Check if parking space exists and is available
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
+                # Corrected the typo: 'availability_schedule'
                 cur.execute(
                     """
-                    SELECT is_locked, is_reserved
+                    SELECT locked, locked_by, availability_schedule
                     FROM parking_spaces
                     WHERE id = %s
                     """,
@@ -115,12 +117,12 @@ def create_reservation(user_id: uuid.UUID, data: Dict[str, Any]) -> Result[Dict[
                 if not parking_space:
                     return Err("Parking space not found.")
 
-                is_locked, is_reserved = parking_space
+                locked, locked_by, availability_schedule = parking_space
 
-                if is_locked:
-                    return Err("Parking space is currently locked.")
-                if is_reserved:
-                    return Err("Parking space is already reserved.")
+                if locked and str(locked_by) != str(user_id):
+                    return Err("Parking space is currently locked by another user.")
+
+
 
                 # Check for overlapping reservations
                 cur.execute(
@@ -138,6 +140,76 @@ def create_reservation(user_id: uuid.UUID, data: Dict[str, Any]) -> Result[Dict[
                 (overlap_count,) = cur.fetchone()
                 if overlap_count > 0:
                     return Err("Parking space is already reserved for the selected time slot.")
+
+                # Function to check if reservation fits within availability_schedule
+                def is_within_availability(start_dt: datetime.datetime, end_dt: datetime.datetime, availability: List[Dict[str, Any]]) -> bool:
+                    """
+                    Check if the reservation from start_dt to end_dt fits within the availability schedule.
+                    """
+                    # Build a mapping from day_of_week to list of (start_time, end_time)
+                    availability_map = {}
+                    for slot in availability:
+                        day = slot.get('day_of_week')
+                        start_time_str = slot.get('start_time')  # Assuming "HH:MM"
+                        end_time_str = slot.get('end_time')      # Assuming "HH:MM"
+
+                        if not all([day, start_time_str, end_time_str]):
+                            continue  # Skip invalid slots
+
+                        try:
+                            slot_start_time = datetime.datetime.strptime(start_time_str, "%H:%M").time()
+                            slot_end_time = datetime.datetime.strptime(end_time_str, "%H:%M").time()
+                        except ValueError:
+                            continue  # Skip slots with invalid time format
+
+                        if day not in availability_map:
+                            availability_map[day] = []
+                        availability_map[day].append((slot_start_time, slot_end_time))
+
+                    # Iterate through each day in the reservation
+                    current_dt = start_dt
+                    while current_dt.date() <= end_dt.date():
+                        day_of_week = current_dt.strftime('%A')  # e.g., 'Monday'
+
+                        if day_of_week not in availability_map:
+                            logger.debug(f"No availability for {day_of_week}.")
+                            return False  # No availability for this day
+
+                        # Determine the reservation's time on this day
+                        if current_dt.date() == start_dt.date():
+                            day_start = current_dt.time()
+                        else:
+                            day_start = dt_time(0, 0)
+
+                        if current_dt.date() == end_dt.date():
+                            day_end = end_dt.time()
+                        else:
+                            day_end = dt_time(23, 59, 59)
+
+                        # Check if the reservation's time on this day fits within any available slot
+                        slots = availability_map[day_of_week]
+                        slot_fits = False
+                        for slot_start, slot_end in slots:
+                            # Handle 24-hour availability
+                            if slot_start == slot_end:
+                                slot_fits = True
+                                break
+
+                            if slot_start <= day_start and day_end <= slot_end:
+                                slot_fits = True
+                                break
+
+                        if not slot_fits:
+                            logger.debug(f"Reservation time on {day_of_week} from {day_start} to {day_end} does not fit within availability.")
+                            return False
+
+                        current_dt += datetime.timedelta(days=1)
+
+                    return True
+
+                # Check availability
+                if not is_within_availability(start_dt, end_dt, availability_schedule):
+                    return Err("Reservation times are outside of availability schedule.")
 
                 # Insert the reservation
                 reservation_id = uuid.uuid4()
@@ -165,16 +237,6 @@ def create_reservation(user_id: uuid.UUID, data: Dict[str, Any]) -> Result[Dict[
                     )
                 )
 
-                # Update parking space status to reserved
-                cur.execute(
-                    """
-                    UPDATE parking_spaces
-                    SET is_reserved = TRUE
-                    WHERE id = %s
-                    """,
-                    (str(parking_space_uuid),)
-                )
-
                 conn.commit()
 
                 # Construct the response
@@ -186,14 +248,16 @@ def create_reservation(user_id: uuid.UUID, data: Dict[str, Any]) -> Result[Dict[
                     "car_info_id": str(car_info_uuid),
                     "renter_id": str(renter_uuid),
                     "status": "booked",
-                    "created_at": datetime.datetime.now().isoformat(),
-                    "updated_at": datetime.datetime.now().isoformat(),
+                    "created_at": datetime.datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.datetime.now(timezone.utc).isoformat(),
                 }
 
                 return Ok(reservation)
 
     except Exception as e:
+        logger.exception("Exception during reservation creation: %s", e)
         return Err(str(e))
+
 
 
 def get_reservation(user_id: uuid.UUID, reservation_id: uuid.UUID) -> Result[Dict[str, Any], str]:
@@ -458,16 +522,6 @@ def cancel_reservation_logic(user_id: uuid.UUID, reservation_id: uuid.UUID) -> R
                     WHERE id = %s
                     """,
                     (str(reservation_id),)
-                )
-
-                # Update parking space status to available
-                cur.execute(
-                    """
-                    UPDATE parking_spaces
-                    SET is_reserved = FALSE
-                    WHERE id = %s
-                    """,
-                    (str(parking_space_id),)
                 )
 
                 conn.commit()

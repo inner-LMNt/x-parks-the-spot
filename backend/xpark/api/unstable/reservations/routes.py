@@ -32,6 +32,7 @@ def create_reservation_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     Create a new reservation.
     """
     data = request.get_json()
+    logger.debug("Received JSON data: %s", data)
     if not data:
         return {'error': 'Invalid input'}, 400
 
@@ -53,6 +54,7 @@ def create_reservation_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             elif "not authorized" in str(e):
                 return {'error': str(e)}, 403
             else:
+                logger.error(str(e))
                 return {'error': str(e)}, 400
 
 
