@@ -14,6 +14,7 @@ import {
 } from "./reservations/reservationsHandler";
 import {
   getParkingSpaceHandler,
+  getOwnedParkingSpacesHandler,
   lockParkingSpaceHandler,
   unlockParkingSpaceHandler,
 } from "./parking-space/parkingSpaceHandler";
@@ -31,6 +32,7 @@ export const handlers = [
   updateReservationHandler,
   searchSpots,
   getParkingSpaceHandler,
+  getOwnedParkingSpacesHandler,
   lockParkingSpaceHandler,
   unlockParkingSpaceHandler,
   getUserCarInfosHandler,

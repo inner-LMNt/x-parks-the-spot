@@ -1,11 +1,22 @@
 from xpark import Config
 from . import bp
-from xpark.logic.parkingspace import create_parking_space, get_parking_space, update_parking_space, delete_parking_space
+from xpark.logic.parkingspace import create_parking_space, get_parking_space, update_parking_space, \
+    delete_parking_space, get_owned_parking_spaces
 from flask import request
 from result import Ok, Err
 from xpark.middleware.token_auth_middleware import require_logged_in_user
 from typing import Tuple, Any
 import uuid
+
+
+@bp.get("/")
+@require_logged_in_user
+def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match get_owned_parking_spaces(user_id):
+        case Ok(data):
+            return data, 200
+        case Err(e):
+            return {'error': str(e)}, 500
 
 @bp.post("/")
 @require_logged_in_user

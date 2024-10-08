@@ -1,9 +1,55 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 from xpark.utils.db import DB
 from result import Result, Ok, Err
 import uuid
 import json
 
+def get_owned_parking_spaces(
+    user_id: uuid.UUID
+) -> Result[Dict[str, List[Dict[str, Any]]], str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            try:
+                query = """
+                    SELECT id, name, is_paid, status, created_at, updated_at
+                    FROM parking_spaces
+                    WHERE owner = %s
+                """
+                params = [user_id]
+
+                cur.execute(query, params)
+                results = cur.fetchall()
+
+                paidSpaces = []
+                freeSpaces = []
+                pendingSpaces = []
+
+                for row in results:
+                    id, name, is_paid, status, created_at, updated_at = row
+                    parking_space = {
+                        "id": str(id),
+                        "name": name,
+                        "is_paid": is_paid,
+                        "status": status,
+                        "created_at": created_at.isoformat(),
+                        "updated_at": updated_at.isoformat(),
+                    }
+                    if status and status.upper() == "PENDING":
+                        pendingSpaces.append(parking_space)
+                    elif is_paid:
+                        paidSpaces.append(parking_space)
+                    else:
+                        freeSpaces.append(parking_space)
+
+                data = {
+                    "paidSpaces": paidSpaces,
+                    "freeSpaces": freeSpaces,
+                    "pendingSpaces": pendingSpaces
+                }
+
+                return Ok(data)
+            except Exception as e:
+                return Err(str(e))
 def create_parking_space(
     owner_id: uuid.UUID,
     is_paid: bool,

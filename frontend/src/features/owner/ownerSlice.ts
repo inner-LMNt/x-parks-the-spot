@@ -1,12 +1,15 @@
+// src/store/slices/ownerSlice.ts
+
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "../../api/axiosInstance";
-import { ParkingSpace, SearchRequest, SearchResponse } from "@/types/type";
+import { ParkingSpace } from "@/types/type";
 
 interface OwnerState {
     loading: boolean;
     error: string | null;
     freeSpots: ParkingSpace[];
     paidSpots: ParkingSpace[];
+    pendingSpots: ParkingSpace[];
 }
 
 const initialState: OwnerState = {
@@ -14,21 +17,19 @@ const initialState: OwnerState = {
     error: null,
     freeSpots: [],
     paidSpots: [],
+    pendingSpots: [],
 };
 
 export const getOwnerSpots = createAsyncThunk<
-    SearchResponse,
-    { paid_status: 'ALL' | 'PAID' | 'FREE' },
+    { paidSpaces: ParkingSpace[]; freeSpaces: ParkingSpace[]; pendingSpaces: ParkingSpace[] },
+    void,
     { rejectValue: string }
->("owner/getSpots", async ({ paid_status }, { rejectWithValue }) => {
+>("owner/getSpots", async (_, { rejectWithValue, getState }) => {
     try {
-        const searchRequest: SearchRequest = {
-            paid_status: paid_status,
-        };
-        const response = await axios.post<SearchResponse>("/search", searchRequest);
+        const response = await axios.get("/parking-spaces");
         return response.data;
     } catch (error: any) {
-        return rejectWithValue(error.response?.data?.message || "Failed to get owner spots");
+        return rejectWithValue(error.response?.data?.error || "Failed to get owner spots");
     }
 });
 
@@ -48,20 +49,11 @@ const ownerSlice = createSlice({
             })
             .addCase(getOwnerSpots.fulfilled, (state, action) => {
                 state.loading = false;
-                if (action.meta.arg.paid_status === 'FREE') {
-                    //@ts-ignore
+                const { paidSpaces, freeSpaces, pendingSpaces } = action.payload;
 
-                    state.freeSpots = action.payload.spots;
-                } else if (action.meta.arg.paid_status === 'PAID') {
-                    //@ts-ignore
-                    state.paidSpots = action.payload.spots;
-                } else {
-                    // If 'ALL', we need to separate the spots
-                    //@ts-ignore
-                    state.freeSpots = action.payload.spots.filter((spot: ParkingSpace) => !spot.is_paid);
-                    //@ts-ignore
-                    state.paidSpots = action.payload.spots.filter((spot: ParkingSpace) => spot.is_paid);
-                }
+                state.paidSpots = paidSpaces;
+                state.freeSpots = freeSpaces;
+                state.pendingSpots = pendingSpaces;
             })
             .addCase(getOwnerSpots.rejected, (state, action) => {
                 state.loading = false;
