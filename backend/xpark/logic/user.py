@@ -73,7 +73,7 @@ def create_user(name: str, email: str, password: str) -> Result[uuid.UUID, str]:
 
 def check_username_password(email: str, password: str) -> Result[uuid.UUID, str]:
     if not check_if_user_exists(email):
-        return Err("Wrong Password")
+            return Err("Wrong Password")
 
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
@@ -87,22 +87,26 @@ def check_username_password(email: str, password: str) -> Result[uuid.UUID, str]
 
             # Ew, exceptions
             try:
-                password_hasher.verify(correct_hashed_password, password)
-                # We have a correct password here
+              password_hasher.verify(correct_hashed_password, password)
+              # We have a correct password here
 
-                if password_hasher.check_needs_rehash(correct_hashed_password):
-                    # Set new password if the hashing parameters have changed
-                    new_password_hash = password_hasher.hash(password)
-                    conn.execute(
-                                "UPDATE users SET password_hash = %s WHERE id = %s", (new_password_hash, id)
-                    )
+              if password_hasher.check_needs_rehash(correct_hashed_password):
+                   change_password(user_id, password)
 
-                return Ok(user_id)
+              return Ok(user_id)
             except VerifyMismatchError:
                 return Err("Wrong Password")
             except VerificationError:
                 # Do we need special handling? When will this ever run?
                 return Err("Wrong Password")
+
+def change_password(id: uuid.UUID, new_password: str) -> Result[None, None]:
+    new_password_hash = password_hasher.hash(new_password)
+    with DB.pool.connection() as conn:
+        conn.execute(
+            "UPDATE users SET password_hash = %s WHERE id = %s", (new_password_hash, id)
+        )
+        return Ok(None)
 
 def create_token(user_id: uuid.UUID) -> str:
     token = Config.TOKEN_PREFIX + secrets.token_urlsafe(32)
@@ -158,19 +162,6 @@ def expire_valid_token(token: str) -> Result[None, None]:
 
             return Ok(None)
 
-
-# Function to log out user from all sessions
-def delete_all_tokens_for_user(user_id: uuid.UUID) -> Result[None, str]:
-    try:
-        with DB.pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("DELETE FROM user_tokens WHERE user_id = %s", (user_id,))
-                if cur.rowcount > 0:
-                    return Ok(None)
-                else:
-                    return Err("No tokens found for this user")
-    except Exception as e:
-        return Err(str(e))
 
 def get_user_id_by_email(email: str) -> Result[uuid.UUID, str]:
     with DB.pool.connection() as conn:
@@ -295,7 +286,7 @@ def handle_confirm_delete(token: str) -> Result[None, str]:
             pass  # Proceed to next step
 
     # Step 4: Log the user out by deleting all tokens
-    delete_all_tokens_for_user(user_id)
+    expire_all_tokens_for_user(user_id)
 
     return Ok(None)
 
@@ -364,7 +355,7 @@ def handle_password_reset_request(email: str) -> Result[None, str]:
         send_email(
             to=email,
             subject="Reset password",
-            content=generate_templated_email("reset_password", name="Name", reset_link=reset_link)
+            content=generate_templated_email("reset_password", name="User", reset_link=reset_link)
         )
 
         return Ok(None)
@@ -386,7 +377,7 @@ def handle_password_reset_confirmation(token: str, new_password: str) -> Result[
             user_data = cur.fetchone()
 
             if not user_data:
-                return Err("Invalid reset token")
+                return Err("Invalid or expired reset token")
 
             user_id, reset_requested_at = user_data
 
