@@ -383,7 +383,7 @@ def handle_password_reset_confirmation(token: str, new_password: str) -> Result[
 
             # Step 2: Check if the token has expired (valid within 1 hour)
             time_elapsed = datetime.datetime.now() - reset_requested_at
-            if time_elapsed > datetime.timedelta(hours=1):
+            if time_elapsed > datetime.timedelta(minutes=30):
                 return Err("Expired reset token")
 
     # Step 3: Update the user's password
