@@ -37,15 +37,15 @@ const searchSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-        .addCase(searchSpots.pending, (state) => {
+        .addCase(searchSpots.pending, (state: SearchState) => {
           state.loading = true;
           state.error = null;
         })
-        .addCase(searchSpots.fulfilled, (state, action) => {
+        .addCase(searchSpots.fulfilled, (state: SearchState, action: any) => {
           state.loading = false;
           state.spots = action.payload.spots;
         })
-        .addCase(searchSpots.rejected, (state, action) => {
+        .addCase(searchSpots.rejected, (state: SearchState, action) => {
           state.loading = false;
           state.error = action.payload as string;
         });

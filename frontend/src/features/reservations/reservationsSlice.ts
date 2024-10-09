@@ -200,15 +200,15 @@ const reservationsSlice = createSlice({
      * Handle fetchUserReservations actions
      */
     builder
-        .addCase(fetchUserReservations.pending, (state) => {
+        .addCase(fetchUserReservations.pending, (state : ReservationsState) => {
           state.loading = true;
           state.error = null;
         })
-        .addCase(fetchUserReservations.fulfilled, (state, action) => {
+        .addCase(fetchUserReservations.fulfilled, (state : ReservationsState, action) => {
           state.loading = false;
           state.reservations = action.payload;
         })
-        .addCase(fetchUserReservations.rejected, (state, action) => {
+        .addCase(fetchUserReservations.rejected, (state : ReservationsState, action) => {
           state.loading = false;
           state.error = action.payload || "Failed to fetch reservations";
         });
@@ -217,11 +217,11 @@ const reservationsSlice = createSlice({
      * Handle fetchReservationById actions
      */
     builder
-        .addCase(fetchReservationById.pending, (state) => {
+        .addCase(fetchReservationById.pending, (state : ReservationsState) => {
           state.loading = true;
           state.error = null;
         })
-        .addCase(fetchReservationById.fulfilled, (state, action) => {
+        .addCase(fetchReservationById.fulfilled, (state : ReservationsState, action) => {
           state.loading = false;
           // Optionally, handle the fetched reservation
           const index = state.reservations.findIndex((r) => r.id === action.payload.id);
@@ -231,7 +231,7 @@ const reservationsSlice = createSlice({
             state.reservations.push(action.payload);
           }
         })
-        .addCase(fetchReservationById.rejected, (state, action) => {
+        .addCase(fetchReservationById.rejected, (state : ReservationsState, action) => {
           state.loading = false;
           state.error = action.payload || "Failed to fetch reservation details";
         });
@@ -240,15 +240,15 @@ const reservationsSlice = createSlice({
      * Handle bookParkingSpace actions
      */
     builder
-        .addCase(bookParkingSpace.pending, (state) => {
+        .addCase(bookParkingSpace.pending, (state : ReservationsState) => {
           state.loading = true;
           state.error = null;
         })
-        .addCase(bookParkingSpace.fulfilled, (state, action) => {
+        .addCase(bookParkingSpace.fulfilled, (state : ReservationsState, action) => {
           state.loading = false;
           state.reservations.push(action.payload);
         })
-        .addCase(bookParkingSpace.rejected, (state, action) => {
+        .addCase(bookParkingSpace.rejected, (state : ReservationsState, action) => {
           state.loading = false;
           state.error = action.payload || "Failed to book parking space";
         });
@@ -257,18 +257,18 @@ const reservationsSlice = createSlice({
      * Handle updateReservation actions
      */
     builder
-        .addCase(updateReservation.pending, (state) => {
+        .addCase(updateReservation.pending, (state : ReservationsState) => {
           state.loading = true;
           state.error = null;
         })
-        .addCase(updateReservation.fulfilled, (state, action) => {
+        .addCase(updateReservation.fulfilled, (state : ReservationsState, action) => {
           state.loading = false;
           const index = state.reservations.findIndex((r) => r.id === action.payload.id);
           if (index !== -1) {
             state.reservations[index] = action.payload;
           }
         })
-        .addCase(updateReservation.rejected, (state, action) => {
+        .addCase(updateReservation.rejected, (state : ReservationsState, action) => {
           state.loading = false;
           state.error = action.payload || "Failed to update reservation";
         });
@@ -277,17 +277,17 @@ const reservationsSlice = createSlice({
      * Handle cancelReservation actions
      */
     builder
-        .addCase(cancelReservation.pending, (state) => {
+        .addCase(cancelReservation.pending, (state : ReservationsState) => {
           state.loading = true;
           state.error = null;
         })
-        .addCase(cancelReservation.fulfilled, (state, action) => {
+        .addCase(cancelReservation.fulfilled, (state : ReservationsState, action) => {
           state.loading = false;
           // Assuming reservationId is passed as action.meta.arg
           const reservationId = action.meta.arg;
           state.reservations = state.reservations.filter((r) => r.id !== reservationId);
         })
-        .addCase(cancelReservation.rejected, (state, action) => {
+        .addCase(cancelReservation.rejected, (state : ReservationsState, action) => {
           state.loading = false;
           state.error = action.payload || "Failed to cancel reservation";
         });

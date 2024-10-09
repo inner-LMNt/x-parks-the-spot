@@ -5,8 +5,8 @@ import React from 'react';
 
 interface ImageWrapperProps extends ImageProps {}
 
-const ImageWrapper: React.FC<ImageWrapperProps> = ({ src, alt, baseUrl = 'http://localhost:5001', ...props }) => {
-
+const ImageWrapper: React.FC<ImageWrapperProps> = ({ src, alt, ...props }) => {
+    const baseUrl = 'http://localhost:5001'
     const absSrc = `${baseUrl}${src}`
     return (
         <Image

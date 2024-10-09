@@ -112,7 +112,7 @@ export default function MySpotsPage() {
                                     <Edit className="w-4 h-4 mr-2" />
                                     Edit
                                 </Button>
-                                <Button variant="destructive" size="sm" className="flex-1" onClick={() => handleDelete(spot.id)}>
+                                <Button variant="destructive" size="sm" className="flex-1" onClick={() => handleDelete(spot.id as string)}>
                                     <Trash2 className="w-4 h-4 mr-2" />
                                     Delete
                                 </Button>

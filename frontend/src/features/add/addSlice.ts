@@ -47,17 +47,17 @@ const addSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            .addCase(addParkingSpot.pending, (state) => {
+            .addCase(addParkingSpot.pending, (state: AddState) => {
                 state.loading = true;
                 state.error = null;
                 state.success = false;
             })
-            .addCase(addParkingSpot.fulfilled, (state) => {
+            .addCase(addParkingSpot.fulfilled, (state: AddState) => {
                 state.loading = false;
                 state.error = null;
                 state.success = true;
             })
-            .addCase(addParkingSpot.rejected, (state, action) => {
+            .addCase(addParkingSpot.rejected, (state: AddState, action) => {
                 state.loading = false;
                 state.error = action.payload || "Failed to add parking spot";
                 state.success = false;
@@ -65,7 +65,7 @@ const addSlice = createSlice({
             .addMatcher(
                 (action: { type: string }): action is { type: "add/errorReset" } =>
                     action.type === "add/errorReset",
-                (state) => {
+                (state: AddState) => {
                     state.error = null;
                     state.loading = false;
                 }

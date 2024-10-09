@@ -69,11 +69,11 @@ const ownerSlice = createSlice({
     extraReducers: (builder) => {
         builder
             // Handle getOwnerSpots
-            .addCase(getOwnerSpots.pending, (state) => {
+            .addCase(getOwnerSpots.pending, (state: OwnerState) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(getOwnerSpots.fulfilled, (state, action) => {
+            .addCase(getOwnerSpots.fulfilled, (state: OwnerState, action) => {
                 state.loading = false;
                 const { paidSpaces, freeSpots, pendingSpaces } = action.payload;
 
@@ -81,16 +81,16 @@ const ownerSlice = createSlice({
                 state.freeSpots = freeSpots;
                 state.pendingSpots = pendingSpaces;
             })
-            .addCase(getOwnerSpots.rejected, (state, action) => {
+            .addCase(getOwnerSpots.rejected, (state: OwnerState, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
             })
             // Handle deleteParkingSpot
-            .addCase(deleteParkingSpot.pending, (state) => {
+            .addCase(deleteParkingSpot.pending, (state: OwnerState) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(deleteParkingSpot.fulfilled, (state, action) => {
+            .addCase(deleteParkingSpot.fulfilled, (state: OwnerState, action) => {
                 state.loading = false;
                 const deletedSpotId = action.payload;
                 // Remove the deleted spot from all categories
@@ -98,7 +98,7 @@ const ownerSlice = createSlice({
                 state.freeSpots = state.freeSpots.filter(spot => spot.id !== deletedSpotId);
                 state.pendingSpots = state.pendingSpots.filter(spot => spot.id !== deletedSpotId);
             })
-            .addCase(deleteParkingSpot.rejected, (state, action) => {
+            .addCase(deleteParkingSpot.rejected, (state: OwnerState, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
             });

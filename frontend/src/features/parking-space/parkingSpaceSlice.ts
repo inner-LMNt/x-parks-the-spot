@@ -161,15 +161,15 @@ const parkingSpaceSlice = createSlice({
          * Handle fetchParkingSpace actions
          */
         builder
-            .addCase(fetchParkingSpace.pending, (state) => {
+            .addCase(fetchParkingSpace.pending, (state: ParkingSpaceState) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchParkingSpace.fulfilled, (state, action) => {
+            .addCase(fetchParkingSpace.fulfilled, (state: ParkingSpaceState, action) => {
                 state.loading = false;
                 state.parkingSpace = action.payload;
             })
-            .addCase(fetchParkingSpace.rejected, (state, action) => {
+            .addCase(fetchParkingSpace.rejected, (state: ParkingSpaceState, action) => {
                 state.loading = false;
                 state.error = action.payload || "Failed to fetch parking space";
             });
@@ -178,15 +178,15 @@ const parkingSpaceSlice = createSlice({
          * Handle lockParkingSpace actions
          */
         builder
-            .addCase(lockParkingSpace.pending, (state) => {
+            .addCase(lockParkingSpace.pending, (state: ParkingSpaceState) => {
                 state.lockStatus = "locking";
                 state.error = null;
             })
-            .addCase(lockParkingSpace.fulfilled, (state, action) => {
+            .addCase(lockParkingSpace.fulfilled, (state: ParkingSpaceState, action) => {
                 state.lockStatus = "locked";
                 state.lockExpiresAt = action.payload.expiresAt;
             })
-            .addCase(lockParkingSpace.rejected, (state, action) => {
+            .addCase(lockParkingSpace.rejected, (state: ParkingSpaceState, action) => {
                 state.lockStatus = "failed";
                 state.error = action.payload || "Failed to lock parking space";
             });
@@ -195,15 +195,15 @@ const parkingSpaceSlice = createSlice({
          * Handle unlockParkingSpace actions
          */
         builder
-            .addCase(unlockParkingSpace.pending, (state) => {
+            .addCase(unlockParkingSpace.pending, (state: ParkingSpaceState) => {
                 state.lockStatus = "unlocking";
                 state.error = null;
             })
-            .addCase(unlockParkingSpace.fulfilled, (state) => {
+            .addCase(unlockParkingSpace.fulfilled, (state: ParkingSpaceState) => {
                 state.lockStatus = "idle";
                 state.lockExpiresAt = null;
             })
-            .addCase(unlockParkingSpace.rejected, (state, action) => {
+            .addCase(unlockParkingSpace.rejected, (state: ParkingSpaceState, action) => {
                 state.lockStatus = "failed";
                 state.error = action.payload || "Failed to unlock parking space";
             });

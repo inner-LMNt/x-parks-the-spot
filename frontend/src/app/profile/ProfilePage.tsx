@@ -73,11 +73,12 @@ function CommentCard({
 
 export default function ProfilePage() {
     const dispatch = useDispatch();
-    const isLoggedIn = useSelector(state => state.user.isLoggedIn);
+    const isLoggedIn = useSelector((state: any) => state.user.isLoggedIn);
     const [eloRating] = React.useState(1200);
     const router = useRouter();
 
     const handleLogout = async () => {
+        // @ts-ignore
         await dispatch(logout());
         router.push('/login');
     };

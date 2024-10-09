@@ -94,15 +94,15 @@ const carSlice = createSlice({
          * Handle fetchUserCars actions
          */
         builder
-            .addCase(fetchUserCars.pending, (state) => {
+            .addCase(fetchUserCars.pending, (state: CarsState) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchUserCars.fulfilled, (state, action) => {
+            .addCase(fetchUserCars.fulfilled, (state: CarsState, action) => {
                 state.loading = false;
                 state.cars = action.payload;
             })
-            .addCase(fetchUserCars.rejected, (state, action) => {
+            .addCase(fetchUserCars.rejected, (state: CarsState, action) => {
                 state.loading = false;
                 state.error = action.payload || "Failed to fetch cars";
             });
@@ -111,15 +111,15 @@ const carSlice = createSlice({
          * Handle addCar actions
          */
         builder
-            .addCase(addCar.pending, (state) => {
+            .addCase(addCar.pending, (state: CarsState) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(addCar.fulfilled, (state, action) => {
+            .addCase(addCar.fulfilled, (state: CarsState, action) => {
                 state.loading = false;
                 state.cars.push(action.payload);
             })
-            .addCase(addCar.rejected, (state, action) => {
+            .addCase(addCar.rejected, (state: CarsState, action) => {
                 state.loading = false;
                 state.error = action.payload || "Failed to add car";
             });
