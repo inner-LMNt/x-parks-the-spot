@@ -1,5 +1,4 @@
 from flask.testing import FlaskClient
-import secrets
 
 def test_request_password_reset(client: FlaskClient) -> None:
     # Register a user first

@@ -112,7 +112,7 @@ def reset_password(token: str) -> Tuple[Any, int]:
     if data is None:
       return {"error": "Invalid JSON"}, 400  # Handle case where JSON is invalid
 
-    new_password = data.get('new_password')
+    new_password = data.get('newPassword')
 
     match handle_password_reset_confirmation(token, new_password):
         case Err(e):

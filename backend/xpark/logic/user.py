@@ -92,7 +92,10 @@ def check_username_password(email: str, password: str) -> Result[uuid.UUID, str]
 
                 if password_hasher.check_needs_rehash(correct_hashed_password):
                     # Set new password if the hashing parameters have changed
-                    change_password(user_id, password)
+                    new_password_hash = password_hasher.hash(password)
+                    conn.execute(
+                                "UPDATE users SET password_hash = %s WHERE id = %s", (new_password_hash, id)
+                    )
 
                 return Ok(user_id)
             except VerifyMismatchError:
@@ -100,16 +103,6 @@ def check_username_password(email: str, password: str) -> Result[uuid.UUID, str]
             except VerificationError:
                 # Do we need special handling? When will this ever run?
                 return Err("Wrong Password")
-
-
-def change_password(id: uuid.UUID, new_password: str) -> Result[None, None]:
-    new_password_hash = password_hasher.hash(new_password)
-    with DB.pool.connection() as conn:
-        conn.execute(
-            "UPDATE users SET password_hash = %s WHERE id = %s", (new_password_hash, id)
-        )
-        return Ok(None)
-
 
 def create_token(user_id: uuid.UUID) -> str:
     token = Config.TOKEN_PREFIX + secrets.token_urlsafe(32)
@@ -343,21 +336,6 @@ def expire_all_tokens_for_user(user_id: uuid.UUID) -> Result[None, str]:
             cur.execute("DELETE FROM user_tokens WHERE user_id = %s", (user_id,))
             return Ok(None)
 
-def store_reset_request(user_id: uuid.UUID, reset_token: str) -> Result[None, str]:
-    try:
-        reset_requested_at = datetime.datetime.now()
-        with DB.pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE users SET reset_requested_at = %s, reset_token = %s WHERE id = %s",
-                    (reset_requested_at, reset_token, user_id)
-                )
-                conn.commit()
-        return Ok(None)
-
-    except Exception as e:
-        return Err(str(e))
-
 
 def handle_password_reset_request(email: str) -> Result[None, str]:
     # Check if the email exists in the database
@@ -365,53 +343,67 @@ def handle_password_reset_request(email: str) -> Result[None, str]:
         return Err("Email not found")
 
     match get_user_id_by_email(email):
-       case Err(e):
-          return Err(f"Failed to retrieve user ID: {e}")
-       case Ok(user_id):
-          pass  # Proceed with user_id
+        case Err(e):
+            return Err(f"Failed to retrieve user ID: {e}")
+        case Ok(user_id):
+            pass  # Proceed with user_id
 
     reset_token = secrets.token_urlsafe(32)
+    reset_requested_at = datetime.datetime.now()
 
-    match store_reset_request(user_id, reset_token):
-        case Err(e):
-            return Err(f"Failed to store reset token: {e}")
-        case Ok(_):
-            pass  # Proceed to the next step
-
-    reset_link = f"http://localhost:3000/confirm-reset/{reset_token}"
-    send_email(to=email,
-               subject="Reset password",
-               content=generate_templated_email(
-                    "reset_password", name="Name", reset_link=reset_link
-                ))
-    return Ok(None)
-
-def handle_password_reset_confirmation(token: str, new_password: str) -> Result[None, str]:
     try:
-        # Step 1: Validate the reset token
-        with DB.pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT id FROM users WHERE reset_token = %s AND reset_requested_at > NOW() - INTERVAL '1 hour'", (token,))
-                user_data = cur.fetchone()
-
-                if not user_data:
-                    return Err("Invalid or expired reset token")
-
-                user_id = user_data[0]
-
-        # Step 2: Update the user's password
-        new_password_hash = password_hasher.hash(new_password)
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "UPDATE users SET password_hash = %s, reset_token = NULL, reset_requested_at = NULL WHERE id = %s",
-                    (new_password_hash, user_id)
+                    "UPDATE users SET reset_requested_at = %s, reset_token = %s WHERE id = %s",
+                    (reset_requested_at, reset_token, user_id)
                 )
                 conn.commit()
 
-        # Step 3: Invalidate the reset token (already done by setting reset_token to NULL above)
+        reset_link = f"http://localhost:3000/confirm-reset/{reset_token}"
+        send_email(
+            to=email,
+            subject="Reset password",
+            content=generate_templated_email("reset_password", name="Name", reset_link=reset_link)
+        )
+
         return Ok(None)
 
     except Exception as e:
-        return Err(f"Failed to reset password: {e}")
+        return Err(f"Failed to process password reset request: {e}")
+
+
+def handle_password_reset_confirmation(token: str, new_password: str) -> Result[None, str]:
+    # Step 1: Get the reset token and check if it's valid
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, reset_requested_at
+                FROM users
+                WHERE reset_token = %s
+            """, (token,))
+
+            user_data = cur.fetchone()
+
+            if not user_data:
+                return Err("Invalid reset token")
+
+            user_id, reset_requested_at = user_data
+
+            # Step 2: Check if the token has expired (valid within 1 hour)
+            time_elapsed = datetime.datetime.now() - reset_requested_at
+            if time_elapsed > datetime.timedelta(hours=1):
+                return Err("Expired reset token")
+
+    # Step 3: Update the user's password
+    new_password_hash = password_hasher.hash(new_password)
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE users SET password_hash = %s, reset_token = NULL, reset_requested_at = NULL WHERE id = %s",
+                (new_password_hash, user_id)
+            )
+            conn.commit()
+
+    return Ok(None)
 
