@@ -50,4 +50,4 @@ def test_request_delete_account_invalid_password(client: FlaskClient) -> None:
 def test_confirm_delete_account_invalid_token(client: FlaskClient) -> None:
     # Try confirming delete with an invalid token
     response = client.get("/api/unstable/auth/confirm-delete/invalid-token")
-    assert response.status_code == 400
+    assert response.status_code == 403

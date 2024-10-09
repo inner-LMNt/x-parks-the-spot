@@ -169,7 +169,7 @@ def delete_all_tokens_for_user(user_id: uuid.UUID) -> Result[None, str]:
 def get_user_name_by_id(user_id: uuid.UUID) -> Result[str, str]:
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT full_name FROM users WHERE id = %s", (user_id,))
+            cur.execute("SELECT name FROM users WHERE id = %s", (user_id,))
             user_data = cur.fetchone()
 
             if not user_data:
@@ -250,10 +250,7 @@ def handle_delete_account_request(
     user_id: uuid.UUID, password: str
 ) -> Result[None, str]:
     # Step 1: Get the user's email by ID
-    user_email = get_user_email_by_id(user_id)
-    if is_err(user_email):
-        return Err("User not found")
-    user_email = user_email.unwrap()
+    user_email = get_user_email_by_id(user_id).unwrap()
 
     # Step 2: Check if the password is correct
     if is_err(check_username_password(user_email, password)):
