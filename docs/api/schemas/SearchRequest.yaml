@@ -9,3 +9,9 @@ properties:
   radius:
     type: number
     format: float
+  paid_status:
+    type: enum
+    enum:
+      - ALL
+      - PAID
+      - FREE
