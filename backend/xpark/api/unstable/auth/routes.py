@@ -17,23 +17,20 @@ import uuid
 
 @bp.post("register")
 def create() -> Tuple[Any, int]:
-    try:
-        # Extract user info from the request
-        name = request.json["full_name"]  # type: ignore
-        password = request.json["password"]  # type: ignore
-        email = request.json["email"]  # type: ignore
+    # Extract user info from the request
+    name = request.json["full_name"]  # type: ignore
+    password = request.json["password"]  # type: ignore
+    email = request.json["email"]  # type: ignore
 
-        # Call the logic function to handle the registration
-        match handle_user_registration(name, email, password):
-            case Ok(user_id):
-                # Generate access token for the new/undeleted user
-                return {"access_token": create_token(user_id)}, 201
-            case Err("User already exists"):
-                return {"err": "Email already in use"}, 409
-            case Err(e):
-                return {"err": e}, 400
-    except KeyError:
-        return {"err": "Missing required fields"}, 400
+    # Call the logic function to handle the registration
+    match handle_user_registration(name, email, password):
+        case Ok(user_id):
+            # Generate access token for the new/undeleted user
+            return {"access_token": create_token(user_id)}, 201
+        case Err("User already exists"):
+            return {"err": "Email already in use"}, 409
+        case Err(e):
+            return {"err": e}, 400
 
 
 
