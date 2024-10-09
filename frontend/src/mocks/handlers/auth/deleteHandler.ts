@@ -12,7 +12,6 @@ export const deleteHandler = http.post<never, { userId: string, password: string
 
     // Find the user by ID
     //const user = findUserById(userId);
-
     if (false) {
         return HttpResponse.json({ message: userId }, { status: 404 });
     }
