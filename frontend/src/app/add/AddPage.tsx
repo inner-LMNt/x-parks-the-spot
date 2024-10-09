@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
@@ -19,23 +19,21 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
-import { Camera, X, Upload, ArrowLeft, PlusCircle, Trash2, MapPin } from 'lucide-react';
+import { Camera, X, Upload, ArrowLeft, MapPin } from 'lucide-react';
 import Webcam from 'react-webcam';
-import { v4 as uuidv4 } from 'uuid';
-import { TimeSlot } from '@/types/type';
+import { TimeSlot } from '@/types/type'; // Ensure DaysOfWeek enum is imported
 
-// Define days of the week
-const daysOfWeek = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-];
+// Define days of the week enum
+export enum DaysOfWeek {
+  Monday = 'Monday',
+  Tuesday = 'Tuesday',
+  Wednesday = 'Wednesday',
+  Thursday = 'Thursday',
+  Friday = 'Friday',
+  Saturday = 'Saturday',
+  Sunday = 'Sunday',
+}
 
-// Helper function to format time
 const formatTime = (time: string): string => {
   return time; // Keeping time as "HH:mm" since backend expects time-only strings
 };
@@ -54,13 +52,14 @@ export default function AddPage() {
   const [showCamera, setShowCamera] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Change availability to a single slot
-  const [availability, setAvailability] = useState<TimeSlot & { is24Seven: boolean }>({
+  // Separate TimeSlot and is24Seven
+  const [timeSlot, setTimeSlot] = useState<any>({
     day_of_week: [],
     start_time: '',
     end_time: '',
-    is24Seven: false,
   });
+
+  const [is24Seven, setIs24Seven] = useState<boolean>(false);
 
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [geoEnabled, setGeoEnabled] = useState(true);
@@ -118,25 +117,39 @@ export default function AddPage() {
   }, []);
 
   /**
-   * **Handle Changes in Availability Slot**
+   * **Handle 24/7 Toggle**
    */
-  const handleAvailabilityChange = (
-      field: keyof TimeSlot | 'is24Seven',
-      value: any
-  ) => {
-    setAvailability((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    // If is24Seven is toggled, reset related fields
-    if (field === 'is24Seven' && value) {
-      setAvailability({
+  const handle24SevenToggle = (checked: boolean) => {
+    setIs24Seven(checked);
+    if (checked) {
+      setTimeSlot({
         day_of_week: [],
         start_time: '00:00',
         end_time: '00:00',
-        is24Seven: true,
       });
+    } else {
+      setTimeSlot({
+        day_of_week: [],
+        start_time: '',
+        end_time: '',
+      });
+    }
+  };
+
+  /**
+   * **Handle Days of the Week Selection**
+   */
+  const handleDaySelection = (day: DaysOfWeek, checked: boolean) => {
+    if (checked) {
+      setTimeSlot((prev: any) => ({
+        ...prev,
+        day_of_week: [...prev.day_of_week, day],
+      }));
+    } else {
+      setTimeSlot((prev: any) => ({
+        ...prev,
+        day_of_week: prev.day_of_week.filter((d: DaysOfWeek) => d !== day),
+      }));
     }
   };
 
@@ -189,30 +202,28 @@ export default function AddPage() {
 
   /**
    * **Validate Availability Slot**
-   * Ensures the slot has valid days and durations.
    */
   const validateAvailability = () => {
     let isValid = true;
     let errorMsg = '';
 
-    if (availability.is24Seven) {
+    if (is24Seven) {
       // For 24/7, ensure start_time and end_time are '00:00'
-      if (availability.start_time !== '00:00' || availability.end_time !== '00:00') {
+      if (timeSlot.start_time !== '00:00' || timeSlot.end_time !== '00:00') {
         isValid = false;
         errorMsg = '24/7 slots must have start and end times set to 00:00.';
       }
     } else {
       // Check if at least one day is selected
-      if (availability.day_of_week.length === 0) {
+      if (timeSlot.day_of_week.length === 0) {
         isValid = false;
         errorMsg = 'Please select at least one day of the week.';
       }
 
       // Validate time durations
-      if (availability.start_time && availability.end_time) {
-        const diffMinutes = calculateTimeDifference(availability.start_time, availability.end_time);
+      if (timeSlot.start_time && timeSlot.end_time) {
+        const diffMinutes = calculateTimeDifference(timeSlot.start_time, timeSlot.end_time);
 
-        // Accept if duration is exactly 0 (invalid, handled below) or >=60 minutes
         if (diffMinutes !== 0 && diffMinutes < 60) {
           isValid = false;
           errorMsg = 'Each time slot must allow for at least one hour of parking.';
@@ -304,18 +315,17 @@ export default function AddPage() {
     // Build the availability_schedule array based on the single slot
     let availability_schedule: any[] = [];
     if (spotType === 'rental') {
-      if (availability.is24Seven) {
-        // Generate an entry for each day of the week with 00:00 - 00:00
-        availability_schedule = daysOfWeek.map((day) => ({
+      if (is24Seven) {
+        availability_schedule = Object.values(DaysOfWeek).map((day) => ({
           day_of_week: day,
           start_time: formatTime('00:00'),
           end_time: formatTime('00:00'),
         }));
       } else {
-        availability_schedule = availability.day_of_week.map((day) => ({
+        availability_schedule = timeSlot.day_of_week.map((day: DaysOfWeek) => ({
           day_of_week: day,
-          start_time: formatTime(availability.start_time),
-          end_time: formatTime(availability.end_time),
+          start_time: formatTime(timeSlot.start_time),
+          end_time: formatTime(timeSlot.end_time),
         }));
       }
     }
@@ -402,12 +412,12 @@ export default function AddPage() {
                             setSpotType(value as 'free' | 'rental');
                             setUserLocation(null);
                             if (value !== 'rental') {
-                              setAvailability({
+                              setTimeSlot({
                                 day_of_week: [],
                                 start_time: '',
                                 end_time: '',
-                                is24Seven: false,
                               });
+                              setIs24Seven(false);
                             }
                           }}
                           className="flex space-x-4"
@@ -491,16 +501,16 @@ export default function AddPage() {
                               <div className="flex items-center space-x-2">
                                 <Checkbox
                                     id={`24seven`}
-                                    checked={availability.is24Seven}
+                                    checked={is24Seven}
                                     onCheckedChange={(checked) => {
-                                      handleAvailabilityChange('is24Seven', checked);
+                                      handle24SevenToggle(checked as boolean);
                                     }}
                                 />
                                 <Label htmlFor={`24seven`}>24/7</Label>
                               </div>
 
                               {/* Time Inputs (Only if Not 24/7) */}
-                              {!availability.is24Seven && (
+                              {!is24Seven && (
                                   <>
                                     <div className="grid grid-cols-2 gap-4">
                                       <div className="space-y-2">
@@ -508,9 +518,12 @@ export default function AddPage() {
                                         <Input
                                             id={`start_time`}
                                             type="time"
-                                            value={availability.start_time}
+                                            value={timeSlot.start_time}
                                             onChange={(e) =>
-                                                handleAvailabilityChange('start_time', e.target.value)
+                                                setTimeSlot((prev: any) => ({
+                                                  ...prev,
+                                                  start_time: e.target.value,
+                                                }))
                                             }
                                             required
                                         />
@@ -520,9 +533,12 @@ export default function AddPage() {
                                         <Input
                                             id={`end_time`}
                                             type="time"
-                                            value={availability.end_time}
+                                            value={timeSlot.end_time}
                                             onChange={(e) =>
-                                                handleAvailabilityChange('end_time', e.target.value)
+                                                setTimeSlot((prev: any) => ({
+                                                  ...prev,
+                                                  end_time: e.target.value,
+                                                }))
                                             }
                                             required
                                         />
@@ -533,16 +549,13 @@ export default function AddPage() {
                                     <div className="space-y-2">
                                       <Label>Days of the Week</Label>
                                       <div className="grid grid-cols-2 gap-2">
-                                        {daysOfWeek.map((day) => (
+                                        {Object.values(DaysOfWeek).map((day) => (
                                             <div key={day} className="flex items-center space-x-2">
                                               <Checkbox
                                                   id={`${day}`}
-                                                  checked={availability.day_of_week.includes(day)}
+                                                  checked={timeSlot.day_of_week.includes(day)}
                                                   onCheckedChange={(checked) => {
-                                                    const updatedDays = checked
-                                                        ? [...availability.day_of_week, day]
-                                                        : availability.day_of_week.filter((d) => d !== day);
-                                                    handleAvailabilityChange('day_of_week', updatedDays);
+                                                    handleDaySelection(day as DaysOfWeek, checked as boolean);
                                                   }}
                                               />
                                               <Label htmlFor={`${day}`}>{day}</Label>

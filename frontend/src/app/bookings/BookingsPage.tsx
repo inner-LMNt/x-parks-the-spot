@@ -52,7 +52,7 @@ function ReservationCard({
     };
 
     // Retrieve the car information using car_id
-    const car = carMap[reservation.car_info_id];
+    const car = carMap[reservation.car_info_id as string];
 
     // Log for debugging
     useEffect(() => {

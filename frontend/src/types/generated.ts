@@ -1792,7 +1792,8 @@ export interface components {
             end_time?: string;
             /** @enum {string} */
             status?: "booked" | "active" | "completed" | "canceled";
-            car_info?: components["schemas"]["CarInfo"];
+            /** Format: uuid */
+            car_info_id?: string;
             /** Format: date-time */
             created_at?: string;
             /** Format: date-time */
