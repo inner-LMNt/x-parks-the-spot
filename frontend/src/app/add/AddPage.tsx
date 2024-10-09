@@ -53,13 +53,19 @@ export default function AddPage() {
   const webcamRef = useRef<Webcam>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [availability, setAvailability] = useState<
-      Array<TimeSlot & { id: string; is24Seven: boolean }>
-  >([]);
+
+  // Change availability to a single slot
+  const [availability, setAvailability] = useState<TimeSlot & { is24Seven: boolean }>({
+    day_of_week: [],
+    start_time: '',
+    end_time: '',
+    is24Seven: false,
+  });
+
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [geoEnabled, setGeoEnabled] = useState(true);
   const [locationLoading, setLocationLoading] = useState(false);
-  const [availabilityErrors, setAvailabilityErrors] = useState<{ [key: string]: string }>({});
+  const [availabilityError, setAvailabilityError] = useState<string>('');
 
   /**
    * **Handle Image Selection**
@@ -112,50 +118,25 @@ export default function AddPage() {
   }, []);
 
   /**
-   * **Add New Availability Slot**
-   */
-  const handleAddAvailability = () => {
-    setAvailability((prev) => [
-      ...prev,
-      { id: uuidv4(), day_of_week: [], start_time: '', end_time: '', is24Seven: false },
-    ]);
-  };
-
-  /**
-   * **Remove Availability Slot by ID**
-   */
-  const handleRemoveAvailability = (id: string) => {
-    setAvailability((prev) => prev.filter((slot) => slot.id !== id));
-    setAvailabilityErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[id];
-      return newErrors;
-    });
-  };
-
-  /**
-   * **Handle Changes in Availability Slots**
+   * **Handle Changes in Availability Slot**
    */
   const handleAvailabilityChange = (
-      id: string,
       field: keyof TimeSlot | 'is24Seven',
       value: any
   ) => {
-    setAvailability((prev) =>
-        prev.map((slot) =>
-            slot.id === id ? { ...slot, [field]: value } : slot
-        )
-    );
+    setAvailability((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
 
     // If is24Seven is toggled, reset related fields
     if (field === 'is24Seven' && value) {
-      setAvailability((prev) =>
-          prev.map((slot) =>
-              slot.id === id
-                  ? { ...slot, start_time: '00:00', end_time: '00:00', day_of_week: [] }
-                  : slot
-          )
-      );
+      setAvailability({
+        day_of_week: [],
+        start_time: '00:00',
+        end_time: '00:00',
+        is24Seven: true,
+      });
     }
   };
 
@@ -207,45 +188,47 @@ export default function AddPage() {
   };
 
   /**
-   * **Validate Availability Slots**
-   * Ensures each slot has valid days and durations.
+   * **Validate Availability Slot**
+   * Ensures the slot has valid days and durations.
    */
   const validateAvailability = () => {
     let isValid = true;
-    const errors: { [key: string]: string } = {};
+    let errorMsg = '';
 
-    availability.forEach((slot) => {
-      if (slot.is24Seven) {
-        // For 24/7, ensure start_time and end_time are '00:00'
-        if (slot.start_time !== '00:00' || slot.end_time !== '00:00') {
-          isValid = false;
-          errors[slot.id] = '24/7 slots must have start and end times set to 00:00.';
-        }
-        return; // No further validation needed
-      }
-
-      // Check if at least one day is selected
-      if (slot.day_of_week.length === 0) {
+    if (availability.is24Seven) {
+      // For 24/7, ensure start_time and end_time are '00:00'
+      if (availability.start_time !== '00:00' || availability.end_time !== '00:00') {
         isValid = false;
-        errors[slot.id] = 'Please select at least one day of the week.';
+        errorMsg = '24/7 slots must have start and end times set to 00:00.';
+      }
+    } else {
+      // Check if at least one day is selected
+      if (availability.day_of_week.length === 0) {
+        isValid = false;
+        errorMsg = 'Please select at least one day of the week.';
       }
 
       // Validate time durations
-      if (slot.start_time && slot.end_time) {
-        const diffMinutes = calculateTimeDifference(slot.start_time, slot.end_time);
+      if (availability.start_time && availability.end_time) {
+        const diffMinutes = calculateTimeDifference(availability.start_time, availability.end_time);
 
         // Accept if duration is exactly 0 (invalid, handled below) or >=60 minutes
         if (diffMinutes !== 0 && diffMinutes < 60) {
           isValid = false;
-          errors[slot.id] = 'Each time slot must allow for at least one hour of parking.';
+          errorMsg = 'Each time slot must allow for at least one hour of parking.';
         }
       } else {
         isValid = false;
-        errors[slot.id] = 'Please provide both start and end times.';
+        errorMsg = 'Please provide both start and end times.';
       }
-    });
+    }
 
-    setAvailabilityErrors(errors);
+    if (isValid) {
+      setAvailabilityError('');
+    } else {
+      setAvailabilityError(errorMsg);
+    }
+
     return isValid;
   };
 
@@ -260,7 +243,7 @@ export default function AddPage() {
     if (!validateAvailability()) {
       toast({
         title: 'Validation Error',
-        description: 'Please fix the errors in your availability schedule.',
+        description: availabilityError || 'Please fix the errors in your availability schedule.',
         variant: 'destructive',
       });
       setIsSubmitting(false);
@@ -318,31 +301,23 @@ export default function AddPage() {
       longitude = userLocation.lng;
     }
 
-    // Build the availability_schedule array
+    // Build the availability_schedule array based on the single slot
     let availability_schedule: any[] = [];
     if (spotType === 'rental') {
-      availability_schedule = availability
-          .filter(
-              (slot) =>
-                  slot.is24Seven ||
-                  (slot.day_of_week.length > 0 && slot.start_time && slot.end_time)
-          )
-          .flatMap((slot) => {
-            if (slot.is24Seven) {
-              // Generate an entry for each day of the week with 00:00 - 00:00
-              return daysOfWeek.map((day) => ({
-                day_of_week: day,
-                start_time: formatTime('00:00'),
-                end_time: formatTime('00:00'),
-              }));
-            } else {
-              return slot.day_of_week.map((day) => ({
-                day_of_week: day,
-                start_time: formatTime(slot.start_time),
-                end_time: formatTime(slot.end_time),
-              }));
-            }
-          });
+      if (availability.is24Seven) {
+        // Generate an entry for each day of the week with 00:00 - 00:00
+        availability_schedule = daysOfWeek.map((day) => ({
+          day_of_week: day,
+          start_time: formatTime('00:00'),
+          end_time: formatTime('00:00'),
+        }));
+      } else {
+        availability_schedule = availability.day_of_week.map((day) => ({
+          day_of_week: day,
+          start_time: formatTime(availability.start_time),
+          end_time: formatTime(availability.end_time),
+        }));
+      }
     }
 
     const data: any = {
@@ -427,7 +402,12 @@ export default function AddPage() {
                             setSpotType(value as 'free' | 'rental');
                             setUserLocation(null);
                             if (value !== 'rental') {
-                              setAvailability([]);
+                              setAvailability({
+                                day_of_week: [],
+                                start_time: '',
+                                end_time: '',
+                                is24Seven: false,
+                              });
                             }
                           }}
                           className="flex space-x-4"
@@ -501,108 +481,83 @@ export default function AddPage() {
                         <>
                           <div className="space-y-4">
                             <Label>Availability Schedule</Label>
-                            {availability.map((slot) => (
-                                <div key={slot.id} className="space-y-2 border p-4 rounded-md">
-                                  {/* Slot Header with Remove Button */}
-                                  <div className="flex justify-between items-center">
-                                    <Label>Time Slot</Label>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        onClick={() => handleRemoveAvailability(slot.id)}
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </div>
+                            <div className="space-y-2 border p-4 rounded-md">
+                              {/* Slot Header */}
+                              <div className="flex justify-between items-center">
+                                <Label>Time Slot</Label>
+                              </div>
 
-                                  {/* 24/7 Checkbox */}
-                                  <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id={`24seven-${slot.id}`}
-                                        checked={slot.is24Seven}
-                                        onCheckedChange={(checked) => {
-                                          handleAvailabilityChange(slot.id, 'is24Seven', checked);
-                                          if (checked) {
-                                            // Reset related fields when 24/7 is selected
-                                            handleAvailabilityChange(slot.id, 'start_time', '00:00');
-                                            handleAvailabilityChange(slot.id, 'end_time', '00:00');
-                                          }
-                                        }}
-                                    />
-                                    <Label htmlFor={`24seven-${slot.id}`}>24/7</Label>
-                                  </div>
+                              {/* 24/7 Checkbox */}
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id={`24seven`}
+                                    checked={availability.is24Seven}
+                                    onCheckedChange={(checked) => {
+                                      handleAvailabilityChange('is24Seven', checked);
+                                    }}
+                                />
+                                <Label htmlFor={`24seven`}>24/7</Label>
+                              </div>
 
-                                  {/* Time Inputs (Only if Not 24/7) */}
-                                  {!slot.is24Seven && (
-                                      <>
-                                        <div className="grid grid-cols-2 gap-4">
-                                          <div className="space-y-2">
-                                            <Label htmlFor={`start_time-${slot.id}`}>Start Time</Label>
-                                            <Input
-                                                id={`start_time-${slot.id}`}
-                                                type="time"
-                                                value={slot.start_time}
-                                                onChange={(e) =>
-                                                    handleAvailabilityChange(slot.id, 'start_time', e.target.value)
-                                                }
-                                                required
-                                            />
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label htmlFor={`end_time-${slot.id}`}>End Time</Label>
-                                            <Input
-                                                id={`end_time-${slot.id}`}
-                                                type="time"
-                                                value={slot.end_time}
-                                                onChange={(e) =>
-                                                    handleAvailabilityChange(slot.id, 'end_time', e.target.value)
-                                                }
-                                                required
-                                            />
-                                          </div>
-                                        </div>
+                              {/* Time Inputs (Only if Not 24/7) */}
+                              {!availability.is24Seven && (
+                                  <>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`start_time`}>Start Time</Label>
+                                        <Input
+                                            id={`start_time`}
+                                            type="time"
+                                            value={availability.start_time}
+                                            onChange={(e) =>
+                                                handleAvailabilityChange('start_time', e.target.value)
+                                            }
+                                            required
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`end_time`}>End Time</Label>
+                                        <Input
+                                            id={`end_time`}
+                                            type="time"
+                                            value={availability.end_time}
+                                            onChange={(e) =>
+                                                handleAvailabilityChange('end_time', e.target.value)
+                                            }
+                                            required
+                                        />
+                                      </div>
+                                    </div>
 
-                                        {/* Days of the Week */}
-                                        <div className="space-y-2">
-                                          <Label>Days of the Week</Label>
-                                          <div className="grid grid-cols-2 gap-2">
-                                            {daysOfWeek.map((day) => (
-                                                <div key={day} className="flex items-center space-x-2">
-                                                  <Checkbox
-                                                      id={`${slot.id}-${day}`}
-                                                      checked={slot.day_of_week.includes(day)}
-                                                      onCheckedChange={(checked) => {
-                                                        const updatedDays = checked
-                                                            ? [...slot.day_of_week, day]
-                                                            : slot.day_of_week.filter((d) => d !== day);
-                                                        handleAvailabilityChange(slot.id, 'day_of_week', updatedDays);
-                                                      }}
-                                                  />
-                                                  <Label htmlFor={`${slot.id}-${day}`}>{day}</Label>
-                                                </div>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      </>
-                                  )}
+                                    {/* Days of the Week */}
+                                    <div className="space-y-2">
+                                      <Label>Days of the Week</Label>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        {daysOfWeek.map((day) => (
+                                            <div key={day} className="flex items-center space-x-2">
+                                              <Checkbox
+                                                  id={`${day}`}
+                                                  checked={availability.day_of_week.includes(day)}
+                                                  onCheckedChange={(checked) => {
+                                                    const updatedDays = checked
+                                                        ? [...availability.day_of_week, day]
+                                                        : availability.day_of_week.filter((d) => d !== day);
+                                                    handleAvailabilityChange('day_of_week', updatedDays);
+                                                  }}
+                                              />
+                                              <Label htmlFor={`${day}`}>{day}</Label>
+                                            </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </>
+                              )}
 
-                                  {/* Display error message if any */}
-                                  {availabilityErrors[slot.id] && (
-                                      <p className="text-red-500 text-sm">{availabilityErrors[slot.id]}</p>
-                                  )}
-                                </div>
-                            ))}
-
-                            {/* Button to Add New Availability Slot */}
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={handleAddAvailability}
-                                className="flex items-center space-x-2"
-                            >
-                              <PlusCircle className="w-4 h-4 mr-2" />
-                              <span>Add Availability Slot</span>
-                            </Button>
+                              {/* Display error message if any */}
+                              {availabilityError && (
+                                  <p className="text-red-500 text-sm">{availabilityError}</p>
+                              )}
+                            </div>
                           </div>
 
                           {/* Price Input (Only for Rental) */}
