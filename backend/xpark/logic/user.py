@@ -207,14 +207,11 @@ def validate_and_check_deletion_token(token: str, user_id: uuid.UUID) -> Result[
 
 
 def reset_deletion_request(user_id: uuid.UUID) -> Result[None, str]:
-    try:
-        with DB.pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("UPDATE users SET deletion_requested_at = NULL, deletion_token = NULL WHERE id = %s", (user_id,))
-                conn.commit()
-        return Ok(None)
-    except Exception as e:
-        return Err(str(e))
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET deletion_requested_at = NULL, deletion_token = NULL WHERE id = %s", (user_id,))
+            conn.commit()
+    return Ok(None)
 
 
 def is_user_deleted(email: str) -> bool:
