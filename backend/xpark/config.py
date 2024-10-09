@@ -8,8 +8,10 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config:
     SECRET_KEY = os.environ["SECRET_KEY"]  # Will fail if SECRET_KEY is not set
     DATABASE_URI = os.environ["DATABASE_URI"]
-    TOKEN_EXPIRY_SECONDS = 2592000
+    TOKEN_EXPIRY_SECONDS = 2592000  # 30 days
+    DELETE_RESET_EXPIRY_SECONDS = 1800  # 30 minutes
     TOKEN_PREFIX = "xpark_"
+    BASE_HOST = os.environ.get("BASE_HOST") or "http://localhost:3000"
 
     TEST_DATABASE_URI = (
         os.environ.get("TEST_DATABASE_URI")
@@ -18,7 +20,9 @@ class Config:
     STATIC_FOLDER = os.path.join(basedir, 'static')
     TEST_DATABASE_NAME = os.environ.get("TEST_DATABASE_NAME") or "test_xpark"
     ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN") or "*"
-    ALLOWED_HEADERS = os.environ.get("ALLOWED_HEADERS") or "*"
+    ALLOWED_HEADERS = (
+        os.environ.get("ALLOWED_HEADERS") or "Authorization, X-PINGOTHER, Content-Type"
+    )
     ALLOWED_METHODS = os.environ.get("ALLOWED_METHODS") or "*"
 
     SMTP_FROM = os.environ.get("SMTP_FROM") or '"NoReply" <noreply@example.com>'

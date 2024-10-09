@@ -13,7 +13,10 @@ def test_cors(client: FlaskClient) -> None:
     response = client.get("/api/unstable/version")
     assert response.status_code == 200
     assert response.headers.get("Access-Control-Allow-Origin") == "*"
-    assert response.headers.get("Access-Control-Allow-Headers") == "X-PINGOTHER, Content-Type"
+    assert (
+        response.headers.get("Access-Control-Allow-Headers")
+        == "Authorization, X-PINGOTHER, Content-Type"
+    )
     assert response.headers.get("Access-Control-Allow-Methods") == "*"
 
     # Ensure headers are not set for invalid API endpoints
@@ -27,7 +30,10 @@ def test_cors(client: FlaskClient) -> None:
     response = client.post("/api/unstable/auth/logout")
     assert response.status_code == 403
     assert response.headers.get("Access-Control-Allow-Origin") == "*"
-    assert response.headers.get("Access-Control-Allow-Headers") == "X-PINGOTHER, Content-Type"
+    assert (
+        response.headers.get("Access-Control-Allow-Headers")
+        == "Authorization, X-PINGOTHER, Content-Type"
+    )
     assert response.headers.get("Access-Control-Allow-Methods") == "*"
 
     # Ensure headers are set for 400 responses (missing data)
@@ -41,7 +47,10 @@ def test_cors(client: FlaskClient) -> None:
     )
     assert response.status_code == 400
     assert response.headers.get("Access-Control-Allow-Origin") == "*"
-    assert response.headers.get("Access-Control-Allow-Headers") == "X-PINGOTHER, Content-Type"
+    assert (
+        response.headers.get("Access-Control-Allow-Headers")
+        == "Authorization, X-PINGOTHER, Content-Type"
+    )
     assert response.headers.get("Access-Control-Allow-Methods") == "*"
 
     # Ensure headers are set for 401 responses
@@ -54,5 +63,8 @@ def test_cors(client: FlaskClient) -> None:
     )
     assert response.status_code == 401
     assert response.headers.get("Access-Control-Allow-Origin") == "*"
-    assert response.headers.get("Access-Control-Allow-Headers") == "X-PINGOTHER, Content-Type"
+    assert (
+        response.headers.get("Access-Control-Allow-Headers")
+        == "Authorization, X-PINGOTHER, Content-Type"
+    )
     assert response.headers.get("Access-Control-Allow-Methods") == "*"
