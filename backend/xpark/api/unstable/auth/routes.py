@@ -60,7 +60,7 @@ def logout(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 @bp.post("request_delete_account")
 @require_logged_in_user
 def request_delete_account(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    password = request.json["password"]
+    password = request.json["password"]  # type: ignore
 
     # Call the helper function to handle the request
     match handle_delete_account_request(user_id, password):
