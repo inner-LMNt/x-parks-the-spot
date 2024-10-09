@@ -10,7 +10,7 @@ class Config:
     DATABASE_URI = os.environ["DATABASE_URI"]
     TOKEN_EXPIRY_SECONDS = 2592000
     TOKEN_PREFIX = "xpark_"
-    BASE_HOST = "localhost:3000"
+    BASE_HOST = os.environ.get("BASE_HOST") or "http://localhost:3000"
 
     TEST_DATABASE_URI = (
         os.environ.get("TEST_DATABASE_URI")

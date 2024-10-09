@@ -70,13 +70,14 @@ def request_delete_account(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return {"err": e}, 401
 
 
-@bp.route("confirm-delete/<token>")
+# FIXME: this isn't idempotent, but it's gotta be a clickable link so
+@bp.get("confirm-delete/<token>")
 def confirm_delete_account(token: str) -> Tuple[Any, int]:
     match handle_confirm_delete(token):
         case Ok(_):
             return {"message": "Account deleted successfully"}, 200
         case Err(e):
-            return {"err": e}, 400
+            return {"err": e}, 403
 
 
 # @bp.get("id")

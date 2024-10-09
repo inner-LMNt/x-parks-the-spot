@@ -3,7 +3,7 @@ from xpark.utils.password import password_hasher
 from argon2.exceptions import VerifyMismatchError, VerificationError
 import uuid
 from xpark.config import Config
-from result import Result, Ok, Err
+from result import Result, Ok, Err, is_err
 from typing import cast, Tuple
 import datetime
 import secrets
@@ -166,6 +166,18 @@ def delete_all_tokens_for_user(user_id: uuid.UUID) -> Result[None, str]:
                 return Err("No tokens found for this user")
 
 
+def get_user_name_by_id(user_id: uuid.UUID) -> Result[str, str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT full_name FROM users WHERE id = %s", (user_id,))
+            user_data = cur.fetchone()
+
+            if not user_data:
+                return Err("User not found")
+
+            return Ok(user_data[0])
+
+
 def get_user_email_by_id(user_id: uuid.UUID) -> Result[str, str]:
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
@@ -238,18 +250,14 @@ def handle_delete_account_request(
     user_id: uuid.UUID, password: str
 ) -> Result[None, str]:
     # Step 1: Get the user's email by ID
-    match get_user_email_by_id(user_id):
-        case Err(e):
-            return Err(f"User not found: {e}")
-        case Ok(user_email):
-            pass  # Proceed to next step
+    user_email = get_user_email_by_id(user_id)
+    if is_err(user_email):
+        return Err("User not found")
+    user_email = user_email.unwrap()
 
     # Step 2: Check if the password is correct
-    match check_username_password(user_email, password):
-        case Err(e):
-            return Err(f"Invalid password: {e}")
-        case Ok(_):
-            pass  # Proceed to next step
+    if is_err(check_username_password(user_email, password)):
+        return Err("Invalid password")
 
     # Step 3: Generate a deletion token
     delete_token = secrets.token_urlsafe(32)
@@ -265,12 +273,14 @@ def handle_delete_account_request(
             conn.commit()
 
     # Step 5: Send the email with the deletion link
-    delete_link = f"http://{Config.BASE_HOST}/confirm-deletion/{delete_token}"
+    delete_link = f"{Config.BASE_HOST}/confirm-deletion/{delete_token}"
     send_email(
         to=user_email,
-        subject="Delete Account",
+        subject="XPark: Delete Account Confirmation",
         content=generate_templated_email(
-            "delete_account", name="User", delete_link=delete_link
+            "delete_account",
+            name=get_user_name_by_id(user_id).unwrap(),
+            delete_link=delete_link,
         ),
     )
     return Ok(None)
