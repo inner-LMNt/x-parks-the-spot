@@ -12,6 +12,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getOwnerSpots, deleteParkingSpot } from '@/features/owner/ownerSlice'
+import ImageWrapper from "@/components/custom/ImageWrapper";
 
 export default function MySpotsPage() {
     const isLoggedIn = useAppSelector(state => state.user.isLoggedIn)
@@ -67,16 +68,14 @@ export default function MySpotsPage() {
                 >
                     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
                         {/* Display Image if Exists */}
-                        {spot.image && (
-                            <div className="relative w-full h-48">
-                                <Image
-                                    src={spot.image}
+                        {spot.photos && (
+                            <div className="relative w-full h-40">
+                                <ImageWrapper
+                                    src={spot.photos[0]} // Can be relative; ImageWrapper handles absolute URL
                                     alt={spot.name || 'Parking Spot Image'}
                                     layout="fill"
                                     objectFit="cover"
                                     className="w-full h-48 object-cover"
-                                    placeholder="blur"
-                                    blurDataURL="/placeholder-image.png" // Ensure this path is correct and the image exists in /public
                                 />
                             </div>
                         )}

@@ -125,8 +125,8 @@ export default function BookingsPage() {
     // Create a carMap for efficient lookup
     const carMap = useMemo(() => {
         const map: { [key: string]: CarInfo } = {};
-        cars.forEach((car) => {
-            map[car.id] = car;
+        cars.forEach((car : CarInfo) => {
+            map[car.id as string] = car;
         });
         console.log('Car Map:', map);
         return map;
@@ -190,7 +190,7 @@ export default function BookingsPage() {
                         ) : carsError ? (
                             <p className="text-red-500">Error loading cars: {carsError}</p>
                         ) : cars.length > 0 ? (
-                            cars.map((car) => (
+                            cars.map((car: CarInfo) => (
                                 <Card key={car.id} className="p-4">
                                     <CardContent>
                                         <p className="text-lg font-semibold">{car.make} {car.model}</p>

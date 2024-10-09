@@ -30,6 +30,7 @@ import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AddCarModal from '@/components/custom/AddCarModal';
 import Link from 'next/link';
+import ImageWrapper from "@/components/custom/ImageWrapper";
 
 /**
  * **Booking Page Component**
@@ -37,6 +38,7 @@ import Link from 'next/link';
 export default function ParkingSpaceBooking() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAddCarModalOpen, setIsAddCarModalOpen] = useState(false); // State to control modal
+    const [showFullImage, setShowFullImage] = useState(false);
     const params = useParams();
     const parkingSpaceId = params?.['parking-space-id'] as string ?? "invalid";
     const router = useRouter();
@@ -73,7 +75,6 @@ export default function ParkingSpaceBooking() {
 
     const isMounted = useRef<boolean>(false);
     const isLocked = useRef<boolean>(false); // Ref to track if parking space is locked by the current user
-
     /**
      * **Fetch Parking Space Details and User's Car Info**
      */
@@ -519,6 +520,28 @@ export default function ParkingSpaceBooking() {
                     </div>
                 </CardHeader>
                 <CardContent>
+                    {parkingSpace.photos && (
+                        <div className="relative w-full h-48 my-2 shadow-md rounded-md cursor-pointer" onClick={() => setShowFullImage(true)}>
+                            <ImageWrapper
+                                src={parkingSpace.photos[0]} // Can be relative; ImageWrapper handles absolute URL
+                                alt={parkingSpace.name || 'Parking Spot Image'}
+                                layout="fill"
+                                objectFit="cover"
+                                className="w-full h-48 object-cover rounded-md"
+                            />
+                        </div>
+                    )}
+                    {showFullImage && (
+                        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center z-10" onClick={() => setShowFullImage(false)}>
+                            <ImageWrapper
+                                src={parkingSpace.photos[0]} // Can be relative; ImageWrapper handles absolute URL
+                                alt={parkingSpace.name || 'Parking Spot Image'}
+                                layout="fill"
+                                objectFit="contain"
+                                className="max-w-full max-h-full"
+                            />
+                        </div>
+                    )}
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center">
                             <Star className="w-5 h-5 text-yellow-400 mr-1" />
