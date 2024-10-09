@@ -41,11 +41,8 @@ def handle_user_registration(
 def check_if_user_exists(email: str) -> bool:
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT COUNT(1) FROM users WHERE email = %s", (email,))
-            result = cur.fetchone()
-            if result is not None:
-                return bool(result[0] != 0)  # Index after confirming result is not None
-            return False
+            cur.execute("SELECT COUNT(1) from users WHERE email = %s", (email,))
+            return cur.fetchone() != (0,)
 
 
 def create_user(name: str, email: str, password: str) -> Result[uuid.UUID, str]:
