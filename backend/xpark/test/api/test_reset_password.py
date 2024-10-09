@@ -1,4 +1,5 @@
 from flask.testing import FlaskClient
+from typing import cast, Tuple
 
 
 def test_request_password_reset(client: FlaskClient) -> None:
@@ -21,6 +22,24 @@ def test_request_password_reset(client: FlaskClient) -> None:
     assert response.status_code == 200
     assert response.json == {"message": "Password reset email sent"}
 
+    # Extract the token from the DB and try using it
+    from xpark.utils.db import DB
+
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT user_pw_reset_requests.token FROM users JOIN user_pw_reset_requests ON user_pw_reset_requests.user_id = users.id WHERE users.email = %s",
+                ("testuser@example.com",),
+            )
+            reset_token = cast(Tuple[str], cur.fetchone())[0]
+
+            # Try confirming delete with an invalid token
+            response = client.post(
+                f"/api/unstable/auth/reset-password/{reset_token}",
+                json={"new_password": "NewPassword!!!!"},
+            )
+            assert response.status_code == 200
+
 
 def test_reset_password_with_invalid_token(client: FlaskClient) -> None:
     # Try resetting the password with an invalid token
@@ -28,5 +47,5 @@ def test_reset_password_with_invalid_token(client: FlaskClient) -> None:
         "/api/unstable/auth/reset-password/invalid-token",
         json={"new_password": "NewPassword123"},
     )
-    assert response.status_code == 400
-    assert response.json == {"error": "Invalid or expired reset token"}
+    assert response.status_code == 403
+    assert response.json == {"err": "Invalid or expired token"}

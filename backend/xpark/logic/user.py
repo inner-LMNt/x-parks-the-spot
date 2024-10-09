@@ -281,6 +281,9 @@ def handle_password_reset_request(email: str) -> Result[None, str]:
     if not check_if_user_exists(email):
         return Err("Email not found")
 
+    if is_user_deleted(email):
+        return Err("User is deleted")
+
     match get_user_id_by_email(email):
         case Err(e):
             return Err(f"Failed to retrieve user ID: {e}")
@@ -292,7 +295,7 @@ def handle_password_reset_request(email: str) -> Result[None, str]:
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO user_delete_requests (user_id, token, expiry) VALUES (%s, %s, NOW() + %s * INTERVAL '1 seconds')",
+                "INSERT INTO user_pw_reset_requests (user_id, token, expiry) VALUES (%s, %s, NOW() + %s * INTERVAL '1 seconds')",
                 (user_id, reset_token, Config.DELETE_RESET_EXPIRY_SECONDS),
             )
 
@@ -327,5 +330,8 @@ def handle_password_reset_confirmation(
 
     # Step 3: Update the user's password
     change_password(user_id, new_password)
+
+    # Expire all tokens
+    expire_all_tokens_for_user(user_id)
 
     return Ok(None)

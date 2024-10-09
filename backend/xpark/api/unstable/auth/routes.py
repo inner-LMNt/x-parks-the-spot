@@ -73,7 +73,7 @@ def request_delete_account(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 
 
 # FIXME: this isn't idempotent, but it's gotta be a clickable link so
-@bp.post("confirm-delete/<token>")
+@bp.get("confirm-delete/<token>")
 def confirm_delete_account(token: str) -> Tuple[Any, int]:
     match handle_confirm_delete(token):
         case Ok(_):
@@ -95,11 +95,11 @@ def reset_password_request() -> Tuple[Any, int]:
 
 @bp.post("/reset-password/<token>")
 def reset_password(token: str) -> Tuple[Any, int]:
-    new_password = request.json["newPassword"]  # type: ignore
+    new_password = request.json["new_password"]  # type: ignore
 
     match handle_password_reset_confirmation(token, new_password):
         case Err(e):
-            return {"error": e}, 400
+            return {"err": e}, 403
         case Ok(_):
             return {"message": "Password reset successfully"}, 200
 
