@@ -53,12 +53,19 @@ export type ReservationUpdateRequest = components["schemas"]["ReservationUpdateR
 /**
  * **Search Type**
  */
-export type SearchRequest = {
-  latitude?: number;
-  longitude?: number;
-  radius?: number;
-  paid_status?: 'ALL' | 'PAID' | 'FREE';
-};
+export interface SearchRequest {
+  latitude: number;
+  longitude: number;
+  radius: number;
+  min_price?: number;  // Minimum price filter
+  max_price?: number;  // Maximum price filter
+  start_time?: string; // Start time filter
+  end_time?: string;   // End time filter
+  features?: string[]; // List of features to filter parking spots
+}
+
+
+
 export type SearchResponse = {
   spots: ParkingSpaceSummary[];
 };

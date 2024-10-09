@@ -46,7 +46,18 @@ export default function SearchPage() {
   const [address, setAddress] = useState<string>('');
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
-
+  const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
+  const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
+  const [startTime, setStartTime] = useState<string | undefined>(undefined);
+  const [endTime, setEndTime] = useState<string | undefined>(undefined);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const featuresOptions = [
+    { value: 'covered', label: 'Covered Parking' },
+    { value: 'electric', label: 'Electric Charging' },
+    { value: 'accessible', label: 'Accessible' },
+    // Add more options as needed
+  ];
+  const [showFeaturesDropdown, setShowFeaturesDropdown] = useState(false);
   const onLoadAutocomplete = (autocompleteInstance: google.maps.places.Autocomplete) => {
     setAutocomplete(autocompleteInstance);
   };
@@ -132,7 +143,7 @@ export default function SearchPage() {
 
         if (geocodeResult.data.results.length > 0) {
           location = geocodeResult.data.results[0].geometry.location;
-          setMapCenter(location ?? default_center); // Center map on the geocoded location or default center
+          setMapCenter(location ?? default_center);
         } else {
           console.error('No results found for the given address.');
           return;
@@ -145,26 +156,28 @@ export default function SearchPage() {
 
     if (!location) {
       console.error("User location is not available yet.");
-      return; // if location is unavailable
+      return;
     }
-
-    console.log("location", location);
 
     const request: SearchRequest = {
       latitude: location.lat,
       longitude: location.lng,
       radius: searchRadius,
+      min_price: minPrice || undefined,
+      max_price: maxPrice || undefined,
+      start_time: startTime || undefined,
+      end_time: endTime || undefined,
+      features: selectedFeatures.length > 0 ? selectedFeatures : undefined,
     };
 
     try {
-      // @ts-ignore
       await dispatch(searchSpots(request));
-      // Close the search bar after search
       setIsSearchOpen(false);
     } catch (error) {
       console.error('Search failed:', error);
     }
   };
+
 
   // Handle parking spot selection
   const handleSpotSelect = (spot: ParkingSpace) => {
@@ -319,11 +332,11 @@ export default function SearchPage() {
                 <div className="flex flex-col">
                   <div className="flex items-center mb-4">
                     <input
-                      type="checkbox"
-                      id="use-current-location"
-                      checked={useCurrentLocation}
-                      onChange={(e) => setUseCurrentLocation(e.target.checked)}
-                      className="mr-2"
+                        type="checkbox"
+                        id="use-current-location"
+                        checked={useCurrentLocation}
+                        onChange={(e) => setUseCurrentLocation(e.target.checked)}
+                        className="mr-2"
                     />
                     <Label htmlFor="use-current-location" className="text-sm">Use Current Location</Label>
                   </div>
@@ -335,43 +348,120 @@ export default function SearchPage() {
                     <div className="flex items-center space-x-4">
                       <div className="flex-grow">
                         <Slider
-                          id="radius-slider"
-                          value={[searchRadius]}
-                          onValueChange={handleSliderChange}
-                          min={0.1}
-                          max={5}
-                          step={0.1}
-                          className="w-full opacity-100"
-                          aria-label="Radius Slider"
+                            id="radius-slider"
+                            value={[searchRadius]}
+                            onValueChange={handleSliderChange}
+                            min={0.1}
+                            max={5}
+                            step={0.1}
+                            className="w-full opacity-100"
+                            aria-label="Radius Slider"
                         />
                       </div>
 
                       <Input
-                        id="radius-input"
-                        type="number"
-                        value={searchRadius}
-                        onChange={handleInputChange}
-                        className="w-20 text-sm"
-                        min={0.1}
-                        max={5}
-                        aria-label="Radius Input"
+                          id="radius-input"
+                          type="number"
+                          value={searchRadius}
+                          onChange={handleInputChange}
+                          className="w-20 text-sm"
+                          min={0.1}
+                          max={5}
+                          aria-label="Radius Input"
                       />
                     </div>
                   </div>
 
-                  {!useCurrentLocation && (
-                    <div className="flex flex-col mb-4">
-                      <Label htmlFor="address" className="text-sm mb-1">Near (Address):</Label>
-                      <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={handlePlaceSelect} className="w-full">
-                        <Input
-                          id="address"
-                          type="text"
-                          value={address}
-                          onChange={(e) => setAddress(e.target.value)}
-                          className="w-full text-sm"
-                        />
-                      </Autocomplete>
+                  <div className="flex flex-col mb-4">
+                    <Label htmlFor="min_price" className="text-sm mb-1">Min Price:</Label>
+                    <Input
+                        id="min_price"
+                        type="number"
+                        value={minPrice}
+                        onChange={(e) => setMinPrice(parseFloat(e.target.value))}
+                        className="w-full text-sm"
+                    />
+                  </div>
+
+                  <div className="flex flex-col mb-4">
+                    <Label htmlFor="max_price" className="text-sm mb-1">Max Price:</Label>
+                    <Input
+                        id="max_price"
+                        type="number"
+                        value={maxPrice}
+                        onChange={(e) => setMaxPrice(parseFloat(e.target.value))}
+                        className="w-full text-sm"
+                    />
+                  </div>
+
+                  <div className="flex flex-col mb-4">
+                    <Label htmlFor="start_time" className="text-sm mb-1">Start Time:</Label>
+                    <Input
+                        id="start_time"
+                        type="datetime-local"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                        className="w-full text-sm"
+                    />
+                  </div>
+
+                  <div className="flex flex-col mb-4">
+                    <Label htmlFor="end_time" className="text-sm mb-1">End Time:</Label>
+                    <Input
+                        id="end_time"
+                        type="datetime-local"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                        className="w-full text-sm"
+                    />
+                  </div>
+
+                  <div className="flex flex-col mb-4">
+                    <div className="flex justify-between items-center cursor-pointer"
+                         onClick={() => setShowFeaturesDropdown(!showFeaturesDropdown)}>
+                      <Label htmlFor="features" className="text-sm mb-1">
+                        Features:
+                      </Label>
+                      <span className={`transform transition-transform ${showFeaturesDropdown ? 'rotate-180' : ''}`}>
+      &#9662; {/* Down arrow, rotate when expanded */}
+    </span>
                     </div>
+
+                    {showFeaturesDropdown && (
+                        <div className="flex flex-col mt-2">
+                          {featuresOptions.map(({value, label}) => (
+                              <label key={value} className="flex items-center mb-1"> {/* Add margin for spacing */}
+                                <input
+                                    type="checkbox"
+                                    value={value}
+                                    checked={selectedFeatures.includes(value)}
+                                    onChange={(e) => {
+                                      setSelectedFeatures(e.target.checked
+                                          ? [...selectedFeatures, value]
+                                          : selectedFeatures.filter(feature => feature !== value));
+                                    }}
+                                    className="mr-2" // Add margin to the right for spacing
+                                />
+                                {label}
+                              </label>
+                          ))}
+                        </div>
+                    )}
+                  </div>
+
+                  {!useCurrentLocation && (
+                      <div className="flex flex-col mb-4">
+                        <Label htmlFor="address" className="text-sm mb-1">Near (Address):</Label>
+                        <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={handlePlaceSelect} className="w-full">
+                          <Input
+                              id="address"
+                              type="text"
+                              value={address}
+                              onChange={(e) => setAddress(e.target.value)}
+                              className="w-full text-sm"
+                          />
+                        </Autocomplete>
+                      </div>
                   )}
 
                   <Button onClick={onSearch} className="w-auto text-sm px-4 py-2">
@@ -380,9 +470,9 @@ export default function SearchPage() {
                 </div>
               </CardContent>
             ) : (
-              <CardContent className="pt-2">
-                {enableGeolocation}
-              </CardContent>
+                <CardContent className="pt-2">
+                  {enableGeolocation}
+                </CardContent>
             )}
           </motion.div>
         </Card>
@@ -390,48 +480,49 @@ export default function SearchPage() {
 
       {/* Map */}
       <div
-        ref={mapRef}
-        className={`transition-all duration-300`}
-        style={{
-          height: isMapExpanded ? `calc(100vh - 64px)` : '50vh',
-          flexShrink: 0,
-          position: 'relative',
-        }}
+          ref={mapRef}
+          className={`transition-all duration-300`}
+          style={{
+            height: isMapExpanded ? `calc(100vh - 64px)` : '50vh',
+            flexShrink: 0,
+            position: 'relative',
+          }}
       >
         {/* @ts-ignore */}
         <LoadScriptNext googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
-          libraries={['places']}
+                        libraries={['places']}
         >
+          console.log("key", googleMapsApiKey)
           <GoogleMap
-            mapContainerStyle={{ width: '100%', height: '100%' }}
-            center={mapCenter}
-            zoom={14}
-            options={{
-              mapTypeControl: false,
-              fullscreenControl: false,
-              gestureHandling: 'greedy',
-            }}
+              mapContainerStyle={{width: '100%', height: '100%'}}
+              center={mapCenter}
+              zoom={14}
+              options={{
+                mapTypeControl: false,
+                fullscreenControl: false,
+                gestureHandling: 'greedy',
+              }}
           >
             {parkingSpots.map((spot: ParkingSpace) => (
-              <Marker
-                key={spot.id}
-                position={{
-                  lat: spot.location.latitude,
-                  lng: spot.location.longitude,
-                }}
-                onClick={() => handleSpotSelect(spot)}
-              />
+                <Marker
+                    key={spot.id}
+                    position={{
+                      lat: spot.location.latitude,
+                      lng: spot.location.longitude,
+                    }}
+                    onClick={() => handleSpotSelect(spot)}
+                />
             ))}
             {mapCenter && (
-              <Marker
-                position={mapCenter}
-                icon="https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
-              />
+                <Marker
+                    position={mapCenter}
+                    icon="https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                />
             )}
             {selectedSpot && (
-              <InfoWindow
-                position={{
-                  lat: selectedSpot.location.latitude,
+                <InfoWindow
+                    position={{
+                      lat: selectedSpot.location.latitude,
                   lng: selectedSpot.location.longitude,
                 }}
                 onCloseClick={() => setSelectedSpot(null)}
