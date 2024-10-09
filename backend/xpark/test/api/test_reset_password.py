@@ -1,9 +1,11 @@
 from flask.testing import FlaskClient
-from typing import cast, Tuple
+from typing import cast, Tuple, Dict
+from result import Ok, Err
+from xpark.logic.user import validate_token_and_refresh
 
 
 def test_request_password_reset(client: FlaskClient) -> None:
-    # Register a user first
+    # Create a user and then delete it
     response = client.post(
         "/api/unstable/auth/register",
         json={
@@ -13,6 +15,18 @@ def test_request_password_reset(client: FlaskClient) -> None:
         },
     )
     assert response.status_code == 201
+    token0 = cast(Dict[str, str], response.json)["access_token"]
+    # Attempt to delete the account with an invalid password
+    response = client.post(
+        "/api/unstable/auth/login",
+        json={"email": "testuser@example.com", "password": "TestPassword123"},
+    )
+    assert response.status_code == 201
+    token1 = cast(Dict[str, str], response.json)["access_token"]
+
+    # Ensure both tokens work
+    assert type(validate_token_and_refresh(token0)) is Ok
+    assert type(validate_token_and_refresh(token1)) is Ok
 
     # Request password reset
     response = client.post(
@@ -39,6 +53,10 @@ def test_request_password_reset(client: FlaskClient) -> None:
                 json={"new_password": "NewPassword!!!!"},
             )
             assert response.status_code == 200
+
+    # Ensure that tokens are invalidated and deleted
+    assert type(validate_token_and_refresh(token0)) is Err
+    assert type(validate_token_and_refresh(token1)) is Err
 
 
 def test_reset_password_with_invalid_token(client: FlaskClient) -> None:

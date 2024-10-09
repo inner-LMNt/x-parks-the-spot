@@ -294,6 +294,9 @@ def handle_password_reset_request(email: str) -> Result[None, str]:
 
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
+            # FIXME: Move to a background job
+            cur.execute("DELETE FROM user_delete_requests WHERE expiry <= NOW()")
+
             cur.execute(
                 "INSERT INTO user_pw_reset_requests (user_id, token, expiry) VALUES (%s, %s, NOW() + %s * INTERVAL '1 seconds')",
                 (user_id, reset_token, Config.DELETE_RESET_EXPIRY_SECONDS),
