@@ -15,6 +15,7 @@ class AuthParams(TypedDict):
 class AuthFunction(Protocol):
     def __call__(self, **kwargs: Unpack[AuthParams]) -> Tuple[Any, int]: ...
 
+
 def require_logged_in_user(next_fn: AuthFunction) -> Callable[..., Tuple[Any, int]]:
     @wraps(next_fn)
     def wrapper(*args: Any, **kwargs: Any) -> Tuple[Any, int]:

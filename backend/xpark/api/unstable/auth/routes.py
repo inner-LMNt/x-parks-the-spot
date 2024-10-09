@@ -3,7 +3,6 @@ from xpark.logic.user import (
     expire_valid_token,
     create_token,
     check_username_password,
-    is_user_deleted,
     handle_user_registration,
     handle_delete_account_request,
     handle_confirm_delete,
@@ -17,26 +16,23 @@ from xpark.middleware.token_auth_middleware import require_logged_in_user
 from typing import Tuple, Any
 import uuid
 
+
 @bp.post("register")
 def create() -> Tuple[Any, int]:
-    try:
-        # Extract user info from the request
-        name = request.json["full_name"]  # type: ignore
-        password = request.json["password"]  # type: ignore
-        email = request.json["email"]  # type: ignore
+    # Extract user info from the request
+    name = request.json["full_name"]  # type: ignore
+    password = request.json["password"]  # type: ignore
+    email = request.json["email"]  # type: ignore
 
-        # Call the logic function to handle the registration
-        match handle_user_registration(name, email, password):
-            case Ok(user_id):
-                # Generate access token for the new/undeleted user
-                return {"access_token": create_token(user_id)}, 201
-            case Err("User already exists"):
-                return {"err": "Email already in use"}, 409
-            case Err(e):
-                return {"err": e}, 400
-    except KeyError:
-        return {"err": "Missing required fields"}, 400
-
+    # Call the logic function to handle the registration
+    match handle_user_registration(name, email, password):
+        case Ok(user_id):
+            # Generate access token for the new/undeleted user
+            return {"access_token": create_token(user_id)}, 201
+        case Err("User already exists"):
+            return {"err": "Email already in use"}, 409
+        case Err(e):
+            return {"err": e}, 400
 
 
 @bp.post("login")
@@ -46,13 +42,9 @@ def login() -> Tuple[Any, Any]:
         email=request.json["email"],  # type: ignore
     ):
         case Ok(user_id):
-            # Check if the user is marked as deleted
-            if is_user_deleted(user_id):
-                return {"err": "User account is deleted. Please contact support."}, 403  # Forbidden error code
             return {"access_token": create_token(user_id)}, 201
         case Err(e):
             return {"err": e}, 401
-
 
 
 @bp.post("logout")
@@ -66,53 +58,44 @@ def logout(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         case Err(e):
             return {"err": e}, 401
 
+
 @bp.post("request_delete_account")
 @require_logged_in_user
 def request_delete_account(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    data = request.get_json()
-    password = data.get('password')
+    password = request.json["password"]  # type: ignore
 
     # Call the helper function to handle the request
-    result = handle_delete_account_request(user_id, password)
+    match handle_delete_account_request(user_id, password):
+        case Ok(_):
+            return {"message": "Account deletion email sent"}, 200
+        case Err(e):
+            return {"err": e}, 401
 
-    if isinstance(result, Ok):
-        return {"message": "Account deletion email sent"}, 200
-    else:
-        return {"err": result.value}, 500 if "failed" in result.value.lower() else 401
 
-
-@bp.route("confirm-delete/<token>")
+# FIXME: this isn't idempotent, but it's gotta be a clickable link so
+@bp.post("confirm-delete/<token>")
 def confirm_delete_account(token: str) -> Tuple[Any, int]:
     match handle_confirm_delete(token):
         case Ok(_):
             return {"message": "Account deleted successfully"}, 200
         case Err(e):
-            return {"err": e}, 400
+            return {"err": e}, 403
+
 
 @bp.post("password-reset-request")
 def reset_password_request() -> Tuple[Any, int]:
-    data = request.get_json()
-    if data is None:
-       return {"error": "Invalid JSON"}, 400  # Handle case where JSON is invalid
+    email = request.json["email"]  # type: ignore
 
-    email = data.get("email")
-
-    result = handle_password_reset_request(email)
-    match result:
+    match handle_password_reset_request(email):
         case Ok(_):
             return {"message": "Password reset email sent"}, 200
         case Err(e):
-            if "not found" in e:
-                return {"error": "Email not found"}, 409  # Conflict
-            return {"error": "Password reset failed"}, 500  # Internal server error
+            return {"err": e}, 403
 
-@bp.post('/reset-password/<token>')
+
+@bp.post("/reset-password/<token>")
 def reset_password(token: str) -> Tuple[Any, int]:
-    data = request.json
-    if data is None:
-      return {"error": "Invalid JSON"}, 400  # Handle case where JSON is invalid
-
-    new_password = data.get('newPassword')
+    new_password = request.json["newPassword"]  # type: ignore
 
     match handle_password_reset_confirmation(token, new_password):
         case Err(e):
