@@ -9,10 +9,7 @@ import datetime
 import secrets
 from xpark.utils.mailer import generate_templated_email, send_email
 
-
-def handle_user_registration(
-    name: str, email: str, password: str
-) -> Result[uuid.UUID, str]:
+def handle_user_registration(name: str, email: str, password: str) -> Result[uuid.UUID, str]:
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             # Check if the email already exists in the database
@@ -20,43 +17,37 @@ def handle_user_registration(
             user_data = cur.fetchone()
 
             if user_data:
-                user_id, is_deleted = user_data
+                user_id = user_data[0]
 
-                # If the user is not deleted, return error
-                if not is_deleted:
+                if is_user_deleted(email):
+                    # Fully delete the user if the account was marked as deleted
+                    cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
+                    conn.commit()  # Commit the deletion
+
+                else:
+                    # If the account exists and is not deleted, return an error
                     return Err("User already exists")
 
-                # If the user was deleted, reactivate the account and reset the password
-                new_password_hash = password_hasher.hash(password)
-                cur.execute(
-                    "UPDATE users SET deleted = FALSE, password_hash = %s, name = %s WHERE id = %s",
-                    (new_password_hash, name, user_id),
-                )
-                conn.commit()
-
-                return Ok(user_id)
-
-            # If the user doesn't exist, create a new account
+            # Create a new account after deleting the previous one (if applicable)
             new_password_hash = password_hasher.hash(password)
             cur.execute(
                 "INSERT INTO users (name, email, password_hash) VALUES (%s, %s, %s) RETURNING id",
                 (name, email, new_password_hash),
             )
             new_user = cur.fetchone()  # Fetch result
-            if new_user:  # Ensure new_user is not None before accessing it
+            if new_user:
                 return Ok(new_user[0])
-            return Err("User creation failed")  # Add error handling
 
+            return Err("User creation failed")
 
 def check_if_user_exists(email: str) -> bool:
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(1) FROM users WHERE email = %s", (email,))
             result = cur.fetchone()
-            if result is None:  # Add a check to prevent indexing None
-                return False
-            return bool(result[0] != 0)  # Index after confirming result is not None
-
+            if result is not None:
+                return bool(result[0] != 0)  # Index after confirming result is not None
+            return False
 
 def create_user(name: str, email: str, password: str) -> Result[uuid.UUID, str]:
     if check_if_user_exists(email):
@@ -77,6 +68,9 @@ def create_user(name: str, email: str, password: str) -> Result[uuid.UUID, str]:
 def check_username_password(email: str, password: str) -> Result[uuid.UUID, str]:
     if not check_if_user_exists(email):
         return Err("Wrong Password")
+
+    if is_user_deleted(email):
+        return Err("User doesn't exist")
 
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
@@ -119,10 +113,9 @@ def create_token(user_id: uuid.UUID) -> str:
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                # https://github.com/psycopg/psycopg/issues/335
                 "INSERT INTO user_tokens (user_id, token, expiry) VALUES (%s, %s, NOW() + %s * INTERVAL '1 seconds')",
                 (user_id, token, Config.TOKEN_EXPIRY_SECONDS),
-            )
+                )
 
             # Clean up any expired tokens in the database
             # FIXME: Move to a background job so that it doesn't run on every login
@@ -138,7 +131,7 @@ def validate_token_and_refresh(token: str) -> Result[uuid.UUID, str]:
             cur.execute(
                 """
                 UPDATE user_tokens
-                SET expiry = NOW() + %s * INTERVAL '1 seconds'
+                SET expiry = NOW() + INTERVAL '%s seconds'
                 WHERE token = %s AND expiry > NOW()
                 RETURNING user_id
                 """,
@@ -158,7 +151,9 @@ def validate_token_and_refresh(token: str) -> Result[uuid.UUID, str]:
 def expire_valid_token(token: str) -> Result[None, None]:
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM user_tokens WHERE token = %s", (token,))
+            cur.execute(
+                "DELETE FROM user_tokens WHERE token = %s", (token,)
+            )
 
             if cur.rowcount == 0:
                 return Err(None)
@@ -168,7 +163,6 @@ def expire_valid_token(token: str) -> Result[None, None]:
 
 # Function to log out user from all sessions
 def delete_all_tokens_for_user(user_id: uuid.UUID) -> Result[None, str]:
-    try:
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("DELETE FROM user_tokens WHERE user_id = %s", (user_id,))
@@ -176,8 +170,6 @@ def delete_all_tokens_for_user(user_id: uuid.UUID) -> Result[None, str]:
                     return Ok(None)
                 else:
                     return Err("No tokens found for this user")
-    except Exception as e:
-        return Err(str(e))
 
 
 def get_user_email_by_id(user_id: uuid.UUID) -> Result[str, str]:
@@ -192,66 +184,48 @@ def get_user_email_by_id(user_id: uuid.UUID) -> Result[str, str]:
             return Ok(user_data[0])
 
 
-def generate_deletion_token() -> Result[str, str]:
-    try:
-        delete_token = secrets.token_urlsafe(32)
-        return Ok(delete_token)
-    except Exception:
-        return Err("Token generation failed")
-
-
-def store_deletion_request(user_id: uuid.UUID, delete_token: str) -> Result[None, str]:
-    try:
-        deletion_requested_at = datetime.datetime.now()
+def validate_and_check_deletion_token(token: str, user_id: uuid.UUID) -> Result[None, str]:
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
+                # Check if the token and user_id match and retrieve the deletion request timestamp
                 cur.execute(
-                    "UPDATE users SET deletion_requested_at = %s, deletion_token = %s WHERE id = %s",
-                    (deletion_requested_at, delete_token, user_id),
+                    "SELECT deletion_requested_at FROM users WHERE deletion_token = %s AND id = %s",
+                    (token, user_id)
                 )
-                conn.commit()
-        return Ok(None)
-    except Exception as e:
-        return Err(str(e))
+                result = cur.fetchone()
 
+                if not result:
+                    return Err("Invalid or expired token")
 
-def check_deletion_request_validity(user_id: uuid.UUID) -> Result[None, str]:
-    try:
-        with DB.pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT deletion_requested_at FROM users WHERE id = %s", (user_id,)
-                )
-                deletion_requested_at = cur.fetchone()
+                deletion_requested_at = result[0]
 
-                if not deletion_requested_at:
-                    return Err("Deletion request not found")
-
-                time_elapsed = datetime.datetime.now() - deletion_requested_at[0]
+                # Check if the deletion request is still valid (not expired)
+                time_elapsed = datetime.datetime.now() - deletion_requested_at
                 if time_elapsed > datetime.timedelta(minutes=30):
                     return Err("Deletion request expired")
-
                 return Ok(None)
-    except Exception as e:
-        return Err(str(e))
 
 
 def reset_deletion_request(user_id: uuid.UUID) -> Result[None, str]:
     try:
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE users SET deletion_requested_at = NULL, deletion_token = NULL WHERE id = %s",
-                    (user_id,),
-                )
+                cur.execute("UPDATE users SET deletion_requested_at = NULL, deletion_token = NULL WHERE id = %s", (user_id,))
                 conn.commit()
         return Ok(None)
     except Exception as e:
         return Err(str(e))
 
 
-def validate_deletion_token(token: str) -> Result[uuid.UUID, str]:
-    try:
+def is_user_deleted(email: str) -> bool:
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT deleted FROM users WHERE email = %s", (email,))
+            result = cur.fetchone()
+            return bool(result[0]) if result else False
+
+
+def get_id_from_deletion_token(token: str) -> Result[uuid.UUID, str]:
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT id FROM users WHERE deletion_token = %s", (token,))
@@ -261,100 +235,71 @@ def validate_deletion_token(token: str) -> Result[uuid.UUID, str]:
                     return Ok(user_id)
                 else:
                     return Err("Invalid or expired token")
-    except Exception as e:
-        return Err(str(e))
 
+def handle_confirm_delete(token: str) -> Result[None, str]:
+    user_id = get_id_from_deletion_token(token)
+    if user_id.is_err():
+        return Err(f"Invalid Token: {user_id.unwrap_err()}")
+    user_id = user_id.unwrap()
 
-def soft_delete_user_account(user_id: uuid.UUID) -> Result[None, str]:
+    # Step 1: Validate the deletion token
+    valid = validate_and_check_deletion_token(token, user_id)
+    if valid.is_err():
+       return Err(f"User not found: {valid.unwrap_err()}")
+    # Step 2: Perform the account deletion (soft delete)
+
     try:
-        with DB.pool.connection() as conn:
+       with DB.pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("UPDATE users SET deleted = TRUE WHERE id = %s", (user_id,))
                 conn.commit()
-        return Ok(None)
     except Exception as e:
-        return Err(str(e))
+        return Err(f"Failed to delete account: {e}")
 
-
-def is_user_deleted(user_id: uuid.UUID) -> bool:
-    with DB.pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT deleted FROM users WHERE id = %s", (user_id,))
-            result = cur.fetchone()
-            if result:
-                return bool(
-                    result[0]
-                )  # Assuming result[0] is the "deleted" status (True/False)
-            return False  # User not found, treat as not deleted
-
-
-def handle_confirm_delete(token: str) -> Result[None, str]:
-    # Step 1: Validate the deletion token
-    match validate_deletion_token(token):
-        case Err(e):
-            return Err(f"Invalid or expired token: {e}")
-        case Ok(user_id):
-            pass  # Proceed to next step
-
-    # Step 2: Check if the deletion request is still valid
-    match check_deletion_request_validity(user_id):
-        case Err(e):
-            return Err(f"Deletion request expired: {e}")
-        case Ok(_):
-            pass  # Proceed to next step
-
-    # Step 3: Perform the account deletion (soft delete)
-    match soft_delete_user_account(user_id):
-        case Err(e):
-            return Err(f"Failed to delete account: {e}")
-        case Ok(_):
-            pass  # Proceed to next step
-
-    # Step 4: Log the user out by deleting all tokens
+    # Step 3: Log the user out by deleting all tokens
     delete_all_tokens_for_user(user_id)
 
     return Ok(None)
 
-
-def handle_delete_account_request(
-    user_id: uuid.UUID, password: str
-) -> Result[None, str]:
+def handle_delete_account_request(user_id: uuid.UUID, password: str) -> Result[None, str]:
     # Step 1: Get the user's email by ID
     match get_user_email_by_id(user_id):
         case Err(e):
             return Err(f"User not found: {e}")
         case Ok(user_email):
             pass  # Proceed to next step
+
     # Step 2: Check if the password is correct
     match check_username_password(user_email, password):
         case Err(e):
             return Err(f"Invalid password: {e}")
         case Ok(_):
             pass  # Proceed to next step
+
     # Step 3: Generate a deletion token
-    match generate_deletion_token():
-        case Err(e):
-            return Err(f"Token generation failed: {e}")
-        case Ok(delete_token):
-            pass  # Proceed to next step
+    delete_token = secrets.token_urlsafe(32)
+
     # Step 4: Store the deletion request
-    match store_deletion_request(user_id, delete_token):
-        case Err(e):
-            return Err(f"Failed to store deletion request: {e}")
-        case Ok(_):
-            pass  # Proceed to next step
+    try:
+       deletion_requested_at = datetime.datetime.now()
+       with DB.pool.connection() as conn:
+           with conn.cursor() as cur:
+               cur.execute(
+                        "UPDATE users SET deletion_requested_at = %s, deletion_token = %s WHERE id = %s",
+                        (deletion_requested_at, delete_token, user_id)
+               )
+               conn.commit()
+    except Exception as e:
+       return Err(f"Failed to store deletion request: {e}")
+
     # Step 5: Send the email with the deletion link
-    delete_link = f"http://localhost:3000/confirm-deletion/{delete_token}"
-    send_email(
-        to=user_email,
-        subject="Subject Here",
-        content=generate_templated_email(
-            "delete_account", name="Name", delete_link=delete_link
-        ),
-    )
-
+    delete_link = f"http://{Config.BASE_HOST}/confirm-deletion/{delete_token}"
+    send_email(to=user_email,
+                subject="Delete Account",
+                content=generate_templated_email(
+                    "delete_account", name="User", delete_link=delete_link
+                ))
     return Ok(None)
-
 
 def expire_all_tokens_for_user(user_id: uuid.UUID) -> Result[None, str]:
     with DB.pool.connection() as conn:

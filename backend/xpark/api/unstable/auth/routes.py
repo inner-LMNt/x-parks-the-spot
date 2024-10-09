@@ -3,7 +3,6 @@ from xpark.logic.user import (
     expire_valid_token,
     create_token,
     check_username_password,
-    is_user_deleted,
     handle_user_registration,
     handle_delete_account_request,
     handle_confirm_delete,
@@ -41,9 +40,6 @@ def login() -> Tuple[Any, Any]:
         email=request.json["email"],  # type: ignore
     ):
         case Ok(user_id):
-            # Check if the user is marked as deleted
-            if is_user_deleted(user_id):
-                return {"err": "User account is deleted. Please contact support."}, 403  # Forbidden error code
             return {"access_token": create_token(user_id)}, 201
         case Err(e):
             return {"err": e}, 401
@@ -64,16 +60,15 @@ def logout(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 @bp.post("request_delete_account")
 @require_logged_in_user
 def request_delete_account(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    data = request.get_json()
-    password = data.get('password')
+    password = request.json['password']
+
 
     # Call the helper function to handle the request
-    result = handle_delete_account_request(user_id, password)
-
-    if isinstance(result, Ok):
-        return {"message": "Account deletion email sent"}, 200
-    else:
-        return {"err": result.value}, 500 if "failed" in result.value.lower() else 401
+    match handle_delete_account_request(user_id, password):
+       case Ok(_):
+            return {"message": "Account deletion email sent"}, 200
+       case Err(e):
+            return {"err": e},  401
 
 
 @bp.route("confirm-delete/<token>")
