@@ -2,6 +2,7 @@ from flask import Flask, send_from_directory
 from .config import Config
 from psycopg_pool import ConnectionPool
 import smtplib
+from typing import Any
 
 
 def create_app(config_class: type[Config] = Config) -> Flask:
@@ -33,9 +34,9 @@ def create_app(config_class: type[Config] = Config) -> Flask:
 
     app.register_blueprint(unstable.bp)
 
-    @app.route('/static/<path:filename>')
-    def static_files(filename):
-        return send_from_directory(app.static_folder, filename)
+    @app.route("/static/<path:filename>")
+    def static_files(filename: str) -> Any:
+        return send_from_directory(Config.STATIC_FOLDER, filename)
 
     @app.route("/")
     def status() -> str:

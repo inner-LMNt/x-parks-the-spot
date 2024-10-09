@@ -117,6 +117,7 @@ def create_token(user_id: uuid.UUID) -> str:
 
             return token
 
+
 def validate_token_and_refresh(token: str) -> Result[uuid.UUID, str]:
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
@@ -138,7 +139,6 @@ def validate_token_and_refresh(token: str) -> Result[uuid.UUID, str]:
                 return Ok(user_id)
 
             return Err("Token expired")
-
 
 
 def expire_valid_token(token: str) -> Result[None, None]:
