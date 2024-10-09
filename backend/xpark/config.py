@@ -8,7 +8,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config:
     SECRET_KEY = os.environ["SECRET_KEY"]  # Will fail if SECRET_KEY is not set
     DATABASE_URI = os.environ["DATABASE_URI"]
-    TOKEN_EXPIRY_SECONDS = 2592000
+    TOKEN_EXPIRY_SECONDS = 2592000  # 30 days
+    DELETE_RESET_EXPIRY_SECONDS = 1800  # 30 minutes
     TOKEN_PREFIX = "xpark_"
     BASE_HOST = os.environ.get("BASE_HOST") or "http://localhost:3000"
 
