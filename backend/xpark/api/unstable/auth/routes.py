@@ -14,6 +14,7 @@ from xpark.middleware.token_auth_middleware import require_logged_in_user
 from typing import Tuple, Any
 import uuid
 
+
 @bp.post("register")
 def create() -> Tuple[Any, int]:
     # Extract user info from the request
@@ -32,7 +33,6 @@ def create() -> Tuple[Any, int]:
             return {"err": e}, 400
 
 
-
 @bp.post("login")
 def login() -> Tuple[Any, Any]:
     match check_username_password(
@@ -43,7 +43,6 @@ def login() -> Tuple[Any, Any]:
             return {"access_token": create_token(user_id)}, 201
         case Err(e):
             return {"err": e}, 401
-
 
 
 @bp.post("logout")
@@ -57,18 +56,18 @@ def logout(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         case Err(e):
             return {"err": e}, 401
 
+
 @bp.post("request_delete_account")
 @require_logged_in_user
 def request_delete_account(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    password = request.json['password']
-
+    password = request.json["password"]
 
     # Call the helper function to handle the request
     match handle_delete_account_request(user_id, password):
-       case Ok(_):
+        case Ok(_):
             return {"message": "Account deletion email sent"}, 200
-       case Err(e):
-            return {"err": e},  401
+        case Err(e):
+            return {"err": e}, 401
 
 
 @bp.route("confirm-delete/<token>")
@@ -78,7 +77,6 @@ def confirm_delete_account(token: str) -> Tuple[Any, int]:
             return {"message": "Account deleted successfully"}, 200
         case Err(e):
             return {"err": e}, 400
-
 
 
 # @bp.get("id")
