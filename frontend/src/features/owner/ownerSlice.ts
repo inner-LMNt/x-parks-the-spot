@@ -3,6 +3,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "../../api/axiosInstance";
 import { ParkingSpace } from "@/types/type";
+import {logger} from "bs-logger";
 
 interface OwnerSpotsResponse {
     paidSpaces: ParkingSpace[];
@@ -57,18 +58,21 @@ export const deleteParkingSpot = createAsyncThunk<
         return rejectWithValue(error.response?.data?.error || "Failed to delete the spot");
     }
 });
-// Async thunk to update a parking spot
+
 export const updateParkingSpot = createAsyncThunk<
-    ParkingSpace, // Return type: Updated ParkingSpace
-    { id: string; data: Partial<ParkingSpace> & { requireReverification?: boolean } }, // Argument type
+    ParkingSpace,
+    { id: string; data: Partial<ParkingSpace> & { requireReverification?: boolean } },
     { rejectValue: string }
 >(
     "owner/updateSpot",
     async ({ id, data }, { rejectWithValue }) => {
+        console.log(`Thunk invoked with ID: ${id} and data:`, data);
         try {
-            const response = await axios.patch(`/parking-spaces/${id}`, data);
+            const response = await axios.patch(`/api/unstable/parking-spaces/${id}`, data);
+            console.log('Thunk response:', response.data);
             return response.data;
         } catch (error: any) {
+            console.error('Thunk error:', error);
             return rejectWithValue(error.response?.data?.error || "Failed to update parking spot");
         }
     }
@@ -84,7 +88,7 @@ const ownerSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            // Handle getOwnerSpots
+            // Handle getOwnerSpots (assuming it's defined elsewhere)
             .addCase(getOwnerSpots.pending, (state: OwnerState) => {
                 state.loading = true;
                 state.error = null;
@@ -99,9 +103,9 @@ const ownerSlice = createSlice({
             })
             .addCase(getOwnerSpots.rejected, (state: OwnerState, action) => {
                 state.loading = false;
-                state.error = action.payload as string;
+                state.error = action.payload;
             })
-            // Handle deleteParkingSpot
+            // Handle deleteParkingSpot (assuming it's defined elsewhere)
             .addCase(deleteParkingSpot.pending, (state: OwnerState) => {
                 state.loading = true;
                 state.error = null;
@@ -116,7 +120,28 @@ const ownerSlice = createSlice({
             })
             .addCase(deleteParkingSpot.rejected, (state: OwnerState, action) => {
                 state.loading = false;
-                state.error = action.payload as string;
+                state.error = action.payload;
+            })
+            // Handle updateParkingSpot
+            .addCase(updateParkingSpot.pending, (state: OwnerState) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(updateParkingSpot.fulfilled, (state: OwnerState, action) => {
+                state.loading = false;
+                const updatedSpot = action.payload;
+
+                // Update the spot in the appropriate category
+                const updateSpotInCategory = (spots: ParkingSpace[]) =>
+                    spots.map(spot => spot.id === updatedSpot.id ? updatedSpot : spot);
+
+                state.paidSpots = updateSpotInCategory(state.paidSpots);
+                state.freeSpots = updateSpotInCategory(state.freeSpots);
+                state.pendingSpots = updateSpotInCategory(state.pendingSpots);
+            })
+            .addCase(updateParkingSpot.rejected, (state: OwnerState, action) => {
+                state.loading = false;
+                state.error = action.payload;
             });
     },
 });
