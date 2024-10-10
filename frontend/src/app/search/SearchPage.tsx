@@ -304,7 +304,7 @@ export default function SearchPage() {
         {
           enableHighAccuracy: true,
           maximumAge: 0,
-          timeout: 5000,
+          timeout: 50000,
         }
       );
     }
@@ -314,7 +314,7 @@ export default function SearchPage() {
         navigator.geolocation.clearWatch(watchId);
       }
     };
-  }, [navigationMode, selectedSpot]);
+  }, [navigationMode, selectedSpot, navigator.geolocation]);
 
   const calculateDistance = (location1: google.maps.LatLngLiteral, location2: google.maps.LatLngLiteral) => {
     const R = 6371e3; // meters
@@ -513,7 +513,7 @@ export default function SearchPage() {
         ref={mapRef}
         className={`transition-all duration-300`}
         style={{
-          height: !isListExpanded ? `calc(100vh - 64px)` : navigationMode ? `calc(100vh - 64px - ${navigationCardRef.current?.offsetHeight}px)` : `50vh`,
+          height: isListExpanded ? `50vh` : navigationMode ? `calc(100vh - 64px - ${navigationCardRef.current?.offsetHeight}px)` : `calc(100vh - 64px)`,
           flexShrink: 0,
           position: 'relative',
           width: '100%',
@@ -594,25 +594,26 @@ export default function SearchPage() {
 
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
           <button onClick={handleArrowClick} className="focus:outline-none">
-            {!isListExpanded ? (
-              <motion.div
-                animate={{ y: [0, 10, 0] }}
-                transition={{ repeat: Infinity, duration: 1 }}
-              >
-                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center drop-shadow-md">
-                  <ArrowDown size={24} className="text-gray-500" />
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                animate={{ y: [0, 10, 0] }}
-                transition={{ repeat: Infinity, duration: 1 }}
-              >
-                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center drop-shadow-md">
-                  <ArrowUp size={24} className="text-gray-500" />
-                </div>
-              </motion.div>
-            )}
+            {!navigationMode &&
+              (!isListExpanded ? (
+                <motion.div
+                  animate={{ y: [0, 10, 0] }}
+                  transition={{ repeat: Infinity, duration: 1 }}
+                >
+                  <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center drop-shadow-md">
+                    <ArrowDown size={24} className="text-gray-500" />
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  animate={{ y: [0, 10, 0] }}
+                  transition={{ repeat: Infinity, duration: 1 }}
+                >
+                  <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center drop-shadow-md">
+                    <ArrowUp size={24} className="text-gray-500" />
+                  </div>
+                </motion.div>
+              ))}
           </button>
         </div>
       </div>
@@ -689,8 +690,12 @@ export default function SearchPage() {
                 <div>
                   <h3 className="text-md font-semibold">From: {userLocation?.lat}, {userLocation?.lng}</h3>
                   <h3 className="text-md font-semibold">To: {selectedSpot?.location.latitude}, {selectedSpot?.location.longitude}</h3>
+                  <div className="border-b border-gray-300 my-4"></div>
                   <div className="mt-4">
-                    <div className="flex items-center justify-between">
+                    <h3 className="text-md font-semibold">Step {currentStepIndex + 1}</h3>
+                    <div className="w-3"></div>
+
+                    {/* <div className="flex items-center justify-between"> // Do we want this feature?
                       <button
                         onClick={() => setCurrentStepIndex(currentStepIndex - 1)}
                         disabled={currentStepIndex === 0}
@@ -706,7 +711,7 @@ export default function SearchPage() {
                       >
                         <ChevronRight size={16} />
                       </button>
-                    </div>
+                    </div> */}
                     <div className="w-8"></div>
                     <span dangerouslySetInnerHTML={{ __html: directions.routes[0].legs[0].steps[currentStepIndex].instructions }} />
                     <div className="text-sm text-gray-600">
