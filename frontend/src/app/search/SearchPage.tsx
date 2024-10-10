@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, use } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ import { ParkingSpace, SearchRequest } from '@/types/type';
 import { searchSpots } from '@/features/search/searchSlice';
 import { usePathname, useRouter } from 'next/navigation';
 import axios from 'axios';
-import Sidebar from './Sidebar';
 
 const default_center = {
   // Purdue University coords
@@ -37,6 +36,7 @@ export default function SearchPage() {
 
   const [domLoaded, setDomLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<google.maps.LatLngLiteral | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [searchRadius, setSearchRadius] = useState<number>(5);
@@ -121,7 +121,7 @@ export default function SearchPage() {
 
   // Handle search action
   const onSearch = async () => {
-    let location = mapCenter;
+    let location = userLocation;
 
     if (address && !useCurrentLocation) {
       try {
@@ -194,6 +194,7 @@ export default function SearchPage() {
           lng: place.geometry.location.lng(),
         };
         setMapCenter(location);
+        setSelectedLocation(location);
         setAddress(place.formatted_address || ''); // Update the address state
       }
     }
@@ -201,7 +202,7 @@ export default function SearchPage() {
 
   // Get directions to the selected parking spot
   const getDirections = () => {
-    if (userLocation && selectedSpot) {
+    if (useCurrentLocation && selectedSpot && userLocation) {
       const directionsService = new window.google.maps.DirectionsService();
       directionsService.route(
         {
@@ -424,12 +425,25 @@ export default function SearchPage() {
                 onClick={() => handleSpotSelect(spot)}
               />
             ))}
-            {mapCenter && (
+            {userLocation && useCurrentLocation && (
               <Marker
-                position={mapCenter}
-                icon="https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                position={userLocation}
+                icon={{
+                  url:"https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+                  scaledSize: new google.maps.Size(40, 40),
+                }}
               />
             )}
+            {selectedLocation && !useCurrentLocation && (
+              <Marker
+                position={selectedLocation}
+                icon={{
+                  url:"https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+                  scaledSize: new google.maps.Size(40, 40),
+                }}
+              />
+            )}
+
             {selectedSpot && (
               <InfoWindow
                 position={{
@@ -484,31 +498,6 @@ export default function SearchPage() {
             )}
           </button>
         </div>
-
-        {/* Button for sidebar on right */}
-        <div className="absolute top-1/2 right-4 transform -translate-x-1/2">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="focus:outline-none">
-            {sidebarOpen ? (
-              <motion.div
-                animate={{ x: [0, 10, 0] }}
-                transition={{ repeat: Infinity, duration: 1 }}
-              >
-                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center drop-shadow-md">
-                  <ChevronRight size={24} className="text-gray-500" />
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                animate={{ x: [0, 10, 0] }}
-                transition={{ repeat: Infinity, duration: 1 }}
-              >
-                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center drop-shadow-md">
-                  <ChevronLeft size={24} className="text-gray-500" />
-                </div>
-              </motion.div>
-            )}
-          </button>
-        </div>
       </div>
 
       {/* Parking Spots List */}
@@ -542,19 +531,62 @@ export default function SearchPage() {
         </div>
       </div>
 
-      {/* Sidebar */}
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
+      {/* Sidebar on the right */}
+      <div
+        className={
+          'fixed top-0 right-0 h-full w-1/4 bg-gray-100 p-4 transition-transform duration-300 transform ' +
+          (sidebarOpen ? 'translate-x-0' : 'translate-x-full')
+        }
       >
-        {selectedSpot && (
-          <div>
-            <p>Selected Spot:</p>
-            <p>ID: {selectedSpot.id}</p>
-            <p>Is Paid: {selectedSpot.is_paid ? 'Yes' : 'No'}</p>
-          </div>
-        )}
-      </Sidebar>
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">Selected Parking Spot</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {selectedSpot ? (
+              <div>
+                <p className="text-sm">ID: {selectedSpot.id}</p>
+                <p className="text-sm">Owner ID: {selectedSpot.owner_id}</p>
+                <p className="text-sm">Latitude: {selectedSpot.location.latitude.toFixed(4)}</p>
+                <p className="text-sm">Longitude: {selectedSpot.location.longitude.toFixed(4)}</p>
+                <Button
+                  onClick={() => handleSpotSelect(selectedSpot)}
+                  className="mt-2 w-full text-sm px-3 py-2"
+                >
+                  <MapPin className="mr-2 h-4 w-4" />
+                  Deselect
+                </Button>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">No spot selected.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="absolute top-1/2 right-full transform -translate-y-1/2 -translate-x-full">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="focus:outline-none">
+            {sidebarOpen ? (
+              <motion.div
+                animate={{ x: [0, 10, 0] }}
+                transition={{ repeat: Infinity, duration: 1 }}
+              >
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center drop-shadow-md">
+                  <ChevronRight size={24} className="text-gray-500" />
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                animate={{ x: [0, 10, 0] }}
+                transition={{ repeat: Infinity, duration: 1 }}
+              >
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center drop-shadow-md">
+                  <ChevronLeft size={24} className="text-gray-500" />
+                </div>
+              </motion.div>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
