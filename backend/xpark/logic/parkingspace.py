@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename

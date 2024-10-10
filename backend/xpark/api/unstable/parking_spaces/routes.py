@@ -13,7 +13,7 @@ from xpark.middleware.token_auth_middleware import require_logged_in_user
 from typing import Tuple, Any
 import uuid
 from json import JSONDecodeError, loads as load_json
-from typing import cast, Dict, Any
+from typing import cast, Dict
 
 
 @bp.get("")
