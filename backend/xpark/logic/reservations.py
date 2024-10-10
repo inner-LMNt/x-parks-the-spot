@@ -5,12 +5,61 @@ from xpark.utils.db import DB
 from result import Result, Ok, Err
 import datetime
 from enum import Enum
+import psycopg
 
 
 class ReservationStatus(Enum):
     book = "book"
     cancel = "cancel"
     complete = "complete"
+
+
+def check_if_available(
+    conn: psycopg.Connection,
+    parking_spot_id: uuid.UUID,
+    start_time: datetime.datetime,
+    end_time: datetime.datetime,
+) -> bool:
+    with conn.cursor(row_factory=dict_row) as cur:
+        # Check if the spot has a proper timeslot
+        cur.execute(
+            """
+            SELECT count(id) FROM
+            paid_parking_allowed_availability
+            WHERE parking_space_id = %(spot_id)s
+            AND   end_time < %(start_time)s
+            AND   start_time >= %(end_time)s
+            """,
+            {
+                "spot_id": parking_spot_id,
+                "end_time": end_time,
+                "start_time": start_time,
+            },
+        )
+        (count,) = cur.fetchone()  # type: ignore
+        if int(count) == 0:
+            return False
+
+        # Now check if a reservation overlaps
+        cur.execute(
+            """
+            SELECT count(id) FROM
+            reservations
+            WHERE parking_space_id = %(spot_id)s
+            AND   end_time > %(start_time)s
+            AND   start_time < %(end_time)s
+            """,
+            {
+                "spot_id": parking_spot_id,
+                "end_time": end_time,
+                "start_time": start_time,
+            },
+        )
+        (count,) = cur.fetchone()  # type: ignore
+        if int(count) > 0:
+            return False
+
+        return True
 
 
 def get_user_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], str]:
@@ -39,58 +88,21 @@ def get_user_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], st
 def create_reservation(
     user_id: uuid.UUID,
     parking_space_uuid: uuid.UUID,
-    start_time: str,
-    end_time: str,
+    start_time: datetime.datetime,
+    end_time: datetime.datetime,
     car_info_uuid: uuid.UUID,
 ) -> Result[Dict[str, Any], str]:
-    start_dt = datetime.datetime.fromisoformat(start_time)
-    end_dt = datetime.datetime.fromisoformat(end_time)
-
-    if end_dt <= start_dt:
+    if end_time <= start_time:
         return Err("End time must be after start time.")
+
+    # Book the spot since it is available
 
     # Check if parking space exists and is available
     with DB.pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT locked, locked_by, availability_schedule
-                FROM parking_spaces
-                WHERE id = %s
-                """,
-                (parking_space_uuid,),
-            )
-            parking_space = cur.fetchone()
-            if not parking_space:
-                return Err("Parking space not found.")
-
-            locked, locked_by, availability_schedule = parking_space
-
-            if locked and locked_by != user_id:
-                return Err("Parking space is currently locked by another user.")
-
-            # Check for overlapping reservations
-            cur.execute(
-                """
-                SELECT COUNT(*) 
-                FROM reservations
-                WHERE parking_space_id = %s
-                  AND status = 'book'
-                  AND (
-                    (start_time < %s AND end_time > %s)
-                  )
-                """,
-                (parking_space_uuid, end_dt, start_dt),
-            )
-            # We can ignore the type because COUNT will always return a value
-            (overlap_count,) = cur.fetchone()  # type: ignore
-            if overlap_count > 0:
-                return Err(
-                    "Parking space is already reserved for the selected time slot."
-                )
-
-        # Switch out the row_factory for dict_row because I don't want to refactor the above code just yet
         with conn.cursor(row_factory=dict_row) as cur:
+            # We're gonna do this all in one txn so that's why we passed conn
+            if not check_if_available(conn, parking_space_uuid, start_time, end_time):
+                return Err("Spot not available")
             # Insert the reservation
             cur.execute(
                 """
@@ -108,8 +120,8 @@ def create_reservation(
                 """,
                 (
                     parking_space_uuid,
-                    start_dt,
-                    end_dt,
+                    start_time,
+                    end_time,
                     car_info_uuid,
                     user_id,
                 ),
