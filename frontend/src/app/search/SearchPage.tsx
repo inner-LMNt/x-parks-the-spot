@@ -8,7 +8,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from '@/components/ui/slider';
-import { MapPin, Navigation, ChevronUp, ChevronDown, ArrowDown, ArrowUp, DollarSign } from 'lucide-react';
+import { MapPin, Navigation, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, ArrowDown, ArrowUp, DollarSign } from 'lucide-react';
 import {
   Autocomplete,
   GoogleMap,
@@ -21,6 +21,7 @@ import { ParkingSpace, SearchRequest } from '@/types/type';
 import { searchSpots } from '@/features/search/searchSlice';
 import { usePathname, useRouter } from 'next/navigation';
 import axios from 'axios';
+import Sidebar from './Sidebar';
 
 const default_center = {
   // Purdue University coords
@@ -46,6 +47,7 @@ export default function SearchPage() {
   const [address, setAddress] = useState<string>('');
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const onLoadAutocomplete = (autocompleteInstance: google.maps.places.Autocomplete) => {
     setAutocomplete(autocompleteInstance);
@@ -482,6 +484,31 @@ export default function SearchPage() {
             )}
           </button>
         </div>
+
+        {/* Button for sidebar on right */}
+        <div className="absolute top-1/2 right-4 transform -translate-x-1/2">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="focus:outline-none">
+            {sidebarOpen ? (
+              <motion.div
+                animate={{ x: [0, 10, 0] }}
+                transition={{ repeat: Infinity, duration: 1 }}
+              >
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center drop-shadow-md">
+                  <ChevronRight size={24} className="text-gray-500" />
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                animate={{ x: [0, 10, 0] }}
+                transition={{ repeat: Infinity, duration: 1 }}
+              >
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center drop-shadow-md">
+                  <ChevronLeft size={24} className="text-gray-500" />
+                </div>
+              </motion.div>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Parking Spots List */}
@@ -514,6 +541,20 @@ export default function SearchPage() {
           )}
         </div>
       </div>
-    </div >
+
+      {/* Sidebar */}
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      >
+        {selectedSpot && (
+          <div>
+            <p>Selected Spot:</p>
+            <p>ID: {selectedSpot.id}</p>
+            <p>Is Paid: {selectedSpot.is_paid ? 'Yes' : 'No'}</p>
+          </div>
+        )}
+      </Sidebar>
+    </div>
   );
 }
