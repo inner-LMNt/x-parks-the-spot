@@ -1,5 +1,3 @@
-// src/store/slices/ownerSlice.ts
-
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "../../api/axiosInstance";
 import { ParkingSpace } from "@/types/type";
@@ -57,6 +55,7 @@ export const deleteParkingSpot = createAsyncThunk<
         return rejectWithValue(error.response?.data?.error || "Failed to delete the spot");
     }
 });
+
 // Async thunk to update a parking spot
 export const updateParkingSpot = createAsyncThunk<
     ParkingSpace, // Return type: Updated ParkingSpace
@@ -70,6 +69,28 @@ export const updateParkingSpot = createAsyncThunk<
             return response.data;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.error || "Failed to update parking spot");
+        }
+    }
+);
+
+// Async thunk to submit verification
+export const submitVerification = createAsyncThunk<
+    ParkingSpace, // Return the updated ParkingSpace after verification submission
+    { spotId: string; formData: FormData }, // Argument type
+    { rejectValue: string }
+>(
+    "owner/submitVerification",
+    async ({ spotId, formData }, { rejectWithValue }) => {
+        try {
+            /*const response = await axios.post(`/parking-spaces/${spotId}/verify`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            return response.data;*/
+
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.error || "Failed to submit verification");
         }
     }
 );
@@ -109,12 +130,31 @@ const ownerSlice = createSlice({
             .addCase(deleteParkingSpot.fulfilled, (state: OwnerState, action) => {
                 state.loading = false;
                 const deletedSpotId = action.payload;
-                // Remove the deleted spot from all categories
                 state.paidSpots = state.paidSpots.filter(spot => spot.id !== deletedSpotId);
                 state.freeSpots = state.freeSpots.filter(spot => spot.id !== deletedSpotId);
                 state.pendingSpots = state.pendingSpots.filter(spot => spot.id !== deletedSpotId);
             })
             .addCase(deleteParkingSpot.rejected, (state: OwnerState, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+            })
+            // Handle submitVerification
+            .addCase(submitVerification.pending, (state: OwnerState) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(submitVerification.fulfilled, (state: OwnerState, action) => {
+                state.loading = false;
+                const updatedSpot = action.payload;
+                // Update the verified spot in the respective category
+                state.paidSpots = state.paidSpots.map(spot =>
+                    spot.id === updatedSpot.id ? updatedSpot : spot
+                );
+                state.pendingSpots = state.pendingSpots.map(spot =>
+                    spot.id === updatedSpot.id ? updatedSpot : spot
+                );
+            })
+            .addCase(submitVerification.rejected, (state: OwnerState, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
             });

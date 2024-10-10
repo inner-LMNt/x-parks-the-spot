@@ -1,77 +1,59 @@
-// src/pages/MySpotsPage.tsx
-
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { MapPin, Edit, Trash2, Plus } from 'lucide-react'
-import { ParkingSpace } from '@/types/type'
-import { useAppDispatch, useAppSelector } from '@/store/hooks'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { getOwnerSpots, deleteParkingSpot } from '@/features/owner/ownerSlice'
+import React, { useEffect, useState, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {MapPin, Edit, Trash2, Plus, FileCheck2, CheckCircle2, Loader, XCircle, CheckCircle} from 'lucide-react';
+import { ParkingSpace } from '@/types/type';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { getOwnerSpots, deleteParkingSpot } from '@/features/owner/ownerSlice';
 import ImageWrapper from "@/components/custom/ImageWrapper";
-import EditSpotModal from '@/components/custom/EditSpotModal' // Import the modal
+import VerificationModal from '@/components/custom/VerificationModal'; // Import the verification modal
 
 export default function MySpotsPage() {
-    const isLoggedIn = useAppSelector(state => state.user.isLoggedIn)
-    if (!isLoggedIn) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 text-slate-900">
-                <p className="text-xl">Please <Link href="/login" className="text-blue-500 underline">log in</Link> to view your spots.</p>
-            </div>
-        );
-    }
+    const isLoggedIn = useAppSelector(state => state.user.isLoggedIn);
+    const router = useRouter();
+    const dispatch = useAppDispatch();
+    const { paidSpots, freeSpots, pendingSpots, loading, error } = useAppSelector(state => state.owner);
 
-    const router = useRouter()
-    const dispatch = useAppDispatch()
-
-    const { paidSpots, freeSpots, pendingSpots, loading, error } = useAppSelector(state => state.owner)
+    const [verificationModalOpen, setVerificationModalOpen] = useState(false);
+    const [currentSpotId, setCurrentSpotId] = useState<string | null>(null);
 
     useEffect(() => {
-        dispatch(getOwnerSpots())
-    }, [dispatch])
+        if (isLoggedIn) {
+            dispatch(getOwnerSpots());
+        }
+    }, [dispatch, isLoggedIn]);
 
     const handleDelete = (id: string) => {
         const confirmDelete = window.confirm("Are you sure you want to delete this parking spot?");
         if (confirmDelete) {
-            dispatch(deleteParkingSpot(id))
+            dispatch(deleteParkingSpot(id));
         }
-    }
+    };
 
-    // Modal state
-    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-    const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null);
+    const openVerificationModal = (spotId: string) => {
+        setCurrentSpotId(spotId);
+        setVerificationModalOpen(true);
+    };
 
-    const openModal = (spot: ParkingSpace) => {
-        setSelectedSpot(spot);
-        setIsModalOpen(true);
-    }
+    const closeVerificationModal = () => {
+        setVerificationModalOpen(false);
+        setCurrentSpotId(null);
+    };
 
-    const closeModal = () => {
-        setSelectedSpot(null);
-        setIsModalOpen(false);
-    }
-
-    const emptySpots = (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="flex flex-col justify-center items-center h-64 w-full bg-white rounded-lg shadow-md"
-        >
-            <MapPin className="w-16 h-16 text-gray-400 mb-4" />
-            <p className="text-gray-500 text-lg">No spots available</p>
-            <Link href="/add" className="mt-4">
-                <Button variant="outline" className="flex items-center text-slate-900">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Your First Spot
-                </Button>
-            </Link>
-        </motion.div>
-    )
+    const getVerificationStatusIcon = (spot: ParkingSpace) => {
+        if (!spot.is_verified) {
+            return <XCircle className="w-6 h-6 text-red-500" title="Not Verified" />;
+        }
+        if (spot.is_verified === 'pending') {
+            return <Loader className="w-6 h-6 text-yellow-500" title="Pending Verification" />;
+        }
+        return <CheckCircle className="w-6 h-6 text-green-500" title="Verified" />;
+    };
 
     const renderSpots = (spots: ParkingSpace[]) => (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -79,9 +61,9 @@ export default function MySpotsPage() {
                 <motion.div key={spot.id}
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.3 }}
-                >
+                            transition={{ duration: 0.3 }}>
                     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+
                         {/* Display Image if Exists */}
                         {spot.photos && (
                             <div className="relative w-full h-40">
@@ -94,6 +76,7 @@ export default function MySpotsPage() {
                                 />
                             </div>
                         )}
+
                         <CardHeader className="bg-gray-50">
                             <div className="flex justify-between items-center">
                                 <CardTitle className="flex items-center space-x-2">
@@ -101,6 +84,7 @@ export default function MySpotsPage() {
                                     <span>{spot.name || (spot.is_paid ? "Unnamed Spot" : "Free Spot")}</span>
                                 </CardTitle>
                             </div>
+
                             <CardDescription>
                                 {/* Display Address if Exists, else Latitude and Longitude */}
                                 {spot.location?.address ? (
@@ -111,19 +95,24 @@ export default function MySpotsPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="pt-4">
+
                             <div className="flex justify-between items-center mb-4">
                                 <span className="text-sm font-medium">{spot.is_paid ? 'Paid' : 'Free'}</span>
                                 <span className={`text-sm font-medium ${spot.availability_schedule && spot.availability_schedule.length > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {spot.is_paid ?
-                                        (spot.availability_schedule && spot.availability_schedule.length > 0 ? 'Available' : 'Unavailable')
-                                        : 'Always Available'}
-                                </span>
+                  {spot.is_paid ?
+                      (spot.availability_schedule && spot.availability_schedule.length > 0 ? 'Available' : 'Unavailable')
+                      : 'Always Available'}
+                </span>
                             </div>
+                            {/* Display price and verification icon */}
                             {spot.is_paid && spot.pricing_info && (
-                                <p className="text-lg font-bold mb-4">${spot.pricing_info.base_price}/hour</p>
+                                <div className="flex items-center justify-between mb-4">
+                                    <p className="text-lg font-bold">${spot.pricing_info.base_price}/hour</p>
+                                    {getVerificationStatusIcon(spot)} {/* Verification status icon */}
+                                </div>
                             )}
                             <div className="flex justify-between">
-                                <Button variant="outline" size="sm" className="flex-1 mr-2" onClick={() => openModal(spot)}>
+                                <Button variant="outline" size="sm" className="flex-1 mr-2" onClick={() => router.push(`/edit/${spot.id}`)}>
                                     <Edit className="w-4 h-4 mr-2" />
                                     Edit
                                 </Button>
@@ -132,12 +121,23 @@ export default function MySpotsPage() {
                                     Delete
                                 </Button>
                             </div>
+                            {/* Verification Status */}
+                            {!spot.is_verified && spot.is_paid && (
+                                <Button
+                                    onClick={() => openVerificationModal(spot.id)}
+                                    className="mt-2 w-full bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300 hover:text-gray-900 transition-colors"
+                                    variant="outline"
+                                >
+                                    <FileCheck2 className="w-4 h-4 mr-2" />
+                                    Submit Verification
+                                </Button>
+                            )}
                         </CardContent>
                     </Card>
                 </motion.div>
             ))}
         </div>
-    )
+    );
 
     return (
         <div className="min-h-screen bg-gray-100 py-8">
@@ -200,14 +200,14 @@ export default function MySpotsPage() {
                 </motion.div>
             </div>
 
-            {/* Edit Spot Modal */}
-            {selectedSpot && (
-                <EditSpotModal
-                    isOpen={isModalOpen}
-                    onClose={closeModal}
-                    spot={selectedSpot}
+            {/* Verification Modal */}
+            {currentSpotId && (
+                <VerificationModal
+                    isOpen={verificationModalOpen}
+                    onClose={closeVerificationModal}
+                    spotId={currentSpotId}
                 />
             )}
         </div>
-    )
+    );
 }
