@@ -48,6 +48,7 @@ export default function SearchPage() {
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [navigationMode, setNavigationMode] = useState(false);
 
   const onLoadAutocomplete = (autocompleteInstance: google.maps.places.Autocomplete) => {
     setAutocomplete(autocompleteInstance);
@@ -216,6 +217,7 @@ export default function SearchPage() {
         (result, status) => {
           if (status === window.google.maps.DirectionsStatus.OK) {
             setDirections(result);
+            setNavigationMode(true);
           } else {
             console.error(`error fetching directions ${result}`);
           }
@@ -429,7 +431,7 @@ export default function SearchPage() {
               <Marker
                 position={userLocation}
                 icon={{
-                  url:"https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+                  url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
                   scaledSize: new google.maps.Size(40, 40),
                 }}
               />
@@ -438,13 +440,13 @@ export default function SearchPage() {
               <Marker
                 position={selectedLocation}
                 icon={{
-                  url:"https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+                  url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
                   scaledSize: new google.maps.Size(40, 40),
                 }}
               />
             )}
 
-            {selectedSpot && (
+            {selectedSpot && !directions && (
               <InfoWindow
                 position={{
                   lat: selectedSpot.location.latitude,
@@ -540,25 +542,23 @@ export default function SearchPage() {
       >
         <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg">Selected Parking Spot</CardTitle>
+            <CardTitle className="text-lg">Directions</CardTitle>
           </CardHeader>
           <CardContent>
-            {selectedSpot ? (
+            {navigationMode && directions ? (
               <div>
-                <p className="text-sm">ID: {selectedSpot.id}</p>
-                <p className="text-sm">Owner ID: {selectedSpot.owner_id}</p>
-                <p className="text-sm">Latitude: {selectedSpot.location.latitude.toFixed(4)}</p>
-                <p className="text-sm">Longitude: {selectedSpot.location.longitude.toFixed(4)}</p>
-                <Button
-                  onClick={() => handleSpotSelect(selectedSpot)}
-                  className="mt-2 w-full text-sm px-3 py-2"
-                >
-                  <MapPin className="mr-2 h-4 w-4" />
-                  Deselect
-                </Button>
+                <h3 className="text-md font-semibold">From: {userLocation?.lat}, {userLocation?.lng}</h3>
+                <h3 className="text-md font-semibold">To: {selectedSpot?.location.latitude}, {selectedSpot?.location.longitude}</h3>
+                <ol className="list-decimal list-inside mt-4">
+                  {directions.routes[0].legs[0].steps.map((step, index) => (
+                    <li key={index} className="mb-2">
+                      <span dangerouslySetInnerHTML={{ __html: step.instructions }} />
+                    </li>
+                  ))}
+                </ol>
               </div>
             ) : (
-              <p className="text-sm text-gray-500">No spot selected.</p>
+              <p className="text-sm text-gray-500">No directions available.</p>
             )}
           </CardContent>
         </Card>
