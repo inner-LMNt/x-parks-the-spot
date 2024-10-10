@@ -32,7 +32,8 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
     // Initialize state based on the spot's current data
     const [image, setImage] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const [imageRemoved, setImageRemoved] = useState<boolean>(false); // New state
+    const [imageRemoved, setImageRemoved] = useState<boolean>(false); // Tracks removal of current image
+    const [previousImageRemoved, setPreviousImageRemoved] = useState<boolean>(false); // Tracks removal of previous image
     const fileInputRef = useRef<HTMLInputElement>(null);
     const webcamRef = useRef<Webcam>(null);
     const [showCamera, setShowCamera] = useState(false);
@@ -69,6 +70,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
         if (file) {
             setImage(file);
             setImageRemoved(false); // Reset imageRemoved since a new image is uploaded
+            // Do NOT reset previousImageRemoved here
             const reader = new FileReader();
             reader.onloadend = () => {
                 setPreviewUrl(reader.result as string);
@@ -90,10 +92,24 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
     const handleRemoveImage = () => {
         setImage(null);
         setPreviewUrl(null);
-        setImageRemoved(true); // Set imageRemoved to true to show "Previous Image"
+        setImageRemoved(true); // Set imageRemoved to true to hide current image
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
+    };
+
+    /**
+     * Remove Previous Image
+     */
+    const handleRemovePreviousImage = () => {
+        setPreviousImageRemoved(true); // Remove the previous image
+    };
+
+    /**
+     * Restore Previous Image
+     */
+    const handleRestorePreviousImage = () => {
+        setPreviousImageRemoved(false); // Restore the previous image
     };
 
     /**
@@ -104,6 +120,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
         if (imageSrc) {
             setPreviewUrl(imageSrc);
             setImageRemoved(false); // Reset imageRemoved since a new image is captured
+            // Do NOT reset previousImageRemoved here
             fetch(imageSrc)
                 .then((res) => res.blob())
                 .then((blob) => {
@@ -343,9 +360,13 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
             // You might need to adjust this based on your backend implementation
             // For now, we'll overwrite the existing image
             updatedData.photos = [previewUrl];
-        } else if (imageRemoved) {
-            // If the image is removed, set photos to empty array or handle as per backend requirements
-            updatedData.photos = [];
+        }
+
+        // Handle removal of previous image
+        if (previousImageRemoved) {
+            // Assuming the previous image is the first in the photos array
+            // Adjust based on your backend's requirements
+            updatedData.photos = updatedData.photos ? updatedData.photos.slice(1) : [];
         }
 
         // Determine if changes require reverification
@@ -414,6 +435,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
             setImage(null);
             setPreviewUrl(null);
             setImageRemoved(false); // Reset imageRemoved state
+            setPreviousImageRemoved(false); // Reset previousImageRemoved state
             setTimeSlot({
                 day_of_week: spot.availability_schedule?.map(s => s.day_of_week) || [],
                 start_time: spot.availability_schedule?.[0]?.start_time || '',
@@ -475,7 +497,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
                                     <ArrowLeft className="w-6 h-6" />
                                 </button>
 
-                                {/* Title with Adjusted Margin to Accommodate Close Arrow */}
+                                {/* Title */}
                                 <div className="mt-8 mb-4">
                                     <Dialog.Title
                                         as="h3"
@@ -489,7 +511,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
                                     {/* Spot Type Display */}
                                     <div className="space-y-2">
                                         <Label className="text-slate-950">Spot Type</Label>
-                                        <div className="flex items-center space-x-2">
+                                        <div className="flex items-center space-x-2 text-slate-950">
                                             <Checkbox
                                                 id={`spot-type-${spot.is_paid ? 'rental' : 'free'}`}
                                                 checked={spot.is_paid}
@@ -696,7 +718,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
                                     )}
 
                                     {/* Previous Image Section */}
-                                    {!imageRemoved && previousImageUrl && (
+                                    {!previousImageRemoved && previousImageUrl && (
                                         <div className="space-y-2">
                                             <Label className="text-slate-950">Previous Image</Label>
                                             <div className="relative w-full h-40">
@@ -707,7 +729,29 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
                                                     objectFit="cover"
                                                     className="w-full h-40 object-cover"
                                                 />
+                                                <button
+                                                    type="button"
+                                                    onClick={handleRemovePreviousImage}
+                                                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                                    aria-label="Remove Previous Image"
+                                                >
+                                                    <X size={16} />
+                                                </button>
                                             </div>
+                                        </div>
+                                    )}
+
+                                    {/* Restore Previous Image Button */}
+                                    {previousImageRemoved && previousImageUrl && (
+                                        <div className="space-y-2">
+                                            <Button
+                                                type="button"
+                                                onClick={handleRestorePreviousImage}
+                                                className="flex items-center space-x-2"
+                                            >
+                                                <Plus className="w-4 h-4 mr-2" />
+                                                Restore Previous Image
+                                            </Button>
                                         </div>
                                     )}
 
