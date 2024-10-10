@@ -11,7 +11,7 @@ import { useAppDispatch } from '@/store/hooks';
 import { reset_password } from '@/features/user/userSlice';
 import {zxcvbn} from "@zxcvbn-ts/core";
 
-export default function ConfirmResetPage() {
+export default async function ConfirmResetPage() {
     const [loading, setLoading] = useState(false);
     const [confirmed, setConfirmed] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -34,10 +34,9 @@ export default function ConfirmResetPage() {
             return; // Early return if the password is too short
         }
 
-        if(zxcvbn(newPassword).score < 3) {
+        if (zxcvbn(newPassword).score < 3) {
             setError("Password is too weak");
             return;
-            }
         }
 
         if (newPassword !== confirmPassword) {
@@ -48,7 +47,8 @@ export default function ConfirmResetPage() {
         setLoading(true);
         setError(null);
         try {
-            const resultAction = await dispatch(reset_password({ token, newPassword }));
+            // @ts-ignore
+            const resultAction = await dispatch(reset_password({token, newPassword}));
 
             if (reset_password.fulfilled.match(resultAction)) {
                 console.log("Password reset successfully");
@@ -63,8 +63,7 @@ export default function ConfirmResetPage() {
         } finally {
             setLoading(false);
         }
-    };
-
+    }
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-4 overflow-hidden">
             <motion.div
