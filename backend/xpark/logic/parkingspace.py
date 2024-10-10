@@ -39,7 +39,6 @@ def get_owned_paid_parking_spaces(
             return Ok(rows)
 
 
-# FIXME: specify reservation times
 def create_paid_parking_space(
     user_id: uuid.UUID,
     image_file: Optional[FileStorage],
