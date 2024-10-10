@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAppDispatch } from '@/store/hooks';
 import { reset_password } from '@/features/user/userSlice';
+import {zxcvbn} from "@zxcvbn-ts/core";
 
 export default function ConfirmResetPage() {
     const [loading, setLoading] = useState(false);
@@ -31,6 +32,12 @@ export default function ConfirmResetPage() {
         if (newPassword.length < 8) {
             setError("Password must be at least 8 characters long");
             return; // Early return if the password is too short
+        }
+
+        if(zxcvbn(newPassword).score < 3) {
+            setError("Password is too weak");
+            return;
+            }
         }
 
         if (newPassword !== confirmPassword) {

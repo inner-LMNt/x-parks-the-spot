@@ -23,6 +23,7 @@ import {reset_request} from '@/features/user/userSlice';
 import {PasswordResetRequest} from "@/types/type";
 import {useAppDispatch} from "@/store/hooks";
 import {useAppSelector} from "@/store/hooks";
+import {zxcvbn} from "@zxcvbn-ts/core";
 import Link from "next/link"; // Adjust the path if needed
 
 type ForgotPasswordInputs = {
