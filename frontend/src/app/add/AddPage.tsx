@@ -346,6 +346,17 @@ export default function AddPage() {
 
     if (image) {
       formSubmitData.append('image', image);
+    } else {
+      // If spot type is 'free' and image is not provided, show an error
+      if (spotType === 'free') {
+        toast({
+          title: 'Image Required',
+          description: 'Please capture an image of the free parking spot.',
+          variant: 'destructive',
+        });
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     try {
@@ -402,6 +413,10 @@ export default function AddPage() {
                           onValueChange={(value) => {
                             setSpotType(value as 'free' | 'rental');
                             setUserLocation(null);
+                            setImage(null); // Reset image when spot type changes
+                            setPreviewUrl(null); // Reset preview
+                            setAvailabilityError(''); // Reset local availability error
+                            dispatch(resetState()); // Reset Redux error state
                             if (value !== 'rental') {
                               setTimeSlot({
                                 day_of_week: [],
@@ -602,8 +617,10 @@ export default function AddPage() {
                           </div>
                       ) : (
                           <div
-                              className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-gray-400 transition-colors"
-                              onClick={handleImageClick}
+                              className={`border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-gray-400 transition-colors ${
+                                  spotType === 'free' ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
+                              onClick={spotType === 'free' ? undefined : handleImageClick}
                           >
                             {previewUrl ? (
                                 <div className="relative">
@@ -625,38 +642,44 @@ export default function AddPage() {
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center py-8">
-                                  <Upload size={48} className="text-gray-400 mb-2" />
+                                  <Upload size={48} className={`text-gray-400 mb-2 ${spotType === 'free' ? 'opacity-50' : ''}`} />
                                   <p className="text-sm text-gray-500">
-                                    Click to upload an image or use camera
+                                    {spotType === 'free'
+                                        ? 'Image upload is disabled for free spots.'
+                                        : 'Click to upload an image or use camera'}
                                   </p>
                                 </div>
                             )}
                           </div>
                       )}
-                      <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageChange}
-                          ref={fileInputRef}
-                          className="hidden"
-                      />
+                      {/* Disable the file input if spotType is 'free' */}
+                      {spotType !== 'free' && (
+                          <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageChange}
+                              ref={fileInputRef}
+                              className="hidden"
+                          />
+                      )}
                       <div className="flex justify-center mt-2">
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => setShowCamera(!showCamera)}
+                            onClick={() => {
+                              if (spotType === 'free') {
+                                toast({
+                                  title: 'Image Upload Disabled',
+                                  description: 'Image uploading is disabled for free spots. Please capture an image using the camera.',
+                                  variant: 'info',
+                                });
+                              }
+                              setShowCamera(!showCamera);
+                            }}
+                            disabled={spotType === 'free' ? false : false} // Allow toggling camera for both types
                         >
-                          {showCamera ? (
-                              <>
-                                <X className="w-4 h-4 mr-2" />
-                                Hide Camera
-                              </>
-                          ) : (
-                              <>
-                                <Camera className="w-4 h-4 mr-2" />
-                                Use Camera
-                              </>
-                          )}
+                          <Camera className="w-4 h-4 mr-2" />
+                          {showCamera ? 'Hide Camera' : 'Use Camera'}
                         </Button>
                       </div>
                     </div>
@@ -665,7 +688,7 @@ export default function AddPage() {
                     <Button
                         type="submit"
                         className="w-full"
-                        disabled={isSubmitting || loading}
+                        disabled={isSubmitting || loading || (spotType === 'free' && !image)}
                     >
                       {isSubmitting || loading ? 'Adding Spot...' : 'Add Parking Spot'}
                     </Button>

@@ -1,4 +1,4 @@
-// src/components/EditSpotModal.tsx
+// src/components/custom/EditSpotModal.tsx
 
 'use client';
 
@@ -9,14 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Camera, X, Upload, ArrowLeft } from 'lucide-react'; // Import ArrowLeft
+import { Camera, X, Upload, Plus, ArrowLeft } from 'lucide-react'; // Import ArrowLeft
 import Webcam from 'react-webcam';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateParkingSpot, resetError } from '@/features/owner/ownerSlice';
 import { useToast } from '@/components/ui/use-toast';
 import { RootState, AppDispatch } from '@/store';
 import { ParkingSpace, DaysOfWeek, TimeSlot } from '@/types/type';
-import ImageWrapper from "@/components/custom/ImageWrapper"; // Ensure ImageWrapper is correctly imported
+import ImageWrapper from "@/components/custom/ImageWrapper";
 
 interface EditSpotModalProps {
     isOpen: boolean;
@@ -29,17 +29,14 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
     const { toast } = useToast();
     const { loading, error } = useSelector((state: RootState) => state.owner);
 
-    // State for image management
+    // Initialize state based on the spot's current data
     const [image, setImage] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const [imageRemoved, setImageRemoved] = useState<boolean>(false);
+    const [imageRemoved, setImageRemoved] = useState<boolean>(false); // New state
     const fileInputRef = useRef<HTMLInputElement>(null);
     const webcamRef = useRef<Webcam>(null);
     const [showCamera, setShowCamera] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    // Store the original image URL
-    const previousImageUrl = spot.photos?.[0] || null;
 
     // TimeSlot and is24Seven
     const [timeSlot, setTimeSlot] = useState<TimeSlot>({
@@ -71,7 +68,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
         const file = event.target.files?.[0];
         if (file) {
             setImage(file);
-            setImageRemoved(false); // Since a new image is uploaded
+            setImageRemoved(false); // Reset imageRemoved since a new image is uploaded
             const reader = new FileReader();
             reader.onloadend = () => {
                 setPreviewUrl(reader.result as string);
@@ -93,7 +90,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
     const handleRemoveImage = () => {
         setImage(null);
         setPreviewUrl(null);
-        setImageRemoved(true); // Indicate that the image has been removed
+        setImageRemoved(true); // Set imageRemoved to true to show "Previous Image"
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -106,7 +103,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
         const imageSrc = webcamRef.current?.getScreenshot();
         if (imageSrc) {
             setPreviewUrl(imageSrc);
-            setImageRemoved(false); // Since a new image is captured
+            setImageRemoved(false); // Reset imageRemoved since a new image is captured
             fetch(imageSrc)
                 .then((res) => res.blob())
                 .then((blob) => {
@@ -341,12 +338,13 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
         }
 
         // Include image if a new one is uploaded or captured
-        if (image) {
-            // Assuming your backend can handle image uploads via multipart/form-data
-            updatedData.photos = [previewUrl!];
+        if (image && previewUrl) {
+            // Assuming your backend expects images as URLs or handles uploads differently
+            // You might need to adjust this based on your backend implementation
+            // For now, we'll overwrite the existing image
+            updatedData.photos = [previewUrl];
         } else if (imageRemoved) {
-            // If the image is removed, you might need to handle it accordingly
-            // For example, setting photos to an empty array or a default image
+            // If the image is removed, set photos to empty array or handle as per backend requirements
             updatedData.photos = [];
         }
 
@@ -368,7 +366,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
             const formSubmitData = new FormData();
             formSubmitData.append('data', JSON.stringify(updatedData));
 
-            if (image) {
+            if (image && previewUrl) {
                 formSubmitData.append('image', image);
             }
 
@@ -415,7 +413,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
         if (!isOpen) {
             setImage(null);
             setPreviewUrl(null);
-            setImageRemoved(false);
+            setImageRemoved(false); // Reset imageRemoved state
             setTimeSlot({
                 day_of_week: spot.availability_schedule?.map(s => s.day_of_week) || [],
                 start_time: spot.availability_schedule?.[0]?.start_time || '',
@@ -434,6 +432,9 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
             dispatch(resetError());
         }
     }, [isOpen, spot, dispatch]);
+
+    // Store the original image URL
+    const previousImageUrl = spot.photos?.[0] || null;
 
     return (
         <Transition appear show={isOpen} as={Fragment}>
@@ -488,9 +489,16 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
                                     {/* Spot Type Display */}
                                     <div className="space-y-2">
                                         <Label className="text-slate-950">Spot Type</Label>
-                                        <p className="text-slate-950 capitalize">
-                                            {spot.is_paid ? 'For Rent' : 'Free'}
-                                        </p>
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id={`spot-type-${spot.is_paid ? 'rental' : 'free'}`}
+                                                checked={spot.is_paid}
+                                                disabled
+                                            />
+                                            <Label htmlFor={`spot-type-${spot.is_paid ? 'rental' : 'free'}`}>
+                                                {spot.is_paid ? 'For Rent' : 'Free'}
+                                            </Label>
+                                        </div>
                                     </div>
 
                                     {/* Spot Name (Only for Rental) */}
@@ -563,7 +571,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
                                             disabled={locationLoading}
                                             className="flex items-center space-x-2 text-slate-950"
                                         >
-                                            <Upload className="w-4 h-4" />
+                                            <Plus className="w-4 h-4" />
                                             <span>{locationLoading ? 'Locating...' : 'Use My Location'}</span>
                                         </Button>
                                         {geoEnabled ? (
@@ -688,18 +696,17 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
                                     )}
 
                                     {/* Previous Image Section */}
-                                    {imageRemoved && previousImageUrl && (
+                                    {!imageRemoved && previousImageUrl && (
                                         <div className="space-y-2">
                                             <Label className="text-slate-950">Previous Image</Label>
-                                            <div className="relative">
+                                            <div className="relative w-full h-40">
                                                 <ImageWrapper
                                                     src={previousImageUrl}
-                                                    alt="Previous Image"
-                                                    width={300} // Adjust as needed
-                                                    height={200} // Adjust as needed
-                                                    className="rounded-lg"
+                                                    alt={spot.name || 'Parking Spot Image'}
+                                                    layout="fill"
+                                                    objectFit="cover"
+                                                    className="w-full h-40 object-cover"
                                                 />
-                                                {/* Optional: Add a label or overlay */}
                                             </div>
                                         </div>
                                     )}
@@ -707,35 +714,55 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
                                     {/* Spot Image Upload Section */}
                                     <div className="space-y-2">
                                         <Label className="text-slate-950">Spot Image</Label>
-                                        {previewUrl ? (
+                                        {showCamera ? (
                                             <div className="relative">
-                                                <ImageWrapper
-                                                    src={previewUrl}
-                                                    alt="Current Image"
-                                                    width={300} // Adjust as needed
-                                                    height={200} // Adjust as needed
-                                                    className="rounded-lg"
+                                                <Webcam
+                                                    audio={false}
+                                                    ref={webcamRef}
+                                                    screenshotFormat="image/jpeg"
+                                                    className="w-full rounded-lg"
                                                 />
-                                                <button
+                                                <Button
                                                     type="button"
-                                                    onClick={handleRemoveImage}
-                                                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                                                    aria-label="Remove Image"
+                                                    onClick={handleCameraCapture}
+                                                    className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
                                                 >
-                                                    <X size={16} />
-                                                </button>
+                                                    <Camera className="w-4 h-4 mr-2" />
+                                                    Capture Photo
+                                                </Button>
                                             </div>
                                         ) : (
                                             <div
                                                 className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-gray-400 transition-colors"
                                                 onClick={handleImageClick}
                                             >
-                                                <div className="flex flex-col items-center py-8">
-                                                    <Upload size={48} className="text-gray-400 mb-2" />
-                                                    <p className="text-sm text-gray-500">
-                                                        Click to upload an image or use camera
-                                                    </p>
-                                                </div>
+                                                {previewUrl ? (
+                                                    <div className="relative">
+                                                        <img
+                                                            src={previewUrl}
+                                                            alt="Preview"
+                                                            className="max-w-full h-auto mx-auto rounded-lg"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleRemoveImage();
+                                                            }}
+                                                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                                            aria-label="Remove Image"
+                                                        >
+                                                            <X size={16} />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-col items-center py-8">
+                                                        <Upload size={48} className="text-gray-400 mb-2" />
+                                                        <p className="text-sm text-gray-500">
+                                                            Click to upload an image or use camera
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                         <input
@@ -767,32 +794,12 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
                                         </div>
                                     </div>
 
-                                    {/* Show Webcam if Retaking Picture */}
-                                    {showCamera && (
-                                        <div className="mt-4 relative w-full">
-                                            <Webcam
-                                                audio={false}
-                                                ref={webcamRef}
-                                                screenshotFormat="image/jpeg"
-                                                className="w-full rounded-lg"
-                                            />
-                                            <Button
-                                                type="button"
-                                                onClick={handleCameraCapture}
-                                                className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-2"
-                                            >
-                                                <Camera className="w-4 h-4" />
-                                                Capture Photo
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                onClick={() => setShowCamera(false)}
-                                                variant="ghost"
-                                                className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-                                                aria-label="Cancel Camera"
-                                            >
-                                                <X className="w-5 h-5" />
-                                            </Button>
+                                    {/* Reverification Warning */}
+                                    {requireReverification && (
+                                        <div className="p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
+                                            <p>
+                                                Changes to your parking spot require reverification. Your spot will no longer be available for new bookings until it's reverified.
+                                            </p>
                                         </div>
                                     )}
 
