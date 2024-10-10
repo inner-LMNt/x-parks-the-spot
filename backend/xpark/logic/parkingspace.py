@@ -40,6 +40,43 @@ def get_owned_paid_parking_spaces(
 
             return Ok(rows)
 
+def create_paid_parking_space(
+    user_id: uuid.UUID,
+    image_file: Optional[FileStorage],
+    longitude: float,
+    latitude: float,
+    address: str,
+) -> Result[Dict[str, Any], str]:
+    # Save image
+    if image_file:
+        image_uri = save_image(image_file)
+        photos = [image_uri]
+    else:
+        photos = []
+
+    # Insert into database
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                INSERT INTO parking_spaces (
+                    owner,
+                    is_paid,
+                    location,
+                    address,
+                    photos,
+                    verification_status
+                )
+                VALUES (%(user_id)s, TRUE, ST_SetSRID(ST_MakePoint(%(long)s, %(lat)s), 4326), %(addr)s, %(photos)s, 'pending')
+                RETURNING id, created_at, updated_at
+                """,
+                {"user_id": user_id, "long": longitude, "lat": latitude, "addr": address, "photos": photos},
+            )
+            parking_space = cur.fetchone()
+            if not parking_space:
+                return Err("Error creating parking space")
+
+            return Ok(parking_space)
 
 def create_free_parking_space(
     user_id: uuid.UUID,

@@ -1,6 +1,7 @@
 from . import bp
 from xpark.logic.parkingspace import (
     create_free_parking_space,
+    create_paid_parking_space,
     delete_parking_space,
     update_paid_parking_space,
     get_parking_space,
@@ -41,20 +42,27 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
 
     if not data:
         return {"err": "Missing data"}, 400
-    # TODO: get address from coordinates if not set
-    if data["is_paid"]:
-        return {"err": "unimplemented"}, 501
 
     longitude = float(data["long"])
     latitude = float(data["lat"])
 
-    result = create_free_parking_space(
-        user_id=user_id,
-        image_file=image_file,
-        longitude=longitude,
-        latitude=latitude,
-        address=data["address"],
-    )
+    # TODO: get address from coordinates if not set
+    if data["is_paid"]:
+        result = create_paid_parking_space(
+            user_id=user_id,
+            image_file=image_file,
+            longitude=longitude,
+            latitude=latitude,
+            address=data["address"],
+        )
+    else:
+        result = create_free_parking_space(
+            user_id=user_id,
+            image_file=image_file,
+            longitude=longitude,
+            latitude=latitude,
+            address=data["address"],
+        )
 
     if result.is_ok():
         return result.unwrap(), 201
