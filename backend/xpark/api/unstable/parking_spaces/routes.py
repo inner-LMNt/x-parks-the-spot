@@ -1,40 +1,65 @@
 from . import bp
 from xpark.logic.parkingspace import (
-    create_parking_space,
-    get_parking_space,
-    update_parking_space,
+    create_free_parking_space,
     delete_parking_space,
-    get_owned_parking_spaces,
+    update_paid_parking_space,
+    get_parking_space,
+    is_paid_spot,
+    get_owned_paid_parking_spaces,
 )
 from flask import request
 from result import Ok, Err
 from xpark.middleware.token_auth_middleware import require_logged_in_user
 from typing import Tuple, Any
 import uuid
+from json import JSONDecodeError, loads as load_json
+from typing import cast, Dict, Any
 
 
 @bp.get("")
 @require_logged_in_user
 def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    match get_owned_parking_spaces(user_id):
+    match get_owned_paid_parking_spaces(user_id):
         case Ok(data):
             return data, 200
         case Err(e):
-            return {"error": str(e)}, 500
+            return {"err": e}, 500
 
 
 @bp.post("/")
 @require_logged_in_user
 def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    data = request.form.get("data")
+    raw_data = request.form.get("data")
     image_file = request.files.get("image")
+    if not raw_data:
+        return {"err", "Missing data"}, 400
+    # FIXME: limit size of JSON
+    try:
+        data = cast(Dict[str, Any], load_json(raw_data))
+    except JSONDecodeError:
+        return {"err", "bad input"}, 400
 
-    result = create_parking_space(user_id=user_id, data=data, image_file=image_file)
+    if not data:
+        return {"err", "Missing data"}, 400
+    # TODO: get address from coordinates if not set
+    if data["is_paid"]:
+        return {"err", "unimplemented"}, 501
+
+    longitude = float(data["longitude"])
+    latitude = float(data["latitude"])
+
+    result = create_free_parking_space(
+        user_id=user_id,
+        image_file=image_file,
+        longitude=longitude,
+        latitude=latitude,
+        address=data["address"],
+    )
 
     if result.is_ok():
         return result.unwrap(), 201
     else:
-        return {"error": result.unwrap_err()}, 400
+        return {"err": result.unwrap_err()}, 400
 
 
 @bp.get("<parking_space_id>")
@@ -45,7 +70,7 @@ def get_parking_space_route(parking_space_id: str) -> Tuple[Any, int]:
         case Ok(parking_space):
             return parking_space, 200
         case Err(e):
-            return {"error": str(e)}, 404
+            return {"err": e}, 404
 
 
 @bp.patch("<parking_space_id>")
@@ -55,20 +80,26 @@ def update_parking_space_route(
 ) -> Tuple[Any, int]:
     data = request.get_json()
     if not data:
-        return {"error": "Invalid input"}, 400
+        return {"err": "Invalid input"}, 400
 
     parking_space_uuid = uuid.UUID(parking_space_id)
 
-    match update_parking_space(user_id, parking_space_uuid, data):
-        case Ok(parking_space):
-            return parking_space, 200
-        case Err(e):
-            status_code = (
-                403
-                if "not authorized" in str(e)
-                else 404 if "not found" in str(e) else 400
-            )
-            return {"error": str(e)}, status_code
+    match is_paid_spot(parking_space_uuid):
+        case Ok(a):
+            is_paid = a
+        case Err(_):
+            return {"err", "spot not found"}, 404
+    if is_paid:
+        match update_paid_parking_space(user_id, parking_space_uuid, data):
+            case Ok(parking_space):
+                return parking_space, 200
+            case Err(e):
+                status_code = (
+                    403 if "not authorized" in e else 404 if "not found" in e else 400
+                )
+                return {"err": e}, status_code
+    else:
+        return {"err", "not implemented: modifying free spot"}, 501
 
 
 @bp.delete("<parking_space_id>")
@@ -82,5 +113,5 @@ def delete_parking_space_route(
         case Ok(_):
             return {}, 200
         case Err(e):
-            status_code = 403 if "not authorized" in str(e) else 404
-            return {"error": str(e)}, status_code
+            status_code = 403 if "not authorized" in e else 404
+            return {"err": e}, status_code

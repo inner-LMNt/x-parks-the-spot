@@ -241,7 +241,6 @@ def handle_delete_account_request(
                 "INSERT INTO user_delete_requests (user_id, token, expiry) VALUES (%s, %s, NOW() + %s * INTERVAL '1 seconds')",
                 (user_id, delete_token, Config.DELETE_RESET_EXPIRY_SECONDS),
             )
-            conn.commit()
 
     # Step 5: Send the email with the deletion link
     delete_link = f"{Config.BASE_HOST}/confirm-deletion/{delete_token}"
