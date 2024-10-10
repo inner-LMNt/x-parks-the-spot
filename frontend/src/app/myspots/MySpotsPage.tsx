@@ -35,6 +35,24 @@ export default function MySpotsPage() {
         }
     };
 
+    const emptySpots = (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="flex flex-col justify-center items-center h-64 w-full bg-white rounded-lg shadow-md"
+        >
+            <MapPin className="w-16 h-16 text-gray-400 mb-4" />
+            <p className="text-gray-500 text-lg">No spots available</p>
+            <Link href="/add" className="mt-4">
+                <Button variant="outline" className="flex items-center">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Your First Spot
+                </Button>
+            </Link>
+        </motion.div>
+    )
+
     const openVerificationModal = (spotId: string) => {
         setCurrentSpotId(spotId);
         setVerificationModalOpen(true);

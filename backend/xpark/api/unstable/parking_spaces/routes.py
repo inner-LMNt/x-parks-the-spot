@@ -5,6 +5,7 @@ from xpark.logic.parkingspace import (
     update_parking_space,
     delete_parking_space,
     get_owned_parking_spaces,
+    submit_verification,
 )
 from flask import request
 from result import Ok, Err
@@ -46,6 +47,18 @@ def get_parking_space_route(parking_space_id: str) -> Tuple[Any, int]:
             return parking_space, 200
         case Err(e):
             return {"error": str(e)}, 404
+
+
+@bp.patch("<parking_space_id>/verification")
+@require_logged_in_user
+def submit_verification (token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    image_file = request.files.get("image")
+    result = submit_verification(user_id=user_id, image_file=image_file)
+    if result.is_ok():
+        return result.unwrap(), 201
+    else:
+        return {"error": result.unwrap_err()}, 400
+
 
 
 @bp.patch("<parking_space_id>")

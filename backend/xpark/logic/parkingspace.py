@@ -87,6 +87,50 @@ def get_owned_parking_spaces(
     except Exception as e:
         return Err(str(e))
 
+def submit_verification(
+    user_id: uuid.UUID,
+    parking_space_id: uuid.UUID,
+    image_file: Optional[FileStorage],
+) -> Result[Dict[str, Any], str]:
+    try:
+        # Validate the image
+        if image_file is None:
+            return Err("No image provided for verification")
+
+        # Save the image
+        image_uri = save_image(image_file)
+
+        # Update the parking space status to "pending" and store the image
+        with DB.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE parking_spaces
+                    SET verification_status = %s, photos = array_append(photos, %s), updated_at = NOW()
+                    WHERE id = %s AND owner = %s
+                    RETURNING id, verification_status, photos, updated_at
+                    """,
+                    ('pending', image_uri, str(parking_space_id), str(user_id)),
+                )
+                result = cur.fetchone()
+                if not result:
+                    return Err("Failed to update verification status or parking space not found")
+
+                # Parse the result
+                updated_parking_space = {
+                    "id": str(result[0]),
+                    "verification_status": result[1],
+                    "photos": result[2],
+                    "updated_at": result[3].isoformat(),
+                }
+
+                conn.commit()
+                return Ok(updated_parking_space)
+
+    except Exception as e:
+        return Err(str(e))
+
+
 
 def create_parking_space(
     user_id: uuid.UUID,

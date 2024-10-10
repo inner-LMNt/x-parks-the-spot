@@ -82,12 +82,12 @@ export const submitVerification = createAsyncThunk<
     "owner/submitVerification",
     async ({ spotId, formData }, { rejectWithValue }) => {
         try {
-            /*const response = await axios.post(`/parking-spaces/${spotId}/verify`, formData, {
+            const response = await axios.post(`/parking-spaces/${spotId}/verify`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
             });
-            return response.data;*/
+            return response.data;
 
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.error || "Failed to submit verification");
