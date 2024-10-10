@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, use } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,7 @@ export default function SearchPage() {
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [navigationMode, setNavigationMode] = useState(false);
+  const [reachedDestination, setReachedDestination] = useState(false);
 
   const onLoadAutocomplete = (autocompleteInstance: google.maps.places.Autocomplete) => {
     setAutocomplete(autocompleteInstance);
@@ -224,6 +225,8 @@ export default function SearchPage() {
         }
       );
     }
+
+    console.log("Directions:", directions);
   };
 
   // Toggle search bar visibility
@@ -258,6 +261,75 @@ export default function SearchPage() {
       }
     };
   }, []);
+
+  // for navigation mode
+  useEffect(() => {
+    if (directions) {
+      setNavigationMode(true);
+      setSidebarOpen(true);
+    } else {
+      setNavigationMode(false);
+      setSidebarOpen(false);
+    }
+  }, [directions]);
+
+  // Watch user location and check if within 50 feet of destination
+  useEffect(() => {
+    let watchId: number;
+
+    if (navigationMode && selectedSpot) {
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setUserLocation(location);
+
+          const distance = calculateDistance(location, {
+            lat: selectedSpot.location.latitude,
+            lng: selectedSpot.location.longitude,
+          });
+
+          if (distance <= 50) {
+            setReachedDestination(true);
+          } else {
+            setReachedDestination(false);
+          }
+        },
+        (error) => {
+          console.error("Error watching position:", error);
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 5000,
+        }
+      );
+    }
+
+    return () => {
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [navigationMode, selectedSpot]);
+
+  const calculateDistance = (location1: google.maps.LatLngLiteral, location2: google.maps.LatLngLiteral) => {
+    const R = 6371e3; // metres
+    const φ1 = location1.lat * Math.PI / 180; // φ, λ in radians
+    const φ2 = location2.lat * Math.PI / 180;
+    const Δφ = (location2.lat - location1.lat) * Math.PI / 180;
+    const Δλ = (location2.lng - location1.lng) * Math.PI / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) *
+      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    const distance = R * c; // in metres
+    return distance * 3.28084; // convert to feet
+  };
 
   const handleSliderChange = (value: number[]) => {
     setSearchRadius(value[0]);
@@ -403,8 +475,7 @@ export default function SearchPage() {
           position: 'relative',
         }}
       >
-        {/* @ts-ignore */}
-        <LoadScriptNext googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+        <LoadScriptNext googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
           libraries={['places']}
         >
           <GoogleMap
@@ -432,7 +503,7 @@ export default function SearchPage() {
                 position={userLocation}
                 icon={{
                   url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-                  scaledSize: new google.maps.Size(40, 40),
+                  // scaledSize: new google.maps.Size(40, 40),
                 }}
               />
             )}
@@ -441,7 +512,7 @@ export default function SearchPage() {
                 position={selectedLocation}
                 icon={{
                   url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-                  scaledSize: new google.maps.Size(40, 40),
+                  // scaledSize: new google.maps.Size(40, 40),
                 }}
               />
             )}
@@ -463,12 +534,12 @@ export default function SearchPage() {
                       <Navigation className="mr-1 h-4 w-4" />
                       Directions
                     </Button>
-                    {selectedSpot.is_paid &&
+                    {selectedSpot.is_paid && (
                       <Button onClick={() => { reserveSpot(selectedSpot.id) }} className="mt-2 text-xs px-3 py-1">
                         <DollarSign className="mr-1 h-4 w-4" />
                         Reserve
                       </Button>
-                    }
+                    )}
                   </div>
                 </div>
               </InfoWindow>
@@ -536,34 +607,68 @@ export default function SearchPage() {
       {/* Sidebar on the right */}
       <div
         className={
-          'fixed top-0 right-0 h-full w-1/4 bg-gray-100 p-4 transition-transform duration-300 transform ' +
+          'fixed top-0 right-0 h-full w-2/5 bg-gray-100 p-4 transition-transform duration-300 transform overflow-y-auto ' +
           (sidebarOpen ? 'translate-x-0' : 'translate-x-full')
         }
+        style={{ height: 'calc(100vh - 64px)' }}
       >
         <Card className="shadow-sm">
-          <CardHeader>
+          <CardHeader className="flex justify-between items-center">
             <CardTitle className="text-lg">Directions</CardTitle>
+            {navigationMode && (
+              <button
+                onClick={() => {
+                  setNavigationMode(false);
+                  setDirections(null);
+                }}
+                className="px-4 py-2 bg-red-500 text-white text-sm font-semibold rounded hover:bg-red-700 focus:outline-none"
+              >
+                Exit Navigation
+              </button>
+            )}
           </CardHeader>
           <CardContent>
             {navigationMode && directions ? (
-              <div>
-                <h3 className="text-md font-semibold">From: {userLocation?.lat}, {userLocation?.lng}</h3>
-                <h3 className="text-md font-semibold">To: {selectedSpot?.location.latitude}, {selectedSpot?.location.longitude}</h3>
-                <ol className="list-decimal list-inside mt-4">
-                  {directions.routes[0].legs[0].steps.map((step, index) => (
-                    <li key={index} className="mb-2">
-                      <span dangerouslySetInnerHTML={{ __html: step.instructions }} />
-                    </li>
-                  ))}
-                </ol>
-              </div>
+              reachedDestination ? (
+                <div className="text-center">
+                  <h3 className="text-md font-semibold mb-4">You've reached your destination</h3>
+                  <button
+                    onClick={() => {
+                      setNavigationMode(false);
+                      setDirections(null);
+                    }}
+                    className="px-4 py-2 bg-red-500 text-white text-sm font-semibold rounded hover:bg-red-700 focus:outline-none"
+                  >
+                    Exit Navigation
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <h3 className="text-md font-semibold">From: {userLocation?.lat}, {userLocation?.lng}</h3>
+                  <h3 className="text-md font-semibold">To: {selectedSpot?.location.latitude}, {selectedSpot?.location.longitude}</h3>
+                  <ol className="list-decimal list-inside mt-4">
+                    {directions.routes[0].legs[0].steps.map((step, index) => (
+                      <li key={index} className="mb-2">
+                        <div>
+                          <span dangerouslySetInnerHTML={{ __html: step.instructions }} />
+                          <div className="text-sm text-gray-600">
+                            <p>Distance: {step.distance ? step.distance.text : ''}</p>
+                            <p>Duration: {step.duration ? step.duration.text : ''}</p>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )
             ) : (
               <p className="text-sm text-gray-500">No directions available.</p>
             )}
           </CardContent>
         </Card>
 
-        <div className="absolute top-1/2 right-full transform -translate-y-1/2 -translate-x-full">
+        {/* Button for opening/closing the sidebar */}
+        <div className="absolute top-1/2 right-full transform -translate-y-1/2 -translate-x-1/2">
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="focus:outline-none">
             {sidebarOpen ? (
               <motion.div
