@@ -243,7 +243,6 @@ def handle_delete_account_request(
                 "INSERT INTO user_delete_requests (user_id, token, expiry) VALUES (%s, %s, NOW() + %s * INTERVAL '1 seconds')",
                 (user_id, delete_token, Config.DELETE_RESET_EXPIRY_SECONDS),
             )
-            conn.commit()
 
     # Step 5: Send the email with the deletion link
     delete_link = f"{Config.BASE_HOST}/confirm-deletion/{delete_token}"
@@ -264,3 +263,78 @@ def expire_all_tokens_for_user(user_id: uuid.UUID) -> Result[None, str]:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM user_tokens WHERE user_id = %s", (user_id,))
             return Ok(None)
+
+
+def get_user_id_by_email(email: str) -> Result[uuid.UUID, str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM users WHERE email = %s", (email,))
+            user_data = cur.fetchone()
+            if not user_data:
+                return Err("User not found")
+
+            return Ok(user_data[0])
+
+
+def handle_password_reset_request(email: str) -> Result[None, str]:
+    # Check if the email exists in the database
+    if not check_if_user_exists(email):
+        return Err("Email not found")
+
+    if is_user_deleted(email):
+        return Err("User is deleted")
+
+    match get_user_id_by_email(email):
+        case Err(e):
+            return Err(f"Failed to retrieve user ID: {e}")
+        case Ok(user_id):
+            pass  # Proceed with user_id
+
+    reset_token = secrets.token_urlsafe(32)
+
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            # FIXME: Move to a background job
+            cur.execute("DELETE FROM user_delete_requests WHERE expiry <= NOW()")
+
+            cur.execute(
+                "INSERT INTO user_pw_reset_requests (user_id, token, expiry) VALUES (%s, %s, NOW() + %s * INTERVAL '1 seconds')",
+                (user_id, reset_token, Config.DELETE_RESET_EXPIRY_SECONDS),
+            )
+
+    reset_link = f"{Config.BASE_HOST}/confirm-reset/{reset_token}"
+    send_email(
+        to=email,
+        subject="XPark: Reset Password",
+        content=generate_templated_email(
+            "reset_password",
+            name=get_user_name_by_id(user_id).unwrap(),
+            reset_link=reset_link,
+        ),
+    )
+
+    return Ok(None)
+
+
+def handle_password_reset_confirmation(
+    token: str, new_password: str
+) -> Result[None, str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT user_id FROM user_pw_reset_requests WHERE token = %s AND expiry > NOW()",
+                (token,),
+            )
+            result = cur.fetchone()
+            if result:
+                user_id = result[0]
+            else:
+                return Err("Invalid or expired token")
+
+    # Step 3: Update the user's password
+    change_password(user_id, new_password)
+
+    # Expire all tokens
+    expire_all_tokens_for_user(user_id)
+
+    return Ok(None)
