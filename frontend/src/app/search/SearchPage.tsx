@@ -417,8 +417,11 @@ export default function SearchPage() {
                   </div>
 
                   <div className="flex flex-col mb-4">
-                    <div className="flex justify-between items-center cursor-pointer"
-                         onClick={() => setShowFeaturesDropdown(!showFeaturesDropdown)}>
+                    <div
+                        className={`flex justify-between items-center cursor-pointer border border-gray-300 rounded-lg p-2 transition-all 
+      ${showFeaturesDropdown ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                        onClick={() => setShowFeaturesDropdown(!showFeaturesDropdown)}
+                    >
                       <Label htmlFor="features" className="text-sm mb-1">
                         Features:
                       </Label>
@@ -428,9 +431,9 @@ export default function SearchPage() {
                     </div>
 
                     {showFeaturesDropdown && (
-                        <div className="flex flex-col mt-2">
+                        <div className="bg-white shadow-lg rounded-lg mt-2 p-4">
                           {featuresOptions.map(({value, label}) => (
-                              <label key={value} className="flex items-center mb-1"> {/* Add margin for spacing */}
+                              <label key={value} className="flex items-center mb-2">
                                 <input
                                     type="checkbox"
                                     value={value}
@@ -440,14 +443,15 @@ export default function SearchPage() {
                                           ? [...selectedFeatures, value]
                                           : selectedFeatures.filter(feature => feature !== value));
                                     }}
-                                    className="mr-2" // Add margin to the right for spacing
+                                    className="mr-2"
                                 />
-                                {label}
+                                <span className="text-sm">{label}</span>
                               </label>
                           ))}
                         </div>
                     )}
                   </div>
+
 
                   {!useCurrentLocation && (
                       <div className="flex flex-col mb-4">
