@@ -208,7 +208,7 @@ def update_paid_parking_space(
             return Ok(parking_space)
 
 
-def delete_parking_space(
+def delete_free_parking_space(
     user_id: uuid.UUID, parking_space_id: uuid.UUID
 ) -> Result[None, str]:
     with DB.pool.connection() as conn:

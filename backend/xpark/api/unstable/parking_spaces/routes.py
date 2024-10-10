@@ -2,8 +2,8 @@ from . import bp
 from xpark.logic.parkingspace import (
     create_free_parking_space,
     create_paid_parking_space,
-    delete_parking_space,
     update_paid_parking_space,
+    delete_free_parking_space,
     get_parking_space,
     is_paid_spot,
     get_owned_paid_parking_spaces,
@@ -115,7 +115,15 @@ def delete_parking_space_route(
 ) -> Tuple[Any, int]:
     parking_space_uuid = uuid.UUID(parking_space_id)
 
-    match delete_parking_space(user_id, parking_space_uuid):
+    match is_paid_spot(parking_space_uuid):
+        case Ok(a):
+            is_paid = a
+        case Err(_):
+            return {"err": "spot not found"}, 404
+    if is_paid:
+        return {"err": "Not allowed to delete paid spot"}, 403
+
+    match delete_free_parking_space(user_id, parking_space_uuid):
         case Ok(_):
             return {}, 200
         case Err(e):

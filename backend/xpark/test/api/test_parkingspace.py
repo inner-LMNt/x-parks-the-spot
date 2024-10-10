@@ -37,6 +37,17 @@ def test_api_create_free_parking_spot(client: FlaskClient) -> None:
     assert response.json
     assert not response.json["is_paid"]
 
+    response = client.delete(
+        f"/api/unstable/parking-spaces/{spot_id}",
+        headers={"Authorization": "Bearer " + token},
+    )
+    assert response.status_code == 200
+    response = client.get(
+        "/api/unstable/parking-spaces", headers={"Authorization": "Bearer " + token}
+    )
+    assert response.status_code == 200
+    assert response.json == []
+
     # response = client.post(
     #     "/api/unstable/search",
     #     headers={"Authorization": "Bearer " + token},
@@ -113,3 +124,16 @@ def test_api_create_paid_parking_spot(client: FlaskClient) -> None:
     assert len(response.json) == 1
     # Not checking the whole thing because the created_at and modified_at times are not stable across reruns
     assert response.json[0]["address"] == "bbb"
+
+    # Now delete
+    response = client.delete(
+        f"/api/unstable/parking-spaces/{spot_id}",
+        headers={"Authorization": "Bearer " + token},
+    )
+    assert response.status_code == 403
+    response = client.get(
+        "/api/unstable/parking-spaces", headers={"Authorization": "Bearer " + token}
+    )
+    assert response.status_code == 200
+    assert response.json
+    assert len(response.json) == 1
