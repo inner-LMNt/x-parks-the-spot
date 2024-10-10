@@ -23,7 +23,7 @@ def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any,
             return {"error": str(e)}, 500
 
 
-@bp.post("/")
+@bp.post("")
 @require_logged_in_user
 def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     data = request.form.get("data")

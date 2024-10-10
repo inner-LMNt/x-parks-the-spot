@@ -91,7 +91,7 @@ export default function LoginPage() {
                 initial="hidden"
                 animate="visible"
             >
-                <Card className="w-[350px] shadow-2xl backdrop-blur-sm bg-white/90">
+                <Card className="w-[90vw] shadow-2xl backdrop-blur-sm bg-white/90">
                     <CardHeader className="space-y-1">
                         <motion.div variants={itemVariants}>
                             <CardTitle className="text-2xl text-center font-bold">Sign in</CardTitle>
@@ -181,12 +181,12 @@ export default function LoginPage() {
                     <CardFooter>
                         <motion.div variants={itemVariants} className="w-full">
                             <Link href="/reset" passHref>
-                                <Button variant="link" className="w-full text-sm text-gray-600 hover:text-gray-800">
+                                <Button variant="link" className="w-36 text-sm text-gray-600 hover:text-gray-800">
                                     Forgot password?
                                 </Button>
                             </Link>
                         </motion.div>
-                        <motion.div variants={itemVariants} className="w-full">
+                        <motion.div variants={itemVariants} className="w-36">
                             <Link href="/signup" passHref>
                                 <Button variant="outline" className="w-full">
                                     Create an account

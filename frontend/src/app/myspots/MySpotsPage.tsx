@@ -2,7 +2,7 @@
 
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getOwnerSpots, deleteParkingSpot } from '@/features/owner/ownerSlice'
 import ImageWrapper from "@/components/custom/ImageWrapper";
+import EditSpotModal from '@/components/custom/EditSpotModal' // Import the modal
 
 export default function MySpotsPage() {
     const isLoggedIn = useAppSelector(state => state.user.isLoggedIn)
@@ -38,6 +39,20 @@ export default function MySpotsPage() {
         if (confirmDelete) {
             dispatch(deleteParkingSpot(id))
         }
+    }
+
+    // Modal state
+    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+    const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null);
+
+    const openModal = (spot: ParkingSpace) => {
+        setSelectedSpot(spot);
+        setIsModalOpen(true);
+    }
+
+    const closeModal = () => {
+        setSelectedSpot(null);
+        setIsModalOpen(false);
     }
 
     const emptySpots = (
@@ -108,7 +123,7 @@ export default function MySpotsPage() {
                                 <p className="text-lg font-bold mb-4">${spot.pricing_info.base_price}/hour</p>
                             )}
                             <div className="flex justify-between">
-                                <Button variant="outline" size="sm" className="flex-1 mr-2" onClick={() => router.push(`/edit/${spot.id}`)}>
+                                <Button variant="outline" size="sm" className="flex-1 mr-2" onClick={() => openModal(spot)}>
                                     <Edit className="w-4 h-4 mr-2" />
                                     Edit
                                 </Button>
@@ -184,6 +199,15 @@ export default function MySpotsPage() {
                     )}
                 </motion.div>
             </div>
+
+            {/* Edit Spot Modal */}
+            {selectedSpot && (
+                <EditSpotModal
+                    isOpen={isModalOpen}
+                    onClose={closeModal}
+                    spot={selectedSpot}
+                />
+            )}
         </div>
     )
 }

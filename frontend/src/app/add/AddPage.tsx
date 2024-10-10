@@ -21,18 +21,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import { Camera, X, Upload, ArrowLeft, MapPin } from 'lucide-react';
 import Webcam from 'react-webcam';
-import { TimeSlot } from '@/types/type'; // Ensure DaysOfWeek enum is imported
+import { DaysOfWeek } from '@/types/type'; // Ensure DaysOfWeek enum is imported
 
 // Define days of the week enum
-export enum DaysOfWeek {
-  Monday = 'Monday',
-  Tuesday = 'Tuesday',
-  Wednesday = 'Wednesday',
-  Thursday = 'Thursday',
-  Friday = 'Friday',
-  Saturday = 'Saturday',
-  Sunday = 'Sunday',
-}
 
 const formatTime = (time: string): string => {
   return time; // Keeping time as "HH:mm" since backend expects time-only strings

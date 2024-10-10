@@ -92,7 +92,7 @@ export default function SignUpPage() {
                 initial="hidden"
                 animate="visible"
             >
-                <Card className="w-[400px] shadow-2xl backdrop-blur-sm bg-white/90">
+                <Card className="w-80 shadow-2xl backdrop-blur-sm bg-white/90">
                     <CardHeader className="space-y-1">
                         <motion.div variants={itemVariants}>
                             <CardTitle className="text-2xl text-center font-bold">Create an Account</CardTitle>

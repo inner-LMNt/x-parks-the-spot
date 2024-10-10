@@ -57,6 +57,22 @@ export const deleteParkingSpot = createAsyncThunk<
         return rejectWithValue(error.response?.data?.error || "Failed to delete the spot");
     }
 });
+// Async thunk to update a parking spot
+export const updateParkingSpot = createAsyncThunk<
+    ParkingSpace, // Return type: Updated ParkingSpace
+    { id: string; data: Partial<ParkingSpace> & { requireReverification?: boolean } }, // Argument type
+    { rejectValue: string }
+>(
+    "owner/updateSpot",
+    async ({ id, data }, { rejectWithValue }) => {
+        try {
+            const response = await axios.patch(`/parking-spaces/${id}`, data);
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.error || "Failed to update parking spot");
+        }
+    }
+);
 
 const ownerSlice = createSlice({
     name: "owner",
