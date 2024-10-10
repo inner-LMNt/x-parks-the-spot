@@ -50,6 +50,7 @@ export default function SearchPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [navigationMode, setNavigationMode] = useState(false);
   const [reachedDestination, setReachedDestination] = useState(false);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
   const onLoadAutocomplete = (autocompleteInstance: google.maps.places.Autocomplete) => {
     setAutocomplete(autocompleteInstance);
@@ -285,6 +286,7 @@ export default function SearchPage() {
             lng: position.coords.longitude,
           };
           setUserLocation(location);
+          updateCurrentStep(location);
 
           const distance = calculateDistance(location, {
             lat: selectedSpot.location.latitude,
@@ -317,18 +319,42 @@ export default function SearchPage() {
 
   const calculateDistance = (location1: google.maps.LatLngLiteral, location2: google.maps.LatLngLiteral) => {
     const R = 6371e3; // meters
-    const φ1 = location1.lat * Math.PI / 180; // φ, λ in radians
-    const φ2 = location2.lat * Math.PI / 180;
-    const Δφ = (location2.lat - location1.lat) * Math.PI / 180;
-    const Δλ = (location2.lng - location1.lng) * Math.PI / 180;
+    const a1 = location1.lat * Math.PI / 180; // a, b in radians
+    const a2 = location2.lat * Math.PI / 180;
+    const da = (location2.lat - location1.lat) * Math.PI / 180;
+    const db = (location2.lng - location1.lng) * Math.PI / 180;
 
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-      Math.cos(φ1) * Math.cos(φ2) *
-      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const a = Math.sin(da / 2) * Math.sin(da / 2) +
+      Math.cos(a1) * Math.cos(a2) *
+      Math.sin(db / 2) * Math.sin(db / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     const distance = R * c; // in meters
-    return distance * 3.28084; // convert to feet
+    return distance; // convert to feet by multiplying 3.28084
+  };
+
+  const updateCurrentStep = (userLocation: google.maps.LatLngLiteral) => {
+    if (directions) {
+      const steps = directions.routes[0].legs[0].steps;
+      let closestStepIndex = null;
+      let closestDistance = Infinity;
+
+      steps.forEach((step, index) => {
+        const stepLocation = {
+          lat: step.end_location.lat(),
+          lng: step.end_location.lng(),
+        };
+        const distance = calculateDistance(userLocation, stepLocation);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestStepIndex = index;
+        }
+      });
+
+      if (closestStepIndex !== null) {
+        setCurrentStepIndex(closestStepIndex);
+      }
+    }
   };
 
   const handleSliderChange = (value: number[]) => {
@@ -473,6 +499,7 @@ export default function SearchPage() {
           height: isMapExpanded ? `calc(100vh - 64px)` : '50vh',
           flexShrink: 0,
           position: 'relative',
+          width: sidebarOpen ? '60%' : '100%',
         }}
       >
         <LoadScriptNext googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
@@ -481,7 +508,7 @@ export default function SearchPage() {
           <GoogleMap
             mapContainerStyle={{ width: '100%', height: '100%' }}
             center={mapCenter}
-            zoom={14}
+            zoom={navigationMode ? 50 : 15}
             options={{
               mapTypeControl: false,
               fullscreenControl: false,
@@ -648,7 +675,10 @@ export default function SearchPage() {
                   <h3 className="text-md font-semibold">To: {selectedSpot?.location.latitude}, {selectedSpot?.location.longitude}</h3>
                   <ol className="list-decimal list-inside mt-4">
                     {directions.routes[0].legs[0].steps.map((step, index) => (
-                      <li key={index} className="mb-2">
+                      <li
+                        key={index}
+                        className={`mb-3 ${index === currentStepIndex ? "border-l-4 border-blue-500 pl-2 bg-gray-200" : ""}`}
+                      >
                         <div>
                           <span dangerouslySetInnerHTML={{ __html: step.instructions }} />
                           <div className="text-sm text-gray-600">
