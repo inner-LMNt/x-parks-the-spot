@@ -1,8 +1,8 @@
 from xpark.logic.cars import (
     get_user_cars,
     add_car_info,
-    update_car_info_logic,
-    delete_car_info_logic,
+    update_car,
+    delete_car,
 )
 from . import bp
 from flask import request
@@ -15,9 +15,6 @@ import uuid
 @bp.get("")
 @require_logged_in_user
 def get_user_cars_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    """
-    Fetch current user's car information.
-    """
     match get_user_cars(user_id):
         case Ok(cars):
             return cars, 200
@@ -28,14 +25,13 @@ def get_user_cars_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 @bp.post("")
 @require_logged_in_user
 def add_car_info_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    """
-    Add new car information.
-    """
-    data = request.get_json()
-    if not data:
-        return {"err": "Invalid input"}, 400
-
-    match add_car_info(user_id, data):
+    assert request.json
+    match add_car_info(
+        user_id,
+        make=request.json["make"],
+        model=request.json["model"],
+        license_plate=request.json["license_plate"],
+    ):
         case Ok(car_info):
             return car_info, 201
         case Err(e):
@@ -47,22 +43,20 @@ def add_car_info_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 
 @bp.patch("<car_id>")
 @require_logged_in_user
-def update_car_info_route(
-    car_id: str, token: str, user_id: uuid.UUID
-) -> Tuple[Any, int]:
-    """
-    Update a car's information.
-    """
-    data = request.get_json()
-    if not data:
-        return {"error": "Invalid input"}, 400
+def update(car_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    car_uuid = uuid.UUID(car_id)
 
-    try:
-        car_uuid = uuid.UUID(car_id)
-    except ValueError:
-        return {"error": "Invalid car ID"}, 400
+    # For typing, we already know it exists
+    assert request.json
 
-    match update_car_info_logic(user_id, car_uuid, data):
+    # We're using .get here because we actually don't care if the value is null
+    match update_car(
+        user_id,
+        car_uuid,
+        make=request.json.get("make"),
+        model=request.json.get("model"),
+        license_plate=request.json.get("license_plate"),
+    ):
         case Ok(car_info):
             return car_info, 200
         case Err(e):
@@ -76,18 +70,10 @@ def update_car_info_route(
 
 @bp.delete("<car_id>")
 @require_logged_in_user
-def delete_car_info_route(
-    car_id: str, token: str, user_id: uuid.UUID
-) -> Tuple[Any, int]:
-    """
-    Delete a car.
-    """
-    try:
-        car_uuid = uuid.UUID(car_id)
-    except ValueError:
-        return {"error": "Invalid car ID"}, 400
+def delete(car_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    car_uuid = uuid.UUID(car_id)
 
-    match delete_car_info_logic(user_id, car_uuid):
+    match delete_car(user_id, car_uuid):
         case Ok(_):
             return {"message": "Car deleted successfully."}, 200
         case Err(e):
