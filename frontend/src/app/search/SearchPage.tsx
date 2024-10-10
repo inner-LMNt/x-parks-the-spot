@@ -199,11 +199,11 @@ export default function SearchPage() {
 
   // Get directions to the selected parking spot
   const getDirections = () => {
-    if (mapCenter && selectedSpot) {
+    if (userLocation && selectedSpot) {
       const directionsService = new window.google.maps.DirectionsService();
       directionsService.route(
         {
-          origin: mapCenter,
+          origin: userLocation,
           destination: {
             lat: selectedSpot.location.latitude,
             lng: selectedSpot.location.longitude,
