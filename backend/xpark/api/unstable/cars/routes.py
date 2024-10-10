@@ -19,7 +19,7 @@ def get_user_cars_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         case Ok(cars):
             return cars, 200
         case Err(e):
-            return {"err": str(e)}, 500
+            return {"err": e}, 500
 
 
 @bp.post("")
@@ -35,10 +35,10 @@ def add_car_info_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         case Ok(car_info):
             return car_info, 201
         case Err(e):
-            if "not authorized" in str(e):
-                return {"error": str(e)}, 403
+            if "not authorized" in e:
+                return {"err": e}, 403
             else:
-                return {"error": str(e)}, 400
+                return {"err": e}, 400
 
 
 @bp.patch("<car_id>")
@@ -60,12 +60,12 @@ def update(car_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         case Ok(car_info):
             return car_info, 200
         case Err(e):
-            if "not authorized" in str(e):
-                return {"error": str(e)}, 403
-            elif "not found" in str(e):
-                return {"error": str(e)}, 404
+            if "not authorized" in e:
+                return {"err": e}, 403
+            elif "not found" in e:
+                return {"err": e}, 404
             else:
-                return {"error": str(e)}, 400
+                return {"err": e}, 400
 
 
 @bp.delete("<car_id>")
@@ -77,9 +77,9 @@ def delete(car_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         case Ok(_):
             return {"message": "Car deleted successfully."}, 200
         case Err(e):
-            if "not authorized" in str(e):
-                return {"error": str(e)}, 403
-            elif "not found" in str(e):
-                return {"error": str(e)}, 404
+            if "not authorized" in e:
+                return {"err": e}, 403
+            elif "not found" in e:
+                return {"err": e}, 404
             else:
-                return {"error": str(e)}, 400
+                return {"err": e}, 400
