@@ -35,6 +35,8 @@
     "@radix-ui/react-toast": "^1.2.1",
     "@react-google-maps/api": "^2.19.3",
     "@reduxjs/toolkit": "^2.2.7",
+    "@zxcvbn-ts/core": "^3.0.4",
+    "@zxcvbn-ts/language-common": "^3.0.4",
     "axios": "^1.7.7",
     "date-fns": "^4.1.0",
     "framer-motion": "^11.5.4",

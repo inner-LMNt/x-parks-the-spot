@@ -6,6 +6,8 @@ from xpark.logic.user import (
     handle_user_registration,
     handle_delete_account_request,
     handle_confirm_delete,
+    handle_password_reset_request,
+    handle_password_reset_confirmation,
 )
 
 from flask import request
@@ -78,6 +80,28 @@ def confirm_delete_account(token: str) -> Tuple[Any, int]:
             return {"message": "Account deleted successfully"}, 200
         case Err(e):
             return {"err": e}, 403
+
+
+@bp.post("password-reset-request")
+def reset_password_request() -> Tuple[Any, int]:
+    email = request.json["email"]  # type: ignore
+
+    match handle_password_reset_request(email):
+        case Ok(_):
+            return {"message": "Password reset email sent"}, 200
+        case Err(e):
+            return {"err": e}, 403
+
+
+@bp.post("/reset-password/<token>")
+def reset_password(token: str) -> Tuple[Any, int]:
+    new_password = request.json["new_password"]  # type: ignore
+
+    match handle_password_reset_confirmation(token, new_password):
+        case Err(e):
+            return {"err": e}, 403
+        case Ok(_):
+            return {"message": "Password reset successfully"}, 200
 
 
 # @bp.get("id")
