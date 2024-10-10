@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,16 +10,101 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getOwnerSpots } from '@/features/owner/ownerSlice'
+import { set } from 'date-fns'
 
 export default function MySpotsPage() {
     const router = useRouter()
     const dispatch = useAppDispatch()
 
-    const { freeSpots, paidSpots, loading, error } = useAppSelector(state => state.owner)
+    const { loading, error } = useAppSelector(state => state.owner) // freeSpots, paidSpots, 
 
-    useEffect(() => {
-        dispatch(getOwnerSpots({ paid_status: 'ALL' }))
-    }, [dispatch])
+    const [freeSpots, setFreeSpots] = React.useState<ParkingSpace[]>([]) // fake
+    const [paidSpots, setPaidSpots] = React.useState<ParkingSpace[]>([]) // fake
+    const [isModalOpen, setIsModalOpen] = useState(false)
+    const [currentSpot, setCurrentSpot] = useState<ParkingSpace | null>(null)
+    const [editedAddress, setEditedAddress] = useState('')
+
+    const fakeResponse = { // fake
+        freeSpots: [
+            {
+                id: '1',
+                is_paid: false,
+                location: {
+                    address: '1234 Elm St',
+                    latitude: 37.7749,
+                    longitude: -122.4194,
+                },
+                availability_schedule: [
+                    {
+                        day_of_week: "Monday" as const,
+                        start_time: '2021-07-10T09:00:00Z',
+                        end_time: '2021-07-10T17:00:00Z',
+                    },
+                ],
+            },
+            {
+                id: '2',
+                is_paid: false,
+                location: {
+                    address: '5678 Oak St',
+                    latitude: 37.7749,
+                    longitude: -122.4194,
+                },
+                availability_schedule: [
+                    {
+                        day_of_week: "Monday" as const,
+                        start_time: '2021-07-10T09:00:00Z',
+                        end_time: '2021-07-10T17:00:00Z',
+                    },
+                ],
+            },
+        ],
+        paidSpots: [
+            {
+                id: '3',
+                is_paid: true,
+                location: {
+                    address: '91011 Pine St',
+                    latitude: 37.7749,
+                    longitude: -122.4194,
+                },
+                availability_schedule: [
+                    {
+                        day_of_week: "Monday" as const,
+                        start_time: '2021-07-10T09:00:00Z',
+                        end_time: '2021-07-10T17:00:00Z',
+                    },
+                ],
+                pricing_info: {
+                    base_price: 10,
+                },
+            },
+            {
+                id: '4',
+                is_paid: true,
+                location: {
+                    address: '121314 Maple St',
+                    latitude: 37.7749,
+                    longitude: -122.4194,
+                },
+                availability_schedule: [
+                    {
+                        day_of_week: "Monday" as const,
+                        start_time: '2021-07-10T09:00:00Z',
+                        end_time: '2021-07-10T17:00:00Z',
+                    },
+                ],
+                pricing_info: {
+                    base_price: 15,
+                },
+            },
+        ],
+    }
+
+    // useEffect(() => { // real
+    //     dispatch(getOwnerSpots({ paid_status: 'ALL' }))
+    // }, [dispatch])
+
 
     const handleDelete = async (id: string) => {
         try {
@@ -29,12 +114,33 @@ export default function MySpotsPage() {
             if (response.ok) {
                 // You might want to dispatch an action to remove the spot from the state
                 console.log('Spot deleted successfully')
+                setFreeSpots(freeSpots.filter(spot => spot.id !== id)) // fake
+                setPaidSpots(paidSpots.filter(spot => spot.id !== id)) // fake
             } else {
                 throw new Error('Failed to delete spot')
             }
         } catch (error) {
             console.error('Error deleting spot:', error)
         }
+    }
+
+    useEffect(() => {  // fake
+        setFreeSpots(fakeResponse.freeSpots);
+        setPaidSpots(fakeResponse.paidSpots);
+    }, [])
+
+    const handleEdit = (spot: ParkingSpace) => { // fake
+        setCurrentSpot(spot)
+        setEditedAddress(spot.location.address || '')
+        setIsModalOpen(true)
+    }
+
+    const handleSave = () => { // fake
+        if (!currentSpot) return
+        const updatedSpot = { ...currentSpot, location: { ...currentSpot.location, address: editedAddress } }
+        setFreeSpots(freeSpots.map(spot => (spot.id === currentSpot.id ? updatedSpot : spot)))
+        setPaidSpots(paidSpots.map(spot => (spot.id === currentSpot.id ? updatedSpot : spot)))
+        setIsModalOpen(false)
     }
 
     const emptySpots = (
@@ -59,9 +165,9 @@ export default function MySpotsPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {spots.map((spot) => (
                 <motion.div key={spot.id}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.3 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
                 >
                     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
                         <CardHeader className="bg-gray-50">
@@ -84,7 +190,8 @@ export default function MySpotsPage() {
                                 <p className="text-lg font-bold mb-4">${spot.pricing_info.base_price}/hour</p>
                             )}
                             <div className="flex justify-between">
-                                <Button variant="outline" size="sm" className="flex-1 mr-2" onClick={() => router.push(`/edit/${spot.id}`)}>
+                                {/* <Button variant="outline" size="sm" className="flex-1 mr-2" onClick={() => router.push(`/edit/${spot.id}`)}> */}
+                                <Button variant="outline" size="sm" className="flex-1 mr-2" onClick={() => handleEdit(spot)}>
                                     <Edit className="w-4 h-4 mr-2" />
                                     Edit
                                 </Button>
@@ -114,8 +221,8 @@ export default function MySpotsPage() {
 
                     {loading ? (
                         <p>Loading...</p>
-                    ) : error ? (
-                        <p>Error: {error}</p>
+                        // ) : error ? (
+                        //     <p>Error: {error}</p>
                     ) : freeSpots.length === 0 && paidSpots.length === 0 ? (
                         emptySpots
                     ) : (
@@ -136,7 +243,6 @@ export default function MySpotsPage() {
                         </>
                     )}
 
-
                     {(freeSpots.length > 0 || paidSpots.length > 0) && (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
@@ -154,6 +260,31 @@ export default function MySpotsPage() {
                     )}
                 </motion.div>
             </div>
+
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+                        <h2 className="text-xl font-bold mb-4">Edit Spot</h2>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                            Address
+                            <input
+                                type="text"
+                                value={editedAddress}
+                                onChange={(e) => setEditedAddress(e.target.value)}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            />
+                        </label>
+                        <div className="flex justify-end mt-4">
+                            <Button variant="outline" className="mr-2" onClick={() => setIsModalOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={handleSave}>
+                                Save
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
