@@ -42,12 +42,11 @@ export default function SearchPage() {
   const [searchRadius, setSearchRadius] = useState<number>(5);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [mapCenter, setMapCenter] = useState<google.maps.LatLngLiteral>(default_center);
-  const [isMapExpanded, setIsMapExpanded] = useState(true);
+  const [isListExpanded, setIsListExpanded] = useState(true);
   const [geoEnabled, setGeoEnabled] = useState(false);
   const [address, setAddress] = useState<string>('');
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [navigationMode, setNavigationMode] = useState(false);
   const [reachedDestination, setReachedDestination] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -58,6 +57,7 @@ export default function SearchPage() {
 
   const mapRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const navigationCardRef = useRef<HTMLDivElement>(null);
   const currentUrl = usePathname();
 
   // Fetch user location on component mount
@@ -220,6 +220,7 @@ export default function SearchPage() {
           if (status === window.google.maps.DirectionsStatus.OK) {
             setDirections(result);
             setNavigationMode(true);
+            setIsListExpanded(false);
           } else {
             console.error(`error fetching directions ${result}`);
           }
@@ -235,7 +236,7 @@ export default function SearchPage() {
     setIsSearchOpen(!isSearchOpen);
   };
   const handleArrowClick = () => {
-    setIsMapExpanded(!isMapExpanded);
+    setIsListExpanded(!isListExpanded);
   };
 
   // Scroll handler for the parking spots list
@@ -244,9 +245,9 @@ export default function SearchPage() {
       if (listRef.current) {
         const scrollTop = listRef.current.scrollTop;
         if (scrollTop > 0) {
-          setIsMapExpanded(false);
+          setIsListExpanded(true);
         } else {
-          setIsMapExpanded(true);
+          setIsListExpanded(false);
         }
       }
     };
@@ -267,10 +268,8 @@ export default function SearchPage() {
   useEffect(() => {
     if (directions) {
       setNavigationMode(true);
-      setSidebarOpen(true);
     } else {
       setNavigationMode(false);
-      setSidebarOpen(false);
     }
   }, [directions]);
 
@@ -381,6 +380,24 @@ export default function SearchPage() {
     }
     router.push(`/bookings/${parkingSpaceId}/reserve?previousUrl=${encodeURIComponent(currentUrl ?? '/search')}`);
   }
+
+  useEffect(() => {
+    const adjustMapHeight = () => {
+      if (navigationCardRef.current) {
+        const navigationCardHeight = navigationCardRef.current.offsetHeight;
+        if (mapRef.current) {
+          mapRef.current.style.height = `calc(100vh - 64px - ${navigationCardHeight}px)`;
+        }
+      }
+    };
+
+    adjustMapHeight();
+    window.addEventListener('resize', adjustMapHeight);
+
+    return () => {
+      window.removeEventListener('resize', adjustMapHeight);
+    };
+  }, []);
 
   return (domLoaded &&
     <div
@@ -496,10 +513,10 @@ export default function SearchPage() {
         ref={mapRef}
         className={`transition-all duration-300`}
         style={{
-          height: isMapExpanded ? `calc(100vh - 64px)` : '50vh',
+          height: !isListExpanded ? `calc(100vh - 64px)` : navigationMode ? `calc(100vh - 64px - ${navigationCardRef.current?.offsetHeight}px)` : `50vh`,
           flexShrink: 0,
           position: 'relative',
-          width: sidebarOpen ? '60%' : '100%',
+          width: '100%',
         }}
       >
         <LoadScriptNext googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
@@ -577,7 +594,7 @@ export default function SearchPage() {
 
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
           <button onClick={handleArrowClick} className="focus:outline-none">
-            {isMapExpanded ? (
+            {!isListExpanded ? (
               <motion.div
                 animate={{ y: [0, 10, 0] }}
                 transition={{ repeat: Infinity, duration: 1 }}
@@ -631,13 +648,12 @@ export default function SearchPage() {
         </div>
       </div>
 
-      {/* magigation sidebar */}
+      {/* navigation stuff */}
       <div
-        className={
-          'fixed top-0 right-0 h-full w-2/5 bg-gray-100 p-4 transition-transform duration-300 transform overflow-y-auto ' +
-          (sidebarOpen ? 'translate-x-0' : 'translate-x-full')
-        }
-        style={{ height: 'calc(100vh - 64px)' }}
+        ref={navigationCardRef}
+        className={`fixed bottom-0 left-0 w-full bg-gray-100 p-4 transition-transform duration-300 transform ${navigationMode ? 'translate-y-0' : 'translate-y-full'
+          }`}
+        style={{ bottom: '64px', height: 'auto' }}
       >
         <Card className="shadow-sm">
           <CardHeader className="flex justify-between items-center">
@@ -673,22 +689,31 @@ export default function SearchPage() {
                 <div>
                   <h3 className="text-md font-semibold">From: {userLocation?.lat}, {userLocation?.lng}</h3>
                   <h3 className="text-md font-semibold">To: {selectedSpot?.location.latitude}, {selectedSpot?.location.longitude}</h3>
-                  <ol className="list-decimal list-inside mt-4">
-                    {directions.routes[0].legs[0].steps.map((step, index) => (
-                      <li
-                        key={index}
-                        className={`mb-3 ${index === currentStepIndex ? "border-l-4 border-blue-500 pl-2 bg-gray-200" : ""}`}
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={() => setCurrentStepIndex(currentStepIndex - 1)}
+                        disabled={currentStepIndex === 0}
+                        className="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded focus:outline-none"
                       >
-                        <div>
-                          <span dangerouslySetInnerHTML={{ __html: step.instructions }} />
-                          <div className="text-sm text-gray-600">
-                            <p>Distance: {step.distance ? step.distance.text : ''}</p>
-                            <p>Duration: {step.duration ? step.duration.text : ''}</p>
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
+                        <ChevronLeft size={16} />
+                      </button>
+                      <h3 className="text-md font-semibold">Step {currentStepIndex + 1}</h3>
+                      <button
+                        onClick={() => setCurrentStepIndex(currentStepIndex + 1)}
+                        disabled={currentStepIndex === directions.routes[0].legs[0].steps.length - 1}
+                        className="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded focus:outline-none"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+                    <div className="w-8"></div>
+                    <span dangerouslySetInnerHTML={{ __html: directions.routes[0].legs[0].steps[currentStepIndex].instructions }} />
+                    <div className="text-sm text-gray-600">
+                      <p>Distance: {directions.routes[0].legs[0].steps[currentStepIndex].distance?.text ?? ''}</p>
+                      <p>Duration: {directions.routes[0].legs[0].steps[currentStepIndex].duration?.text ?? ''}</p>
+                    </div>
+                  </div>
                 </div>
               )
             ) : (
@@ -696,31 +721,6 @@ export default function SearchPage() {
             )}
           </CardContent>
         </Card>
-
-        {/* sidebar button */}
-        <div className="absolute top-1/2 right-full transform -translate-y-1/2 -translate-x-1/2">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="focus:outline-none">
-            {sidebarOpen ? (
-              <motion.div
-                animate={{ x: [0, 10, 0] }}
-                transition={{ repeat: Infinity, duration: 1 }}
-              >
-                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center drop-shadow-md">
-                  <ChevronRight size={24} className="text-gray-500" />
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                animate={{ x: [0, 10, 0] }}
-                transition={{ repeat: Infinity, duration: 1 }}
-              >
-                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center drop-shadow-md">
-                  <ChevronLeft size={24} className="text-gray-500" />
-                </div>
-              </motion.div>
-            )}
-          </button>
-        </div>
       </div>
     </div>
   );
