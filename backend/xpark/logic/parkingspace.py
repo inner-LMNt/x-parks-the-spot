@@ -65,7 +65,7 @@ def create_free_parking_space(
                     is_paid,
                     location,
                     address,
-                    photos,
+                    photos
                 )
                 VALUES (%s, FALSE, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s, %s)
                 RETURNING id, created_at, updated_at

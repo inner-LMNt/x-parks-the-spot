@@ -26,27 +26,27 @@ def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any,
             return {"err": e}, 500
 
 
-@bp.post("/")
+@bp.post("")
 @require_logged_in_user
 def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     raw_data = request.form.get("data")
     image_file = request.files.get("image")
     if not raw_data:
-        return {"err", "Missing data"}, 400
+        return {"err": "Missing data"}, 400
     # FIXME: limit size of JSON
     try:
         data = cast(Dict[str, Any], load_json(raw_data))
     except JSONDecodeError:
-        return {"err", "bad input"}, 400
+        return {"err": "bad input"}, 400
 
     if not data:
-        return {"err", "Missing data"}, 400
+        return {"err": "Missing data"}, 400
     # TODO: get address from coordinates if not set
     if data["is_paid"]:
-        return {"err", "unimplemented"}, 501
+        return {"err": "unimplemented"}, 501
 
-    longitude = float(data["longitude"])
-    latitude = float(data["latitude"])
+    longitude = float(data["long"])
+    latitude = float(data["lat"])
 
     result = create_free_parking_space(
         user_id=user_id,
@@ -88,7 +88,7 @@ def update_parking_space_route(
         case Ok(a):
             is_paid = a
         case Err(_):
-            return {"err", "spot not found"}, 404
+            return {"err": "spot not found"}, 404
     if is_paid:
         match update_paid_parking_space(user_id, parking_space_uuid, data):
             case Ok(parking_space):
@@ -99,7 +99,7 @@ def update_parking_space_route(
                 )
                 return {"err": e}, status_code
     else:
-        return {"err", "not implemented: modifying free spot"}, 501
+        return {"err": "not implemented: modifying free spot"}, 501
 
 
 @bp.delete("<parking_space_id>")
