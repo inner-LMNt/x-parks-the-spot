@@ -68,7 +68,7 @@ export const updateParkingSpot = createAsyncThunk<
     async ({ id, data }, { rejectWithValue }) => {
         console.log(`Thunk invoked with ID: ${id} and data:`, data);
         try {
-            const response = await axios.patch(`/api/unstable/parking-spaces/${id}`, data);
+            const response = await axios.patch(`/parking-spaces/${id}`, data);
             console.log('Thunk response:', response.data);
             return response.data;
         } catch (error: any) {

@@ -14,7 +14,16 @@ import { updateParkingSpot, resetError } from '@/features/owner/ownerSlice';
 import { useToast } from '@/components/ui/use-toast';
 import { RootState, AppDispatch } from '@/store';
 import { ParkingSpace, DaysOfWeek, TimeSlot } from '@/types/type';
-import {AlertDialog} from '@/components/ui/alert-dialog'; // Ensure correct import
+import {
+    AlertDialog,
+    AlertDialogOverlay,
+    AlertDialogContent,
+    AlertDialogTitle,
+    AlertDialogDescription,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogFooter,
+} from '@/components/ui/alert-dialog'; // Import necessary sub-components
 
 interface EditSpotModalProps {
     isOpen: boolean;
@@ -73,7 +82,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
         price: spot.is_paid ? spot.pricing_info?.base_price || null : null,
         latitude: spot.location?.latitude.toString() || '',
         longitude: spot.location?.longitude.toString() || '',
-        is24Seven: false,
+        is24Seven: false, // Initially set to false; will be updated in useEffect
         timeSlot: {
             day_of_week: spot.availability_schedule?.map(s => s.day_of_week) || [],
             start_time: spot.availability_schedule?.[0]?.start_time || '',
@@ -86,33 +95,33 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
      */
     useEffect(() => {
         if (isOpen) {
-            // Set initial data
+            // Compute if the spot is 24/7
+            const hasAllTimesZero = spot.availability_schedule?.every(
+                s => s.start_time === '00:00' && s.end_time === '00:00'
+            );
+            const hasSevenDays = spot.availability_schedule?.length >= 7;
+            const computedIs24Seven = !!(hasAllTimesZero && hasSevenDays);
+
+            console.log('Availability Schedule:', spot.availability_schedule);
+            console.log('All times zero:', hasAllTimesZero);
+            console.log('Has seven days:', hasSevenDays);
+
+            setIs24Seven(computedIs24Seven);
+
+            // Set initial data with the correct is24Seven value
             initialData.current = {
                 name: spot.is_paid ? spot.name : '',
                 address: spot.is_paid ? spot.location.address : '',
                 price: spot.is_paid ? spot.pricing_info?.base_price || null : null,
                 latitude: spot.location?.latitude.toString() || '',
                 longitude: spot.location?.longitude.toString() || '',
-                is24Seven: false, // Will be set below
+                is24Seven: computedIs24Seven, // Correctly set to computed value
                 timeSlot: {
                     day_of_week: spot.availability_schedule?.map(s => s.day_of_week) || [],
                     start_time: spot.availability_schedule?.[0]?.start_time || '',
                     end_time: spot.availability_schedule?.[0]?.end_time || '',
                 }
             };
-
-            // Refactored is24Seven logic
-            console.log('Availability Schedule:', spot.availability_schedule);
-
-            const hasAllTimesZero = spot.availability_schedule?.every(
-                s => s.start_time === '00:00' && s.end_time === '00:00'
-            );
-            const hasSevenDays = spot.availability_schedule?.length >= 7;
-
-            console.log('All times zero:', hasAllTimesZero);
-            console.log('Has seven days:', hasSevenDays);
-
-            setIs24Seven(!!(hasAllTimesZero && hasSevenDays));
 
             setIsChanged(false);
             console.log('Initial data set:', initialData.current);
@@ -266,13 +275,15 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
     /**
      * Determine if changes require reverification (only address and location)
      */
-    const determineReverificationRequirements = (original: ParkingSpace, updated: Partial<ParkingSpace>): boolean => {
-        if (
-            updated.location?.address !== original.location.address ||
-            updated.location?.latitude !== original.location.latitude ||
-            updated.location?.longitude !== original.location.longitude
-        ) {
-            return true;
+    const determineReverificationRequirements = (
+        original: ParkingSpace,
+        updated: Partial<ParkingSpace>
+    ): boolean => {
+        if (updated.location) {
+            const addressChanged = updated.location.address !== original.location.address;
+            const latitudeChanged = updated.location.latitude !== original.location.latitude;
+            const longitudeChanged = updated.location.longitude !== original.location.longitude;
+            return addressChanged || latitudeChanged || longitudeChanged;
         }
         return false;
     };
@@ -293,6 +304,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
                 variant: 'destructive',
             });
             setIsSubmitting(false);
+            console.log('Validation failed:', availabilityError);
             return;
         }
 
@@ -304,6 +316,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
                 variant: 'destructive',
             });
             setIsSubmitting(false);
+            console.log('Price validation failed:', price);
             return;
         }
 
@@ -318,6 +331,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
                 variant: 'destructive',
             });
             setIsSubmitting(false);
+            console.log('Coordinate validation failed:', { latitude, longitude });
             return;
         }
 
@@ -350,43 +364,52 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
 
         // Compare and add changed fields
         if (spot.is_paid) {
+            // Name Change
             if (name !== initialData.current.name) {
                 updatedData.name = name;
+                console.log('Name changed:', name);
             }
-            if (address !== initialData.current.address) {
+
+            // Address or Location Change
+            if (
+                address !== initialData.current.address ||
+                latitude !== initialData.current.latitude ||
+                longitude !== initialData.current.longitude
+            ) {
                 updatedData.location = {
-                    ...updatedData.location,
-                    address,
+                    address: address !== initialData.current.address ? address : spot.location.address,
+                    latitude: latitude !== initialData.current.latitude ? parsedLatitude : spot.location.latitude,
+                    longitude: longitude !== initialData.current.longitude ? parsedLongitude : spot.location.longitude,
                 };
+                console.log('Location changed:', updatedData.location);
             }
+
+            // Price Change
             if (price !== initialData.current.price) {
                 updatedData.pricing_info = {
                     ...updatedData.pricing_info,
                     base_price: price!,
                 };
+                console.log('Price changed:', price);
             }
+
+            // Availability Change
             if (availabilityChanged) {
                 updatedData.availability_schedule = newAvailabilitySchedule;
+                console.log('Availability changed:', newAvailabilitySchedule);
             }
-        }
-
-        // Always update location if latitude or longitude changes
-        if (latitude !== initialData.current.latitude || longitude !== initialData.current.longitude) {
-            updatedData.location = {
-                ...updatedData.location,
-                latitude: parsedLatitude,
-                longitude: parsedLongitude,
-            };
         }
 
         // Determine if changes require reverification (only address and location)
         const changesRequireReverification = determineReverificationRequirements(spot, updatedData);
+        console.log('Changes require reverification:', changesRequireReverification);
 
         if (changesRequireReverification) {
             // Store updatedData temporarily and open confirmation dialog
             setPendingSubmit(updatedData);
             setIsReverifyOpen(true);
             setIsSubmitting(false);
+            console.log('Opening reverification dialog');
             return;
         }
 
@@ -398,6 +421,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
                 variant: 'info',
             });
             setIsSubmitting(false);
+            console.log('No changes detected');
             return;
         }
 
@@ -441,6 +465,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
             const updatedData = { ...pendingSubmit, requireReverification: true };
             setIsReverifyOpen(false);
             setPendingSubmit(null);
+            console.log('Confirmed reverification, submitting update with requireReverification: true');
             submitUpdate(updatedData);
         }
     };
@@ -453,6 +478,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
             description: 'Your changes were not saved.',
             variant: 'destructive',
         });
+        console.log('Cancelled reverification');
     };
 
     /**
@@ -468,7 +494,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
                 start_time: spot.availability_schedule?.[0]?.start_time || '',
                 end_time: spot.availability_schedule?.[0]?.end_time || '',
             });
-            setIs24Seven(false); // Reset is24Seven
+            setIs24Seven(false);
             setUserLocation(spot.location || null);
             setLatitude(spot.location?.latitude.toString() || '');
             setLongitude(spot.location?.longitude.toString() || '');
@@ -479,6 +505,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
             setPendingSubmit(null);
             setIsChanged(false);
             dispatch(resetError());
+            console.log('Form reset');
         }
     }, [isOpen, spot, dispatch]);
 
@@ -809,7 +836,6 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
                                         {/* Submit Button */}
                                         <Button
                                             type="submit"
-                                            onClick={handleSubmit} // Added onClick handler
                                             className={`w-full ${!isChanged ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'}`}
                                             disabled={isSubmitting || loading || !isChanged}
                                         >
@@ -829,17 +855,26 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
             </Transition>
 
             {/* Reverification Confirmation Dialog */}
-            <AlertDialog
-                isOpen={isReverifyOpen}
-                onClose={() => setIsReverifyOpen(false)}
-                title="Reverification Required"
-                description="Modifying the address or location of this parking spot requires reverification. This is a destructive action and will make your spot unavailable for new bookings until it's reverified. Do you want to proceed?"
-                confirmText="Proceed"
-                cancelText="Cancel"
-                onConfirm={handleConfirmReverification}
-                onCancel={handleCancelReverification}
-                variant="destructive"
-            />
+            <AlertDialog open={isReverifyOpen} onOpenChange={setIsReverifyOpen}>
+                <AlertDialogOverlay />
+                <AlertDialogContent>
+                    <AlertDialogTitle>Reverification Required</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Modifying the address or location of this parking spot requires reverification. This is a destructive action and will make your spot unavailable for new bookings until it's reverified. Do you want to proceed?
+                    </AlertDialogDescription>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={handleCancelReverification}>
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleConfirmReverification}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            Proceed
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 };
