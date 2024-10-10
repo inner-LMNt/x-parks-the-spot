@@ -86,10 +86,6 @@ def get_parking_space_route(parking_space_id: str) -> Tuple[Any, int]:
 def update_parking_space_route(
     parking_space_id: str, token: str, user_id: uuid.UUID
 ) -> Tuple[Any, int]:
-    data = request.get_json()
-    if not data:
-        return {"err": "Invalid input"}, 400
-
     parking_space_uuid = uuid.UUID(parking_space_id)
 
     match is_paid_spot(parking_space_uuid):
@@ -98,7 +94,9 @@ def update_parking_space_route(
         case Err(_):
             return {"err": "spot not found"}, 404
     if is_paid:
-        match update_paid_parking_space(user_id, parking_space_uuid, data):
+        match update_paid_parking_space(
+            user_id, parking_space_uuid, address=request.json.get("address")  # type: ignore
+        ):
             case Ok(parking_space):
                 return parking_space, 200
             case Err(e):

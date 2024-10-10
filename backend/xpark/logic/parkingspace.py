@@ -20,14 +20,12 @@ def get_owned_paid_parking_spaces(
             cur.execute(
                 """
                 SELECT 
-                    name, 
+                    id,
                     is_paid, 
                     verification_status, 
                     ST_Y(location::geometry) AS latitude, 
                     ST_X(location::geometry) AS longitude, 
                     address, 
-                    availability_schedule, 
-                    pricing_info,
                     photos,
                     created_at, 
                     updated_at
@@ -40,6 +38,8 @@ def get_owned_paid_parking_spaces(
 
             return Ok(rows)
 
+
+# FIXME: specify reservation times
 def create_paid_parking_space(
     user_id: uuid.UUID,
     image_file: Optional[FileStorage],
@@ -70,13 +70,20 @@ def create_paid_parking_space(
                 VALUES (%(user_id)s, TRUE, ST_SetSRID(ST_MakePoint(%(long)s, %(lat)s), 4326), %(addr)s, %(photos)s, 'pending')
                 RETURNING id, created_at, updated_at
                 """,
-                {"user_id": user_id, "long": longitude, "lat": latitude, "addr": address, "photos": photos},
+                {
+                    "user_id": user_id,
+                    "long": longitude,
+                    "lat": latitude,
+                    "addr": address,
+                    "photos": photos,
+                },
             )
             parking_space = cur.fetchone()
             if not parking_space:
                 return Err("Error creating parking space")
 
             return Ok(parking_space)
+
 
 def create_free_parking_space(
     user_id: uuid.UUID,
@@ -141,16 +148,10 @@ def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str
                 SELECT
                     owner,
                     is_paid,
-                    name, 
                     ST_X(location::geometry) AS longitude,
                     ST_Y(location::geometry) AS latitude,
-                    features,
-                    availability_schedule,
-                    pricing_info,
                     photos,
                     verification_status,
-                    dynamic_pricing_enabled,
-                    cancellation_policy,
                     created_at,
                     updated_at
                 FROM parking_spaces
@@ -168,7 +169,7 @@ def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str
 def update_paid_parking_space(
     user_id: uuid.UUID,
     parking_space_id: uuid.UUID,
-    name: Optional[str],
+    address: Optional[str],
 ) -> Result[Dict[str, Any], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -184,25 +185,21 @@ def update_paid_parking_space(
             cur.execute(
                 """
                 UPDATE parking_spaces SET
-                name = COALESCE(%s, name),
+                address = COALESCE(%s, address),
                 updated_at = NOW()
                 WHERE id = %s
                 RETURNING
-                    owner,
-                    name,
-                    ST_X(location::geometry) AS longitude,
-                    ST_Y(location::geometry) AS latitude,
-                    features,
-                    availability_schedule,
-                    pricing_info,
+                    id,
+                    is_paid, 
+                    verification_status, 
+                    ST_Y(location::geometry) AS latitude, 
+                    ST_X(location::geometry) AS longitude, 
+                    address, 
                     photos,
-                    verification_status,
-                    dynamic_pricing_enabled,
-                    cancellation_policy,
-                    created_at,
+                    created_at, 
                     updated_at
                 """,
-                (name,),
+                (address, parking_space_id),
             )
             parking_space = cur.fetchone()
             if not parking_space:
