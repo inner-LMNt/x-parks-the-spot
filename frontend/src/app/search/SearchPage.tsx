@@ -316,7 +316,7 @@ export default function SearchPage() {
   }, [navigationMode, selectedSpot]);
 
   const calculateDistance = (location1: google.maps.LatLngLiteral, location2: google.maps.LatLngLiteral) => {
-    const R = 6371e3; // metres
+    const R = 6371e3; // meters
     const φ1 = location1.lat * Math.PI / 180; // φ, λ in radians
     const φ2 = location2.lat * Math.PI / 180;
     const Δφ = (location2.lat - location1.lat) * Math.PI / 180;
@@ -327,7 +327,7 @@ export default function SearchPage() {
       Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-    const distance = R * c; // in metres
+    const distance = R * c; // in meters
     return distance * 3.28084; // convert to feet
   };
 
@@ -604,7 +604,7 @@ export default function SearchPage() {
         </div>
       </div>
 
-      {/* Sidebar on the right */}
+      {/* magigation sidebar */}
       <div
         className={
           'fixed top-0 right-0 h-full w-2/5 bg-gray-100 p-4 transition-transform duration-300 transform overflow-y-auto ' +
@@ -667,7 +667,7 @@ export default function SearchPage() {
           </CardContent>
         </Card>
 
-        {/* Button for opening/closing the sidebar */}
+        {/* sidebar button */}
         <div className="absolute top-1/2 right-full transform -translate-y-1/2 -translate-x-1/2">
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="focus:outline-none">
             {sidebarOpen ? (
