@@ -15,6 +15,7 @@ import { register_acc } from '@/features/user/userSlice';
 import {Logo} from '@/components/custom/TopLeftLogo'
 import {RegisterRequest} from "@/types/type";
 import {useAppSelector} from "@/store/hooks";
+import {zxcvbn} from "@zxcvbn-ts/core";
 type SignUpFormInputs = {
     name: string;
     email: string;
@@ -157,6 +158,11 @@ export default function SignUpPage() {
                                         minLength: {
                                             value: 8,
                                             message: "Password must be at least 8 characters"
+                                        },
+                                        validate: (val: string) => {
+                                            if(zxcvbn(val).score <3) {
+                                                return "Password is too weak"
+                                            }
                                         }
                                     })}
                                     className="transition-all duration-200 focus:ring-2 focus:ring-purple-400"

@@ -19,10 +19,11 @@ import {
     AlertDialogFooter,
     AlertDialogAction,
 } from '@/components/ui/alert-dialog';
-import {reset} from '@/features/user/userSlice';
+import {reset_request} from '@/features/user/userSlice';
 import {PasswordResetRequest} from "@/types/type";
 import {useAppDispatch} from "@/store/hooks";
 import {useAppSelector} from "@/store/hooks";
+import {zxcvbn} from "@zxcvbn-ts/core";
 import Link from "next/link"; // Adjust the path if needed
 
 type ForgotPasswordInputs = {
@@ -72,13 +73,13 @@ export default function ForgotPasswordPage() {
     const onSubmit = async (data: PasswordResetRequest) => {
         try {
             // @ts-ignore
-            const resultAction = await dispatch(reset(data.email));
+            const resultAction = await dispatch(reset_request(data.email));
 
-            if (reset.fulfilled.match(resultAction)) {
+            if (reset_request.fulfilled.match(resultAction)) {
                 // Password reset email sent successfully
                 console.log('Password reset email sent:', data);
                 setIsDialogOpen(true);
-            } else if (reset.rejected.match(resultAction)) {
+            } else if (reset_request.rejected.match(resultAction)) {
                 // Password reset failed
                 console.error('Password reset failed:', resultAction.payload);
                 // Optionally, display the error to the user

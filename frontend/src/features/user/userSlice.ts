@@ -134,13 +134,32 @@ export const logout = createAsyncThunk<
   }
 });
 
-export const reset = createAsyncThunk<
+export const reset_password = createAsyncThunk<void, { token: string; newPassword: string }, { rejectValue: string }>(
+    "user/reset_password",
+    async ({ token, newPassword }, { rejectWithValue }) => {
+        try {
+
+            const response = await axios.post(`auth/reset-password/${token}`, {
+                token,
+                newPassword,
+            });
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.status === 400) {
+                return rejectWithValue("Invalid token or password");
+            }
+            return rejectWithValue("Password reset failed");
+        }
+    }
+);
+
+export const reset_request = createAsyncThunk<
   void, // Return type of the payload creator
   string, // First argument to the payload creator (email)
   { rejectValue: string } // Types for ThunkAPI
->("user/reset", async (email: string, { rejectWithValue }) => {
+>("user/reset_request", async (email: string, { rejectWithValue }) => {
   try {
-    const response = await axios.post("auth/password-reset", {
+    const response = await axios.post("auth/password-reset-request", {
       email,
     } as PasswordResetRequest);
     return response.data;
@@ -169,7 +188,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof login.pending
           | typeof register_acc.pending
           | typeof logout.pending
-          | typeof reset.pending
+          | typeof reset_password.pending
         > => action.type.endsWith("/pending"),
         (state) => {
           state.loading = true;
@@ -185,7 +204,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof login.rejected
           | typeof register_acc.rejected
           | typeof logout.rejected
-          | typeof reset.rejected
+          | typeof reset_password.rejected
         > => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false;
@@ -212,7 +231,7 @@ const userSlice = createSlice<UserState, {}, "user">({
       )
 
       // Handle fulfilled actions for logout and reset
-      .addMatcher(isAnyOf(logout.fulfilled, reset.fulfilled), (state) => {
+      .addMatcher(isAnyOf(logout.fulfilled, reset_password.fulfilled), (state) => {
         state.loading = false;
         state.isLoggedIn = false;
         state.access_token = null;
