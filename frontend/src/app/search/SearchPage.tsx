@@ -50,6 +50,7 @@ export default function SearchPage() {
   const [navigationMode, setNavigationMode] = useState(false);
   const [reachedDestination, setReachedDestination] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [iconScale, setIconScale] = useState<google.maps.Size | null>(null);
 
   const onLoadAutocomplete = (autocompleteInstance: google.maps.places.Autocomplete) => {
     setAutocomplete(autocompleteInstance);
@@ -76,8 +77,8 @@ export default function SearchPage() {
 
           fetchAddressFromLocation(location); // Runtime error with this line, need to fix
         },
-        () => {
-          console.error("Error: The Geolocation service failed.");
+        (error) => {
+          console.error("Error: The Geolocation service failed.", error);
           setGeoEnabled(false);
         }
       );
@@ -89,6 +90,7 @@ export default function SearchPage() {
 
   useEffect(() => {
     if (useCurrentLocation && userLocation) {
+      console.log("Updating map center to user location:", userLocation);
       setMapCenter(userLocation);
     }
   }, [useCurrentLocation, userLocation]);
@@ -108,6 +110,8 @@ export default function SearchPage() {
     } catch (error) {
       console.error('Error fetching address:', error);
     }
+
+    setIconScale(new google.maps.Size(40, 40));
   };
 
   const enableGeolocation = (
@@ -121,6 +125,35 @@ export default function SearchPage() {
       </ol>
     </div>
   );
+
+  const pulsatingCircleSVG = `
+  <svg width="30" height="30" xmlns="http://www.w3.org/2000/svg">
+    <style>
+      @keyframes pulsate {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.7);
+          opacity: 0.5;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      .pulsating-circle {
+        animation: pulsate 1.7s infinite;
+        transform-origin: center;
+      }
+    </style>
+    <circle cx="15" cy="15" r="9" fill="#4285F4" />
+    <circle cx="15" cy="15" r="9" fill="rgba(66, 133, 244, 0.5)" class="pulsating-circle" />
+  </svg>
+  `;
+
+  const encodedSVG = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(pulsatingCircleSVG);
 
   // Handle search action
   const onSearch = async () => {
@@ -284,6 +317,7 @@ export default function SearchPage() {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           };
+          console.log("User location updated:", location);
           setUserLocation(location);
           updateCurrentStep(location);
 
@@ -314,7 +348,7 @@ export default function SearchPage() {
         navigator.geolocation.clearWatch(watchId);
       }
     };
-  }, [navigationMode, selectedSpot, navigator.geolocation]);
+  }, [navigationMode, selectedSpot]);
 
   const calculateDistance = (location1: google.maps.LatLngLiteral, location2: google.maps.LatLngLiteral) => {
     const R = 6371e3; // meters
@@ -404,6 +438,8 @@ export default function SearchPage() {
       className="min-h-screen bg-gray-50 text-gray-900 flex flex-col"
       style={{ height: '100vh', overflow: 'hidden' }}
     >
+      <script src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
+
       <motion.div
         className={`fixed top-2 w-full flex justify-center z-50 transition-all duration-300`}
         animate={{ opacity: isSearchOpen ? 1 : 0.6 }}
@@ -542,12 +578,12 @@ export default function SearchPage() {
                 onClick={() => handleSpotSelect(spot)}
               />
             ))}
-            {userLocation && useCurrentLocation && (
+            {userLocation && useCurrentLocation && iconScale && (
               <Marker
                 position={userLocation}
                 icon={{
-                  url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-                  // scaledSize: new google.maps.Size(40, 40),
+                  url: encodedSVG,
+                  scaledSize: iconScale,
                 }}
               />
             )}
@@ -657,19 +693,19 @@ export default function SearchPage() {
         style={{ bottom: '64px', height: 'auto' }}
       >
         <Card className="shadow-sm">
-          <CardHeader className="flex justify-between items-center">
-            <CardTitle className="text-lg">Directions</CardTitle>
-            {navigationMode && (
-              <button
-                onClick={() => {
-                  setNavigationMode(false);
-                  setDirections(null);
-                }}
-                className="px-4 py-2 bg-red-500 text-white text-sm font-semibold rounded hover:bg-red-700 focus:outline-none"
-              >
-                Exit Navigation
-              </button>
-            )}
+          <CardHeader className="flex flex-row justify-between items-center w-full">
+              <CardTitle className="text-lg">Directions</CardTitle>
+              {navigationMode && (
+                <button
+                  onClick={() => {
+                    setNavigationMode(false);
+                    setDirections(null);
+                  }}
+                  className="mt-2 px-3 py-2 bg-red-500 text-white text-sm font-semibold rounded hover:bg-red-700 focus:outline-none"
+                >
+                  Exit Navigation
+                </button>
+              )}
           </CardHeader>
           <CardContent>
             {navigationMode && directions ? (
@@ -688,10 +724,10 @@ export default function SearchPage() {
                 </div>
               ) : (
                 <div>
-                  <h3 className="text-md font-semibold">From: {userLocation?.lat}, {userLocation?.lng}</h3>
-                  <h3 className="text-md font-semibold">To: {selectedSpot?.location.latitude}, {selectedSpot?.location.longitude}</h3>
-                  <div className="border-b border-gray-300 my-4"></div>
-                  <div className="mt-4">
+                  {/* <h3 className="text-md font-semibold">From: {userLocation?.lat}, {userLocation?.lng}</h3>
+                  <h3 className="text-md font-semibold">To: {selectedSpot?.location.latitude}, {selectedSpot?.location.longitude}</h3> */}
+                  {/* <div className="border-b border-gray-300 my-4"></div> */}
+                  <div className="mt-0">
                     <h3 className="text-md font-semibold">Step {currentStepIndex + 1}</h3>
                     <div className="w-3"></div>
 
