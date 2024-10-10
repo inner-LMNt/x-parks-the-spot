@@ -1,25 +1,19 @@
-# xpark/logic/reservations.py
-
 import uuid
 from typing import Dict, Any, List
 from psycopg.rows import dict_row
-
 from xpark.utils.db import DB
 from result import Result, Ok, Err
 import datetime
-from datetime import timezone
-import logging
-from datetime import timezone, time as dt_time
+from enum import Enum
 
-logging.basicConfig(level=logging.DEBUG)
 
-logger = logging.getLogger(__name__)
+class ReservationStatus(Enum):
+    book = "book"
+    cancel = "cancel"
+    complete = "complete"
 
 
 def get_user_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], str]:
-    """
-    Fetch current user's reservations from the database.
-    """
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
@@ -44,18 +38,11 @@ def get_user_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], st
 
 def create_reservation(
     user_id: uuid.UUID,
-    parking_space_id: str,
+    parking_space_uuid: uuid.UUID,
     start_time: str,
     end_time: str,
-    car_info_id: str,
-    renter_id: str,
+    car_info_uuid: uuid.UUID,
 ) -> Result[Dict[str, Any], str]:
-    """
-    Create a new reservation.
-    """
-    parking_space_uuid = uuid.UUID(parking_space_id)
-    car_info_uuid = uuid.UUID(car_info_id)
-    renter_uuid = uuid.UUID(renter_id)
     start_dt = datetime.datetime.fromisoformat(start_time)
     end_dt = datetime.datetime.fromisoformat(end_time)
 
@@ -88,7 +75,7 @@ def create_reservation(
                 SELECT COUNT(*) 
                 FROM reservations
                 WHERE parking_space_id = %s
-                  AND status = 'booked'
+                  AND status = 'book'
                   AND (
                     (start_time < %s AND end_time > %s)
                   )
@@ -102,86 +89,8 @@ def create_reservation(
                     "Parking space is already reserved for the selected time slot."
                 )
 
-            # Function to check if reservation fits within availability_schedule
-            def is_within_availability(
-                start_dt: datetime.datetime,
-                end_dt: datetime.datetime,
-                availability: List[Dict[str, Any]],
-            ) -> bool:
-                """
-                Check if the reservation from start_dt to end_dt fits within the availability schedule.
-                """
-                # Build a mapping from day_of_week to list of (start_time, end_time)
-                availability_map = {}
-                for slot in availability:
-                    day = slot.get("day_of_week")
-                    start_time_str = slot.get("start_time")  # Assuming "HH:MM"
-                    end_time_str = slot.get("end_time")  # Assuming "HH:MM"
-
-                    if not all([day, start_time_str, end_time_str]):
-                        continue  # Skip invalid slots
-
-                    try:
-                        slot_start_time = datetime.datetime.strptime(
-                            start_time_str, "%H:%M"
-                        ).time()
-                        slot_end_time = datetime.datetime.strptime(
-                            end_time_str, "%H:%M"
-                        ).time()
-                    except ValueError:
-                        continue  # Skip slots with invalid time format
-
-                    if day not in availability_map:
-                        availability_map[day] = []
-                    availability_map[day].append((slot_start_time, slot_end_time))
-
-                # Iterate through each day in the reservation
-                current_dt = start_dt
-                while current_dt.date() <= end_dt.date():
-                    day_of_week = current_dt.strftime("%A")  # e.g., 'Monday'
-
-                    if day_of_week not in availability_map:
-                        logger.debug(f"No availability for {day_of_week}.")
-                        return False  # No availability for this day
-
-                    # Determine the reservation's time on this day
-                    if current_dt.date() == start_dt.date():
-                        day_start = current_dt.time()
-                    else:
-                        day_start = dt_time(0, 0)
-
-                    if current_dt.date() == end_dt.date():
-                        day_end = end_dt.time()
-                    else:
-                        day_end = dt_time(23, 59, 59)
-
-                    # Check if the reservation's time on this day fits within any available slot
-                    slots = availability_map[day_of_week]
-                    slot_fits = False
-                    for slot_start, slot_end in slots:
-                        # Handle 24-hour availability
-                        if slot_start == slot_end:
-                            slot_fits = True
-                            break
-
-                        if slot_start <= day_start and day_end <= slot_end:
-                            slot_fits = True
-                            break
-
-                    if not slot_fits:
-                        logger.debug(
-                            f"Reservation time on {day_of_week} from {day_start} to {day_end} does not fit within availability."
-                        )
-                        return False
-
-                    current_dt += datetime.timedelta(days=1)
-
-                return True
-
-            # Check availability
-            if not is_within_availability(start_dt, end_dt, availability_schedule):
-                return Err("Reservation times are outside of availability schedule.")
-
+        # Switch out the row_factory for dict_row because I don't want to refactor the above code just yet
+        with conn.cursor(row_factory=dict_row) as cur:
             # Insert the reservation
             cur.execute(
                 """
@@ -194,33 +103,21 @@ def create_reservation(
                     status,
                     created_at,
                     updated_at
-                ) VALUES (%s, %s, %s, %s, %s, 'booked', NOW(), NOW()) RETURNING id
+                ) VALUES (%s, %s, %s, %s, %s, 'book', NOW(), NOW())
+                RETURNING id, parking_space_id, start_time, end_time, car_info_id, status, created_at, updated_at
                 """,
                 (
                     parking_space_uuid,
                     start_dt,
                     end_dt,
                     car_info_uuid,
-                    renter_uuid,
+                    user_id,
                 ),
             )
 
-            # only an error would cause this to fail, and we should've returned a 500 before we reach here
-            # so it's fine to ignore the null check
-            (reservation_id,) = cur.fetchone()  # type: ignore
-
-            # Construct the response
-            reservation = {
-                "id": reservation_id,
-                "parking_space_id": parking_space_uuid,
-                "start_time": start_dt.isoformat(),
-                "end_time": end_dt.isoformat(),
-                "car_info_id": car_info_uuid,
-                "renter_id": renter_uuid,
-                "status": "booked",
-                "created_at": datetime.datetime.now(timezone.utc).isoformat(),
-                "updated_at": datetime.datetime.now(timezone.utc).isoformat(),
-            }
+            reservation = cur.fetchone()
+            if not reservation:
+                return Err("Unable to create reservation")
 
             return Ok(reservation)
 
@@ -228,9 +125,6 @@ def create_reservation(
 def get_reservation(
     user_id: uuid.UUID, reservation_id: uuid.UUID
 ) -> Result[Dict[str, Any], str]:
-    """
-    Get reservation details by ID, ensuring it belongs to the user.
-    """
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
@@ -257,90 +151,38 @@ def get_reservation(
             return Ok(reservation)
 
 
-def update_reservation_logic(
-    user_id: uuid.UUID, reservation_id: uuid.UUID, updates: Dict[str, Any]
+def update_reservation(
+    user_id: uuid.UUID,
+    reservation_id: uuid.UUID,
+    start_time: str | None = None,
+    end_time: str | None = None,
+    car_info_uuid: uuid.UUID | None = None,
 ) -> Result[Dict[str, Any], str]:
-    """
-    Update an existing reservation.
-    """
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
-            # Fetch the reservation
             cur.execute(
                 """
                 SELECT 
-                    id, 
-                    parking_space_id, 
-                    start_time, 
-                    end_time, 
-                    car_info_id, 
-                    renter_id,
-                    status,
-                    created_at,
-                    updated_at
+                id,
+                start_time,
+                end_time
                 FROM reservations
-                WHERE id = %s
+                WHERE id = %s AND renter_id = %s
                 """,
-                (str(reservation_id),),
+                (reservation_id, user_id),
             )
             reservation = cur.fetchone()
             if not reservation:
-                return Err("Reservation not found.")
+                return Err("Reservation not found")
 
-            (
-                id,
-                parking_space_id,
-                start_time,
-                end_time,
-                car_info_id,
-                renter_id,
-                status,
-                created_at,
-                updated_at,
-            ) = reservation
+            parking_space_id, original_start_time, original_end_time = reservation
 
-            if str(renter_id) != str(user_id):
-                return Err("User not authorized to update this reservation.")
-
-            # Only allow updating certain fields
-            allowed_fields = {"start_time", "end_time", "car_info_id", "status"}
-            set_clauses = []
-            values = []
-
-            for key, value in updates.items():
-                if key in allowed_fields:
-                    if key in {"start_time", "end_time"}:
-                        # Validate date format
-                        try:
-                            dt = datetime.datetime.fromisoformat(value)
-                            set_clauses.append(f"{key} = %s")
-                            values.append(dt)
-                        except ValueError:
-                            return Err(f"Invalid date format for {key}. Use ISO 8601.")
-                    elif key == "car_info_id":
-                        try:
-                            car_info_uuid = uuid.UUID(value)
-                            set_clauses.append(f"{key} = %s")
-                            values.append(str(car_info_uuid))
-                        except ValueError:
-                            return Err("Invalid UUID format for car_info_id.")
-                    elif key == "status":
-                        if value not in {"booked", "canceled", "completed"}:
-                            return Err("Invalid status value.")
-                        set_clauses.append(f"{key} = %s")
-                        values.append(value)
-
-            if not set_clauses:
-                return Err("No valid fields to update.")
+            new_start_time = start_time or original_start_time
+            new_end_time = end_time or original_end_time
 
             # If updating time, check for overlaps
-            new_start_time = updates.get("start_time", start_time.isoformat())
-            new_end_time = updates.get("end_time", end_time.isoformat())
-            try:
-                new_start_dt = datetime.datetime.fromisoformat(new_start_time)
-                new_end_dt = datetime.datetime.fromisoformat(new_end_time)
-            except ValueError:
-                return Err("Invalid date format. Use ISO 8601.")
+            new_start_dt = datetime.datetime.fromisoformat(new_start_time)
+            new_end_dt = datetime.datetime.fromisoformat(new_end_time)
 
             if new_end_dt <= new_start_dt:
                 return Err("End time must be after start time.")
@@ -351,317 +193,63 @@ def update_reservation_logic(
                 FROM reservations
                 WHERE parking_space_id = %s
                   AND id != %s
-                  AND status = 'booked'
+                  AND status = 'book'
                   AND (
                     (start_time < %s AND end_time > %s)
                   )
                 """,
                 (
-                    str(parking_space_id),
-                    str(reservation_id),
+                    parking_space_id,
+                    reservation_id,
                     new_end_dt,
                     new_start_dt,
                 ),
             )
-            (overlap_count,) = cur.fetchone()
+            (overlap_count,) = cur.fetchone()  # type: ignore
             if overlap_count > 0:
                 return Err(
                     "Parking space is already reserved for the selected time slot."
                 )
 
+        with conn.cursor(row_factory=dict_row) as cur:
             # Update the reservation
-            query = f"""
-                UPDATE reservations
-                SET {', '.join(set_clauses)}, updated_at = NOW()
+            cur.execute(
+                """
+                UPDATE reservations SET
+                start_time = %s,
+                end_time = %s,
+                updated_at = NOW()
                 WHERE id = %s
                 RETURNING id, parking_space_id, start_time, end_time, car_info_id, renter_id, status, created_at, updated_at
-            """
-            values.append(str(reservation_id))
-            cur.execute(query, tuple(values))
+                """,
+                (start_time, end_time),
+            )
             updated_reservation = cur.fetchone()
 
-            (
-                id,
-                parking_space_id,
-                start_time,
-                end_time,
-                car_info_id,
-                renter_id,
-                status,
-                created_at,
-                updated_at,
-            ) = updated_reservation
+            if not updated_reservation:
+                return Err("Error updating reservation")
 
-            # Commit the transaction
-            conn.commit()
-
-            reservation_data = {
-                "id": str(id),
-                "parking_space_id": str(parking_space_id),
-                "start_time": start_time.isoformat(),
-                "end_time": end_time.isoformat(),
-                "car_info_id": str(car_info_id),
-                "renter_id": str(renter_id),
-                "status": status,
-                "created_at": created_at.isoformat(),
-                "updated_at": updated_at.isoformat(),
-            }
-
-            return Ok(reservation_data)
+            return Ok(updated_reservation)
 
 
 def cancel_reservation_logic(
     user_id: uuid.UUID, reservation_id: uuid.UUID
 ) -> Result[None, str]:
-    """
-    Cancel a reservation.
-    """
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
-            # Fetch the reservation
-            cur.execute(
-                """
-                SELECT 
-                    parking_space_id, 
-                    status
-                FROM reservations
-                WHERE id = %s
-                """,
-                (str(reservation_id),),
-            )
-            reservation = cur.fetchone()
-            if not reservation:
-                return Err("Reservation not found.")
-
-            parking_space_id, status = reservation
-
-            if status == "canceled":
-                return Err("Reservation is already canceled.")
-
-            # Verify ownership
-            cur.execute(
-                """
-                SELECT renter_id
-                FROM reservations
-                WHERE id = %s
-                """,
-                (str(reservation_id),),
-            )
-            (renter_id,) = cur.fetchone()
-
-            if str(renter_id) != str(user_id):
-                return Err("User not authorized to cancel this reservation.")
-
-            # Update the reservation status to canceled
+            # Update the reservation if it exists and is valid
             cur.execute(
                 """
                 UPDATE reservations
-                SET status = 'canceled', updated_at = NOW()
-                WHERE id = %s
+                SET status = 'cancel', updated_at = NOW()
+                WHERE id = %s AND renter_id = %s AND status = 'book'
+                RETURNING status
                 """,
-                (str(reservation_id),),
+                (reservation_id, user_id),
             )
 
-            conn.commit()
+            reservation = cur.fetchone()
+            if not reservation:
+                return Err("Reservation not found")
 
             return Ok(None)
-
-
-def lock_parking_space(
-    user_id: uuid.UUID, parking_space_id: uuid.UUID, lock_duration: str
-) -> Result[Dict[str, Any], str]:
-    """
-    Lock a parking space for a specified duration.
-    lock_duration should be in ISO 8601 duration format, e.g., 'PT15M' for 15 minutes.
-    """
-    try:
-        # Parse lock_duration
-        if not lock_duration.startswith("PT"):
-            return Err(
-                "Invalid lock_duration format. Use ISO 8601 duration, e.g., 'PT15M'."
-            )
-
-        # Handle only minutes for simplicity
-        minutes_str = lock_duration[2:-1]  # Remove 'PT' and 'M'
-        try:
-            minutes = int(minutes_str)
-        except ValueError:
-            return Err("Invalid lock_duration value. Minutes must be an integer.")
-
-        # Use timezone-aware datetime
-        now_utc = datetime.datetime.now(timezone.utc)
-        lock_until = now_utc + datetime.timedelta(minutes=minutes)
-        logger.debug("Attempting to lock parking space until %s", lock_until)
-
-        with DB.pool.connection() as conn:
-            with conn.cursor() as cur:
-                # Begin transaction
-                cur.execute("BEGIN;")
-                logger.debug("Transaction started.")
-
-                # Lock the row for update to prevent race conditions
-                cur.execute(
-                    """
-                    SELECT locked, locked_by, locked_until
-                    FROM parking_spaces
-                    WHERE id = %s
-                    FOR UPDATE
-                    """,
-                    (str(parking_space_id),),
-                )
-                parking_space = cur.fetchone()
-                logger.debug("Fetched parking space: %s", parking_space)
-
-                if not parking_space:
-                    conn.rollback()
-                    logger.error("Parking space not found.")
-                    return Err("Parking space not found.")
-
-                locked, locked_by, locked_until = parking_space
-
-                # Check if parking space is already locked by another user
-                if locked and str(locked_by) != str(user_id):
-                    conn.rollback()
-                    logger.error("Parking space is already locked by another user.")
-                    logger.error("Locked by:", locked_by, " Req by:", user_id)
-
-                    return Err("Parking space is already locked by another user.")
-
-                # Check for overlapping reservations
-                cur.execute(
-                    """
-                    SELECT COUNT(*)
-                    FROM reservations
-                    WHERE parking_space_id = %s
-                      AND status = 'active'
-                      AND (
-                          (start_time <= %s AND end_time > %s) OR
-                          (start_time < %s AND end_time >= %s) OR
-                          (start_time >= %s AND end_time <= %s)
-                      )
-                    """,
-                    (
-                        str(parking_space_id),
-                        lock_until,
-                        now_utc,
-                        lock_until,
-                        now_utc,
-                        now_utc,
-                        lock_until,
-                    ),
-                )
-                reservation_count = cur.fetchone()[0]
-                logger.debug(
-                    "Active reservations overlapping with lock period: %d",
-                    reservation_count,
-                )
-
-                if reservation_count > 0:
-                    conn.rollback()
-                    logger.error(
-                        "Parking space is reserved during the desired lock period."
-                    )
-                    return Err(
-                        "Parking space is reserved during the desired lock period."
-                    )
-
-                # If already locked by the same user, update the lock_until
-                if locked and str(locked_by) == str(user_id):
-                    logger.debug(
-                        "Parking space already locked by the user. Extending lock."
-                    )
-                else:
-                    logger.debug("Locking the parking space.")
-
-                # Lock the parking space
-                cur.execute(
-                    """
-                    UPDATE parking_spaces
-                    SET locked = TRUE,
-                        locked_by = %s,
-                        locked_until = %s
-                    WHERE id = %s
-                    """,
-                    (str(user_id), lock_until, str(parking_space_id)),
-                )
-                logger.debug("Updated parking space to locked until %s.", lock_until)
-
-                # Commit transaction
-                conn.commit()
-                logger.debug("Transaction committed.")
-
-                response_data = {"lock_until": lock_until}
-
-                return Ok(response_data)
-
-    except Exception as e:
-        logger.exception("Exception during locking parking space: %s", e)
-        return Err(str(e))
-
-
-def unlock_parking_space(
-    user_id: uuid.UUID, parking_space_id: uuid.UUID
-) -> Result[Dict[str, Any], str]:
-    """
-    Unlock a previously locked parking space.
-    """
-    try:
-        with DB.pool.connection() as conn:
-            with conn.cursor() as cur:
-                # Begin transaction
-                cur.execute("BEGIN;")
-                logger.debug("Transaction started for unlocking.")
-
-                # Fetch parking space with row lock
-                cur.execute(
-                    """
-                    SELECT locked, locked_by
-                    FROM parking_spaces
-                    WHERE id = %s
-                    FOR UPDATE
-                    """,
-                    (str(parking_space_id),),
-                )
-                parking_space = cur.fetchone()
-                logger.debug("Fetched parking space for unlocking: %s", parking_space)
-
-                if not parking_space:
-                    conn.rollback()
-                    logger.error("Parking space not found.")
-                    return Err("Parking space not found.")
-
-                locked, locked_by = parking_space
-
-                if not locked:
-                    conn.rollback()
-                    logger.error("Parking space is not currently locked.")
-                    return Err("Parking space is not currently locked.")
-
-                if str(locked_by) != str(user_id):
-                    conn.rollback()
-                    logger.error("Parking space is not locked by the user.")
-                    return Err("Parking space is not locked by the user.")
-
-                # Unlock the parking space
-                cur.execute(
-                    """
-                    UPDATE parking_spaces
-                    SET locked = FALSE,
-                        locked_by = NULL,
-                        locked_until = NULL
-                    WHERE id = %s
-                    """,
-                    (str(parking_space_id),),
-                )
-                logger.debug("Updated parking space to unlocked.")
-
-                # Commit transaction
-                conn.commit()
-                logger.debug("Transaction committed for unlocking.")
-
-                response_data = {"message": "Parking space unlocked successfully."}
-
-                return Ok(response_data)
-    except Exception as e:
-        logger.exception("Exception during unlocking parking space: %s", e)
-        return Err(str(e))

@@ -2,8 +2,6 @@ ALTER TABLE parking_spaces
 ADD COLUMN is_paid BOOLEAN DEFAULT FALSE,
 ADD COLUMN name TEXT,
 ADD COLUMN features TEXT[],
-ADD COLUMN availability_schedule JSONB,
-ADD COLUMN pricing_info JSONB,
 ADD COLUMN photos TEXT[],
 ADD COLUMN verification_status TEXT,
 ADD COLUMN dynamic_pricing_enabled BOOLEAN DEFAULT FALSE,
