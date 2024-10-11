@@ -17,12 +17,13 @@ import {
   DirectionsRenderer,
   InfoWindow,
 } from '@react-google-maps/api';
-import { ParkingSpaceSummary, SearchRequest } from '@/types/type';
+import { ParkingSpace, SearchRequest } from '@/types/type';
 import { searchSpots } from '@/features/search/searchSlice';
 import { usePathname, useRouter } from 'next/navigation';
 import axios from 'axios';
 
 const default_center = {
+  // Purdue University coords
   lat: 40.4237,
   lng: -86.9212,
 };
@@ -35,7 +36,7 @@ export default function SearchPage() {
 
   const [domLoaded, setDomLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
-  const [selectedSpot, setSelectedSpot] = useState<ParkingSpaceSummary | null>(null);
+  const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [searchRadius, setSearchRadius] = useState<number>(5);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -45,6 +46,22 @@ export default function SearchPage() {
   const [address, setAddress] = useState<string>('');
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
+
+  const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
+  const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
+  const [startTime, setStartTime] = useState<string | undefined>(undefined);
+  const [endTime, setEndTime] = useState<string | undefined>(undefined);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const featuresOptions = [
+    { value: 'covered', label: 'Covered Parking' },
+    { value: 'electric', label: 'Electric Charging' },
+    { value: 'accessible', label: 'Accessible' },
+    // Add more options as needed
+  ];
+  const [showFeaturesDropdown, setShowFeaturesDropdown] = useState(false);
+  const onLoadAutocomplete = (autocompleteInstance: google.maps.places.Autocomplete) => {
+    setAutocomplete(autocompleteInstance);
+  };
 
   const mapRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -103,6 +120,7 @@ export default function SearchPage() {
     setAutocomplete(autocompleteInstance);
   };
 
+  // Handle search action
   const onSearch = async () => {
     let location = mapCenter;
 
@@ -133,24 +151,36 @@ export default function SearchPage() {
       return;
     }
 
+    console.log("location", location);
+
     const request: SearchRequest = {
       latitude: location.lat,
       longitude: location.lng,
       radius: searchRadius,
+      min_price: minPrice || undefined,
+      max_price: maxPrice || undefined,
+      start_time: startTime || undefined,
+      end_time: endTime || undefined,
+      features: selectedFeatures.length > 0 ? selectedFeatures : undefined,
       paid_status: 'ALL',
     };
 
     try {
+      // @ts-ignore
       await dispatch(searchSpots(request));
+      // Close the search bar after search
       setIsSearchOpen(false);
     } catch (error) {
       console.error('Search failed:', error);
     }
   };
 
-  const handleSpotSelect = (spot: ParkingSpaceSummary) => {
+
+  // Handle parking spot selection
+  const handleSpotSelect = (spot: ParkingSpace) => {
     if (selectedSpot && selectedSpot.id === spot.id) {
       setSelectedSpot(null);
+      console.log("Deselected:", spot);
     } else {
       setSelectedSpot(spot);
       if (spot.location) {
@@ -163,6 +193,7 @@ export default function SearchPage() {
     setDirections(null);
   };
 
+  // for autocomplete
   const handlePlaceSelect = () => {
     if (autocomplete) {
       const place = autocomplete.getPlace();
@@ -177,6 +208,7 @@ export default function SearchPage() {
     }
   };
 
+  // Get directions to the selected parking spot
   const getDirections = () => {
     if (mapCenter && selectedSpot && selectedSpot.location) {
       const directionsService = new window.google.maps.DirectionsService();
@@ -200,6 +232,7 @@ export default function SearchPage() {
     }
   };
 
+  // Toggle search bar visibility
   const toggleSearch = () => {
     setIsSearchOpen(!isSearchOpen);
   };
@@ -208,6 +241,7 @@ export default function SearchPage() {
     setIsMapExpanded(!isMapExpanded);
   };
 
+  // Scroll handler for the parking spots list
   useEffect(() => {
     const handleListScroll = () => {
       if (listRef.current) {
@@ -323,33 +357,114 @@ export default function SearchPage() {
                             />
                           </div>
 
-                          <Input
-                              id="radius-input"
-                              type="number"
-                              value={searchRadius}
-                              onChange={handleInputChange}
-                              className="w-20 text-sm"
-                              min={0.1}
-                              max={5}
-                              aria-label="Radius Input"
-                          />
-                        </div>
-                      </div>
+                      <Input
+                          id="radius-input"
+                          type="number"
+                          value={searchRadius}
+                          onChange={handleInputChange}
+                          className="w-20 text-sm"
+                          min={0.1}
+                          max={5}
+                          aria-label="Radius Input"
+                      />
+                    </div>
+                  </div>
 
-                      {!useCurrentLocation && (
-                          <div className="flex flex-col mb-4">
-                            <Label htmlFor="address" className="text-sm mb-1">Near (Address):</Label>
-                            <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={handlePlaceSelect} className="w-full">
-                              <Input
-                                  id="address"
-                                  type="text"
-                                  value={address}
-                                  onChange={(e) => setAddress(e.target.value)}
-                                  className="w-full text-sm"
-                              />
-                            </Autocomplete>
-                          </div>
-                      )}
+                  <div className="flex flex-col mb-4">
+                    <Label htmlFor="min_price" className="text-sm mb-1">Min Price:</Label>
+                    <Input
+                        id="min_price"
+                        type="number"
+                        value={minPrice}
+                        onChange={(e) => setMinPrice(parseFloat(e.target.value))}
+                        className="w-full text-sm"
+                    />
+                  </div>
+
+                  <div className="flex flex-col mb-4">
+                    <Label htmlFor="max_price" className="text-sm mb-1">Max Price:</Label>
+                    <Input
+                        id="max_price"
+                        type="number"
+                        value={maxPrice}
+                        onChange={(e) => setMaxPrice(parseFloat(e.target.value))}
+                        className="w-full text-sm"
+                    />
+                  </div>
+
+                  <div className="flex flex-col mb-4">
+                    <Label htmlFor="start_time" className="text-sm mb-1">Start Time:</Label>
+                    <Input
+                        id="start_time"
+                        type="datetime-local"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                        className="w-full text-sm"
+                    />
+                  </div>
+
+                  <div className="flex flex-col mb-4">
+                    <Label htmlFor="end_time" className="text-sm mb-1">End Time:</Label>
+                    <Input
+                        id="end_time"
+                        type="datetime-local"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                        className="w-full text-sm"
+                    />
+                  </div>
+
+                  <div className="flex flex-col mb-4">
+                    <div
+                        className={`flex justify-between items-center cursor-pointer border border-gray-300 rounded-lg p-2 transition-all 
+      ${showFeaturesDropdown ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                        onClick={() => setShowFeaturesDropdown(!showFeaturesDropdown)}
+                    >
+                      <Label htmlFor="features" className="text-sm mb-1">
+                        Features:
+                      </Label>
+                      <span className={`transform transition-transform ${showFeaturesDropdown ? 'rotate-180' : ''}`}>
+      &#9662; {/* Down arrow, rotate when expanded */}
+    </span>
+                    </div>
+
+                    {showFeaturesDropdown && (
+                        <div className="bg-white shadow-lg rounded-lg mt-2 p-4">
+                          {featuresOptions.map(({value, label}) => (
+                              <label key={value} className="flex items-center mb-2">
+                                <input
+                                    type="checkbox"
+                                    value={value}
+                                    checked={selectedFeatures.includes(value)}
+                                    onChange={(e) => {
+                                      setSelectedFeatures(e.target.checked
+                                          ? [...selectedFeatures, value]
+                                          : selectedFeatures.filter(feature => feature !== value));
+                                    }}
+                                    className="mr-2"
+                                />
+                                <span className="text-sm">{label}</span>
+                              </label>
+                          ))}
+                        </div>
+                    )}
+                  </div>
+
+
+                  {!useCurrentLocation && (
+                      <div className="flex flex-col mb-4">
+                        <Label htmlFor="address" className="text-sm mb-1">Near (Address):</Label>
+                        <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={handlePlaceSelect} className="w-full">
+                          <Input
+                              id="address"
+                              type="text"
+                              value={address}
+                              onChange={(e) => setAddress(e.target.value)}
+                              className="w-full text-sm"
+                          />
+                        </Autocomplete>
+                      </div>
+                  )}
 
                       <Button onClick={onSearch} className="w-auto text-sm px-4 py-2">
                         Search

@@ -5,6 +5,160 @@ import { ParkingSpace, TimeSlot, PricingInfo, Location } from "@/types/type";
 // Mock database of parking spots
 export const spaces: ParkingSpace[] = [
   {
+    id: "11a2b3c4d-5678-90ab-cdef-1234567890ab",
+    owner_id: "124e4567-e89b-12d3-a456-426614174000",
+    location: {
+      latitude: 39.265604,
+      longitude:-84.387085,
+      address: "10912 Allenhurst Blvd E, Cincinnati, OH",
+    } as Location,
+    is_paid: true,
+    features: ["Covered", "CCTV"],
+    availability_schedule: [
+      {
+        day_of_week: "Monday",
+        start_time: "2024-10-07T09:00:00Z",
+        end_time: "2024-10-07T17:00:00Z",
+      } as TimeSlot,
+    ],
+    pricing_info: {
+      base_price: 7.0,
+      dynamic_pricing: true,
+      dynamic_pricing_algorithm: "peak_hours",
+    } as PricingInfo,
+    photos: ["https://example.com/photos/parking11/photo1.jpg"],
+    verification_status: "verified",
+    dynamic_pricing_enabled: true,
+    cancellation_policy: "Free cancellation up to 12 hours before booking.",
+    locked: false,
+    created_at: "2024-09-01T12:00:00Z",
+    updated_at: "2024-09-15T12:00:00Z",
+  } as ParkingSpace,
+
+  {
+    id: "12a2b3c4d-5678-90ab-cdef-1234567890bc",
+    owner_id: "125e4567-e89b-12d3-a456-426614174001",
+    location: {
+      latitude: 39.265604,
+      longitude:-84.387090,
+      address: "10912 Allenhurst Blvd E, Cincinnati, OH",
+    } as Location,
+    is_paid: false,
+    features: ["Uncovered", "No EV Charging"],
+    availability_schedule: [
+      {
+        day_of_week: "Tuesday",
+        start_time: "2024-10-08T08:00:00Z",
+        end_time: "2024-10-08T18:00:00Z",
+      } as TimeSlot,
+    ],
+    pricing_info: {
+      base_price: 0,
+      dynamic_pricing: false,
+      dynamic_pricing_algorithm: "",
+    } as PricingInfo,
+    photos: ["https://example.com/photos/parking12/photo1.jpg"],
+    verification_status: "pending",
+    dynamic_pricing_enabled: false,
+    cancellation_policy: "No cancellations allowed.",
+    locked: false,
+    created_at: "2024-09-05T12:00:00Z",
+    updated_at: "2024-09-20T12:00:00Z",
+  } as ParkingSpace,
+
+  {
+    id: "13a2b3c4d-5678-90ab-cdef-1234567890cd",
+    owner_id: "126e4567-e89b-12d3-a456-426614174002",
+    location: {
+      latitude: 39.2657,
+      longitude:-84.387085,
+      address: "10912 Allenhurst Blvd E, Cincinnati, OH",
+    } as Location,
+    is_paid: true,
+    features: ["Garage", "CCTV", "Charging Station"],
+    availability_schedule: [
+      {
+        day_of_week: "Wednesday",
+        start_time: "2024-10-09T09:00:00Z",
+        end_time: "2024-10-09T17:00:00Z",
+      } as TimeSlot,
+    ],
+    pricing_info: {
+      base_price: 10.0,
+      dynamic_pricing: true,
+      dynamic_pricing_algorithm: "standard",
+    } as PricingInfo,
+    photos: ["https://example.com/photos/parking13/photo1.jpg"],
+    verification_status: "verified",
+    dynamic_pricing_enabled: true,
+    cancellation_policy: "Free cancellation up to 24 hours before booking.",
+    locked: false,
+    created_at: "2024-09-10T12:00:00Z",
+    updated_at: "2024-09-25T12:00:00Z",
+  } as ParkingSpace,
+
+  {
+    id: "14a2b3c4d-5678-90ab-cdef-1234567890de",
+    owner_id: "127e4567-e89b-12d3-a456-426614174003",
+    location: {
+      latitude: 39.265694,
+      longitude:-84.387095,
+      address: "10912 Allenhurst Blvd E, Cincinnati, OH",
+    } as Location,
+    is_paid: true,
+    features: ["EV Charging", "Handicapped Accessible", "Covered"],
+    availability_schedule: [
+      {
+        day_of_week: "Thursday",
+        start_time: "2024-10-10T07:00:00Z",
+        end_time: "2024-10-10T19:00:00Z",
+      } as TimeSlot,
+    ],
+    pricing_info: {
+      base_price: 8.0,
+      dynamic_pricing: false,
+      dynamic_pricing_algorithm: "",
+    } as PricingInfo,
+    photos: ["https://example.com/photos/parking14/photo1.jpg"],
+    verification_status: "pending",
+    dynamic_pricing_enabled: false,
+    cancellation_policy: "Free cancellation up to 12 hours before booking.",
+    locked: false,
+    created_at: "2024-09-15T12:00:00Z",
+    updated_at: "2024-09-30T12:00:00Z",
+  } as ParkingSpace,
+    {
+    id: "15a2b3c4d-5678-90ab-cdef-1234567890ef",
+    owner_id: "128e4567-e89b-12d3-a456-426614174004",
+    location: {
+      latitude: 39.265604,
+      longitude: -84.387045,
+      address: "10912 Allenhurst Blvd E, Cincinnati, OH",
+    } as Location,
+    is_paid: true,
+    features: ["EV Charging", "CCTV"],
+    availability_schedule: [
+      {
+        day_of_week: "Friday",
+        start_time: "2024-10-11T07:00:00Z",
+        end_time: "2024-10-11T21:00:00Z",
+      } as TimeSlot,
+    ],
+    pricing_info: {
+      base_price: 6.0,
+      dynamic_pricing: true,
+      dynamic_pricing_algorithm: "off_peak",
+    } as PricingInfo,
+    photos: ["https://example.com/photos/parking15/photo1.jpg"],
+    verification_status: "verified",
+    dynamic_pricing_enabled: true,
+    cancellation_policy: "Free cancellation up to 24 hours before booking.",
+    locked: false,
+    created_at: "2024-09-20T12:00:00Z",
+    updated_at: "2024-10-05T12:00:00Z",
+  } as ParkingSpace,
+
+  {
     id: "1a2b3c4d-5678-90ab-cdef-1234567890ab",
     owner_id: "123e4567-e89b-12d3-a456-426614174000",
     location: {
