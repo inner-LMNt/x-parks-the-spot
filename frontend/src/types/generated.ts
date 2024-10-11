@@ -1628,8 +1628,7 @@ export interface components {
         };
         AuthResponse: {
             access_token?: string;
-            /** Format: uuid */
-            userId: string;
+            name?: string;
         };
         LoginRequest: {
             /** Format: email */

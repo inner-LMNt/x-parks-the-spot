@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, {useState, useRef, useCallback, useEffect} from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
@@ -36,6 +36,7 @@ export default function AddPage() {
   const { loading, error } = useSelector((state: RootState) => state.add);
 
   const [spotType, setSpotType] = useState<'free' | 'rental'>('free');
+  const [domLoaded, setDomLoaded] = useState(false);
   const [image, setImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -378,7 +379,11 @@ export default function AddPage() {
     }
   };
 
+  useEffect(() => {
+    setDomLoaded(true);
+  }, []);
   return (
+      domLoaded && (
       <div className="flex flex-col min-h-screen bg-gray-100">
         <div className="flex-grow overflow-y-auto">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl py-6">
@@ -642,7 +647,7 @@ export default function AddPage() {
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center py-8">
-                                  <Upload size={48} className={`text-gray-400 mb-2 ${spotType === 'free' ? 'opacity-50' : ''}`} />
+                                  <Upload required size={48} className={`text-gray-400 mb-2 ${spotType === 'free' ? 'opacity-50' : ''}`} />
                                   <p className="text-sm text-gray-500">
                                     {spotType === 'free'
                                         ? 'Image upload is disabled for free spots.'
@@ -660,6 +665,7 @@ export default function AddPage() {
                               onChange={handleImageChange}
                               ref={fileInputRef}
                               className="hidden"
+                              required
                           />
                       )}
                       <div className="flex justify-center mt-2">
@@ -704,5 +710,5 @@ export default function AddPage() {
           </div>
         </div>
       </div>
-  );
+      ));
 }

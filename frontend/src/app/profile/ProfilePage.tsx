@@ -77,7 +77,7 @@ export default function ProfilePage() {
     //const yearsOnApp = useSelector((state:any) => state.user.);
     const [eloRating] = React.useState(1200);
     const router = useRouter();
-
+    const name = useSelector((state: any) => state.user.name);
     const handleLogout = async () => {
         // @ts-ignore
         await dispatch(logout());
@@ -87,7 +87,7 @@ export default function ProfilePage() {
     console.log("Select ", useSelector((state:any) => state.user))
 
     const userProfile = {
-        username: "John",
+        username: name,
         joinedDate: new Date(2020, 5, 1),
         spotfindPosts: 50,
         yearsOnApp: 2,

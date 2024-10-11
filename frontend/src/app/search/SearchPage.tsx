@@ -422,7 +422,7 @@ export default function SearchPage() {
             ref={mapRef}
             className={`transition-all duration-300`}
             style={{
-              height: isMapExpanded ? `calc(100vh - 64px)` : '50vh',
+              height: isLoggedIn ? (isMapExpanded ? `calc(100vh - 64px)` : '50vh') : (isMapExpanded ? '100vh' : '50vh'),
               flexShrink: 0,
               position: 'relative',
             }}

@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import {ArrowRight, Loader2} from 'lucide-react';
 import { login } from '@/features/user/userSlice';
 import { Logo } from '@/components/custom/TopLeftLogo';
 import {LoginRequest} from "@/types/type";
@@ -70,7 +70,7 @@ export default function LoginPage() {
             if (login.fulfilled.match(resultAction)) {
                 // Login successful
                 console.log('router trying to push');
-                router.push('/profile');
+                router.push('/search');
             } else if (login.rejected.match(resultAction)) {
                 // Login failed
                 console.error('Login failed:', resultAction.payload);
@@ -191,6 +191,16 @@ export default function LoginPage() {
                                 <Button variant="outline" className="w-full">
                                     Create an account
                                 </Button>
+                            </Link>
+                        </motion.div>
+                    </CardFooter>
+                    <CardFooter>
+                        <motion.div variants={itemVariants} className="w-full flex justify-center align-baseline">
+                            <Link href="/search" passHref className="flex justify-center hover:text-gray-800">
+                                <Button variant="link" className="text-sm text-gray-600 flex">
+                                    Continue without logging in <ArrowRight className="w-4 h-4 ml-2 text-sm text-gray-600"/>
+                                </Button>
+
                             </Link>
                         </motion.div>
                     </CardFooter>

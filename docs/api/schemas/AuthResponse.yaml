@@ -4,6 +4,5 @@ required:
 properties:
   access_token:
     type: string
-  userId:
+  name:
     type: string
-    format: uuid

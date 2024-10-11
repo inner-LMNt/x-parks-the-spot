@@ -121,6 +121,7 @@ export default function BookingsPage() {
     const cars = useAppSelector((state) => state.cars.cars);
     const carsLoading = useAppSelector((state) => state.cars.loading);
     const carsError = useAppSelector((state) => state.cars.error);
+    const userName = useAppSelector((state) => state.user.name);
 
     // Create a carMap for efficient lookup
     const carMap = useMemo(() => {
@@ -171,7 +172,7 @@ export default function BookingsPage() {
                 {/* Header Section */}
                 <header className="flex flex-col items-center mb-8">
                     <Avatar className="w-24 h-24 mb-4" />
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">John Doe</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">{userName}</h1>
                     <div className="flex space-x-12 mt-4">
                         <StatCard label="Total Reservations" value={reservations.length} />
                         <StatCard label="Years with Us" value={2} />

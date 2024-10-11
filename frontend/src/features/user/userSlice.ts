@@ -22,6 +22,7 @@ import {
 interface UserState {
   isLoggedIn: boolean;
   access_token: string | null;
+  name: string | null;
   location: {
     latitude: number | null;
     longitude: number | null;
@@ -33,6 +34,7 @@ interface UserState {
 const initialState: UserState = {
   isLoggedIn: false, // Maybe redundant, just check if access_token is null
   access_token: null,
+    name: null,
   location: {
     latitude: null,
     longitude: null,
@@ -227,6 +229,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           state.loading = false;
           state.isLoggedIn = true;
           state.access_token = action.payload.access_token || null;
+          state.name = action.payload.name || null;
         }
       )
 
