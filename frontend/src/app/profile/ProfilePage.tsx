@@ -118,7 +118,7 @@ export default function ProfilePage() {
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive" size="sm" className="absolute top-4 left-4">
-                            <LogOut className="w-4 h-4 mr-2" />
+                            <LogOut className="w-4 h-4 mr-2"/>
                             Logout
                         </Button>
                     </AlertDialogTrigger>
@@ -139,33 +139,34 @@ export default function ProfilePage() {
                 {/* Settings Icon */}
                 <Link href="/settings" passHref>
                     <div className="absolute top-4 right-4" aria-label="Settings">
-                        <Settings className="w-6 h-6 text-gray-400 cursor-pointer hover:text-gray-600" />
+                        <Settings className="w-6 h-6 text-gray-400 cursor-pointer hover:text-gray-600"/>
                     </div>
                 </Link>
 
                 {/* Profile Section */}
                 <div className="flex flex-col items-center mb-4">
-                    <div className="w-24 h-24 rounded-full bg-gray-300 mb-4 drop-shadow-lg" />
+                    <div className="w-24 h-24 rounded-full bg-gray-300 mb-4 drop-shadow-lg"/>
                     <h1 className="text-2xl md:text-3xl font-bold mb-1">{userProfile.username}</h1>
                     <div className="flex justify-center items-center space-x-8">
-                        <ProfileStats label="Rating" value={eloRating} />
-                        <ProfileStats label="Posts" value={userProfile.spotfindPosts} />
-                        <ProfileStats label="Years" value={userProfile.yearsOnApp} />
+                        <ProfileStats label="Rating" value={eloRating}/>
+                        <ProfileStats label="Posts" value={userProfile.spotfindPosts}/>
+                        <ProfileStats label="Years" value={userProfile.yearsOnApp}/>
                     </div>
                 </div>
 
                 {/* Elo Rating Bar */}
                 <div className="w-full bg-gray-300 rounded-full h-4 mb-6 drop-shadow-lg">
-                    <div className="bg-green-500 h-4 rounded-full" style={{ width: `${(eloRating / maxElo) * 100}%` }}></div>
+                    <div className="bg-green-500 h-4 rounded-full"
+                         style={{width: `${(eloRating / maxElo) * 100}%`}}></div>
                 </div>
 
                 {/* Achievements Section */}
                 <div className="text-left mb-6">
                     <h2 className="text-lg font-semibold mb-4">Achievements</h2>
                     <div className="grid grid-cols-3 gap-4">
-                        <AchievementCard colorClass="bg-blue-500" label="Top Spot" />
-                        <AchievementCard colorClass="bg-yellow-500" label="Quick Finder" />
-                        <AchievementCard colorClass="bg-red-500" label="Top Rating" />
+                        <AchievementCard colorClass="bg-blue-500" label="Top Spot"/>
+                        <AchievementCard colorClass="bg-yellow-500" label="Quick Finder"/>
+                        <AchievementCard colorClass="bg-red-500" label="Top Rating"/>
                     </div>
                 </div>
 
@@ -183,6 +184,8 @@ export default function ProfilePage() {
                         ))}
                     </div>
                 </div>
+            </div>
+            <div className="flex h-16">
             </div>
         </div>
     );

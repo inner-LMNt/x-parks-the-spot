@@ -268,6 +268,8 @@ export default function BookingsPage() {
                         </Link>
                     </div>
                 )}
+                <div className="flex h-16">
+                </div>
             </div>
         </div>
     );

@@ -103,9 +103,9 @@ export default function MySpotsPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {spots.map((spot) => (
                 <motion.div key={spot.id}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.3 }}>
+                            initial={{opacity: 0, scale: 0.9}}
+                            animate={{opacity: 1, scale: 1}}
+                            transition={{duration: 0.3}}>
                     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
                         {/* Display Image if Exists */}
                         {spot.photos && (
@@ -123,7 +123,7 @@ export default function MySpotsPage() {
                         <CardHeader className="bg-gray-50">
                             <div className="flex justify-between items-center">
                                 <CardTitle className="flex items-center space-x-2">
-                                    <MapPin className={`w-5 h-5 ${spot.is_paid ? 'text-green-500' : 'text-blue-500'}`} />
+                                    <MapPin className={`w-5 h-5 ${spot.is_paid ? 'text-green-500' : 'text-blue-500'}`}/>
                                     <span>{spot.name || (spot.is_paid ? "Unnamed Spot" : "Free Spot")}</span>
                                 </CardTitle>
                             </div>
@@ -140,7 +140,8 @@ export default function MySpotsPage() {
                         <CardContent className="pt-4">
                             <div className="flex justify-between items-center mb-4">
                                 <span className="text-sm font-medium">{spot.is_paid ? 'Paid' : 'Free'}</span>
-                                <span className={`text-sm font-medium ${spot.availability_schedule && spot.availability_schedule.length > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                <span
+                                    className={`text-sm font-medium ${spot.availability_schedule && spot.availability_schedule.length > 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 {spot.is_paid ? (spot.availability_schedule && spot.availability_schedule.length > 0 ? 'Available' : 'Unavailable') : 'Always Available'}
                             </span>
                             </div>
@@ -162,8 +163,11 @@ export default function MySpotsPage() {
                                         className="flex-1 mr-2"
                                         onClick={async () => {
                                             // @ts-ignore
-                                            await dispatch(verifyParkingSpot({ spotId: spot.id ?? '', is_verified: true }));
-                                                                                        // @ts-ignore
+                                            await dispatch(verifyParkingSpot({
+                                                spotId: spot.id ?? '',
+                                                is_verified: true
+                                            }));
+                                            // @ts-ignore
 
                                             dispatch(getOwnerSpots()); // Re-fetch after verifying
                                         }}
@@ -176,7 +180,10 @@ export default function MySpotsPage() {
                                         className="flex-1"
                                         onClick={async () => {
                                             // @ts-ignore
-                                            await dispatch(verifyParkingSpot({ spotId: spot.id  ?? '', is_verified: false }));
+                                            await dispatch(verifyParkingSpot({
+                                                spotId: spot.id ?? '',
+                                                is_verified: false
+                                            }));
                                             // @ts-ignore
                                             dispatch(getOwnerSpots()); // Re-fetch after rejecting
                                         }}
@@ -193,18 +200,20 @@ export default function MySpotsPage() {
                                     className="mt-2 w-full bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300 hover:text-gray-900 transition-colors"
                                     variant="outline"
                                 >
-                                    <FileCheck2 className="w-4 h-4 mr-2" />
+                                    <FileCheck2 className="w-4 h-4 mr-2"/>
                                     Submit Verification
                                 </Button>
                             )}
 
                             <div className="flex justify-between mt-4">
-                                <Button variant="outline" size="sm" className="flex-1 mr-2" onClick={() => openModal(spot)}>
-                                    <Edit className="w-4 h-4 mr-2" />
+                                <Button variant="outline" size="sm" className="flex-1 mr-2"
+                                        onClick={() => openModal(spot)}>
+                                    <Edit className="w-4 h-4 mr-2"/>
                                     Edit
                                 </Button>
-                                <Button variant="destructive" size="sm" className="flex-1" onClick={() => handleDelete(spot.id as string)}>
-                                    <Trash2 className="w-4 h-4 mr-2" />
+                                <Button variant="destructive" size="sm" className="flex-1"
+                                        onClick={() => handleDelete(spot.id as string)}>
+                                    <Trash2 className="w-4 h-4 mr-2"/>
                                     Delete
                                 </Button>
                             </div>
@@ -216,15 +225,13 @@ export default function MySpotsPage() {
     );
 
 
-
-
     return (
         <div className="min-h-screen bg-gray-100 py-8">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
+                    initial={{opacity: 0, y: 20}}
+                    animate={{opacity: 1, y: 0}}
+                    transition={{duration: 0.5}}
                     className="bg-white shadow-md rounded-lg p-6 mb-8"
                 >
                     <h1 className="text-3xl font-bold mb-2 text-black">My Parking Spots</h1>
@@ -263,14 +270,14 @@ export default function MySpotsPage() {
 
                     {(freeSpots.length > 0 || paidSpots.length > 0 || pendingSpots.length > 0) && (
                         <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3, duration: 0.5 }}
+                            initial={{opacity: 0, y: 20}}
+                            animate={{opacity: 1, y: 0}}
+                            transition={{delay: 0.3, duration: 0.5}}
                             className="mt-8"
                         >
                             <Link href="/add">
                                 <Button className="w-full sm:w-auto">
-                                    <Plus className="w-4 h-4 mr-2" />
+                                    <Plus className="w-4 h-4 mr-2"/>
                                     Add New Spot
                                 </Button>
                             </Link>
@@ -296,6 +303,8 @@ export default function MySpotsPage() {
                     spot={selectedSpot}
                 />
             )}
+            <div className="flex h-16">
+            </div>
         </div>
     );
 }

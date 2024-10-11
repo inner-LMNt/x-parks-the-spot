@@ -17,7 +17,7 @@ import {
   DirectionsRenderer,
   InfoWindow,
 } from '@react-google-maps/api';
-import { ParkingSpaceSummary, SearchRequest } from '@/types/type';
+import {ParkingSpace, ParkingSpaceSummary, SearchRequest} from '@/types/type';
 import { searchSpots } from '@/features/search/searchSlice';
 import { usePathname, useRouter } from 'next/navigation';
 import axios from 'axios';
@@ -525,7 +525,7 @@ export default function SearchPage() {
                 <p className="text-center text-gray-500">No parking spots found. Try searching.</p>
             ) : (
                 <div className="grid grid-cols-1 gap-4">
-                  {parkingSpots.map((spot: ParkingSpaceSummary) => (
+                  {parkingSpots.map((spot: ParkingSpace) => (
                       <Card key={spot.id} className="shadow-sm">
                         <CardHeader>
                           <CardTitle className="text-base">{spot.name || 'Unnamed Parking Space'}</CardTitle>
@@ -538,8 +538,8 @@ export default function SearchPage() {
                                 <p className="text-sm">Longitude: {spot.location.longitude.toFixed(4)}</p>
                               </>
                           )}
-                          <p className="text-sm">Average Rating: {spot.average_rating?.toFixed(1) || 'No ratings'}</p>
-                          <p className="text-sm">Availability: {spot.availability ? 'Available' : 'Not Available'}</p>
+                          <p className="text-sm">Average Rating: {'No ratings'}</p>
+                          <p className="text-sm">Availability: {'Available'}</p>
                           {spot.features && spot.features.length > 0 && (
                               <p className="text-sm">Features: {spot.features.join(', ')}</p>
                           )}
@@ -547,7 +547,7 @@ export default function SearchPage() {
                               onClick={() => handleSpotSelect(spot)}
                               className="mt-2 w-full text-sm px-3 py-2"
                           >
-                            <MapPin className="mr-2 h-4 w-4" />
+                            <MapPin className="mr-2 h-4 w-4"/>
                             Select
                           </Button>
                         </CardContent>
@@ -555,6 +555,8 @@ export default function SearchPage() {
                   ))}
                 </div>
             )}
+          </div>
+          <div className="flex h-16">
           </div>
         </div>
       </div>
