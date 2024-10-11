@@ -51,7 +51,7 @@ export const registerHandler = http.post<never,RegisterRequest>(
         // Generate token
         const res: AuthResponse = {
             access_token: token,
-            userId: newUuid
+            name: 'John Doe',
         };
 
         return HttpResponse.json(res, { status: 201 });

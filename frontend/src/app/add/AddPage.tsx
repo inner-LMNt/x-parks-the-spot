@@ -647,7 +647,7 @@ export default function AddPage() {
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center py-8">
-                                  <Upload required size={48} className={`text-gray-400 mb-2 ${spotType === 'free' ? 'opacity-50' : ''}`} />
+                                  <Upload size={48} className={`text-gray-400 mb-2 ${spotType === 'free' ? 'opacity-50' : ''}`} />
                                   <p className="text-sm text-gray-500">
                                     {spotType === 'free'
                                         ? 'Image upload is disabled for free spots.'
@@ -677,7 +677,7 @@ export default function AddPage() {
                                 toast({
                                   title: 'Image Upload Disabled',
                                   description: 'Image uploading is disabled for free spots. Please capture an image using the camera.',
-                                  variant: 'info',
+                                  variant: 'destructive',
                                 });
                               }
                               setShowCamera(!showCamera);

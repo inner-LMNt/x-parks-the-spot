@@ -47,7 +47,7 @@ export default function ConfirmResetPage() {
         setError(null);
 
         dispatch(reset_password({ token, newPassword }))
-            .then(resultAction => {
+            .then((resultAction: any) => {
                 if (reset_password.fulfilled.match(resultAction)) {
                     console.log("Password reset successfully");
                     setConfirmed(true);
@@ -56,7 +56,7 @@ export default function ConfirmResetPage() {
                     setError(resultAction.payload || "Password reset failed");
                 }
             })
-            .catch(err => {
+            .catch((err: any) => {
                 console.error("Reset failed:", err);
                 setError("Something went wrong");
             })

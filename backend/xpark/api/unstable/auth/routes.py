@@ -27,8 +27,13 @@ def create() -> Tuple[Any, int]:
     # Call the logic function to handle the registration
     match handle_user_registration(name, email, password):
         case Ok(user_id):
-            # Generate access token for the new/undeleted user
-            return {"access_token": create_token(user_id)}, 201
+            match get_user_name_by_id(
+                            user_id=user_id
+                        ):
+                case Ok(user_name):
+                    return {"access_token": create_token(user_id), "name": user_name}, 201
+                case Err(e):
+                    return {"access_token": create_token(user_id), "name": "unknown user"}, 401
         case Err("User already exists"):
             return {"err": "Email already in use"}, 409
         case Err(e):
@@ -46,7 +51,7 @@ def login() -> Tuple[Any, Any]:
                 user_id=user_id
             ):
                 case Ok(user_name):
-                    return {"access_token": create_token(user_id), "name": user_name}, 201
+                    return {"access_token": create_token(user_id), "name": user_name}, 200
                 case Err(e):
                     return {"access_token": create_token(user_id), "name": "unknown user"}, 401
         case Err(e):

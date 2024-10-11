@@ -204,7 +204,7 @@ const ownerSlice = createSlice({
             })
             .addCase(updateParkingSpot.rejected, (state: OwnerState, action) => {
                 state.loading = false;
-                state.error = action.payload;
+                state.error = action.payload ?? 'Failed to update spot';
             });
     },
 });

@@ -54,6 +54,7 @@ const VerificationModal: React.FC<VerificationModalProps> = ({ isOpen, onClose, 
             const formData = new FormData();
             formData.append('image', verificationFile);
             try {
+                // @ts-ignore
                 const resultAction = await dispatch(submitVerification({ spotId, formData })).unwrap();
 
                 if (resultAction) {
