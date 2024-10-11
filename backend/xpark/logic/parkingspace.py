@@ -1,6 +1,7 @@
 import os
 from typing import Dict, Any, List, Optional
 
+from psycopg.rows import dict_row
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 from xpark.utils.mailer import generate_templated_email, send_email
@@ -460,101 +461,81 @@ def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str
 
 
 def update_parking_space(
-    user_id: uuid.UUID, parking_space_id: uuid.UUID, updates: Dict[str, Any]
+    user_id: uuid.UUID,
+    parking_space_id: uuid.UUID,
+    name: str,
+    address: str,
+    latitude: float,
+    longitude: float,
+    availability_schedule: list[Dict[str, str]],
+    price_per_hour: float,
+    reverification_required: bool,
 ) -> Result[Dict[str, Any], str]:
+    print(availability_schedule)
+    print(price_per_hour)
+    print(json.dumps(availability_schedule))
+    print(json.dumps({"price_per_hour": price_per_hour}))
     with DB.pool.connection() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
             # Check if parking space exists and if the user is the owner
             cur.execute(
-                "SELECT owner FROM parking_spaces WHERE id = %s",
-                (parking_space_id,),
+                "SELECT count(id) FROM parking_spaces WHERE id = %s AND owner = %s",
+                (parking_space_id, user_id),
             )
             result = cur.fetchone()
             if not result:
                 return Err("Parking space not found")
-            (owner_id,) = result
-            if owner_id != user_id:
-                return Err("User not authorized to update this parking space")
-
-            # Build SET clause dynamically
-            allowed_fields = {
-                "is_paid",
-                "name",
-                "features",
-                "availability_schedule",
-                "pricing_info",
-                "photos",
-                "verification_status",
-                "dynamic_pricing_enabled",
-                "cancellation_policy",
-            }
-            set_clauses = []
-            values = []
-            for key, value in updates.items():
-                if key in allowed_fields:
-                    set_clauses.append(f"{key} = %s")
-                    if key in ["availability_schedule", "pricing_info"]:
-                        values.append(json.dumps(value))
-                    else:
-                        values.append(value)
-            if not set_clauses:
-                return Err("No valid fields to update")
-
-            values.append(parking_space_id)
-
-            query = f"""
-                UPDATE parking_spaces
-                SET {', '.join(set_clauses)}, updated_at = NOW()
-                WHERE id = %s
-                RETURNING id, owner, is_paid, name, ST_X(location::geometry) AS longitude,
-                          ST_Y(location::geometry) AS latitude, features, availability_schedule,
-                          pricing_info, photos, verification_status, dynamic_pricing_enabled,
-                          cancellation_policy, created_at, updated_at
-            """
-            cur.execute(query, values)
-            result = cur.fetchone()
-            if result:
-                (
+            new_status = "unverified" if reverification_required else None
+            cur.execute(
+                """
+                UPDATE parking_spaces SET
+                name = COALESCE(%(name)s, name),
+                address = COALESCE(%(address)s, address),
+                location = ST_MakePoint(COALESCE(%(longitude)s, ST_X(location::geometry))
+                            , COALESCE(%(latitude)s, ST_Y(location::geometry))),
+                availability_schedule = COALESCE(%(availability_schedule)s, availability_schedule), 
+                pricing_info = COALESCE(%(pricing_info)s, pricing_info), 
+                updated_at = NOW(),
+                verification_status = COALESCE(%(new_status)s, verification_status)
+                WHERE id = %(id)s
+                RETURNING
                     id,
-                    owner_id,
-                    is_paid,
+                    is_paid, 
+                    verification_status, 
                     name,
-                    longitude,
-                    latitude,
-                    features,
-                    availability_schedule,
-                    pricing_info,
+                    ST_Y(location::geometry) AS latitude, 
+                    ST_X(location::geometry) AS longitude, 
+                    address, 
                     photos,
-                    verification_status,
-                    dynamic_pricing_enabled,
-                    cancellation_policy,
-                    created_at,
+                    created_at, 
                     updated_at,
-                ) = result
+                    pricing_info,
+                    availability_schedule
+                """,
+                {
+                 "name": name,
+                 "address": address,
+                 "latitude": latitude,
+                 "longitude": longitude,
+                 "availability_schedule": json.dumps(availability_schedule) if availability_schedule else None,
+                 "pricing_info": json.dumps({"base_price": price_per_hour}) if price_per_hour else None,
+                 "new_status": new_status,
+                 "id": parking_space_id
 
-                parking_space = {
-                    "id": str(id),
-                    "owner_id": str(owner_id),
-                    "is_paid": is_paid,
-                    "name": name,
-                    "location": {
-                        "latitude": latitude,
-                        "longitude": longitude,
-                    },
-                    "features": features,
-                    "availability_schedule": availability_schedule,
-                    "pricing_info": pricing_info,
-                    "photos": photos,
-                    "verification_status": verification_status,
-                    "dynamic_pricing_enabled": dynamic_pricing_enabled,
-                    "cancellation_policy": cancellation_policy,
-                    "created_at": created_at.isoformat(),
-                    "updated_at": updated_at.isoformat(),
                 }
-                conn.commit()
-                return Ok(parking_space)
-            else:
+            )
+            parking_space = cur.fetchone()
+
+            if not parking_space:
                 return Err("Failed to update parking space")
+            parking_space['location'] = {"latitude": parking_space['latitude'],
+                                         "longitude": parking_space['longitude'],
+                                         "address": parking_space['address']}
+            del parking_space['latitude']
+            del parking_space['longitude']
+            del parking_space['address']
+
+            return Ok(parking_space)
 
 
 def delete_parking_space(

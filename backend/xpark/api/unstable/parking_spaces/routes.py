@@ -93,17 +93,34 @@ def update_parking_space_route(
         return {"error": "Invalid input"}, 400
 
     parking_space_uuid = uuid.UUID(parking_space_id)
+    location = data.get("location")
+    if location: address = location.get("address")
+    else: address = None
+    if location: latitude = location.get("latitude")
+    else: latitude = None
+    if location: longitude = location.get("longitude")
+    else: longitude = None
+    pricing_info = data.get("pricing_info")
+    if pricing_info: price_per_hour = pricing_info.get("base_price")
+    else: price_per_hour = None
 
-    match update_parking_space(user_id, parking_space_uuid, data):
+    reverification_required : bool = data.get("reverification_required") or False
+
+    match update_parking_space(
+        user_id = user_id,
+        parking_space_id = parking_space_uuid,
+        name = data.get("name"),
+        address = address,
+        latitude = latitude,
+        longitude = longitude,
+        availability_schedule = data.get("availability_schedule"),
+        price_per_hour = price_per_hour,
+        reverification_required = reverification_required
+    ):
         case Ok(parking_space):
             return parking_space, 200
         case Err(e):
-            status_code = (
-                403
-                if "not authorized" in str(e)
-                else 404 if "not found" in str(e) else 400
-            )
-            return {"error": str(e)}, status_code
+            return {"err": e}, 400
 
 
 
