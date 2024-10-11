@@ -24,8 +24,8 @@ import axios from 'axios';
 
 const default_center = {
   // Purdue University coords
-  lat: 40.4237,
-  lng: -86.9212,
+  lat: 40.4137,
+  lng: -86.9112,
 };
 
 export default function SearchPage() {
@@ -113,7 +113,7 @@ export default function SearchPage() {
       console.error('Error fetching address:', error);
     }
 
-    setIconScale(new google.maps.Size(40, 40));
+    // setIconScale(new google.maps.Size(40, 40));
   };
 
   const enableGeolocation = (
@@ -347,6 +347,39 @@ export default function SearchPage() {
     };
   }, [navigationMode, selectedSpot]);
 
+  useEffect(() => {
+    let watchId: number;
+
+    if (!navigationMode) {
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          console.log("User location updated (non-navigation mode):", location, Math.random());
+
+          setUserLocation(location);
+
+          // You can add any additional logic here if needed
+        },
+        (error) => {
+          console.error("Error getting position:", error);
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 5000,
+        }
+      );
+    }
+
+    return () => {
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [navigationMode]);
 
   const calculateDistance = (location1: google.maps.LatLngLiteral, location2: google.maps.LatLngLiteral) => {
     const R = 6371e3; // meters
@@ -367,26 +400,35 @@ export default function SearchPage() {
   const updateCurrentStep = (userLocation: google.maps.LatLngLiteral) => {
     if (directions) {
       const steps = directions.routes[0].legs[0].steps;
-      let closestStepIndex = null;
-      let closestDistance = Infinity;
-
-      steps.forEach((step, index) => {
-        const stepLocation = {
-          lat: step.end_location.lat(),
-          lng: step.end_location.lng(),
-        };
-        const distance = calculateDistance(userLocation, stepLocation);
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          closestStepIndex = index;
-        }
+      let closestStepIndex = currentStepIndex;  // Start with the current step
+      let closestDistance = calculateDistance(userLocation, {
+        lat: steps[currentStepIndex].start_location.lat(),
+        lng: steps[currentStepIndex].start_location.lng(),
       });
 
-      if (closestStepIndex !== null && closestStepIndex !== currentStepIndex) {
+      // Iterate through steps to find the closest one
+      for (let i = currentStepIndex; i < steps.length; i++) {
+        const stepLocation = {
+          lat: steps[i].start_location.lat(),
+          lng: steps[i].start_location.lng(),
+        };
+        const distance = calculateDistance(userLocation, stepLocation);
+
+        // Only consider steps ahead or the current step
+        if (distance < closestDistance && i >= currentStepIndex) {
+          closestStepIndex = i;
+          closestDistance = distance;
+          console.log("New closest step:", i, distance);
+        }
+      }
+
+      // Update the step index only if a closer step is found
+      if (closestStepIndex > currentStepIndex) {
         setCurrentStepIndex(closestStepIndex);
       }
     }
   };
+
 
 
   const handleSliderChange = (value: number[]) => {
@@ -579,21 +621,21 @@ export default function SearchPage() {
                 />
               )))}
 
-            {userLocation && iconScale && (
+            {userLocation && ( // iconScale
               <Marker
                 position={userLocation}
                 icon={{
                   url: encodedSVG,
-                  scaledSize: iconScale,
+                  // scaledSize: iconScale,
                 }}
               />
             )}
-            {selectedLocation && !useCurrentLocation && iconScale && (
+            {selectedLocation && !useCurrentLocation && ( // iconScale
               <Marker
                 position={selectedLocation}
                 icon={{
                   url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-                  scaledSize: iconScale,
+                  // scaledSize: iconScale,
                 }}
               />
             )}
@@ -700,6 +742,7 @@ export default function SearchPage() {
               <button
                 onClick={() => {
                   setNavigationMode(false);
+                  setCurrentStepIndex(0);
                   setDirections(null);
                 }}
                 className="mt-2 px-3 py-2 bg-red-500 text-white text-sm font-semibold rounded hover:bg-red-700 focus:outline-none"
@@ -761,4 +804,76 @@ export default function SearchPage() {
       </div>
     </div>
   );
+
+  /*
+
+  Example position coordinates for testing Nagivation in Google Chrome
+  In dev console, click the 3 vertical buttons on the top right next to the x
+  Click More tools > Sensors
+  Set the Geolocation dropdown to Custom Location
+
+  Enter the following coordinates:
+  1. 40.41864, -86.89894
+  2. 40.41906, -86.89984
+  3. 40.41957, -86.90015
+  4. 40.42012, -86.90066
+  5. 40.42100, -86.90203
+  6. 40.42168, -86.90381
+  7. 40.42197, -86.90403
+  8. 40.42327, -86.90343
+  9. 40.42384, -86.90310
+  10. 40.42611, -86.90170
+  11. 40.42639, -86.90061
+  12. 40.42589, -86.90034
+  13. 40.42568, -86.90207
+  14. 40.42740, -86.90812
+  15. 40.42742, -86.90941
+  16. 40.42833, -86.91067
+  17. 40.42935, -86,91177
+  18. 40.42945, -86.91137
+
+  The garage/destination should be the parkingspace object:
+
+  {
+    id: "4a2b3c4d-5678-90ab-cdef-1234567890de",
+    owner_id: "423e4567-e89b-12d3-a456-426614174003",
+    location: {
+      latitude: 40.42956,
+      longitude: -86.91114,
+      address: "460 Northwestern Ave, West Lafayette, IN",
+    } as Location,
+    is_paid: true,
+    features: ["Security Cameras"],
+    availability_schedule: [
+      {
+        day_of_week: "Sunday",
+        start_time: "2024-10-13T06:00:00Z",
+        end_time: "2024-10-13T20:00:00Z",
+      } as TimeSlot,
+      {
+        day_of_week: "Monday",
+        start_time: "2024-10-14T06:00:00Z",
+        end_time: "2024-10-14T20:00:00Z",
+      } as TimeSlot,
+    ],
+    pricing_info: {
+      base_price: 5.5,
+      dynamic_pricing: false,
+      dynamic_pricing_algorithm: "",
+    } as PricingInfo,
+    photos: [
+      "https://example.com/photos/parking4/photo1.jpg",
+      "https://example.com/photos/parking4/photo2.jpg",
+    ],
+    verification_status: "rejected",
+    dynamic_pricing_enabled: false,
+    cancellation_policy: "No refunds available.",
+    locked: false,
+    locked_by: undefined,
+    locked_until: undefined,
+    created_at: "2024-09-15T12:00:00Z",
+    updated_at: "2024-09-30T12:00:00Z",
+  } as ParkingSpace,
+
+  */
 }
