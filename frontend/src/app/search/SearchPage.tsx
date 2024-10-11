@@ -8,7 +8,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from '@/components/ui/slider';
-import { MapPin, Navigation, ChevronUp, ChevronDown, ArrowDown, ArrowUp, DollarSign } from 'lucide-react';
+import { MapPin, Navigation, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, ArrowDown, ArrowUp, DollarSign } from 'lucide-react';
 import {
   Autocomplete,
   GoogleMap,
@@ -23,8 +23,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import axios from 'axios';
 
 const default_center = {
-  lat: 40.4237,
-  lng: -86.9212,
+  // Purdue University coords
+  lat: 40.4137,
+  lng: -86.9112,
 };
 
 export default function SearchPage() {
@@ -35,16 +36,25 @@ export default function SearchPage() {
 
   const [domLoaded, setDomLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
-  const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<google.maps.LatLngLiteral | null>(null);
+  const [selectedSpot, setSelectedSpot] = useState<ParkingSpaceSummary | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [searchRadius, setSearchRadius] = useState<number>(5);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [mapCenter, setMapCenter] = useState<google.maps.LatLngLiteral>(default_center);
-  const [isMapExpanded, setIsMapExpanded] = useState(true);
+  const [isListExpanded, setIsListExpanded] = useState(true);
   const [geoEnabled, setGeoEnabled] = useState(false);
   const [address, setAddress] = useState<string>('');
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
+  const [navigationMode, setNavigationMode] = useState(false);
+  const [reachedDestination, setReachedDestination] = useState(false);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [iconScale, setIconScale] = useState<google.maps.Size | null>(null);
+
+  const onLoadAutocomplete = (autocompleteInstance: google.maps.places.Autocomplete) => {
+    setAutocomplete(autocompleteInstance);
+  };
   const [showLoginModal, setShowLoginModal] = useState(false); // Track login modal state
   // Filter States
   const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
@@ -120,13 +130,47 @@ export default function SearchPage() {
     }
   };
 
-  const onLoadAutocomplete = (autocompleteInstance: google.maps.places.Autocomplete) => {
-    setAutocomplete(autocompleteInstance);
-  };
+  const enableGeolocation = (
+    <div className="p-4 bg-gray-100 rounded-md">
+      <p className="text-lg font-semibold mb-2">Please enable geolocation to search for parking spots near you.</p>
+      <p className="mb-2">To enable geolocation:</p>
+      <ol className="list-decimal list-inside ml-4">
+        <li className="mb-1">Go to your browser settings.</li>
+        <li className="mb-1">Allow location access for this site.</li>
+        <li className="mb-1">Reload the page after enabling it.</li>
+      </ol>
+    </div>
+  );
 
+  const pulsatingCircleSVG = `
+  <svg width="30" height="30" xmlns="http://www.w3.org/2000/svg">
+    <style>
+      @keyframes pulsate {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.7);
+          opacity: 0.5;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      .pulsating-circle {
+        animation: pulsate 1.7s infinite;
+        transform-origin: center;
+      }
+    </style>
+    <circle cx="15" cy="15" r="9" fill="#4285F4" />
+    <circle cx="15" cy="15" r="9" fill="rgba(66, 133, 244, 0.5)" class="pulsating-circle" />
+  </svg>
+  `;
+  const encodedSVG = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(pulsatingCircleSVG);
   const onSearch = async () => {
-
-    let location = mapCenter;
+    let location = userLocation;
 
     if (address && !useCurrentLocation) {
       try {
@@ -226,17 +270,18 @@ export default function SearchPage() {
           lng: place.geometry.location.lng(),
         };
         setMapCenter(location);
-        setAddress(place.formatted_address || '');
+        setSelectedLocation(location);
+        setAddress(place.formatted_address || ''); // Update the address state
       }
     }
   };
 
   const getDirections = () => {
-    if (mapCenter && selectedSpot && selectedSpot.location) {
+    if (selectedSpot && userLocation) {
       const directionsService = new window.google.maps.DirectionsService();
       directionsService.route(
           {
-            origin: mapCenter,
+            origin: userLocation,
             destination: {
               lat: selectedSpot.location.latitude,
               lng: selectedSpot.location.longitude,
@@ -246,6 +291,8 @@ export default function SearchPage() {
           (result, status) => {
             if (status === window.google.maps.DirectionsStatus.OK) {
               setDirections(result);
+              setNavigationMode(true);
+              setIsListExpanded(false);
             } else {
               console.error(`error fetching directions ${result}`);
             }
@@ -259,7 +306,7 @@ export default function SearchPage() {
   };
 
   const handleArrowClick = () => {
-    setIsMapExpanded(!isMapExpanded);
+    setIsListExpanded(!isListExpanded);
   };
 
   useEffect(() => {
@@ -267,9 +314,9 @@ export default function SearchPage() {
       if (listRef.current) {
         const scrollTop = listRef.current.scrollTop;
         if (scrollTop > 0) {
-          setIsMapExpanded(false);
+          setIsListExpanded(true);
         } else {
-          setIsMapExpanded(true);
+          setIsListExpanded(false);
         }
       }
     };
@@ -285,6 +332,139 @@ export default function SearchPage() {
       }
     };
   }, []);
+
+  // Watch user location and check if within 50 feet of destination
+  useEffect(() => {
+    let watchId: number;
+
+    if (navigationMode && selectedSpot) {
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          // add random int to differentiate console logs
+          console.log("User location updated:", location, Math.random());
+
+          setUserLocation(location);
+          updateCurrentStep(location);
+
+          const distance = calculateDistance(location, {
+            lat: selectedSpot.location.latitude,
+            lng: selectedSpot.location.longitude,
+          });
+
+          console.log("Distance to destination:", distance);
+
+          if (distance < 50) {
+            setReachedDestination(true);
+            setDirections(null);
+          } else {
+            setReachedDestination(false);
+          }
+        },
+        (error) => {
+          console.error("Error getting position:", error);
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 5000,
+        }
+      );
+    };
+
+    return () => {
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [navigationMode, selectedSpot]);
+
+  useEffect(() => {
+    let watchId: number;
+
+    if (!navigationMode) {
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          console.log("User location updated (non-navigation mode):", location, Math.random());
+
+          setUserLocation(location);
+
+          // You can add any additional logic here if needed
+        },
+        (error) => {
+          console.error("Error getting position:", error);
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 5000,
+        }
+      );
+    }
+
+    return () => {
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [navigationMode]);
+
+  const calculateDistance = (location1: google.maps.LatLngLiteral, location2: google.maps.LatLngLiteral) => {
+    const R = 6371e3; // meters
+    const a1 = location1.lat * Math.PI / 180; // a, b in radians
+    const a2 = location2.lat * Math.PI / 180;
+    const da = (location2.lat - location1.lat) * Math.PI / 180;
+    const db = (location2.lng - location1.lng) * Math.PI / 180;
+
+    const a = Math.sin(da / 2) * Math.sin(da / 2) +
+      Math.cos(a1) * Math.cos(a2) *
+      Math.sin(db / 2) * Math.sin(db / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    const distance = R * c; // in meters
+    return distance; // convert to feet by multiplying 3.28084
+  };
+
+  const updateCurrentStep = (userLocation: google.maps.LatLngLiteral) => {
+    if (directions) {
+      const steps = directions.routes[0].legs[0].steps;
+      let closestStepIndex = currentStepIndex;  // Start with the current step
+      let closestDistance = calculateDistance(userLocation, {
+        lat: steps[currentStepIndex].start_location.lat(),
+        lng: steps[currentStepIndex].start_location.lng(),
+      });
+
+      // Iterate through steps to find the closest one
+      for (let i = currentStepIndex; i < steps.length; i++) {
+        const stepLocation = {
+          lat: steps[i].start_location.lat(),
+          lng: steps[i].start_location.lng(),
+        };
+        const distance = calculateDistance(userLocation, stepLocation);
+
+        // Only consider steps ahead or the current step
+        if (distance < closestDistance && i >= currentStepIndex) {
+          closestStepIndex = i;
+          closestDistance = distance;
+          console.log("New closest step:", i, distance);
+        }
+      }
+
+      // Update the step index only if a closer step is found
+      if (closestStepIndex > currentStepIndex) {
+        setCurrentStepIndex(closestStepIndex);
+      }
+    }
+  };
+
+
 
   const handleSliderChange = (value: number[]) => {
     setSearchRadius(value[0]);
@@ -315,6 +495,24 @@ export default function SearchPage() {
     }
     router.push(`/bookings/${parkingSpaceId}/reserve?previousUrl=${encodeURIComponent(currentUrl ?? '/search')}`);
   };
+
+  useEffect(() => {
+    const adjustMapHeight = () => {
+      if (navigationCardRef.current) {
+        const navigationCardHeight = navigationCardRef.current.offsetHeight;
+        if (mapRef.current) {
+          mapRef.current.style.height = `calc(100vh - 64px - ${navigationCardHeight}px)`;
+        }
+      }
+    };
+
+    adjustMapHeight();
+    window.addEventListener('resize', adjustMapHeight);
+
+    return () => {
+      window.removeEventListener('resize', adjustMapHeight);
+    };
+  }, []);
 
   // Define available filters
   const availableFilters = [
@@ -353,6 +551,8 @@ export default function SearchPage() {
           className="min-h-screen bg-gray-50 text-gray-900 flex flex-col"
           style={{ height: '100vh', overflow: 'hidden' }}
       >
+      <script src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
+
         {/* Show login button next to search if the user is not logged in */}
         {!isLoggedIn && (
             <div className="fixed top-2 right-4 z-10">
@@ -685,7 +885,7 @@ export default function SearchPage() {
             ref={mapRef}
             className={`transition-all duration-300`}
             style={{
-              height: isLoggedIn ? (isMapExpanded ? `calc(100vh - 64px)` : '50vh') : (isMapExpanded ? '100vh' : '50vh'),
+              height: isLoggedIn ? (isListExpanded ? `calc(100vh - 64px)` : '50vh') : (isListExpanded ? '100vh' : '50vh'),
               flexShrink: 0,
               position: 'relative',
             }}
@@ -759,7 +959,7 @@ export default function SearchPage() {
 
           <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
             <button onClick={handleArrowClick} className="focus:outline-none">
-              {isMapExpanded ? (
+              {isListExpanded ? (
                   <motion.div
                       animate={{ y: [0, 10, 0] }}
                       transition={{ repeat: Infinity, duration: 1 }}
@@ -822,6 +1022,80 @@ export default function SearchPage() {
           <div className="flex h-16">
           </div>
         </div>
+      {/* navigation stuff */}
+      <div
+        ref={navigationCardRef}
+        className={`fixed bottom-0 left-0 w-full bg-gray-100 p-4 transition-transform duration-300 transform ${navigationMode ? 'translate-y-0' : 'translate-y-full'
+          }`}
+        style={{ bottom: '64px', height: 'auto' }}
+      >
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row justify-between items-center w-full">
+            <CardTitle className="text-lg">Directions</CardTitle>
+            {navigationMode && (
+              <button
+                onClick={() => {
+                  setNavigationMode(false);
+                  setCurrentStepIndex(0);
+                  setDirections(null);
+                }}
+                className="mt-2 px-3 py-2 bg-red-500 text-white text-sm font-semibold rounded hover:bg-red-700 focus:outline-none"
+              >
+                Exit Navigation
+              </button>
+            )}
+          </CardHeader>
+          <CardContent>
+            {navigationMode ? (
+              reachedDestination ? (
+                <div className="text-center">
+                  <h3 className="text-md font-semibold mb-4">You've reached your destination</h3>
+                </div>
+              ) : (
+                <div>
+                  {/* <h3 className="text-md font-semibold">From: {userLocation?.lat}, {userLocation?.lng}</h3>
+                  <h3 className="text-md font-semibold">To: {selectedSpot?.location.latitude}, {selectedSpot?.location.longitude}</h3> */}
+                  {/* <div className="border-b border-gray-300 my-4"></div> */}
+                  <div className="mt-0">
+                    <h3 className="text-md font-semibold">Step {currentStepIndex + 1}</h3>
+                    <div className="w-3"></div>
+
+                    {/* <div className="flex items-center justify-between"> // Do we want this feature?
+                      <button
+                        onClick={() => setCurrentStepIndex(currentStepIndex - 1)}
+                        disabled={currentStepIndex === 0}
+                        className="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded focus:outline-none"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      <h3 className="text-md font-semibold">Step {currentStepIndex + 1}</h3>
+                      <button
+                        onClick={() => setCurrentStepIndex(currentStepIndex + 1)}
+                        disabled={currentStepIndex === directions.routes[0].legs[0].steps.length - 1}
+                        className="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded focus:outline-none"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div> */}
+                    <div className="w-8"></div>
+                    {directions && (
+                      <span dangerouslySetInnerHTML={{ __html: directions.routes[0].legs[0].steps[currentStepIndex].instructions }} />
+                    )}
+                    {directions && (
+                      <div className="text-sm text-gray-600">
+                        <p>Distance: {directions.routes[0].legs[0].steps[currentStepIndex].distance?.text ?? ''}</p>
+                        <p>Duration: {directions.routes[0].legs[0].steps[currentStepIndex].duration?.text ?? ''}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            ) : (
+              <p className="text-sm text-gray-500">No directions available.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
       </div>
   );
 }
