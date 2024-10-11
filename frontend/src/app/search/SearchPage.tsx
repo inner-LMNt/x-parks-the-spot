@@ -46,6 +46,23 @@ export default function SearchPage() {
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
   const [showLoginModal, setShowLoginModal] = useState(false); // Track login modal state
+  // Filter States
+  const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
+  const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
+  const [startTime, setStartTime] = useState<string | undefined>(undefined);
+  const [endTime, setEndTime] = useState<string | undefined>(undefined);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const featuresOptions = [
+    { value: 'covered', label: 'Covered Parking' },
+    { value: 'electric', label: 'Electric Charging' },
+    { value: 'accessible', label: 'Accessible' },
+    // Add more options as needed
+  ];
+
+  // New States for Filter Selection
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [paidStatus, setPaidStatus] = useState<string[]>([]); // Array to hold 'paid' and/or 'unpaid'
+
   const mapRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const currentUrl = usePathname();
@@ -142,6 +159,37 @@ export default function SearchPage() {
       radius: searchRadius,
       paid_status: 'ALL',
     };
+
+    if (selectedFilters.includes('minPrice') && minPrice !== undefined) {
+      request.min_price = minPrice;
+    }
+
+    if (selectedFilters.includes('maxPrice') && maxPrice !== undefined) {
+      request.max_price = maxPrice;
+    }
+
+    if (selectedFilters.includes('startTime') && startTime) {
+      request.start_time = startTime;
+    }
+
+    if (selectedFilters.includes('endTime') && endTime) {
+      request.end_time = endTime;
+    }
+
+    if (selectedFilters.includes('features') && selectedFeatures.length > 0) {
+      request.features = selectedFeatures;
+    }
+
+    if (selectedFilters.includes('paidStatus')) {
+      if (paidStatus.length === 1) {
+        if (paidStatus.includes('paid')) {
+          request.paid_status = 'PAID';
+        } else if (paidStatus.includes('unpaid')) {
+          request.paid_status = 'UNPAID';
+        }
+      }
+      // If both are selected or none are selected, do not set paid_status (i.e., 'ALL')
+    }
 
     try {
       await dispatch(searchSpots(request));
@@ -266,10 +314,36 @@ export default function SearchPage() {
     router.push(`/bookings/${parkingSpaceId}/reserve?previousUrl=${encodeURIComponent(currentUrl ?? '/search')}`);
   };
 
+  // Define available filters
+  const availableFilters = [
+    { key: 'minPrice', label: 'Min Price' },
+    { key: 'maxPrice', label: 'Max Price' },
+    { key: 'startTime', label: 'Start Time' },
+    { key: 'endTime', label: 'End Time' },
+    { key: 'features', label: 'Features' },
+    { key: 'paidStatus', label: 'Paid Status' }, // New Paid Status Filter
+  ];
+
+  // Handle Deselect All
+  const handleDeselectAll = () => {
+    setSelectedFilters([]);
+    setMinPrice(undefined);
+    setMaxPrice(undefined);
+    setStartTime(undefined);
+    setEndTime(undefined);
+    setSelectedFeatures([]);
+    setPaidStatus([]);
+  };
 
   // Function to close the modal
   const closeLoginModal = () => {
     setShowLoginModal(false);
+    setMinPrice(undefined);
+    setMaxPrice(undefined);
+    setStartTime(undefined);
+    setEndTime(undefined);
+    setSelectedFeatures([]);
+    setPaidStatus([]);
   };
 
   return (domLoaded &&
@@ -379,6 +453,192 @@ export default function SearchPage() {
                         </div>
                       </div>
 
+                      {/* Filter Selection Field */}
+                      <div className="flex flex-col mb-4">
+                        <Label className="text-sm mb-1">Select Filters:</Label>
+                        <div className="flex flex-wrap">
+                          {availableFilters.map((filter) => (
+                              <label key={filter.key} className="mr-4 mb-2 flex items-center">
+                                <input
+                                    type="checkbox"
+                                    value={filter.key}
+                                    checked={selectedFilters.includes(filter.key)}
+                                    onChange={(e) => {
+                                      const { value, checked } = e.target;
+                                      if (checked) {
+                                        setSelectedFilters([...selectedFilters, value]);
+                                      } else {
+                                        setSelectedFilters(selectedFilters.filter((f) => f !== value));
+                                        // Reset the filter values when unselected
+                                        switch (value) {
+                                          case 'minPrice':
+                                            setMinPrice(undefined);
+                                            break;
+                                          case 'maxPrice':
+                                            setMaxPrice(undefined);
+                                            break;
+                                          case 'startTime':
+                                            setStartTime(undefined);
+                                            break;
+                                          case 'endTime':
+                                            setEndTime(undefined);
+                                            break;
+                                          case 'features':
+                                            setSelectedFeatures([]);
+                                            break;
+                                          case 'paidStatus':
+                                            setPaidStatus([]); // Reset to default (no selection)
+                                            break;
+                                          default:
+                                            break;
+                                        }
+                                      }
+                                    }}
+                                    className="mr-2"
+                                />
+                                <span className="text-sm">{filter.label}</span>
+                              </label>
+                          ))}
+                        </div>
+                        {/* Deselect All Button */}
+                        {selectedFilters.length > 0 && (
+                            <Button
+                                onClick={handleDeselectAll}
+                                className="mt-2 text-sm px-4 py-2 self-start"
+                                variant="secondary"
+                            >
+                              Deselect All
+                            </Button>
+                        )}
+                      </div>
+
+                      {/* Dynamically Rendered Filters */}
+                      {selectedFilters.includes('minPrice') && (
+                          <div className="flex flex-col mb-4">
+                            <Label htmlFor="min_price" className="text-sm mb-1">Min Price:</Label>
+                            <Input
+                                id="min_price"
+                                type="number"
+                                value={minPrice}
+                                onChange={(e) => setMinPrice(parseFloat(e.target.value))}
+                                className="w-full text-sm"
+                                min={0}
+                                placeholder="Enter minimum price"
+                            />
+                          </div>
+                      )}
+
+                      {selectedFilters.includes('maxPrice') && (
+                          <div className="flex flex-col mb-4">
+                            <Label htmlFor="max_price" className="text-sm mb-1">Max Price:</Label>
+                            <Input
+                                id="max_price"
+                                type="number"
+                                value={maxPrice}
+                                onChange={(e) => setMaxPrice(parseFloat(e.target.value))}
+                                className="w-full text-sm"
+                                min={0}
+                                placeholder="Enter maximum price"
+                            />
+                          </div>
+                      )}
+
+                      {selectedFilters.includes('startTime') && (
+                          <div className="flex flex-col mb-4">
+                            <Label htmlFor="start_time" className="text-sm mb-1">Start Time:</Label>
+                            <Input
+                                id="start_time"
+                                type="datetime-local"
+                                value={startTime}
+                                onChange={(e) => setStartTime(e.target.value)}
+                                className="w-full text-sm"
+                            />
+                          </div>
+                      )}
+
+                      {selectedFilters.includes('endTime') && (
+                          <div className="flex flex-col mb-4">
+                            <Label htmlFor="end_time" className="text-sm mb-1">End Time:</Label>
+                            <Input
+                                id="end_time"
+                                type="datetime-local"
+                                value={endTime}
+                                onChange={(e) => setEndTime(e.target.value)}
+                                className="w-full text-sm"
+                            />
+                          </div>
+                      )}
+
+                      {selectedFilters.includes('features') && (
+                          <div className="flex flex-col mb-4">
+                            <Label htmlFor="features" className="text-sm mb-1">Features:</Label>
+                            <div className="bg-white shadow-lg rounded-lg mt-2 p-4">
+                              {featuresOptions.map(({ value, label }) => (
+                                  <label key={value} className="flex items-center mb-2">
+                                    <input
+                                        type="checkbox"
+                                        value={value}
+                                        checked={selectedFeatures.includes(value)}
+                                        onChange={(e) => {
+                                          setSelectedFeatures(
+                                              e.target.checked
+                                                  ? [...selectedFeatures, value]
+                                                  : selectedFeatures.filter((feature) => feature !== value)
+                                          );
+                                        }}
+                                        className="mr-2"
+                                    />
+                                    <span className="text-sm">{label}</span>
+                                  </label>
+                              ))}
+                            </div>
+                          </div>
+                      )}
+
+                      {selectedFilters.includes('paidStatus') && (
+                          <div className="flex flex-col mb-4">
+                            <Label className="text-sm mb-1">Paid Status:</Label>
+                            <div className="flex items-center bg-white shadow-lg rounded-lg mt-2 p-4">
+                              <label className="mr-4 flex items-center">
+                                <input
+                                    type="checkbox"
+                                    value="paid"
+                                    checked={paidStatus.includes('paid')}
+                                    onChange={(e) => {
+                                      const { value, checked } = e.target;
+                                      if (checked) {
+                                        setPaidStatus([...paidStatus, value]);
+                                      } else {
+                                        setPaidStatus(paidStatus.filter((status) => status !== value));
+                                      }
+                                    }}
+                                    className="mr-2"
+                                />
+                                <span className="text-sm">Paid</span>
+                              </label>
+                              <label className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    value="unpaid"
+                                    checked={paidStatus.includes('unpaid')}
+                                    onChange={(e) => {
+                                      const { value, checked } = e.target;
+                                      if (checked) {
+                                        setPaidStatus([...paidStatus, value]);
+                                      } else {
+                                        setPaidStatus(paidStatus.filter((status) => status !== value));
+                                      }
+                                    }}
+                                    className="mr-2"
+                                />
+                                <span className="text-sm">Unpaid</span>
+                              </label>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">Select both or none for no restriction.</p>
+                          </div>
+                      )}
+
+                      {/* Address Field (if not using current location) */}
                       {!useCurrentLocation && (
                           <div className="flex flex-col mb-4">
                             <Label htmlFor="address" className="text-sm mb-1">Near (Address):</Label>
@@ -390,6 +650,7 @@ export default function SearchPage() {
                                   value={address}
                                   onChange={(e) => setAddress(e.target.value)}
                                   className="w-full text-sm"
+							      placeholder="Enter an address"
                               />
                             </Autocomplete>
                           </div>
