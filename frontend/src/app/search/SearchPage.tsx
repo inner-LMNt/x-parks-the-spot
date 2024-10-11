@@ -32,12 +32,12 @@ export default function SearchPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
 
-  const [parkingSpots] = useAppSelector((state) => state.search.spots);
+  const parkingSpots = useAppSelector((state) => state.search.spots);
 
   const [domLoaded, setDomLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<google.maps.LatLngLiteral | null>(null);
-  const [selectedSpot, setSelectedSpot] = useState<ParkingSpaceSummary | null>(null);
+  const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [searchRadius, setSearchRadius] = useState<number>(5);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -51,7 +51,7 @@ export default function SearchPage() {
   const [reachedDestination, setReachedDestination] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [iconScale, setIconScale] = useState<google.maps.Size | null>(null);
-
+  const navigationCardRef = useRef<HTMLDivElement>(null);
   const onLoadAutocomplete = (autocompleteInstance: google.maps.places.Autocomplete) => {
     setAutocomplete(autocompleteInstance);
   };
@@ -245,7 +245,7 @@ export default function SearchPage() {
     }
   };
 
-  const handleSpotSelect = (spot: ParkingSpaceSummary) => {
+  const handleSpotSelect = (spot: ParkingSpace) => {
     console.log("Spot clicked:", spot)
     if (selectedSpot && selectedSpot.id === spot.id) {
       setSelectedSpot(null);
@@ -368,9 +368,8 @@ export default function SearchPage() {
           console.error("Error getting position:", error);
         },
         {
-          enableHighAccuracy: true,
-          maximumAge: 0,
-          timeout: 5000,
+          enableHighAccuracy: false,
+          maximumAge: 5000,
         }
       );
     };
@@ -402,9 +401,8 @@ export default function SearchPage() {
           console.error("Error getting position:", error);
         },
         {
-          enableHighAccuracy: true,
-          maximumAge: 0,
-          timeout: 5000,
+          enableHighAccuracy: false,
+          maximumAge: 5000,
         }
       );
     }
@@ -520,7 +518,7 @@ export default function SearchPage() {
     { key: 'maxPrice', label: 'Max Price' },
     { key: 'startTime', label: 'Start Time' },
     { key: 'endTime', label: 'End Time' },
-    { key: 'features', label: 'Features' },
+    // { key: 'features', label: 'Features' },
     { key: 'paidStatus', label: 'Paid Status' }, // New Paid Status Filter
   ];
 
@@ -531,7 +529,7 @@ export default function SearchPage() {
     setMaxPrice(undefined);
     setStartTime(undefined);
     setEndTime(undefined);
-    setSelectedFeatures([]);
+    //setSelectedFeatures([]);
     setPaidStatus([]);
   };
 
@@ -542,7 +540,7 @@ export default function SearchPage() {
     setMaxPrice(undefined);
     setStartTime(undefined);
     setEndTime(undefined);
-    setSelectedFeatures([]);
+    //setSelectedFeatures([]);
     setPaidStatus([]);
   };
 
@@ -593,7 +591,7 @@ export default function SearchPage() {
             className={`fixed ${!isLoggedIn ? 'top-12' : 'top-2'} w-full flex justify-center z-50 transition-all duration-300`}
             animate={{opacity: isSearchOpen ? 1 : 0.6}}
         >
-          <Card className={`w-3/4 sm:w-2/3 md:w-1/2 lg:w-2/5`}>
+          <Card className={`w-3/4 sm:w-2/3 md:w-1/2 lg:w-2/5 max-h-[50vh] overflow-y-auto`}>
             <CardHeader className={`${isSearchOpen ? 'p-3 border-b' : 'py-0.5 px-4'}`} onClick={toggleSearch}>
               <div className="flex justify-between items-center cursor-pointer">
                 <CardTitle className={`text-lg ${isSearchOpen ? 'text-xl' : 'text-base'}`}>Search for
@@ -686,7 +684,7 @@ export default function SearchPage() {
                                             setEndTime(undefined);
                                             break;
                                           case 'features':
-                                            setSelectedFeatures([]);
+                                            //setSelectedFeatures([]);
                                             break;
                                           case 'paidStatus':
                                             setPaidStatus([]); // Reset to default (no selection)
@@ -771,31 +769,31 @@ export default function SearchPage() {
                           </div>
                       )}
 
-                      {selectedFilters.includes('features') && (
-                          <div className="flex flex-col mb-4">
-                            <Label htmlFor="features" className="text-sm mb-1">Features:</Label>
-                            <div className="bg-white shadow-lg rounded-lg mt-2 p-4">
-                              {featuresOptions.map(({ value, label }) => (
-                                  <label key={value} className="flex items-center mb-2">
-                                    <input
-                                        type="checkbox"
-                                        value={value}
-                                        checked={selectedFeatures.includes(value)}
-                                        onChange={(e) => {
-                                          setSelectedFeatures(
-                                              e.target.checked
-                                                  ? [...selectedFeatures, value]
-                                                  : selectedFeatures.filter((feature) => feature !== value)
-                                          );
-                                        }}
-                                        className="mr-2"
-                                    />
-                                    <span className="text-sm">{label}</span>
-                                  </label>
-                              ))}
-                            </div>
-                          </div>
-                      )}
+                      {/*{selectedFilters.includes('features') && (*/}
+                      {/*    <div className="flex flex-col mb-4">*/}
+                      {/*      <Label htmlFor="features" className="text-sm mb-1">Features:</Label>*/}
+                      {/*      <div className="bg-white shadow-lg rounded-lg mt-2 p-4">*/}
+                      {/*        {featuresOptions.map(({ value, label }) => (*/}
+                      {/*            <label key={value} className="flex items-center mb-2">*/}
+                      {/*              <input*/}
+                      {/*                  type="checkbox"*/}
+                      {/*                  value={value}*/}
+                      {/*                  checked={selectedFeatures.includes(value)}*/}
+                      {/*                  onChange={(e) => {*/}
+                      {/*                    setSelectedFeatures(*/}
+                      {/*                        e.target.checked*/}
+                      {/*                            ? [...selectedFeatures, value]*/}
+                      {/*                            : selectedFeatures.filter((feature) => feature !== value)*/}
+                      {/*                    );*/}
+                      {/*                  }}*/}
+                      {/*                  className="mr-2"*/}
+                      {/*              />*/}
+                      {/*              <span className="text-sm">{label}</span>*/}
+                      {/*            </label>*/}
+                      {/*        ))}*/}
+                      {/*      </div>*/}
+                      {/*    </div>*/}
+                      {/*)}*/}
 
                       {selectedFilters.includes('paidStatus') && (
                           <div className="flex flex-col mb-4">
@@ -904,7 +902,7 @@ export default function SearchPage() {
                   gestureHandling: 'greedy',
                 }}
             >
-              {parkingSpots.map((spot: ParkingSpace) => (
+              {(parkingSpots || []).map((spot: ParkingSpace) => (
                   spot.location && (
                       <Marker
                           key={spot.id}
@@ -935,11 +933,9 @@ export default function SearchPage() {
                       <p>Address: {selectedSpot.location.address || 'Not specified'}</p>
                       <p>Latitude: {selectedSpot.location.latitude.toFixed(4)}</p>
                       <p>Longitude: {selectedSpot.location.longitude.toFixed(4)}</p>
-                      <p>Average Rating: {selectedSpot.average_rating?.toFixed(1) || 'No ratings'}</p>
-                      <p>Availability: {selectedSpot.availability ? 'Available' : 'Not Available'}</p>
-                      {selectedSpot.features && selectedSpot.features.length > 0 && (
-                          <p>Features: {selectedSpot.features.join(', ')}</p>
-                      )}
+                      {/*{selectedSpot.features && selectedSpot.features.length > 0 && (*/}
+                      {/*    <p>Features: {selectedSpot.features.join(', ')}</p>*/}
+                      {/*)}*/}
                       <div className="flex items-center space-x-2">
                         <Button onClick={getDirections} className="mt-2 text-xs px-3 py-1">
                           <Navigation className="mr-1 h-4 w-4" />
@@ -984,11 +980,12 @@ export default function SearchPage() {
 
         <div className="flex-grow overflow-y-auto" ref={listRef}>
           <div className="mx-auto max-w-xl p-4">
-            {parkingSpots.length === 0 ? (
+            {!Array.isArray(parkingSpots) || parkingSpots?.length === 0 ? (
                 <p className="text-center text-gray-500">No parking spots found. Try searching.</p>
             ) : (
                 <div className="grid grid-cols-1 gap-4">
-                  {parkingSpots.map((spot: ParkingSpace) => (
+
+                  { (parkingSpots).map((spot: ParkingSpace) => (
                       <Card key={spot.id} className="shadow-sm">
                         <CardHeader>
                           <CardTitle className="text-base">{spot.name || 'Unnamed Parking Space'}</CardTitle>
@@ -1003,9 +1000,9 @@ export default function SearchPage() {
                           )}
                           <p className="text-sm">Average Rating: {'No ratings'}</p>
                           <p className="text-sm">Availability: {'Available'}</p>
-                          {spot.features && spot.features.length > 0 && (
-                              <p className="text-sm">Features: {spot.features.join(', ')}</p>
-                          )}
+                          {/*{spot.features && spot.features.length > 0 && (*/}
+                          {/*    <p className="text-sm">Features: {spot.features.join(', ')}</p>*/}
+                          {/*)}*/}
                           <Button
                               onClick={() => handleSpotSelect(spot)}
                               className="mt-2 w-full text-sm px-3 py-2"
