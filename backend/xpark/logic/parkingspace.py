@@ -132,6 +132,37 @@ def handle_submit_verification(
         print(f"Error occurred during verification: {str(e)}")  # Add logging for better debug
         return Err(str(e))
 
+def verify_parking_space(parking_space_id: uuid.UUID, is_verified: bool) -> Result[Dict[str, Any], str]:
+    try:
+        verification_status = 'verified' if is_verified else 'rejected'
+
+        with DB.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE parking_spaces
+                    SET verification_status = %s, updated_at = NOW()
+                    WHERE id = %s
+                    RETURNING id, verification_status, updated_at
+                    """,
+                    (verification_status, str(parking_space_id)),
+                )
+                result = cur.fetchone()
+                if not result:
+                    return Err("Parking space not found or verification failed.")
+
+                updated_space = {
+                    "id": str(result[0]),
+                    "verification_status": result[1],
+                    "updated_at": result[2].isoformat(),
+                }
+
+                conn.commit()
+                return Ok(updated_space)
+
+    except Exception as e:
+        return Err(f"Error updating verification status: {str(e)}")
+
 
 
 def create_parking_space(

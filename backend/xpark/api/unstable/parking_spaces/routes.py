@@ -23,6 +23,28 @@ def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any,
         case Err(e):
             return {"error": str(e)}, 500
 
+@bp.patch("admin-verify-spot")
+@require_logged_in_user
+def verify_parking_space_route(
+    parking_space_id: str, token: str, user_id: uuid.UUID
+) -> Tuple[Any, int]:
+    # Parse the request JSON body for the verification decision
+    data = request.get_json()
+    is_verified = data.get("is_verified")
+
+    if is_verified is None:
+        return {"error": "Missing or invalid 'is_verified' value"}, 400
+
+    # Convert parking_space_id to UUID and call the logic function
+    parking_space_uuid = uuid.UUID(parking_space_id)
+
+    match verify_parking_space(parking_space_uuid, is_verified):
+        case Ok(updated_space):
+            return updated_space, 200
+        case Err(e):
+            return {"error": str(e)}, 404
+
+
 
 @bp.post("")
 @require_logged_in_user
