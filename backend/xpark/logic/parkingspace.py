@@ -3,7 +3,7 @@ from typing import Dict, Any, List, Optional
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
-
+from xpark.utils.mailer import generate_templated_email, send_email
 from xpark.config import Config
 from xpark.utils.db import DB
 from result import Result, Ok, Err
@@ -87,6 +87,106 @@ def get_owned_parking_spaces(
     except Exception as e:
         return Err(str(e))
 
+def handle_verify_parking(parking_space_id: uuid.UUID, is_verified: bool) -> Result[Dict[str, Any], str]:
+    try:
+        # Step 1: Fetch the owner (user ID) of the parking space
+        with DB.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT owner FROM parking_spaces WHERE id = %s
+                    """,
+                    (str(parking_space_id),)
+                )
+                user_id_result = cur.fetchone()
+                if not user_id_result:
+                    return Err("Parking space not found.")
+
+                user_id = user_id_result[0]  # Extract user_id
+
+        # Step 2: Update the parking space verification status
+        verification_status = 'verified' if is_verified else 'rejected'
+
+        with DB.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE parking_spaces
+                    SET verification_status = %s, updated_at = NOW()
+                    WHERE id = %s
+                    RETURNING id, verification_status, updated_at
+                    """,
+                    (verification_status, str(parking_space_id)),
+                )
+                result = cur.fetchone()
+                if not result:
+                    return Err("Parking space verification failed.")
+
+                updated_space = {
+                    "id": str(result[0]),
+                    "verification_status": result[1],
+                    "updated_at": result[2].isoformat(),
+                }
+
+        # Step 3: Fetch the user's name and email by user ID
+        with DB.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT name, email FROM users WHERE id = %s
+                    """,
+                    (str(user_id),)
+                )
+                user_info_result = cur.fetchone()
+                if not user_info_result:
+                    return Err("User information not found.")
+
+                user_name = user_info_result[0]  # Extract user's name
+                user_email = user_info_result[1]  # Extract user's email
+
+        # Step 4: Send an email notification to the user
+        if is_verified:
+                send_email(
+                   to=user_email,
+                   subject="Parking spot verification successful",
+                   content=generate_templated_email(
+                          "spot_verified",
+                          name=user_name  # Use the fetched user's name
+                   ),
+                )
+        else:
+                send_email(
+                        to=user_email,
+                        subject="Parking spot verification rejected",
+                        content=generate_templated_email(
+                            "spot_rejected",
+                            name=user_name  # Use the fetched user's name
+                        ),
+                )
+        return Ok(updated_space)
+    except Exception as e:
+        return Err(f"Error during verification process: {str(e)}")
+
+
+
+def get_user_id_from_parking_space(parking_space_id: uuid.UUID) -> Result[uuid.UUID, str]:
+    """
+    Fetch the user ID (owner) of the parking space from the parking_space_id.
+    """
+    try:
+        with DB.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT owner FROM parking_spaces WHERE id = %s", (str(parking_space_id),)
+                )
+                result = cur.fetchone()
+                if not result:
+                    return Err("Parking space not found.")
+                return Ok(result[0])  # Return the user_id (owner)
+    except Exception as e:
+        return Err(f"Error fetching user ID: {str(e)}")
+
+
 def handle_submit_verification(
     parking_space_id: uuid.UUID,
     image_file: Optional[FileStorage],
@@ -99,7 +199,6 @@ def handle_submit_verification(
 
         # Save the image
         image_uri = save_image(image_file)
-
 
         # Update the parking space status to "pending" and store the image
         with DB.pool.connection() as conn:
@@ -129,39 +228,9 @@ def handle_submit_verification(
                 return Ok(updated_parking_space)
 
     except Exception as e:
-        print(f"Error occurred during verification: {str(e)}")  # Add logging for better debug
+        print(f"Error occurred during verification: {str(e)}")
         return Err(str(e))
 
-def verify_parking_space(parking_space_id: uuid.UUID, is_verified: bool) -> Result[Dict[str, Any], str]:
-    try:
-        verification_status = 'verified' if is_verified else 'rejected'
-
-        with DB.pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    UPDATE parking_spaces
-                    SET verification_status = %s, updated_at = NOW()
-                    WHERE id = %s
-                    RETURNING id, verification_status, updated_at
-                    """,
-                    (verification_status, str(parking_space_id)),
-                )
-                result = cur.fetchone()
-                if not result:
-                    return Err("Parking space not found or verification failed.")
-
-                updated_space = {
-                    "id": str(result[0]),
-                    "verification_status": result[1],
-                    "updated_at": result[2].isoformat(),
-                }
-
-                conn.commit()
-                return Ok(updated_space)
-
-    except Exception as e:
-        return Err(f"Error updating verification status: {str(e)}")
 
 
 

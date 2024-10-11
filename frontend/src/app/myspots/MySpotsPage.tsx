@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { getOwnerSpots, deleteParkingSpot } from '@/features/owner/ownerSlice';
 import ImageWrapper from "@/components/custom/ImageWrapper";
 import VerificationModal from '@/components/custom/VerificationModal'; // Import the verification modal
+import EditSpotModal from '@/components/custom/EditSpotModal'
 
 export default function MySpotsPage() {
     const isLoggedIn = useAppSelector(state => state.user.isLoggedIn);
@@ -34,6 +35,20 @@ export default function MySpotsPage() {
             dispatch(deleteParkingSpot(id));
         }
     };
+
+    // Modal state
+    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+    const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null);
+
+    const openModal = (spot: ParkingSpace) => {
+        setSelectedSpot(spot);
+        setIsModalOpen(true);
+    }
+
+    const closeModal = () => {
+        setSelectedSpot(null);
+        setIsModalOpen(false);
+    }
 
     const emptySpots = (
         <motion.div
@@ -132,7 +147,7 @@ export default function MySpotsPage() {
                                 </div>
                             )}
                             <div className="flex justify-between">
-                                <Button variant="outline" size="sm" className="flex-1 mr-2" onClick={() => router.push(`/edit/${spot.id}`)}>
+                                <Button variant="outline" size="sm" className="flex-1 mr-2" onClick={() => openModal(spot)}>
                                     <Edit className="w-4 h-4 mr-2" />
                                     Edit
                                 </Button>
@@ -227,6 +242,15 @@ export default function MySpotsPage() {
                     isOpen={verificationModalOpen}
                     onClose={closeVerificationModal}
                     spotId={currentSpotId}
+                />
+            )}
+
+            {/* Edit Spot Modal */}
+            {selectedSpot && (
+                <EditSpotModal
+                    isOpen={isModalOpen}
+                    onClose={closeModal}
+                    spot={selectedSpot}
                 />
             )}
         </div>

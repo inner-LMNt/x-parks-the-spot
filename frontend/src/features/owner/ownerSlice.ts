@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "../../api/axiosInstance";
 import { ParkingSpace } from "@/types/type";
+import {logger} from "bs-logger";
 
 interface OwnerSpotsResponse {
     paidSpaces: ParkingSpace[];
@@ -58,20 +59,42 @@ export const deleteParkingSpot = createAsyncThunk<
 
 // Async thunk to update a parking spot
 export const updateParkingSpot = createAsyncThunk<
-    ParkingSpace, // Return type: Updated ParkingSpace
-    { id: string; data: Partial<ParkingSpace> & { requireReverification?: boolean } }, // Argument type
+    ParkingSpace,
+    { id: string; data: Partial<ParkingSpace> & { requireReverification?: boolean } },
     { rejectValue: string }
 >(
     "owner/updateSpot",
     async ({ id, data }, { rejectWithValue }) => {
+        console.log(`Thunk invoked with ID: ${id} and data:`, data);
         try {
             const response = await axios.patch(`/parking-spaces/${id}`, data);
+            console.log('Thunk response:', response.data);
             return response.data;
         } catch (error: any) {
+            console.error('Thunk error:', error);
             return rejectWithValue(error.response?.data?.error || "Failed to update parking spot");
         }
     }
 );
+
+// Async thunk to verify or reject a parking spot
+export const verifyParkingSpot = createAsyncThunk<
+    ParkingSpace, // Return the updated ParkingSpace after verification
+    { spotId: string; is_verified: boolean }, // Argument: ID of the spot to verify/reject and the decision
+    { rejectValue: string }
+>(
+    "owner/verifySpot",
+    async ({ spotId, is_verified }, { rejectWithValue }) => {
+        try {
+            // Send the spotId and is_verified in the request body
+            const response = await axios.patch(`/parking-spaces/verify_parking_space`, { spotId, is_verified });
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.error || "Failed to verify parking spot");
+        }
+    }
+);
+
 
 // Async thunk to submit verification
 export const submitVerification = createAsyncThunk<
@@ -131,9 +154,9 @@ const ownerSlice = createSlice({
             .addCase(deleteParkingSpot.fulfilled, (state: OwnerState, action) => {
                 state.loading = false;
                 const deletedSpotId = action.payload;
-                state.paidSpots = state.paidSpots.filter(spot => spot.id !== deletedSpotId);
-                state.freeSpots = state.freeSpots.filter(spot => spot.id !== deletedSpotId);
-                state.pendingSpots = state.pendingSpots.filter(spot => spot.id !== deletedSpotId);
+                state.paidSpots = state.paidSpots.filter(spot => spot.is_paid && spot.status !== "pending");
+                state.freeSpots = state.freeSpots.filter(spot => !spot.is_paid && spot.status !== "pending");
+                state.pendingSpots = state.pendingSpots.filter(spot => spot.status === "pending");
             })
             .addCase(deleteParkingSpot.rejected, (state: OwnerState, action) => {
                 state.loading = false;
@@ -158,6 +181,27 @@ const ownerSlice = createSlice({
             .addCase(submitVerification.rejected, (state: OwnerState, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
+            })
+            // Handle updateParkingSpot
+            .addCase(updateParkingSpot.pending, (state: OwnerState) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(updateParkingSpot.fulfilled, (state: OwnerState, action) => {
+                state.loading = false;
+                const updatedSpot = action.payload;
+
+                // Update the spot in the appropriate category
+                const updateSpotInCategory = (spots: ParkingSpace[]) =>
+                    spots.map(spot => spot.id === updatedSpot.id ? updatedSpot : spot);
+
+                state.paidSpots = updateSpotInCategory(state.paidSpots);
+                state.freeSpots = updateSpotInCategory(state.freeSpots);
+                state.pendingSpots = updateSpotInCategory(state.pendingSpots);
+            })
+            .addCase(updateParkingSpot.rejected, (state: OwnerState, action) => {
+                state.loading = false;
+                state.error = action.payload;
             });
     },
 });

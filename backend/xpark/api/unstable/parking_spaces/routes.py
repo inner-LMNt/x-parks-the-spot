@@ -6,6 +6,7 @@ from xpark.logic.parkingspace import (
     delete_parking_space,
     get_owned_parking_spaces,
     handle_submit_verification,
+    handle_verify_parking,
 )
 from flask import request
 from result import Ok, Err
@@ -23,22 +24,29 @@ def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any,
         case Err(e):
             return {"error": str(e)}, 500
 
-@bp.patch("admin-verify-spot")
+
+@bp.patch("verify_parking_space")
 @require_logged_in_user
-def verify_parking_space_route(
-    parking_space_id: str, token: str, user_id: uuid.UUID
+def verify_parking_space(
+    token: str, user_id: uuid.UUID
 ) -> Tuple[Any, int]:
-    # Parse the request JSON body for the verification decision
+    # Parse the request JSON body for the spot ID and verification decision
     data = request.get_json()
+    spot_id = data.get("spotId")
     is_verified = data.get("is_verified")
 
-    if is_verified is None:
+    if spot_id is None or not isinstance(spot_id, str):
+        return {"error": "Missing or invalid 'spotId' value"}, 400
+    if is_verified is None or not isinstance(is_verified, bool):
         return {"error": "Missing or invalid 'is_verified' value"}, 400
 
-    # Convert parking_space_id to UUID and call the logic function
-    parking_space_uuid = uuid.UUID(parking_space_id)
+    # Convert spot_id to UUID and call the logic function
+    try:
+        parking_space_uuid = uuid.UUID(spot_id)
+    except ValueError:
+        return {"error": "Invalid parking_space_id format"}, 400
 
-    match verify_parking_space(parking_space_uuid, is_verified):
+    match handle_verify_parking(parking_space_uuid, is_verified):
         case Ok(updated_space):
             return updated_space, 200
         case Err(e):
