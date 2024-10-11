@@ -140,25 +140,25 @@ export default function MySpotsPage() {
                         <p>Loading...</p>
                     ) : error ? (
                         <p className="text-red-500">Error: {error}</p>
-                    ) : (paidSpots.length === 0 && freeSpots.length === 0 && pendingSpots.length === 0) ? (
+                    ) : (!freeSpots && !paidSpots && !pendingSpots || (freeSpots?.length === 0 && paidSpots?.length === 0 && pendingSpots?.length === 0)) ? (
                         emptySpots
                     ) : (
                         <>
-                            {freeSpots.length > 0 && (
+                            {freeSpots?.length > 0 && (
                                 <>
                                     <h2 className="text-2xl font-bold mb-4 text-gray-900">Free Spots</h2>
                                     {renderSpots(freeSpots)}
                                 </>
                             )}
 
-                            {paidSpots.length > 0 && (
+                            {paidSpots?.length > 0 && (
                                 <>
                                     <h2 className="text-2xl font-bold mb-4 mt-8 text-gray-900">Paid Spots</h2>
                                     {renderSpots(paidSpots)}
                                 </>
                             )}
 
-                            {pendingSpots.length > 0 && (
+                            {pendingSpots?.length > 0 && (
                                 <>
                                     <h2 className="text-2xl font-bold mb-4 mt-8 text-gray-900">Pending Spots</h2>
                                     {renderSpots(pendingSpots)}
@@ -167,7 +167,7 @@ export default function MySpotsPage() {
                         </>
                     )}
 
-                    {(freeSpots.length > 0 || paidSpots.length > 0 || pendingSpots.length > 0) && (
+                    {(freeSpots?.length > 0 && paidSpots?.length > 0 && pendingSpots?.length > 0) && (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}

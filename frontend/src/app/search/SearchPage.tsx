@@ -22,10 +22,10 @@ import { searchSpots } from '@/features/search/searchSlice';
 import { usePathname, useRouter } from 'next/navigation';
 import axios from 'axios';
 
+// Default map center coordinates
 const default_center = {
-  // Purdue University coords
-  lat: 40.4237,
-  lng: -86.9212,
+  lat: 40.4237, // Purdue University latitude
+  lng: -86.9212, // Purdue University longitude
 };
 
 export default function SearchPage() {
@@ -47,6 +47,7 @@ export default function SearchPage() {
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
 
+  // Filter States
   const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
   const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
   const [startTime, setStartTime] = useState<string | undefined>(undefined);
@@ -58,10 +59,10 @@ export default function SearchPage() {
     { value: 'accessible', label: 'Accessible' },
     // Add more options as needed
   ];
-  const [showFeaturesDropdown, setShowFeaturesDropdown] = useState(false);
-  const onLoadAutocomplete = (autocompleteInstance: google.maps.places.Autocomplete) => {
-    setAutocomplete(autocompleteInstance);
-  };
+
+  // New States for Filter Selection
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [paidStatus, setPaidStatus] = useState<string[]>([]); // Array to hold 'paid' and/or 'unpaid'
 
   const mapRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -153,17 +154,44 @@ export default function SearchPage() {
 
     console.log("location", location);
 
-    const request: SearchRequest = {
+    // Construct the search request with only selected filters
+    const request: any = {
       latitude: location.lat,
       longitude: location.lng,
       radius: searchRadius,
-      min_price: minPrice || undefined,
-      max_price: maxPrice || undefined,
-      start_time: startTime || undefined,
-      end_time: endTime || undefined,
-      features: selectedFeatures.length > 0 ? selectedFeatures : undefined,
-      paid_status: 'ALL',
+      paid_status: 'ALL', // Default to 'ALL' if not set
     };
+
+    if (selectedFilters.includes('minPrice') && minPrice !== undefined) {
+      request.min_price = minPrice;
+    }
+
+    if (selectedFilters.includes('maxPrice') && maxPrice !== undefined) {
+      request.max_price = maxPrice;
+    }
+
+    if (selectedFilters.includes('startTime') && startTime) {
+      request.start_time = startTime;
+    }
+
+    if (selectedFilters.includes('endTime') && endTime) {
+      request.end_time = endTime;
+    }
+
+    if (selectedFilters.includes('features') && selectedFeatures.length > 0) {
+      request.features = selectedFeatures;
+    }
+
+    if (selectedFilters.includes('paidStatus')) {
+      if (paidStatus.length === 1) {
+        if (paidStatus.includes('paid')) {
+          request.paid_status = 'PAID';
+        } else if (paidStatus.includes('unpaid')) {
+          request.paid_status = 'UNPAID';
+        }
+      }
+      // If both are selected or none are selected, do not set paid_status (i.e., 'ALL')
+    }
 
     try {
       // @ts-ignore
@@ -174,7 +202,6 @@ export default function SearchPage() {
       console.error('Search failed:', error);
     }
   };
-
 
   // Handle parking spot selection
   const handleSpotSelect = (spot: ParkingSpace) => {
@@ -271,7 +298,7 @@ export default function SearchPage() {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = parseInt(e.target.value, 10);
+    let value = parseFloat(e.target.value);
 
     if (isNaN(value)) {
       value = 0;
@@ -289,18 +316,40 @@ export default function SearchPage() {
       return;
     }
     router.push(`/bookings/${parkingSpaceId}/reserve?previousUrl=${encodeURIComponent(currentUrl ?? '/search')}`);
-  }
+  };
+
+  // Define available filters
+  const availableFilters = [
+    { key: 'minPrice', label: 'Min Price' },
+    { key: 'maxPrice', label: 'Max Price' },
+    { key: 'startTime', label: 'Start Time' },
+    { key: 'endTime', label: 'End Time' },
+    { key: 'features', label: 'Features' },
+    { key: 'paidStatus', label: 'Paid Status' }, // New Paid Status Filter
+  ];
+
+  // Handle Deselect All
+  const handleDeselectAll = () => {
+    setSelectedFilters([]);
+    setMinPrice(undefined);
+    setMaxPrice(undefined);
+    setStartTime(undefined);
+    setEndTime(undefined);
+    setSelectedFeatures([]);
+    setPaidStatus([]);
+  };
 
   return (domLoaded &&
       <div
           className="min-h-screen bg-gray-50 text-gray-900 flex flex-col"
           style={{ height: '100vh', overflow: 'hidden' }}
       >
+        {/* Search Panel */}
         <motion.div
             className={`fixed top-2 w-full flex justify-center z-50 transition-all duration-300`}
             animate={{ opacity: isSearchOpen ? 1 : 0.6 }}
         >
-          <Card className={`w-3/4 sm:w-2/3 md:w-1/2 lg:w-2/5`}>
+          <Card className={`w-3/4 sm:w-2/3 md:w-1/2 lg:w-2/5 max-h-[50vh] overflow-y-auto`}>
             <CardHeader
                 className={`${isSearchOpen ? 'p-3 border-b' : 'py-0.5 px-4'}`}
                 onClick={toggleSearch}
@@ -328,6 +377,7 @@ export default function SearchPage() {
               {geoEnabled ? (
                   <CardContent className="pt-2 pb-3">
                     <div className="flex flex-col">
+                      {/* Use Current Location Checkbox */}
                       <div className="flex items-center mb-4">
                         <input
                             type="checkbox"
@@ -339,6 +389,7 @@ export default function SearchPage() {
                         <Label htmlFor="use-current-location" className="text-sm">Use Current Location</Label>
                       </div>
 
+                      {/* Radius Slider */}
                       <div className="flex flex-col mb-4">
                         <Label htmlFor="radius" className="text-sm mb-1">
                           Radius (km):
@@ -357,115 +408,222 @@ export default function SearchPage() {
                             />
                           </div>
 
-                      <Input
-                          id="radius-input"
-                          type="number"
-                          value={searchRadius}
-                          onChange={handleInputChange}
-                          className="w-20 text-sm"
-                          min={0.1}
-                          max={5}
-                          aria-label="Radius Input"
-                      />
-                    </div>
-                  </div>
+                          <Input
+                              id="radius-input"
+                              type="number"
+                              value={searchRadius}
+                              onChange={handleInputChange}
+                              className="w-20 text-sm"
+                              min={0.1}
+                              max={5}
+                              aria-label="Radius Input"
+                          />
+                        </div>
+                      </div>
 
-                  <div className="flex flex-col mb-4">
-                    <Label htmlFor="min_price" className="text-sm mb-1">Min Price:</Label>
-                    <Input
-                        id="min_price"
-                        type="number"
-                        value={minPrice}
-                        onChange={(e) => setMinPrice(parseFloat(e.target.value))}
-                        className="w-full text-sm"
-                    />
-                  </div>
-
-                  <div className="flex flex-col mb-4">
-                    <Label htmlFor="max_price" className="text-sm mb-1">Max Price:</Label>
-                    <Input
-                        id="max_price"
-                        type="number"
-                        value={maxPrice}
-                        onChange={(e) => setMaxPrice(parseFloat(e.target.value))}
-                        className="w-full text-sm"
-                    />
-                  </div>
-
-                  <div className="flex flex-col mb-4">
-                    <Label htmlFor="start_time" className="text-sm mb-1">Start Time:</Label>
-                    <Input
-                        id="start_time"
-                        type="datetime-local"
-                        value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)}
-                        className="w-full text-sm"
-                    />
-                  </div>
-
-                  <div className="flex flex-col mb-4">
-                    <Label htmlFor="end_time" className="text-sm mb-1">End Time:</Label>
-                    <Input
-                        id="end_time"
-                        type="datetime-local"
-                        value={endTime}
-                        onChange={(e) => setEndTime(e.target.value)}
-                        className="w-full text-sm"
-                    />
-                  </div>
-
-                  <div className="flex flex-col mb-4">
-                    <div
-                        className={`flex justify-between items-center cursor-pointer border border-gray-300 rounded-lg p-2 transition-all 
-      ${showFeaturesDropdown ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
-                        onClick={() => setShowFeaturesDropdown(!showFeaturesDropdown)}
-                    >
-                      <Label htmlFor="features" className="text-sm mb-1">
-                        Features:
-                      </Label>
-                      <span className={`transform transition-transform ${showFeaturesDropdown ? 'rotate-180' : ''}`}>
-      &#9662; {/* Down arrow, rotate when expanded */}
-    </span>
-                    </div>
-
-                    {showFeaturesDropdown && (
-                        <div className="bg-white shadow-lg rounded-lg mt-2 p-4">
-                          {featuresOptions.map(({value, label}) => (
-                              <label key={value} className="flex items-center mb-2">
+                      {/* Filter Selection Field */}
+                      <div className="flex flex-col mb-4">
+                        <Label className="text-sm mb-1">Select Filters:</Label>
+                        <div className="flex flex-wrap">
+                          {availableFilters.map((filter) => (
+                              <label key={filter.key} className="mr-4 mb-2 flex items-center">
                                 <input
                                     type="checkbox"
-                                    value={value}
-                                    checked={selectedFeatures.includes(value)}
+                                    value={filter.key}
+                                    checked={selectedFilters.includes(filter.key)}
                                     onChange={(e) => {
-                                      setSelectedFeatures(e.target.checked
-                                          ? [...selectedFeatures, value]
-                                          : selectedFeatures.filter(feature => feature !== value));
+                                      const { value, checked } = e.target;
+                                      if (checked) {
+                                        setSelectedFilters([...selectedFilters, value]);
+                                      } else {
+                                        setSelectedFilters(selectedFilters.filter((f) => f !== value));
+                                        // Reset the filter values when unselected
+                                        switch (value) {
+                                          case 'minPrice':
+                                            setMinPrice(undefined);
+                                            break;
+                                          case 'maxPrice':
+                                            setMaxPrice(undefined);
+                                            break;
+                                          case 'startTime':
+                                            setStartTime(undefined);
+                                            break;
+                                          case 'endTime':
+                                            setEndTime(undefined);
+                                            break;
+                                          case 'features':
+                                            setSelectedFeatures([]);
+                                            break;
+                                          case 'paidStatus':
+                                            setPaidStatus([]); // Reset to default (no selection)
+                                            break;
+                                          default:
+                                            break;
+                                        }
+                                      }
                                     }}
                                     className="mr-2"
                                 />
-                                <span className="text-sm">{label}</span>
+                                <span className="text-sm">{filter.label}</span>
                               </label>
                           ))}
                         </div>
-                    )}
-                  </div>
-
-
-                  {!useCurrentLocation && (
-                      <div className="flex flex-col mb-4">
-                        <Label htmlFor="address" className="text-sm mb-1">Near (Address):</Label>
-                        <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={handlePlaceSelect} className="w-full">
-                          <Input
-                              id="address"
-                              type="text"
-                              value={address}
-                              onChange={(e) => setAddress(e.target.value)}
-                              className="w-full text-sm"
-                          />
-                        </Autocomplete>
+                        {/* Deselect All Button */}
+                        {selectedFilters.length > 0 && (
+                            <Button
+                                onClick={handleDeselectAll}
+                                className="mt-2 text-sm px-4 py-2 self-start"
+                                variant="secondary"
+                            >
+                              Deselect All
+                            </Button>
+                        )}
                       </div>
-                  )}
 
+                      {/* Dynamically Rendered Filters */}
+                      {selectedFilters.includes('minPrice') && (
+                          <div className="flex flex-col mb-4">
+                            <Label htmlFor="min_price" className="text-sm mb-1">Min Price:</Label>
+                            <Input
+                                id="min_price"
+                                type="number"
+                                value={minPrice}
+                                onChange={(e) => setMinPrice(parseFloat(e.target.value))}
+                                className="w-full text-sm"
+                                min={0}
+                                placeholder="Enter minimum price"
+                            />
+                          </div>
+                      )}
+
+                      {selectedFilters.includes('maxPrice') && (
+                          <div className="flex flex-col mb-4">
+                            <Label htmlFor="max_price" className="text-sm mb-1">Max Price:</Label>
+                            <Input
+                                id="max_price"
+                                type="number"
+                                value={maxPrice}
+                                onChange={(e) => setMaxPrice(parseFloat(e.target.value))}
+                                className="w-full text-sm"
+                                min={0}
+                                placeholder="Enter maximum price"
+                            />
+                          </div>
+                      )}
+
+                      {selectedFilters.includes('startTime') && (
+                          <div className="flex flex-col mb-4">
+                            <Label htmlFor="start_time" className="text-sm mb-1">Start Time:</Label>
+                            <Input
+                                id="start_time"
+                                type="datetime-local"
+                                value={startTime}
+                                onChange={(e) => setStartTime(e.target.value)}
+                                className="w-full text-sm"
+                            />
+                          </div>
+                      )}
+
+                      {selectedFilters.includes('endTime') && (
+                          <div className="flex flex-col mb-4">
+                            <Label htmlFor="end_time" className="text-sm mb-1">End Time:</Label>
+                            <Input
+                                id="end_time"
+                                type="datetime-local"
+                                value={endTime}
+                                onChange={(e) => setEndTime(e.target.value)}
+                                className="w-full text-sm"
+                            />
+                          </div>
+                      )}
+
+                      {selectedFilters.includes('features') && (
+                          <div className="flex flex-col mb-4">
+                            <Label htmlFor="features" className="text-sm mb-1">Features:</Label>
+                            <div className="bg-white shadow-lg rounded-lg mt-2 p-4">
+                              {featuresOptions.map(({ value, label }) => (
+                                  <label key={value} className="flex items-center mb-2">
+                                    <input
+                                        type="checkbox"
+                                        value={value}
+                                        checked={selectedFeatures.includes(value)}
+                                        onChange={(e) => {
+                                          setSelectedFeatures(
+                                              e.target.checked
+                                                  ? [...selectedFeatures, value]
+                                                  : selectedFeatures.filter((feature) => feature !== value)
+                                          );
+                                        }}
+                                        className="mr-2"
+                                    />
+                                    <span className="text-sm">{label}</span>
+                                  </label>
+                              ))}
+                            </div>
+                          </div>
+                      )}
+
+                      {selectedFilters.includes('paidStatus') && (
+                          <div className="flex flex-col mb-4">
+                            <Label className="text-sm mb-1">Paid Status:</Label>
+                            <div className="flex items-center bg-white shadow-lg rounded-lg mt-2 p-4">
+                              <label className="mr-4 flex items-center">
+                                <input
+                                    type="checkbox"
+                                    value="paid"
+                                    checked={paidStatus.includes('paid')}
+                                    onChange={(e) => {
+                                      const { value, checked } = e.target;
+                                      if (checked) {
+                                        setPaidStatus([...paidStatus, value]);
+                                      } else {
+                                        setPaidStatus(paidStatus.filter((status) => status !== value));
+                                      }
+                                    }}
+                                    className="mr-2"
+                                />
+                                <span className="text-sm">Paid</span>
+                              </label>
+                              <label className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    value="unpaid"
+                                    checked={paidStatus.includes('unpaid')}
+                                    onChange={(e) => {
+                                      const { value, checked } = e.target;
+                                      if (checked) {
+                                        setPaidStatus([...paidStatus, value]);
+                                      } else {
+                                        setPaidStatus(paidStatus.filter((status) => status !== value));
+                                      }
+                                    }}
+                                    className="mr-2"
+                                />
+                                <span className="text-sm">Unpaid</span>
+                              </label>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">Select both or none for no restriction.</p>
+                          </div>
+                      )}
+
+                      {/* Address Field (if not using current location) */}
+                      {!useCurrentLocation && (
+                          <div className="flex flex-col mb-4">
+                            <Label htmlFor="address" className="text-sm mb-1">Near (Address):</Label>
+                            <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={handlePlaceSelect} className="w-full">
+                              <Input
+                                  id="address"
+                                  type="text"
+                                  value={address}
+                                  onChange={(e) => setAddress(e.target.value)}
+                                  className="w-full text-sm"
+                                  placeholder="Enter an address"
+                              />
+                            </Autocomplete>
+                          </div>
+                      )}
+
+                      {/* Search Button */}
                       <Button onClick={onSearch} className="w-auto text-sm px-4 py-2">
                         Search
                       </Button>
@@ -488,6 +646,7 @@ export default function SearchPage() {
           </Card>
         </motion.div>
 
+        {/* Google Map Section */}
         <div
             ref={mapRef}
             className={`transition-all duration-300`}
@@ -511,7 +670,7 @@ export default function SearchPage() {
                   gestureHandling: 'greedy',
                 }}
             >
-              {parkingSpots.map((spot: ParkingSpaceSummary) => (
+              {parkingSpots.map((spot: ParkingSpace) => (
                   spot.location && (
                       <Marker
                           key={spot.id}
@@ -564,6 +723,7 @@ export default function SearchPage() {
             </GoogleMap>
           </LoadScriptNext>
 
+          {/* Toggle Map Size Button */}
           <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
             <button onClick={handleArrowClick} className="focus:outline-none">
               {isMapExpanded ? (
@@ -589,13 +749,14 @@ export default function SearchPage() {
           </div>
         </div>
 
+        {/* Parking Spots List */}
         <div className="flex-grow overflow-y-auto" ref={listRef}>
           <div className="mx-auto max-w-xl p-4">
             {parkingSpots.length === 0 ? (
                 <p className="text-center text-gray-500">No parking spots found. Try searching.</p>
             ) : (
                 <div className="grid grid-cols-1 gap-4">
-                  {parkingSpots.map((spot: ParkingSpaceSummary) => (
+                  {parkingSpots.map((spot: ParkingSpace) => (
                       <Card key={spot.id} className="shadow-sm">
                         <CardHeader>
                           <CardTitle className="text-base">{spot.name || 'Unnamed Parking Space'}</CardTitle>
