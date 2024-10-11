@@ -52,15 +52,18 @@ const VerificationModal: React.FC<VerificationModalProps> = ({ isOpen, onClose, 
     const handleSubmit = async () => {
         if (verificationFile) {
             const formData = new FormData();
-            formData.append('verificationFile', verificationFile);
-
+            formData.append('image', verificationFile);
             try {
-                await dispatch(submitVerification({ spotId, formData })).unwrap();
-                toast({
-                    title: 'Verification Submitted',
-                    description: 'Your verification is now pending approval.',
-                });
-                onClose(); // Close the modal after submission
+                const resultAction = await dispatch(submitVerification({ spotId, formData })).unwrap();
+
+                if (resultAction) {
+                    toast({
+                        title: 'Verification Submitted',
+                        description: 'Your verification is now pending approval.',
+                    });
+
+                    window.location.reload();  // Reload the page
+                }
             } catch (error) {
                 toast({
                     title: 'Error',
@@ -70,6 +73,8 @@ const VerificationModal: React.FC<VerificationModalProps> = ({ isOpen, onClose, 
             }
         }
     };
+
+
 
     return (
         <Transition appear show={isOpen} as={Fragment}>
@@ -183,7 +188,8 @@ const VerificationModal: React.FC<VerificationModalProps> = ({ isOpen, onClose, 
                                 </div>
 
                                 <div className="mt-6">
-                                    <Button onClick={handleSubmit} className="w-full" disabled={!verificationFile}>
+                                    <Button onClick={handleSubmit} className="w-full" disabled={!
+                                        File}>
                                         Submit Verification
                                     </Button>
                                 </div>

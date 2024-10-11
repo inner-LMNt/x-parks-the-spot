@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {MapPin, Edit, Trash2, Plus, FileCheck2, CheckCircle2, Loader, XCircle, CheckCircle} from 'lucide-react';
+import {MapPin, Edit, Trash2, Plus, FileCheck2, ShieldEllipsis, ShieldCheck, ShieldX} from 'lucide-react';
 import { ParkingSpace } from '@/types/type';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useRouter } from 'next/navigation';
@@ -64,13 +64,15 @@ export default function MySpotsPage() {
     };
 
     const getVerificationStatusIcon = (spot: ParkingSpace) => {
-        if (!spot.is_verified) {
-            return <XCircle className="w-6 h-6 text-red-500" title="Not Verified" />;
+        console.log("next ", spot.status)
+        if (spot.status === 'verified') {
+            return <ShieldCheck className="w-6 h-6 text-green-500" title="Verified" />;
         }
-        if (spot.is_verified === 'pending') {
-            return <Loader className="w-6 h-6 text-yellow-500" title="Pending Verification" />;
+        if (spot.status === 'pending') {
+            return <ShieldEllipsis className="w-6 h-6 text-yellow-500" title="Pending Verification" />;
         }
-        return <CheckCircle className="w-6 h-6 text-green-500" title="Verified" />;
+        return <ShieldX className="w-6 h-6 text-red-500" title="Not Verified" />;
+
     };
 
     const renderSpots = (spots: ParkingSpace[]) => (
@@ -140,7 +142,8 @@ export default function MySpotsPage() {
                                 </Button>
                             </div>
                             {/* Verification Status */}
-                            {!spot.is_verified && spot.is_paid && (
+                            {(spot.status !== "verified" && spot.status !== "pending")
+                                && spot.is_paid && (
                                 <Button
                                     onClick={() => openVerificationModal(spot.id)}
                                     className="mt-2 w-full bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300 hover:text-gray-900 transition-colors"

@@ -87,10 +87,10 @@ def get_owned_parking_spaces(
     except Exception as e:
         return Err(str(e))
 
-def submit_verification(
-    user_id: uuid.UUID,
+def handle_submit_verification(
     parking_space_id: uuid.UUID,
     image_file: Optional[FileStorage],
+    user_id: uuid.UUID,
 ) -> Result[Dict[str, Any], str]:
     try:
         # Validate the image
@@ -99,6 +99,7 @@ def submit_verification(
 
         # Save the image
         image_uri = save_image(image_file)
+
 
         # Update the parking space status to "pending" and store the image
         with DB.pool.connection() as conn:
@@ -128,6 +129,7 @@ def submit_verification(
                 return Ok(updated_parking_space)
 
     except Exception as e:
+        print(f"Error occurred during verification: {str(e)}")  # Add logging for better debug
         return Err(str(e))
 
 

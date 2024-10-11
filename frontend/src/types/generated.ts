@@ -1693,7 +1693,7 @@ export interface components {
             pricing_info?: components["schemas"]["PricingInfo"];
             photos?: string[];
             /** @enum {string} */
-            verification_status?: "verified" | "pending" | "rejected";
+            status?: "verified" | "pending" | "rejected";
             dynamic_pricing_enabled?: boolean;
             cancellation_policy?: string;
             locked?: boolean;
