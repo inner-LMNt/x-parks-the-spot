@@ -197,14 +197,13 @@ export default function SearchPage() {
     try {
       // @ts-ignore
       await dispatch(searchSpots(request));
-      // Close the search bar after search
       setIsSearchOpen(false);
     } catch (error) {
       console.error('Search failed:', error);
     }
   };
 
-  // Handle parking spot selection
+  // parking spot selection
   const handleSpotSelect = (spot: ParkingSpace) => {
     if (selectedSpot && selectedSpot.id === spot.id) {
       setSelectedSpot(null);
@@ -238,7 +237,7 @@ export default function SearchPage() {
 
   // Get directions to the selected parking spot
   const getDirections = () => {
-    if (useCurrentLocation && selectedSpot && userLocation) {
+    if (selectedSpot && userLocation) {
       const directionsService = new window.google.maps.DirectionsService();
       directionsService.route(
         {
@@ -264,7 +263,7 @@ export default function SearchPage() {
     console.log("Directions:", directions);
   };
 
-  // Toggle search bar visibility
+  // search bar visibility
   const toggleSearch = () => {
     setIsSearchOpen(!isSearchOpen);
   };
@@ -309,42 +308,49 @@ export default function SearchPage() {
   // Watch user location and check if within 50 feet of destination
   useEffect(() => {
     let watchId: number;
-    let intervalId: NodeJS.Timeout;
 
     if (navigationMode && selectedSpot) {
-      const updateLocation = () => {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const location = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            };
-            console.log("User location updated (manual interval):", location);
-            setUserLocation(location);
-            updateCurrentStep(location);
-          },
-          (error) => {
-            console.error("Error getting position:", error);
-          },
-          {
-            enableHighAccuracy: true,
-          }
-        );
-      };
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          // add random int to differentiate console logs
+          console.log("User location updated:", location, Math.random());
 
-      if (navigationMode) {
-        intervalId = setInterval(updateLocation, 3000);
-      } else {
-        intervalId = setInterval(updateLocation, 50000);
-      }
-    }
+          setUserLocation(location);
+          updateCurrentStep(location);
+
+          const distance = calculateDistance(location, {
+            lat: selectedSpot.location.latitude,
+            lng: selectedSpot.location.longitude,
+          });
+
+          console.log("Distance to destination:", distance);
+
+          if (distance < 30) {
+            setReachedDestination(true);
+            setNavigationMode(false);
+            setDirections(null);
+          } else {
+            setReachedDestination(false);
+          }
+        },
+        (error) => {
+          console.error("Error getting position:", error);
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 5000,
+        }
+      );
+    };
 
     return () => {
       if (watchId) {
         navigator.geolocation.clearWatch(watchId);
-      }
-      if (intervalId) {
-        clearInterval(intervalId);
       }
     };
   }, [navigationMode, selectedSpot]);
@@ -579,7 +585,7 @@ export default function SearchPage() {
                 onClick={() => handleSpotSelect(spot)}
               />
             ))}
-            {userLocation && useCurrentLocation && iconScale && (
+            {userLocation && iconScale && (
               <Marker
                 position={userLocation}
                 icon={{
@@ -588,12 +594,12 @@ export default function SearchPage() {
                 }}
               />
             )}
-            {selectedLocation && !useCurrentLocation && (
+            {selectedLocation && !useCurrentLocation && iconScale && (
               <Marker
                 position={selectedLocation}
                 icon={{
                   url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-                  // scaledSize: new google.maps.Size(40, 40),
+                  scaledSize: iconScale,
                 }}
               />
             )}
