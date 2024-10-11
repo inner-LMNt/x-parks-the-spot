@@ -423,6 +423,48 @@ export const spaces: ParkingSpace[] = [
     created_at: "2024-10-15T12:00:00Z",
     updated_at: "2024-10-30T12:00:00Z",
   } as ParkingSpace,
+
+  {
+    id: "mgdonal",
+    owner_id: "a23e4567-e89b-12d3-a456-426614174009",
+    location: {
+      latitude: 40.431040,
+      longitude: -86.913150,
+      address: "951 Spruce St, Indianapolis, IN",
+    } as Location,
+    is_paid: true,
+    features: ["EV Charging", "Covered", "Security Cameras"],
+    availability_schedule: [
+      {
+        day_of_week: "Friday",
+        start_time: "2024-10-26T00:00:00Z",
+        end_time: "2024-10-26T22:00:00Z",
+      } as TimeSlot,
+      {
+        day_of_week: "Saturday",
+        start_time: "2024-10-27T00:00:00Z",
+        end_time: "2024-10-27T22:00:00Z",
+      } as TimeSlot,
+      // Add more time slots as needed
+    ],
+    pricing_info: {
+      base_price: 7.0,
+      dynamic_pricing: false,
+      dynamic_pricing_algorithm: "",
+    } as PricingInfo,
+    photos: [
+      "https://example.com/photos/parking10/photo1.jpg",
+      "https://example.com/photos/parking10/photo2.jpg",
+    ],
+    verification_status: "pending",
+    dynamic_pricing_enabled: false,
+    cancellation_policy: "No cancellations allowed.",
+    locked: true,
+    locked_by: undefined, // UUID of the user who locked
+    locked_until: undefined,
+    created_at: "2024-10-15T12:00:00Z",
+    updated_at: "2024-10-30T12:00:00Z",
+  } as ParkingSpace,
 ];
 
 /**

@@ -309,46 +309,46 @@ export default function SearchPage() {
   // Watch user location and check if within 50 feet of destination
   useEffect(() => {
     let watchId: number;
+    let intervalId: NodeJS.Timeout;
 
     if (navigationMode && selectedSpot) {
-      watchId = navigator.geolocation.watchPosition(
-        (position) => {
-          const location = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          console.log("User location updated:", location);
-          setUserLocation(location);
-          updateCurrentStep(location);
-
-          const distance = calculateDistance(location, {
-            lat: selectedSpot.location.latitude,
-            lng: selectedSpot.location.longitude,
-          });
-
-          if (distance <= 50) {
-            setReachedDestination(true);
-          } else {
-            setReachedDestination(false);
+      const updateLocation = () => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const location = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            console.log("User location updated (manual interval):", location);
+            setUserLocation(location);
+            updateCurrentStep(location);
+          },
+          (error) => {
+            console.error("Error getting position:", error);
+          },
+          {
+            enableHighAccuracy: true,
           }
-        },
-        (error) => {
-          console.error("Error watching position:", error);
-        },
-        {
-          enableHighAccuracy: true,
-          maximumAge: 0,
-          timeout: 50000,
-        }
-      );
+        );
+      };
+
+      if (navigationMode) {
+        intervalId = setInterval(updateLocation, 3000);
+      } else {
+        intervalId = setInterval(updateLocation, 50000);
+      }
     }
 
     return () => {
       if (watchId) {
         navigator.geolocation.clearWatch(watchId);
       }
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
     };
   }, [navigationMode, selectedSpot]);
+
 
   const calculateDistance = (location1: google.maps.LatLngLiteral, location2: google.maps.LatLngLiteral) => {
     const R = 6371e3; // meters
@@ -384,11 +384,12 @@ export default function SearchPage() {
         }
       });
 
-      if (closestStepIndex !== null) {
+      if (closestStepIndex !== null && closestStepIndex !== currentStepIndex) {
         setCurrentStepIndex(closestStepIndex);
       }
     }
   };
+
 
   const handleSliderChange = (value: number[]) => {
     setSearchRadius(value[0]);
@@ -694,18 +695,18 @@ export default function SearchPage() {
       >
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row justify-between items-center w-full">
-              <CardTitle className="text-lg">Directions</CardTitle>
-              {navigationMode && (
-                <button
-                  onClick={() => {
-                    setNavigationMode(false);
-                    setDirections(null);
-                  }}
-                  className="mt-2 px-3 py-2 bg-red-500 text-white text-sm font-semibold rounded hover:bg-red-700 focus:outline-none"
-                >
-                  Exit Navigation
-                </button>
-              )}
+            <CardTitle className="text-lg">Directions</CardTitle>
+            {navigationMode && (
+              <button
+                onClick={() => {
+                  setNavigationMode(false);
+                  setDirections(null);
+                }}
+                className="mt-2 px-3 py-2 bg-red-500 text-white text-sm font-semibold rounded hover:bg-red-700 focus:outline-none"
+              >
+                Exit Navigation
+              </button>
+            )}
           </CardHeader>
           <CardContent>
             {navigationMode && directions ? (
