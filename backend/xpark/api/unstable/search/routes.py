@@ -7,12 +7,6 @@ from typing import Tuple, Any
 
 @bp.post("")
 def search() -> Tuple[Any, int]:
-    search_query = {
-        "lat": float,
-        "long": float,
-        "radius": float,
-
-    }
     return (
         search_query(
             lat=request.json["lat"],  # type: ignore

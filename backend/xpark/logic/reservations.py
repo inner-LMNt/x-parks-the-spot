@@ -265,3 +265,47 @@ def cancel_reservation_logic(
                 return Err("Reservation not found")
 
             return Ok(None)
+
+def lock_parking_space(
+    user_id: uuid.UUID, parking_space_id: uuid.UUID, lock_duration: str
+) -> Result[Dict[str, Any], str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE parking_spaces
+                SET locked = TRUE,
+                    locked_by = %s,
+                    locked_until = NOW() + %s
+                WHERE id = %s
+                AND NOT (locked AND locked_by != %s)
+                RETURNING locked, locked_by
+                """,
+                (user_id, lock_duration, parking_space_id, user_id),
+            )
+            if not cur.fetchone():
+                return Err("Parking space is already locked by another user.")
+            return Ok({"lock_until": cur.fetchone()["locked_until"]})
+
+
+def unlock_parking_space(
+    user_id: uuid.UUID, parking_space_id: uuid.UUID
+) -> Result[Dict[str, Any], str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE parking_spaces
+                SET locked = FALSE,
+                    locked_by = NULL,
+                    locked_until = NULL
+                WHERE id = %s
+                AND locked
+                AND locked_by = %s
+                RETURNING locked, locked_by
+                """,
+                (parking_space_id, user_id),
+            )
+            if not cur.fetchone():
+                return Err("Parking space is not currently locked by the user.")
+            return Ok({"message": "Parking space unlocked successfully."})
