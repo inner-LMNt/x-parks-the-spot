@@ -17,7 +17,7 @@ import {
   DirectionsRenderer,
   InfoWindow,
 } from '@react-google-maps/api';
-import {ParkingSpace, ParkingSpaceSummary, SearchRequest} from '@/types/type';
+import {ParkingSpace} from '@/types/type';
 import { searchSpots } from '@/features/search/searchSlice';
 import { usePathname, useRouter } from 'next/navigation';
 import axios from 'axios';
@@ -31,11 +31,11 @@ export default function SearchPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
 
-  const parkingSpots = useAppSelector((state) => state.search.spots);
+  const [parkingSpots] = useAppSelector((state) => state.search.spots);
 
   const [domLoaded, setDomLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
-  const [selectedSpot, setSelectedSpot] = useState<ParkingSpaceSummary | null>(null);
+  const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [searchRadius, setSearchRadius] = useState<number>(5);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -70,6 +70,8 @@ export default function SearchPage() {
 
 
   useEffect(() => {
+    // @ts-ignore
+    dispatch({type: 'search/resetSpots'})
     setDomLoaded(true);
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -153,7 +155,7 @@ export default function SearchPage() {
       return;
     }
 
-    const request: SearchRequest = {
+    const request: any = {
       latitude: location.lat,
       longitude: location.lng,
       radius: searchRadius,
@@ -422,7 +424,7 @@ export default function SearchPage() {
                         <Label htmlFor="use-current-location" className="text-sm">Use Current Location</Label>
                       </div>
 
-                      <div className="flex flex-col mb-4">
+                      <div className="flex flex-col mb-4 max-h-[80vh]">
                         <Label htmlFor="radius" className="text-sm mb-1">
                           Radius (km):
                         </Label>
@@ -702,7 +704,7 @@ export default function SearchPage() {
                   gestureHandling: 'greedy',
                 }}
             >
-              {parkingSpots.map((spot: ParkingSpaceSummary) => (
+              {parkingSpots.map((spot: ParkingSpace) => (
                   spot.location && (
                       <Marker
                           key={spot.id}

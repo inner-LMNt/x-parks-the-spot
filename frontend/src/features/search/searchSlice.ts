@@ -48,7 +48,15 @@ const searchSlice = createSlice({
         .addCase(searchSpots.rejected, (state: SearchState, action) => {
           state.loading = false;
           state.error = action.payload as string;
-        });
+        })
+        .addMatcher(
+            (action: { type: string }): action is { type: "search/resetSpots" } =>
+                action.type === "search/resetSpots",
+            (state : SearchState) => {
+              console.log("Resetting spots");
+              state.spots = [];
+            }
+        );
   },
 });
 
