@@ -4,7 +4,7 @@ on:
     branches: ["main"]
     paths: ['backend/**', "flake.nix", "flake.lock", ".github/workflows/backend.yml"]
   pull_request:
-    branches: ["main"]
+    branches: ["*"]
     paths: ['backend/**', "flake.nix", "flake.lock", ".github/workflows/backend.yml"]
 
 defaults:
