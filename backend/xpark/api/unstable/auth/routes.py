@@ -82,7 +82,7 @@ def confirm_delete_account(token: str) -> Tuple[Any, int]:
             return {"err": e}, 403
 
 
-@bp.post("password-reset-request")
+@bp.post("password-reset")
 def reset_password_request() -> Tuple[Any, int]:
     email = request.json["email"]  # type: ignore
 
