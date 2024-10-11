@@ -86,8 +86,10 @@ export const verifyParkingSpot = createAsyncThunk<
     "owner/verifySpot",
     async ({ spotId, is_verified }, { rejectWithValue }) => {
         try {
+            console.log("spot ",spotId)
+            console.log("veri ",is_verified)
             // Send the spotId and is_verified in the request body
-            const response = await axios.patch(`/parking-spaces/verify_parking_space`, { spotId, is_verified });
+            const response = await axios.post(`/parking-spaces/verify-parking-space`, { spotId, is_verified });
             return response.data;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.error || "Failed to verify parking spot");

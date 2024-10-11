@@ -9,7 +9,7 @@ import { ParkingSpace } from '@/types/type';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getOwnerSpots, deleteParkingSpot } from '@/features/owner/ownerSlice';
+import { getOwnerSpots, deleteParkingSpot, verifyParkingSpot} from '@/features/owner/ownerSlice';
 import ImageWrapper from "@/components/custom/ImageWrapper";
 import VerificationModal from '@/components/custom/VerificationModal'; // Import the verification modal
 import EditSpotModal from '@/components/custom/EditSpotModal'
@@ -29,12 +29,15 @@ export default function MySpotsPage() {
         }
     }, [dispatch, isLoggedIn]);
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         const confirmDelete = window.confirm("Are you sure you want to delete this parking spot?");
         if (confirmDelete) {
-            dispatch(deleteParkingSpot(id));
+            // Await the deletion and then re-fetch the spots
+            await dispatch(deleteParkingSpot(id));
+            dispatch(getOwnerSpots()); // Re-fetch the updated spots list
         }
     };
+
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -98,7 +101,6 @@ export default function MySpotsPage() {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.3 }}>
                     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-
                         {/* Display Image if Exists */}
                         {spot.photos && (
                             <div className="relative w-full h-40">
@@ -130,15 +132,13 @@ export default function MySpotsPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="pt-4">
-
                             <div className="flex justify-between items-center mb-4">
                                 <span className="text-sm font-medium">{spot.is_paid ? 'Paid' : 'Free'}</span>
                                 <span className={`text-sm font-medium ${spot.availability_schedule && spot.availability_schedule.length > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {spot.is_paid ?
-                      (spot.availability_schedule && spot.availability_schedule.length > 0 ? 'Available' : 'Unavailable')
-                      : 'Always Available'}
-                </span>
+                                {spot.is_paid ? (spot.availability_schedule && spot.availability_schedule.length > 0 ? 'Available' : 'Unavailable') : 'Always Available'}
+                            </span>
                             </div>
+
                             {/* Display price and verification icon */}
                             {spot.is_paid && spot.pricing_info && (
                                 <div className="flex items-center justify-between mb-4">
@@ -146,19 +146,37 @@ export default function MySpotsPage() {
                                     {getVerificationStatusIcon(spot)} {/* Verification status icon */}
                                 </div>
                             )}
-                            <div className="flex justify-between">
-                                <Button variant="outline" size="sm" className="flex-1 mr-2" onClick={() => openModal(spot)}>
-                                    <Edit className="w-4 h-4 mr-2" />
-                                    Edit
-                                </Button>
-                                <Button variant="destructive" size="sm" className="flex-1" onClick={() => handleDelete(spot.id as string)}>
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Delete
-                                </Button>
-                            </div>
-                            {/* Verification Status */}
-                            {(spot.status !== "verified" && spot.status !== "pending")
-                                && spot.is_paid && (
+
+                            {/* Verification Buttons for Pending Spots */}
+                            {spot.status === 'pending' && (
+                                <div className="flex justify-between">
+                                    <Button
+                                        variant="success"
+                                        size="sm"
+                                        className="flex-1 mr-2"
+                                        onClick={async () => {
+                                            await dispatch(verifyParkingSpot({ spotId: spot.id, is_verified: true }));
+                                            dispatch(getOwnerSpots()); // Re-fetch after verifying
+                                        }}
+                                    >
+                                        Verify
+                                    </Button>
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        className="flex-1"
+                                        onClick={async () => {
+                                            await dispatch(verifyParkingSpot({ spotId: spot.id, is_verified: false }));
+                                            dispatch(getOwnerSpots()); // Re-fetch after rejecting
+                                        }}
+                                    >
+                                        Reject
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* Submit Verification Button for Unverified Spots */}
+                            {(spot.status !== 'pending' && spot.status !== 'verified') && (
                                 <Button
                                     onClick={() => openVerificationModal(spot.id)}
                                     className="mt-2 w-full bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300 hover:text-gray-900 transition-colors"
@@ -168,12 +186,26 @@ export default function MySpotsPage() {
                                     Submit Verification
                                 </Button>
                             )}
+
+                            <div className="flex justify-between mt-4">
+                                <Button variant="outline" size="sm" className="flex-1 mr-2" onClick={() => openModal(spot)}>
+                                    <Edit className="w-4 h-4 mr-2" />
+                                    Edit
+                                </Button>
+                                <Button variant="destructive" size="sm" className="flex-1" onClick={() => handleDelete(spot.id as string)}>
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
                 </motion.div>
             ))}
         </div>
     );
+
+
+
 
     return (
         <div className="min-h-screen bg-gray-100 py-8">

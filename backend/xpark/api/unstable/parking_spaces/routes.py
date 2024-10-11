@@ -25,7 +25,7 @@ def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any,
             return {"error": str(e)}, 500
 
 
-@bp.patch("verify_parking_space")
+@bp.post("verify-parking-space")
 @require_logged_in_user
 def verify_parking_space(
     token: str, user_id: uuid.UUID
@@ -34,13 +34,6 @@ def verify_parking_space(
     data = request.get_json()
     spot_id = data.get("spotId")
     is_verified = data.get("is_verified")
-
-    if spot_id is None or not isinstance(spot_id, str):
-        return {"error": "Missing or invalid 'spotId' value"}, 400
-    if is_verified is None or not isinstance(is_verified, bool):
-        return {"error": "Missing or invalid 'is_verified' value"}, 400
-
-    # Convert spot_id to UUID and call the logic function
     try:
         parking_space_uuid = uuid.UUID(spot_id)
     except ValueError:
@@ -51,7 +44,6 @@ def verify_parking_space(
             return updated_space, 200
         case Err(e):
             return {"error": str(e)}, 404
-
 
 
 @bp.post("")
