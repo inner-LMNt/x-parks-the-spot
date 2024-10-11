@@ -100,7 +100,7 @@ def handle_verify_parking(parking_space_id: uuid.UUID, is_verified: bool) -> Res
                 )
                 user_id_result = cur.fetchone()
                 if not user_id_result:
-                    return Err("Parking space not found.")
+                    return Err(f"Parking space with ID {parking_space_id} not found.")
 
                 user_id = user_id_result[0]  # Extract user_id
 
@@ -120,7 +120,7 @@ def handle_verify_parking(parking_space_id: uuid.UUID, is_verified: bool) -> Res
                 )
                 result = cur.fetchone()
                 if not result:
-                    return Err("Parking space verification failed.")
+                    return Err(f"Failed to update the verification status of parking space with ID {parking_space_id}.")
 
                 updated_space = {
                     "id": str(result[0]),
@@ -139,33 +139,43 @@ def handle_verify_parking(parking_space_id: uuid.UUID, is_verified: bool) -> Res
                 )
                 user_info_result = cur.fetchone()
                 if not user_info_result:
-                    return Err("User information not found.")
+                    return Err(f"User information not found for user ID {user_id}.")
 
                 user_name = user_info_result[0]  # Extract user's name
                 user_email = user_info_result[1]  # Extract user's email
 
         # Step 4: Send an email notification to the user
         if is_verified:
+            try:
                 send_email(
-                   to=user_email,
-                   subject="Parking spot verification successful",
-                   content=generate_templated_email(
-                          "spot_verified",
-                          name=user_name  # Use the fetched user's name
-                   ),
+                    to=user_email,
+                    subject="Parking spot verification successful",
+                    content=generate_templated_email(
+                        "spot_verified",
+                        name=user_name  # Use the fetched user's name
+                    ),
                 )
+            except Exception as email_error:
+                return Err(f"Failed to send verification email: {str(email_error)}")
         else:
+            try:
                 send_email(
-                        to=user_email,
-                        subject="Parking spot verification rejected",
-                        content=generate_templated_email(
-                            "spot_rejected",
-                            name=user_name  # Use the fetched user's name
-                        ),
+                    to=user_email,
+                    subject="Parking spot verification rejected",
+                    content=generate_templated_email(
+                        "spot_rejected",
+                        name=user_name  # Use the fetched user's name
+                    ),
                 )
+            except Exception as email_error:
+                return Err(f"Failed to send rejection email: {str(email_error)}")
+
         return Ok(updated_space)
+
     except Exception as e:
-        return Err(f"Error during verification process: {str(e)}")
+        # Capture any unexpected error and return it
+        return Err(f"An unexpected error occurred during the verification process: {str(e)}")
+
 
 
 

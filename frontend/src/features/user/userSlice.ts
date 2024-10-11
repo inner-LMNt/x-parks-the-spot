@@ -159,7 +159,7 @@ export const reset_request = createAsyncThunk<
   { rejectValue: string } // Types for ThunkAPI
 >("user/reset_request", async (email: string, { rejectWithValue }) => {
   try {
-    const response = await axios.post("auth/password-reset-request", {
+    const response = await axios.post("auth/password-reset", {
       email,
     } as PasswordResetRequest);
     return response.data;

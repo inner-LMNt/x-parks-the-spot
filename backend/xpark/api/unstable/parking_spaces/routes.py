@@ -43,7 +43,7 @@ def verify_parking_space(
         case Ok(updated_space):
             return updated_space, 200
         case Err(e):
-            return {"error": str(e)}, 404
+            return {"error": str(e)}, 400
 
 
 @bp.post("")

@@ -104,6 +104,7 @@ def reset_password(token: str) -> Tuple[Any, int]:
             return {"message": "Password reset successfully"}, 200
 
 
+
 # @bp.get("id")
 # @require_logged_in_user
 # def id(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:

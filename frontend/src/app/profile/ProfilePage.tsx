@@ -74,6 +74,7 @@ function CommentCard({
 export default function ProfilePage() {
     const dispatch = useDispatch();
     const isLoggedIn = useSelector((state: any) => state.user.isLoggedIn);
+    //const yearsOnApp = useSelector((state:any) => state.user.);
     const [eloRating] = React.useState(1200);
     const router = useRouter();
 
@@ -83,12 +84,15 @@ export default function ProfilePage() {
         router.push('/login');
     };
 
+    console.log("Select ", useSelector((state:any) => state.user))
+
     const userProfile = {
-        username: 'John Doe',
+        username: "John",
         joinedDate: new Date(2020, 5, 1),
         spotfindPosts: 50,
         yearsOnApp: 2,
     };
+
 
     const maxElo = 3000;
 

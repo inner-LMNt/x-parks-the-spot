@@ -9,29 +9,28 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAppDispatch } from '@/store/hooks';
 import { reset_password } from '@/features/user/userSlice';
-import {zxcvbn} from "@zxcvbn-ts/core";
+import { zxcvbn } from '@zxcvbn-ts/core';
 
-export default async function ConfirmResetPage() {
+export default function ConfirmResetPage() {
     const [loading, setLoading] = useState(false);
     const [confirmed, setConfirmed] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [newPassword, setNewPassword] = useState<string>('');
-    const [confirmPassword, setConfirmPassword] = useState<string>(''); // New state for confirm password
+    const [confirmPassword, setConfirmPassword] = useState<string>('');
 
     const dispatch = useAppDispatch();
     const params = useParams();
     const token = params?.['reset-token'] as string ?? "invalid";
 
-    const handleConfirmReset = async () => {
+    const handleConfirmReset = () => {
         if (!token) {
             setError("Invalid or missing token");
             return;
         }
 
-        // Check if the new password is at least 8 characters long
         if (newPassword.length < 8) {
             setError("Password must be at least 8 characters long");
-            return; // Early return if the password is too short
+            return;
         }
 
         if (zxcvbn(newPassword).score < 3) {
@@ -41,29 +40,29 @@ export default async function ConfirmResetPage() {
 
         if (newPassword !== confirmPassword) {
             setError("Passwords do not match");
-            return; // Early return if passwords don't match
+            return;
         }
 
         setLoading(true);
         setError(null);
-        try {
-            // @ts-ignore
-            const resultAction = await dispatch(reset_password({token, newPassword}));
 
-            if (reset_password.fulfilled.match(resultAction)) {
-                console.log("Password reset successfully");
-                setConfirmed(true); // Set confirmation state
-            } else if (reset_password.rejected.match(resultAction)) {
-                console.log("Reset failed", resultAction.payload);
-                setError(resultAction.payload || "Password reset failed");
-            }
-        } catch (err) {
-            console.error("Reset failed:", err);
-            setError("Something went wrong"); // Handle unexpected errors
-        } finally {
-            setLoading(false);
-        }
-    }
+        dispatch(reset_password({ token, newPassword }))
+            .then(resultAction => {
+                if (reset_password.fulfilled.match(resultAction)) {
+                    console.log("Password reset successfully");
+                    setConfirmed(true);
+                } else if (reset_password.rejected.match(resultAction)) {
+                    console.log("Reset failed", resultAction.payload);
+                    setError(resultAction.payload || "Password reset failed");
+                }
+            })
+            .catch(err => {
+                console.error("Reset failed:", err);
+                setError("Something went wrong");
+            })
+            .finally(() => setLoading(false));
+    };
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-4 overflow-hidden">
             <motion.div

@@ -45,10 +45,12 @@ export default function SearchPage() {
   const [address, setAddress] = useState<string>('');
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
-
+  const [showLoginModal, setShowLoginModal] = useState(false); // Track login modal state
   const mapRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const currentUrl = usePathname();
+  const isLoggedIn = useAppSelector(state => state.user.isLoggedIn);
+
 
   useEffect(() => {
     setDomLoaded(true);
@@ -104,6 +106,7 @@ export default function SearchPage() {
   };
 
   const onSearch = async () => {
+
     let location = mapCenter;
 
     if (address && !useCurrentLocation) {
@@ -149,6 +152,7 @@ export default function SearchPage() {
   };
 
   const handleSpotSelect = (spot: ParkingSpaceSummary) => {
+    console.log("Spot clicked:", spot)
     if (selectedSpot && selectedSpot.id === spot.id) {
       setSelectedSpot(null);
     } else {
@@ -250,46 +254,85 @@ export default function SearchPage() {
     setSearchRadius(value);
   };
 
+  // Handle restricted actions and show modal if not logged in
   const reserveSpot = (parkingSpaceId: string | undefined) => {
+    if (!isLoggedIn) {
+      setShowLoginModal(true); // Show login modal if not logged in
+      return;
+    }
     if (!parkingSpaceId) {
       return;
     }
     router.push(`/bookings/${parkingSpaceId}/reserve?previousUrl=${encodeURIComponent(currentUrl ?? '/search')}`);
-  }
+  };
+
+
+  // Function to close the modal
+  const closeLoginModal = () => {
+    setShowLoginModal(false);
+  };
 
   return (domLoaded &&
       <div
           className="min-h-screen bg-gray-50 text-gray-900 flex flex-col"
           style={{ height: '100vh', overflow: 'hidden' }}
       >
+        {/* Show login button next to search if the user is not logged in */}
+        {!isLoggedIn && (
+            <div className="fixed top-2 right-4 z-10">
+              <Button
+                  onClick={() => router.push('/login')}
+                  className="bg-blue-500 text-white px-4 py-2 rounded-md shadow-md"
+              >
+                Log In
+              </Button>
+            </div>
+        )}
+
+        {/* Show login modal when not logged in and trying to perform restricted actions */}
+        {showLoginModal && (
+            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+              <div className="bg-white p-6 rounded-lg shadow-lg">
+                <h2 className="text-lg font-bold mb-4">You need to log in to perform this action</h2>
+                <p className="mb-4">Please log in to continue reserving a parking spot.</p>
+                <div className="flex justify-end">
+                  <Button
+                      onClick={() => router.push('/login')}
+                      className="bg-blue-500 text-white px-4 py-2 rounded-md"
+                  >
+                    Log In
+                  </Button>
+                  <Button
+                      onClick={closeLoginModal}
+                      className="ml-2 bg-gray-300 text-gray-800 px-4 py-2 rounded-md"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+        )}
+
         <motion.div
-            className={`fixed top-2 w-full flex justify-center z-50 transition-all duration-300`}
-            animate={{ opacity: isSearchOpen ? 1 : 0.6 }}
+            className={`fixed ${!isLoggedIn ? 'top-12' : 'top-2'} w-full flex justify-center z-50 transition-all duration-300`}
+            animate={{opacity: isSearchOpen ? 1 : 0.6}}
         >
           <Card className={`w-3/4 sm:w-2/3 md:w-1/2 lg:w-2/5`}>
-            <CardHeader
-                className={`${isSearchOpen ? 'p-3 border-b' : 'py-0.5 px-4'}`}
-                onClick={toggleSearch}
-            >
+            <CardHeader className={`${isSearchOpen ? 'p-3 border-b' : 'py-0.5 px-4'}`} onClick={toggleSearch}>
               <div className="flex justify-between items-center cursor-pointer">
-                <CardTitle className={`text-lg ${isSearchOpen ? 'text-xl' : 'text-base'}`}>
-                  Search for Parking
-                </CardTitle>
-                <Button
-                    variant="ghost"
-                    className="p-1 focus:outline-none"
-                    aria-label="Toggle Search Parameters"
-                >
-                  {isSearchOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                <CardTitle className={`text-lg ${isSearchOpen ? 'text-xl' : 'text-base'}`}>Search for
+                  Parking</CardTitle>
+                <Button variant="ghost" className="p-1 focus:outline-none" aria-label="Toggle Search Parameters">
+                  {isSearchOpen ? <ChevronUp size={20}/> : <ChevronDown size={20}/>}
                 </Button>
               </div>
             </CardHeader>
 
             <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: isSearchOpen ? 'auto' : 0, opacity: isSearchOpen ? 1 : 0 }}
-                transition={{ duration: 0.3 }}
-                style={{ overflow: 'hidden' }}
+                initial={{height: 0, opacity: 0}}
+                animate={{height: isSearchOpen ? 'auto' : 0, opacity: isSearchOpen ? 1 : 0}}
+                transition={{duration: 0.3}}
+                style={{overflow: 'hidden'}}
             >
               {geoEnabled ? (
                   <CardContent className="pt-2 pb-3">
@@ -339,7 +382,8 @@ export default function SearchPage() {
                       {!useCurrentLocation && (
                           <div className="flex flex-col mb-4">
                             <Label htmlFor="address" className="text-sm mb-1">Near (Address):</Label>
-                            <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={handlePlaceSelect} className="w-full">
+                            <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={handlePlaceSelect}
+                                          className="w-full">
                               <Input
                                   id="address"
                                   type="text"
@@ -359,7 +403,8 @@ export default function SearchPage() {
               ) : (
                   <CardContent className="pt-2">
                     <div className="p-4 bg-gray-100 rounded-md">
-                      <p className="text-lg font-semibold mb-2">Please enable geolocation to search for parking spots near you.</p>
+                      <p className="text-lg font-semibold mb-2">Please enable geolocation to search for parking spots
+                        near you.</p>
                       <p className="mb-2">To enable geolocation:</p>
                       <ol className="list-decimal list-inside ml-4">
                         <li className="mb-1">Go to your browser settings.</li>
@@ -387,7 +432,7 @@ export default function SearchPage() {
               libraries={['places']}
           >
             <GoogleMap
-                mapContainerStyle={{ width: '100%', height: '100%' }}
+                mapContainerStyle={{width: '100%', height: '100%'}}
                 center={mapCenter}
                 zoom={14}
                 options={{
