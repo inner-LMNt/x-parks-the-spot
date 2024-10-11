@@ -28,7 +28,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import {RegisterRequest} from "@/types/type";
 import {useAppDispatch, useAppSelector} from '@/store/hooks'; // Use typed hooks
-import {deleteAccount} from "@/features/user/userSlice";
+import {request_delete_account} from "@/features/user/userSlice";
 import {ArrowLeft} from "lucide-react";
 import Link from "next/link";
 
@@ -55,12 +55,12 @@ export default function SettingsPage() {
         try {
             // Dispatch the deleteAccount thunk with the password from the form
             //@ts-ignore
-            const resultAction = await dispatch(deleteAccount({userId: userID, password: data.password})); // Use `data.password`
+            const resultAction = await dispatch(request_delete_account({password: data.password})); // Use `data.password`
 
-            if (deleteAccount.fulfilled.match(resultAction)) {
+            if (request_delete_account.fulfilled.match(resultAction)) {
                 // Account successfully deleted
                 setAccountDeleted(true); // Show account deleted dialog
-            } else if (deleteAccount.rejected.match(resultAction)) {
+            } else if (request_delete_account.rejected.match(resultAction)) {
                 // Account deletion failed
                 setErrorMessage(resultAction.payload as string); // Show error message
             }
@@ -197,10 +197,10 @@ export default function SettingsPage() {
                 <DialogContent className="bg-white rounded-md p-6">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-semibold text-gray-900">
-                            Account Deleted
+                            Email Sent
                         </DialogTitle>
                         <DialogDescription className="text-base text-gray-700 mt-2">
-                            Your account has been successfully deleted.
+                            A deletion email has been sent to you.
                         </DialogDescription>
                     </DialogHeader>
                     <Button

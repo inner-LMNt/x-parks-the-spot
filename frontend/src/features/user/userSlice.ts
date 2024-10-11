@@ -61,28 +61,41 @@ export const login = createAsyncThunk<
 });
 
 export const deleteAccount = createAsyncThunk<
-  void, // Return type (no response expected beyond success)
-  { userId: string; password: string }, // Argument type (an object with userId and password)
-  { rejectValue: string } // ThunkAPI config with state
+    void, // Return type of the payload creator
+    string, // Token passed in the URL
+    { rejectValue: string } // Types for ThunkAPI
 >(
-  "user/deleteAccount",
-  //@ts-ignore
-  async ({ userId, password }, { rejectWithValue }) => {
-    try {
-      // Make the API call using both userId and password
-      const response = await axios.post<Object>("auth/delete", {
-        userId,
-        password,
-      });
-
-      return response.data; // Handle success response
-    } catch (error: any) {
-      if (error.status === 401) {
-        return rejectWithValue("Invalid password");
-      }
-      return rejectWithValue("Account deletion failed");
+    'user/deleteAccount',
+    async (token: string, { rejectWithValue }) => {
+        try {
+            // Send request to delete account, no body needed, just the token
+            const response = await axios.get(`/auth/confirm-delete/${token}`);
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue('Deletion Token Invalid');
+        }
     }
-  }
+);
+
+export const request_delete_account = createAsyncThunk<
+    void, // Return type of the payload creator
+    { password: string }, // First argument to the payload creator
+    { rejectValue: string } // Types for ThunkAPI
+>(
+    'user/request_delete_account',
+    async ({ password },
+                        { rejectWithValue }) => {
+        try {
+            // Implement logout logic if needed (e.g., API call to invalidate token)
+            const response = await axios.post('auth/request_delete_account', {password});
+            return response.data
+        } catch (error: any) {
+            if (error.response?.status === 401) {
+                return rejectWithValue('Invalid password');
+            }
+            return rejectWithValue('Account deletion request failed');
+        }
+    }
 );
 
 /**
@@ -121,18 +134,37 @@ export const logout = createAsyncThunk<
   }
 });
 
-export const reset = createAsyncThunk<
+export const reset_password = createAsyncThunk<void, { token: string; newPassword: string }, { rejectValue: string }>(
+    "user/reset_password",
+    async ({ token, newPassword }, { rejectWithValue }) => {
+        try {
+
+            const response = await axios.post(`auth/reset-password/${token}`, {
+                token,
+                newPassword,
+            });
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.status === 400) {
+                return rejectWithValue("Invalid token or password");
+            }
+            return rejectWithValue("Password reset failed");
+        }
+    }
+);
+
+export const reset_request = createAsyncThunk<
   void, // Return type of the payload creator
   string, // First argument to the payload creator (email)
   { rejectValue: string } // Types for ThunkAPI
->("user/reset", async (email: string, { rejectWithValue }) => {
+>("user/reset_request", async (email: string, { rejectWithValue }) => {
   try {
-    const response = await axios.post("auth/password-reset", {
+    const response = await axios.post("auth/password-reset-request", {
       email,
     } as PasswordResetRequest);
     return response.data;
   } catch (error: any) {
-    if (error.status === 409) {
+    if (error.status === 404) {
       return rejectWithValue("Email not found");
     }
     return rejectWithValue("Password reset failed");
@@ -156,7 +188,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof login.pending
           | typeof register_acc.pending
           | typeof logout.pending
-          | typeof reset.pending
+          | typeof reset_password.pending
         > => action.type.endsWith("/pending"),
         (state) => {
           state.loading = true;
@@ -172,7 +204,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof login.rejected
           | typeof register_acc.rejected
           | typeof logout.rejected
-          | typeof reset.rejected
+          | typeof reset_password.rejected
         > => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false;
@@ -199,7 +231,7 @@ const userSlice = createSlice<UserState, {}, "user">({
       )
 
       // Handle fulfilled actions for logout and reset
-      .addMatcher(isAnyOf(logout.fulfilled, reset.fulfilled), (state) => {
+      .addMatcher(isAnyOf(logout.fulfilled, reset_password.fulfilled), (state) => {
         state.loading = false;
         state.isLoggedIn = false;
         state.access_token = null;

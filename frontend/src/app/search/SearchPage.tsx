@@ -61,6 +61,8 @@ export default function SearchPage() {
   const navigationCardRef = useRef<HTMLDivElement>(null);
   const currentUrl = usePathname();
 
+  const libs = ['places'];
+
   // Fetch user location on component mount
   useEffect(() => {
     setDomLoaded(true);
@@ -296,15 +298,6 @@ export default function SearchPage() {
     };
   }, []);
 
-  // for navigation mode
-  useEffect(() => {
-    if (directions) {
-      setNavigationMode(true);
-    } else {
-      setNavigationMode(false);
-    }
-  }, [directions]);
-
   // Watch user location and check if within 50 feet of destination
   useEffect(() => {
     let watchId: number;
@@ -329,9 +322,8 @@ export default function SearchPage() {
 
           console.log("Distance to destination:", distance);
 
-          if (distance < 30) {
+          if (distance < 50) {
             setReachedDestination(true);
-            setNavigationMode(false);
             setDirections(null);
           } else {
             setReachedDestination(false);
@@ -563,7 +555,7 @@ export default function SearchPage() {
         }}
       >
         <LoadScriptNext googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
-          libraries={['places']}
+          libraries={libs as any}
         >
           <GoogleMap
             mapContainerStyle={{ width: '100%', height: '100%' }}
@@ -575,16 +567,18 @@ export default function SearchPage() {
               gestureHandling: 'greedy',
             }}
           >
-            {parkingSpots.map((spot: ParkingSpace) => (
-              <Marker
-                key={spot.id}
-                position={{
-                  lat: spot.location.latitude,
-                  lng: spot.location.longitude,
-                }}
-                onClick={() => handleSpotSelect(spot)}
-              />
-            ))}
+            {!navigationMode &&
+              (parkingSpots.map((spot: ParkingSpace) => (
+                <Marker
+                  key={spot.id}
+                  position={{
+                    lat: spot.location.latitude,
+                    lng: spot.location.longitude,
+                  }}
+                  onClick={() => handleSpotSelect(spot)}
+                />
+              )))}
+
             {userLocation && iconScale && (
               <Marker
                 position={userLocation}
@@ -715,19 +709,10 @@ export default function SearchPage() {
             )}
           </CardHeader>
           <CardContent>
-            {navigationMode && directions ? (
+            {navigationMode ? (
               reachedDestination ? (
                 <div className="text-center">
                   <h3 className="text-md font-semibold mb-4">You've reached your destination</h3>
-                  <button
-                    onClick={() => {
-                      setNavigationMode(false);
-                      setDirections(null);
-                    }}
-                    className="px-4 py-2 bg-red-500 text-white text-sm font-semibold rounded hover:bg-red-700 focus:outline-none"
-                  >
-                    Exit Navigation
-                  </button>
                 </div>
               ) : (
                 <div>
@@ -756,11 +741,15 @@ export default function SearchPage() {
                       </button>
                     </div> */}
                     <div className="w-8"></div>
-                    <span dangerouslySetInnerHTML={{ __html: directions.routes[0].legs[0].steps[currentStepIndex].instructions }} />
-                    <div className="text-sm text-gray-600">
-                      <p>Distance: {directions.routes[0].legs[0].steps[currentStepIndex].distance?.text ?? ''}</p>
-                      <p>Duration: {directions.routes[0].legs[0].steps[currentStepIndex].duration?.text ?? ''}</p>
-                    </div>
+                    {directions && (
+                      <span dangerouslySetInnerHTML={{ __html: directions.routes[0].legs[0].steps[currentStepIndex].instructions }} />
+                    )}
+                    {directions && (
+                      <div className="text-sm text-gray-600">
+                        <p>Distance: {directions.routes[0].legs[0].steps[currentStepIndex].distance?.text ?? ''}</p>
+                        <p>Duration: {directions.routes[0].legs[0].steps[currentStepIndex].duration?.text ?? ''}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )

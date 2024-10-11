@@ -3,6 +3,7 @@ from xpark.logic.user import validate_token_and_refresh
 from result import Ok, Err
 from typing import Callable, Any, Tuple, Protocol, TypedDict, Unpack
 import uuid
+from functools import wraps
 
 
 # These two classes implement type-checking to ensure decorated functions have both the `token` and `user_id` arguments
@@ -16,6 +17,7 @@ class AuthFunction(Protocol):
 
 
 def require_logged_in_user(next_fn: AuthFunction) -> Callable[..., Tuple[Any, int]]:
+    @wraps(next_fn)
     def wrapper(*args: Any, **kwargs: Any) -> Tuple[Any, int]:
         # Extract the bearer auth
         token_to_check = request.headers.get("Authorization")
@@ -26,7 +28,6 @@ def require_logged_in_user(next_fn: AuthFunction) -> Callable[..., Tuple[Any, in
         if not token_to_check.startswith("Bearer "):
             return {"err": "Bad authentication"}, 400
         token = token_to_check[7:]
-
         match validate_token_and_refresh(token):
             case Ok(user_id):
                 kwargs["user_id"] = user_id

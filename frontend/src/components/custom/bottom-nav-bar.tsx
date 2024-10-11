@@ -1,12 +1,20 @@
 "use client";
 
 import { useState } from 'react';
-import { Home, Search, Calendar, User, Plus } from 'lucide-react';
+import {Search, Calendar, User, Plus, Car, Home} from 'lucide-react';
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 export function BottomNavBar() {
   const [activeIcon, setActiveIcon] = useState<string | null>(null);
+
+  const navItems = [
+    { icon: Car, label: 'My Spots', href: '/myspots', isCenter: false },
+    { icon: Search, label: 'Search', href: '/search', isCenter: false },
+    { icon: Plus, label: 'Add', href: '/add', isCenter: true },
+    { icon: Calendar, label: 'Bookings', href: '/bookings', isCenter: false },
+    { icon: User, label: 'Profile', href: '/profile', isCenter: false },
+  ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-gray-100 shadow-lg z-10 border-t border-gray-300">
