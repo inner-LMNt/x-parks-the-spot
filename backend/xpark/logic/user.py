@@ -296,7 +296,7 @@ def handle_password_reset_request(email: str) -> Result[None, str]:
             cur.execute("DELETE FROM user_delete_requests WHERE expiry <= NOW()")
 
             cur.execute(
-                "INSERT INTO user_pw_reset_requests (user_id, token, expiry) VALUES (%s, %s, NOW() + %s * INTERVAL '1 seconds')",
+                "INSERT INTO user_pw_reset_requests (user_id, token, expiry) VALUES (%s, %s, NOW() + %s * INTERVAL '30 minutes')",
                 (user_id, reset_token, Config.DELETE_RESET_EXPIRY_SECONDS),
             )
 

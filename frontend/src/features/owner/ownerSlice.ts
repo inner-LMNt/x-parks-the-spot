@@ -25,6 +25,20 @@ const initialState: OwnerState = {
     pendingSpots: [],
 };
 
+
+export const getAllPendingSpots = createAsyncThunk<
+    { pendingSpaces: ParkingSpace[] },
+    void,
+    { rejectValue: string }
+>("owner/getAllPendingSpots", async (_, { rejectWithValue }) => {
+    try {
+        const response = await axios.get("/parking-spaces/get-pending");
+        return response.data;
+    } catch (error: any) {
+        return rejectWithValue(error.response?.data?.error || "Failed to get pending parking spots");
+    }
+});
+
 // Async thunk to fetch owner spots
 export const getOwnerSpots = createAsyncThunk<
     OwnerSpotsResponse,
@@ -38,6 +52,8 @@ export const getOwnerSpots = createAsyncThunk<
         return rejectWithValue(error.response?.data?.error || "Failed to get owner spots");
     }
 });
+
+
 
 // Async thunk to delete a parking spot
 export const deleteParkingSpot = createAsyncThunk<
@@ -132,6 +148,20 @@ const ownerSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
+            // Added reducers for getAllPendingSpots
+            .addCase(getAllPendingSpots.pending, (state: OwnerState) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(getAllPendingSpots.fulfilled, (state: OwnerState, action) => {
+                state.loading = false;
+                state.pendingSpots = action.payload.pendingSpaces;
+            })
+            .addCase(getAllPendingSpots.rejected, (state: OwnerState, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+            })
+
             // Handle getOwnerSpots
             .addCase(getOwnerSpots.pending, (state: OwnerState) => {
                 state.loading = true;

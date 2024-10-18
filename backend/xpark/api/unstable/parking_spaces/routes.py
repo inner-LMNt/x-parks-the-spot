@@ -7,13 +7,13 @@ from xpark.logic.parkingspace import (
     get_owned_parking_spaces,
     handle_submit_verification,
     handle_verify_parking,
+    get_all_pending_parking_spaces,
 )
 from flask import request
 from result import Ok, Err
 from xpark.middleware.token_auth_middleware import require_logged_in_user
 from typing import Tuple, Any
 import uuid
-
 
 @bp.get("")
 @require_logged_in_user
@@ -23,6 +23,19 @@ def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any,
             return data, 200
         case Err(e):
             return {"error": str(e)}, 500
+
+
+@bp.get("get-pending")
+@require_logged_in_user
+def get_pending_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    """
+    Fetch all parking spaces with a pending verification status
+    """
+    match get_all_pending_parking_spaces():
+        case Ok(pending_spaces):
+            return pending_spaces, 200
+        case Err(e):
+            return {"error": str(e)}, 403
 
 
 @bp.post("verify-parking-space")

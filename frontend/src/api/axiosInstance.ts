@@ -10,7 +10,7 @@ export const injectStore = (_store: AppStore) => {
 const axiosInstance = axios.create({
   baseURL:
     process.env.NEXT_PUBLIC_API_BASE_URL ||
-    "http://localhost:5001/api/unstable",
+    "http://localhost:5000/api/unstable",
 });
 
 // Add a request interceptor

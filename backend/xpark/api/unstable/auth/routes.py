@@ -106,6 +106,7 @@ def reset_password_request() -> Tuple[Any, int]:
 
 @bp.post("/reset-password/<token>")
 def reset_password(token: str) -> Tuple[Any, int]:
+
     new_password = request.json["new_password"]  # type: ignore
 
     match handle_password_reset_confirmation(token, new_password):

@@ -11,6 +11,66 @@ from result import Result, Ok, Err
 import uuid
 import json
 
+def get_all_pending_parking_spaces() -> Result[Dict[str, List[Dict[str, Any]]], str]:
+    """
+    Fetch all parking spaces that have a 'pending' verification status from the database.
+    """
+    try:
+        with DB.pool.connection() as conn:
+            with conn.cursor() as cur:
+                query = """
+                    SELECT
+                        id,
+                        name,
+                        is_paid,
+                        verification_status,
+                        ST_Y(location::geometry) AS latitude,
+                        ST_X(location::geometry) AS longitude,
+                        address,
+                        availability_schedule,
+                        pricing_info,
+                        photos,
+                        created_at,
+                        updated_at
+                    FROM parking_spaces
+                    WHERE verification_status = 'pending'
+                """
+                cur.execute(query)
+                rows = cur.fetchall()
+
+                # Retrieve column names
+                col_names = [desc[0] for desc in cur.description]
+
+                pendingSpaces = []
+                for row in rows:
+                    row_dict = dict(zip(col_names, row))
+
+                    parking_space = {
+                        "id": str(row_dict["id"]),
+                        "name": row_dict["name"] or "Unnamed Spot",
+                        "is_paid": row_dict["is_paid"],
+                        "status": row_dict["verification_status"] or "Pending",
+                        "created_at": row_dict["created_at"].isoformat(),
+                        "updated_at": row_dict["updated_at"].isoformat(),
+                        "location": {
+                            "latitude": float(row_dict["latitude"]),
+                            "longitude": float(row_dict["longitude"]),
+                            "address": row_dict["address"] or "",
+                        },
+                        "availability_schedule": row_dict["availability_schedule"] or [],
+                        "pricing_info": row_dict["pricing_info"] or {},
+                        "photos": row_dict["photos"] or [],
+                    }
+
+                    pendingSpaces.append(parking_space)
+
+                return Ok({"pendingSpaces": pendingSpaces})
+    except Exception as e:
+        return Err(str(e))
+
+
+
+
 
 def get_owned_parking_spaces(
     user_id: uuid.UUID,
