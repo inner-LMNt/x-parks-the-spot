@@ -17,7 +17,7 @@ import uuid
 
 @bp.get("")
 @require_logged_in_user
-def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+def get_owned_parking_spaces_route(user_id: uuid.UUID) -> Tuple[Any, int]:
     match get_owned_parking_spaces(user_id):
         case Ok(data):
             return data, 200
@@ -28,7 +28,6 @@ def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any,
 @bp.post("verify-parking-space")
 @require_logged_in_user
 def verify_parking_space(
-    token: str, user_id: uuid.UUID
 ) -> Tuple[Any, int]:
     # Parse the request JSON body for the spot ID and verification decision
     data = request.get_json()
@@ -48,7 +47,7 @@ def verify_parking_space(
 
 @bp.post("")
 @require_logged_in_user
-def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+def create_parking_space_route(user_id: uuid.UUID) -> Tuple[Any, int]:
     data = request.form.get("data")
     image_file = request.files.get("image")
 
@@ -73,7 +72,7 @@ def get_parking_space_route(parking_space_id: str) -> Tuple[Any, int]:
 
 @bp.post("spot-verification")
 @require_logged_in_user
-def submit_verification( token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+def submit_verification(user_id: uuid.UUID) -> Tuple[Any, int]:
     spot_id = uuid.UUID(request.form.get('spotID'))
     image_file = request.files.get("image")
     result = handle_submit_verification(user_id=user_id, parking_space_id=spot_id, image_file=image_file)
@@ -86,7 +85,7 @@ def submit_verification( token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 @bp.patch("<parking_space_id>")
 @require_logged_in_user
 def update_parking_space_route(
-    parking_space_id: str, token: str, user_id: uuid.UUID
+    parking_space_id: str, user_id: uuid.UUID
 ) -> Tuple[Any, int]:
     data = request.get_json()
     if not data:
@@ -94,28 +93,35 @@ def update_parking_space_route(
 
     parking_space_uuid = uuid.UUID(parking_space_id)
     location = data.get("location")
-    if location: address = location.get("address")
-    else: address = None
-    if location: latitude = location.get("latitude")
-    else: latitude = None
-    if location: longitude = location.get("longitude")
-    else: longitude = None
+    if location:
+        address = location.get("address")
+    else:
+        address = None
+    if location:
+        latitude = location.get("latitude")
+    else:
+        latitude = None
+    if location:
+        longitude = location.get("longitude")
+    else:
+        longitude = None
     pricing_info = data.get("pricing_info")
-    if pricing_info: price_per_hour = pricing_info.get("base_price")
-    else: price_per_hour = None
-
-    reverification_required : bool = data.get("reverification_required") or False
+    if pricing_info:
+        price_per_hour = pricing_info.get("base_price")
+    else:
+        price_per_hour = None
+    reverification_required = data.get("reverification_required")
 
     match update_parking_space(
-        user_id = user_id,
-        parking_space_id = parking_space_uuid,
-        name = data.get("name"),
-        address = address,
-        latitude = latitude,
-        longitude = longitude,
-        availability_schedule = data.get("availability_schedule"),
-        price_per_hour = price_per_hour,
-        reverification_required = reverification_required
+        user_id=user_id,
+        parking_space_id=parking_space_uuid,
+        name=data.get("name"),
+        address=address,
+        latitude=latitude,
+        longitude=longitude,
+        availability_schedule=data.get("availability_schedule"),
+        price_per_hour=price_per_hour,
+        reverification_required=reverification_required
     ):
         case Ok(parking_space):
             return parking_space, 200
@@ -123,11 +129,10 @@ def update_parking_space_route(
             return {"err": e}, 400
 
 
-
 @bp.delete("<parking_space_id>")
 @require_logged_in_user
 def delete_parking_space_route(
-    parking_space_id: str, token: str, user_id: uuid.UUID
+    parking_space_id: str, user_id: uuid.UUID
 ) -> Tuple[Any, int]:
     parking_space_uuid = uuid.UUID(parking_space_id)
 
