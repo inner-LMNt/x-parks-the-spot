@@ -31,6 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import AddCarModal from '@/components/custom/AddCarModal';
 import Link from 'next/link';
 import ImageWrapper from "@/components/custom/ImageWrapper";
+import {lock} from "next/dist/client/components/react-dev-overlay/internal/components/Overlay/body-locker";
 
 /**
  * **Booking Page Component**
@@ -71,10 +72,6 @@ export default function ParkingSpaceBooking() {
         renter_id: userId // Dynamically set the authenticated user ID
     });
 
-    const [timer, setTimer] = useState<number>(0); // Time left in milliseconds
-
-    const isMounted = useRef<boolean>(false);
-    const isLocked = useRef<boolean>(false); // Ref to track if parking space is locked by the current user
     /**
      * **Fetch Parking Space Details and User's Car Info**
      */
@@ -93,142 +90,6 @@ export default function ParkingSpaceBooking() {
             setIsAddCarModalOpen(true);
         }
     }, [carLoading, carInfos.length]);
-
-    /**
-     * **Handle Locking Based on Fetched Parking Space Details**
-     */
-    useEffect(() => {
-        if (!parkingSpace) return; // Ensure parkingSpace is loaded
-
-        isMounted.current = true;
-
-        const attemptLock = async () => {
-            if (parkingSpace.locked) {
-                if (parkingSpace.locked_by === userId) {
-                    // Already locked by the same user
-                    isLocked.current = true;
-                    setTimer(parkingSpace.lock_until ? parkingSpace.lock_until - Date.now() : 0);
-                } else {
-                    // Locked by another user
-                    toast({
-                        title: 'Lock Failed',
-                        description: 'This parking space is already locked by another user.',
-                        variant: 'destructive',
-                    });
-                    router.push(previousUrl);
-                }
-            } else {
-                // Attempt to lock
-                try {
-                    // @ts-ignore
-                    const response = await dispatch(lockParkingSpace({
-                        parking_space_id: parkingSpaceId,
-                        lock_duration: 'PT5M'
-                    })).unwrap();
-                    isLocked.current = true;
-                    setTimer(response.expiresAt - Date.now());
-                    toast({
-                        title: 'Parking Space Locked',
-                        description: 'You have successfully locked this parking space.',
-                        variant: 'success',
-                    });
-                } catch (error: any) {
-                    if (error === "Parking space is already locked or reserved") {
-                        toast({
-                            title: 'Lock Failed',
-                            description: 'This parking space is already locked by another user or reserved.',
-                            variant: 'destructive',
-                        });
-                    } else {
-                        toast({
-                            title: 'Lock Failed',
-                            description: error || 'Unable to lock the parking space.',
-                            variant: 'destructive',
-                        });
-                    }
-                    router.push(previousUrl);
-                }
-            }
-        };
-
-        attemptLock();
-
-        /**
-         * **Handle Unlocking on Component Unmount or Page Reload**
-         */
-        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (isMounted.current && isLocked.current) {
-                // Proceed to unlock without blocking the unload
-                // @ts-ignore
-                dispatch(unlockParkingSpace(parkingSpaceId))
-                    .unwrap()
-                    .then(() => {
-                        toast({
-                            title: 'Parking Space Unlocked',
-                            description: 'You have successfully unlocked this parking space.',
-                            variant: 'success',
-                        });
-                    })
-                    .catch((error: any) => console.error('Failed to unlock on unload:', error));
-            }
-        };
-
-        window.addEventListener('beforeunload', handleBeforeUnload);
-
-        return () => {
-            if (isMounted.current && isLocked.current) {
-                // @ts-ignore
-                dispatch(unlockParkingSpace(parkingSpaceId))
-                    .unwrap()
-                    .then(() => {
-                        toast({
-                            title: 'Parking Space Unlocked',
-                            description: 'You have successfully unlocked this parking space.',
-                            variant: 'success',
-                        });
-                    })
-                    .catch((error: any) => console.error('Failed to unlock on unmount:', error));
-            }
-            isMounted.current = false;
-            window.removeEventListener('beforeunload', handleBeforeUnload);
-        };
-    }, [parkingSpace, dispatch, parkingSpaceId, userId, router, previousUrl]);
-
-    /**
-     * **Handle Lock Expiration and Set Up Timer**
-     */
-    useEffect(() => {
-        if (lockExpiresAt) {
-            const updateTimer = () => {
-                const timeLeft = lockExpiresAt - Date.now();
-                if (timeLeft <= 0) {
-                    setTimer(0);
-                    toast({
-                        title: 'Lock Expired',
-                        description: 'Your parking space lock has expired.',
-                        variant: 'destructive',
-                    });
-                    // Automatically unlock
-                    if (isLocked.current) {
-                        // @ts-ignore
-                        dispatch(unlockParkingSpace(parkingSpaceId))
-                            .unwrap()
-                            .catch((error: any) => console.error('Failed to unlock on expiration:', error));
-                        isLocked.current = false;
-                    }
-                    router.push(previousUrl);
-                } else {
-                    setTimer(timeLeft);
-                }
-            };
-
-            updateTimer();
-
-            const interval = setInterval(updateTimer, 1000);
-
-            return () => clearInterval(interval);
-        }
-    }, [lockExpiresAt, dispatch, parkingSpaceId, router, previousUrl]);
 
     /**
      * **Handle Booking Errors**
@@ -371,18 +232,6 @@ export default function ParkingSpaceBooking() {
         const start = new Date(booking.start_time);
         const end = new Date(booking.end_time);
         let hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-
-        if (is24Hours(booking.start_time, booking.end_time)) {
-            hours = 24;
-        } else if (hours < 0) {
-            hours += 24; // Overnight booking
-        }
-
-        // Prevent negative or excessively large durations
-        if (hours <= 0 || hours > 24) {
-            return 0;
-        }
-
         let price = hours * parkingSpace.pricing_info.base_price;
 
         if (parkingSpace.pricing_info.dynamic_pricing && parkingSpace.pricing_info.dynamic_pricing_algorithm) {
@@ -547,8 +396,8 @@ export default function ParkingSpaceBooking() {
                             <Star className="w-5 h-5 text-yellow-400 mr-1" />
                             <span className="font-semibold">{parkingSpace.verification_status}</span>
                         </div>
-                        <Badge variant={lockStatus !== 'locked' ? 'default' : 'destructive'}>
-                            {lockStatus === 'locked' ? 'Locked' : 'Available'}
+                        <Badge variant= 'default'>
+                            Available
                         </Badge>
                     </div>
                     <Separator className="my-4" />
@@ -682,18 +531,11 @@ export default function ParkingSpaceBooking() {
                             <div className="text-2xl font-bold">${calculateTotal().toFixed(2)}</div>
                         </div>
 
-                        <div className="w-full flex justify-between items-center mt-4">
-                            <div className="text-lg font-semibold">Time Left:</div>
-                            <div className="text-xl font-bold">
-                                {Math.floor(timer / 60000)}:{('0' + Math.floor((timer % 60000) / 1000)).slice(-2)} mins
-                            </div>
-                        </div>
-
                         <Button
                             type="submit"
                             className="w-full mt-4"
                             size="lg"
-                            disabled={isSubmitting || lockStatus !== 'locked'}
+                            disabled={isSubmitting}
                         >
                             {isSubmitting ? 'Submitting...' : 'Book Now'}
                         </Button>
