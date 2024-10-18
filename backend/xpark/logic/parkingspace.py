@@ -43,7 +43,7 @@ def get_owned_parking_spaces(
                 rows = cur.fetchall()
 
                 # Retrieve column names
-                col_names = [desc[0] for desc in cur.description]
+                col_names = [desc[0] for desc in cur.description] if cur.description is not None else []
 
                 paidSpaces = []
                 freeSpots = []
@@ -356,7 +356,7 @@ def create_parking_space(
                     ),
                 )
                 result = cur.fetchone()
-                parking_space_id, created_at, updated_at = result
+                parking_space_id, created_at, updated_at = result  # type: ignore
                 conn.commit()
 
                 # Construct the response object
@@ -386,8 +386,10 @@ def create_parking_space(
         return Err(str(e))
 
 
-def save_image(image_file) -> str:
+def save_image(image_file: FileStorage) -> str:
     allowed_extensions = {"png", "jpg", "jpeg", "gif"}
+    if image_file.filename is None:
+        return ""
     filename = secure_filename(image_file.filename)
     extension = filename.rsplit(".", 1)[1].lower()
     if "." in filename and extension in allowed_extensions:
@@ -399,8 +401,7 @@ def save_image(image_file) -> str:
         image_uri = f"/static/images/{unique_filename}"
         return image_uri
     else:
-        raise ValueError("Invalid image file type")
-
+        return ""
 
 def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str]:
     with DB.pool.connection() as conn:

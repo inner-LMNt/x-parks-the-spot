@@ -112,7 +112,7 @@ def create_reservation(
                 Check if the reservation from start_dt to end_dt fits within the availability schedule.
                 """
                 # Build a mapping from day_of_week to list of (start_time, end_time)
-                availability_map = {}
+                availability_map = {} # type: ignore
                 for slot in availability:
                     day = slot.get("day_of_week")
                     start_time_str = slot.get("start_time")  # Assuming "HH:MM"
@@ -123,10 +123,10 @@ def create_reservation(
 
                     try:
                         slot_start_time = datetime.datetime.strptime(
-                            start_time_str, "%H:%M"
+                            start_time_str, "%H:%M"  # type: ignore
                         ).time()
                         slot_end_time = datetime.datetime.strptime(
-                            end_time_str, "%H:%M"
+                            end_time_str, "%H:%M"  # type: ignore
                         ).time()
                     except ValueError:
                         continue  # Skip slots with invalid time format
@@ -321,7 +321,7 @@ def update_reservation_logic(
                         try:
                             car_info_uuid = uuid.UUID(value)
                             set_clauses.append(f"{key} = %s")
-                            values.append(str(car_info_uuid))
+                            values.append(str(car_info_uuid)) # type: ignore
                         except ValueError:
                             return Err("Invalid UUID format for car_info_id.")
                     elif key == "status":
@@ -363,7 +363,7 @@ def update_reservation_logic(
                     new_start_dt,
                 ),
             )
-            (overlap_count,) = cur.fetchone()
+            (overlap_count,) = cur.fetchone()  # type: ignore
             if overlap_count > 0:
                 return Err(
                     "Parking space is already reserved for the selected time slot."
@@ -376,7 +376,7 @@ def update_reservation_logic(
                 WHERE id = %s
                 RETURNING id, parking_space_id, start_time, end_time, car_info_id, renter_id, status, created_at, updated_at
             """
-            values.append(str(reservation_id))
+            values.append(str(reservation_id))  # type: ignore
             cur.execute(query, tuple(values))
             updated_reservation = cur.fetchone()
 
@@ -390,7 +390,7 @@ def update_reservation_logic(
                 status,
                 created_at,
                 updated_at,
-            ) = updated_reservation
+            ) = updated_reservation  # type: ignore
 
             # Commit the transaction
             conn.commit()
@@ -447,7 +447,7 @@ def cancel_reservation_logic(
                 """,
                 (str(reservation_id),),
             )
-            (renter_id,) = cur.fetchone()
+            (renter_id,) = cur.fetchone() # type: ignore
 
             if str(renter_id) != str(user_id):
                 return Err("User not authorized to cancel this reservation.")

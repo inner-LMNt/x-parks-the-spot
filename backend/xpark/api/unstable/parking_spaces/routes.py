@@ -74,7 +74,7 @@ def get_parking_space_route(parking_space_id: str) -> Tuple[Any, int]:
 @bp.post("spot-verification")
 @require_logged_in_user
 def submit_verification( token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    spot_id = request.form.get('spotID')
+    spot_id = uuid.UUID(request.form.get('spotID'))
     image_file = request.files.get("image")
     result = handle_submit_verification(user_id=user_id, parking_space_id=spot_id, image_file=image_file)
     if result.is_ok():

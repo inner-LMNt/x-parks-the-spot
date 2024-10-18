@@ -1,6 +1,4 @@
 from xpark.logic.reservations import (
-    unlock_parking_space,
-    lock_parking_space,
     update_reservation_logic,
     get_reservation,
     create_reservation,
