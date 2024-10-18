@@ -9,7 +9,7 @@ from result import Result, Ok, Err
 import datetime
 from datetime import timezone
 import logging
-from datetime import timezone, time as dt_time
+from datetime import time as dt_time
 
 logging.basicConfig(level=logging.DEBUG)
 

@@ -1,12 +1,7 @@
-from datetime import datetime
-
-from xpark.config import Config
 from . import bp
 from xpark.logic.search import search_query
-from flask import request, jsonify
-from result import Ok, Err
+from flask import request
 from typing import Tuple, Any
-import logging
 
 
 @bp.post("")

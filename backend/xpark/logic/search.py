@@ -1,5 +1,4 @@
-import uuid
-from typing import cast, Any
+from typing import Any
 
 from psycopg.rows import dict_row
 
