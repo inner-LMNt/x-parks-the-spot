@@ -17,7 +17,7 @@ import uuid
 
 @bp.get("")
 @require_logged_in_user
-def get_owned_parking_spaces_route(user_id: uuid.UUID) -> Tuple[Any, int]:
+def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     match get_owned_parking_spaces(user_id):
         case Ok(data):
             return data, 200
@@ -27,8 +27,7 @@ def get_owned_parking_spaces_route(user_id: uuid.UUID) -> Tuple[Any, int]:
 
 @bp.post("verify-parking-space")
 @require_logged_in_user
-def verify_parking_space(
-) -> Tuple[Any, int]:
+def verify_parking_space(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     # Parse the request JSON body for the spot ID and verification decision
     data = request.get_json()
     spot_id = data.get("spotId")
@@ -47,7 +46,7 @@ def verify_parking_space(
 
 @bp.post("")
 @require_logged_in_user
-def create_parking_space_route(user_id: uuid.UUID) -> Tuple[Any, int]:
+def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 
     data = request.form.get("data")
     image_file = request.files.get("image")
@@ -73,7 +72,7 @@ def get_parking_space_route(parking_space_id: str) -> Tuple[Any, int]:
 
 @bp.post("spot-verification")
 @require_logged_in_user
-def submit_verification(user_id: uuid.UUID) -> Tuple[Any, int]:
+def submit_verification(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     spot_id = uuid.UUID(request.form.get('spotID'))
     image_file = request.files.get("image")
     result = handle_submit_verification(user_id=user_id, parking_space_id=spot_id, image_file=image_file)
@@ -86,7 +85,7 @@ def submit_verification(user_id: uuid.UUID) -> Tuple[Any, int]:
 @bp.patch("<parking_space_id>")
 @require_logged_in_user
 def update_parking_space_route(
-    parking_space_id: str, user_id: uuid.UUID
+    parking_space_id: str, token: str, user_id: uuid.UUID
 ) -> Tuple[Any, int]:
     data = request.get_json()
     if not data:
@@ -133,7 +132,7 @@ def update_parking_space_route(
 @bp.delete("<parking_space_id>")
 @require_logged_in_user
 def delete_parking_space_route(
-    parking_space_id: str, user_id: uuid.UUID
+    parking_space_id: str, token: str, user_id: uuid.UUID
 ) -> Tuple[Any, int]:
     parking_space_uuid = uuid.UUID(parking_space_id)
 
