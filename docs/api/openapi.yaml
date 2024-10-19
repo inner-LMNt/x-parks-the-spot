@@ -273,6 +273,34 @@ paths:
         '404':
           description: Car not found
   /parking-spaces:
+    get:
+      tags:
+        - Parking Spaces
+      summary: Get all parking spaces owned by the authenticated user
+      security:
+        - bearerAuth: [ ]
+      responses:
+        '200':
+          description: List of parking spaces grouped by status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  paidSpaces:
+                    type: array
+                    items:
+                      $ref: './schemas/ParkingSpaceSummary.yaml'
+                  freeSpaces:
+                    type: array
+                    items:
+                      $ref: './schemas/ParkingSpaceSummary.yaml'
+                  pendingSpaces:
+                    type: array
+                    items:
+                      $ref: './schemas/ParkingSpaceSummary.yaml'
+        '401':
+          description: Unauthorized
     post:
       tags:
         - Parking Spaces
@@ -333,10 +361,13 @@ paths:
             type: string
             format: date-time
         - in: query
-          name: free_only
+          name: paid_status
           schema:
-            type: boolean
-            default: false
+            type: enum
+            enum:
+              - ALL
+              - PAID
+              - FREE
         - in: query
           name: features
           schema:

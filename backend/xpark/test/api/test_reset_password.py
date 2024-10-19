@@ -21,7 +21,7 @@ def test_request_password_reset(client: FlaskClient) -> None:
         "/api/unstable/auth/login",
         json={"email": "testuser@example.com", "password": "TestPassword123"},
     )
-    assert response.status_code == 201
+    assert response.status_code == 200
     token1 = cast(Dict[str, str], response.json)["access_token"]
 
     # Ensure both tokens work
@@ -30,7 +30,7 @@ def test_request_password_reset(client: FlaskClient) -> None:
 
     # Request password reset
     response = client.post(
-        "/api/unstable/auth/password-reset-request",
+        "/api/unstable/auth/password-reset",
         json={"email": "testuser@example.com"},
     )
     assert response.status_code == 200

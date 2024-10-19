@@ -4,6 +4,8 @@ import searchReducer from "@/features/search/searchSlice";
 import reservationsReducer from "@/features/reservations/reservationsSlice";
 import parkingSpaceReducer from "@/features/parking-space/parkingSpaceSlice";
 import ownerReducer from "@/features/owner/ownerSlice";
+import carReducer from "@/features/cars/carSlice";
+import addReducer from "@/features/add/addSlice";
 import { customMiddleware } from "./middleware"; // Import your custom middleware
 import throttle from "lodash.throttle";
 import { saveState, loadState } from "./localStorage";
@@ -15,13 +17,13 @@ export const createStore = (preloadedState?: Partial<RootState>) => {
   const store = configureStore({
     reducer: {
       // @ts-ignore
-
+      add: addReducer,
       user: userReducer,
       search: searchReducer,
       reservations: reservationsReducer,
       parkingSpace: parkingSpaceReducer,
       owner: ownerReducer,
-      // Add other reducers here
+      cars: carReducer,
     },
     // @ts-ignore
     middleware: (getDefaultMiddleware) =>

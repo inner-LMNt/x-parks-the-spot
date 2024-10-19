@@ -22,6 +22,7 @@ import {
 interface UserState {
   isLoggedIn: boolean;
   access_token: string | null;
+  name: string | null;
   location: {
     latitude: number | null;
     longitude: number | null;
@@ -33,6 +34,7 @@ interface UserState {
 const initialState: UserState = {
   isLoggedIn: false, // Maybe redundant, just check if access_token is null
   access_token: null,
+    name: null,
   location: {
     latitude: null,
     longitude: null,
@@ -141,7 +143,7 @@ export const reset_password = createAsyncThunk<void, { token: string; newPasswor
 
             const response = await axios.post(`auth/reset-password/${token}`, {
                 token,
-                newPassword,
+                new_password: newPassword,
             });
             return response.data;
         } catch (error: any) {
@@ -159,7 +161,7 @@ export const reset_request = createAsyncThunk<
   { rejectValue: string } // Types for ThunkAPI
 >("user/reset_request", async (email: string, { rejectWithValue }) => {
   try {
-    const response = await axios.post("auth/password-reset-request", {
+    const response = await axios.post("auth/password-reset", {
       email,
     } as PasswordResetRequest);
     return response.data;
@@ -227,6 +229,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           state.loading = false;
           state.isLoggedIn = true;
           state.access_token = action.payload.access_token || null;
+          state.name = action.payload.name || null;
         }
       )
 

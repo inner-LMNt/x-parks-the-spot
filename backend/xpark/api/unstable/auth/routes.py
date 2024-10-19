@@ -7,7 +7,7 @@ from xpark.logic.user import (
     handle_delete_account_request,
     handle_confirm_delete,
     handle_password_reset_request,
-    handle_password_reset_confirmation,
+    handle_password_reset_confirmation, get_user_name_by_id,
 )
 
 from flask import request
@@ -27,8 +27,13 @@ def create() -> Tuple[Any, int]:
     # Call the logic function to handle the registration
     match handle_user_registration(name, email, password):
         case Ok(user_id):
-            # Generate access token for the new/undeleted user
-            return {"access_token": create_token(user_id)}, 201
+            match get_user_name_by_id(
+                            user_id=user_id
+                        ):
+                case Ok(user_name):
+                    return {"access_token": create_token(user_id), "name": user_name}, 201
+                case Err(e):
+                    return {"access_token": create_token(user_id), "name": "unknown user"}, 401
         case Err("User already exists"):
             return {"err": "Email already in use"}, 409
         case Err(e):
@@ -42,7 +47,13 @@ def login() -> Tuple[Any, Any]:
         email=request.json["email"],  # type: ignore
     ):
         case Ok(user_id):
-            return {"access_token": create_token(user_id)}, 201
+            match get_user_name_by_id(
+                user_id=user_id
+            ):
+                case Ok(user_name):
+                    return {"access_token": create_token(user_id), "name": user_name}, 200
+                case Err(e):
+                    return {"access_token": create_token(user_id), "name": "unknown user"}, 401
         case Err(e):
             return {"err": e}, 401
 
@@ -82,7 +93,7 @@ def confirm_delete_account(token: str) -> Tuple[Any, int]:
             return {"err": e}, 403
 
 
-@bp.post("password-reset-request")
+@bp.post("password-reset")
 def reset_password_request() -> Tuple[Any, int]:
     email = request.json["email"]  # type: ignore
 
@@ -102,6 +113,7 @@ def reset_password(token: str) -> Tuple[Any, int]:
             return {"err": e}, 403
         case Ok(_):
             return {"message": "Password reset successfully"}, 200
+
 
 
 # @bp.get("id")

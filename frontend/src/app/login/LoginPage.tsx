@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import {ArrowRight, Loader2} from 'lucide-react';
 import { login } from '@/features/user/userSlice';
 import { Logo } from '@/components/custom/TopLeftLogo';
 import {LoginRequest} from "@/types/type";
@@ -70,7 +70,7 @@ export default function LoginPage() {
             if (login.fulfilled.match(resultAction)) {
                 // Login successful
                 console.log('router trying to push');
-                router.push('/profile');
+                router.push('/search');
             } else if (login.rejected.match(resultAction)) {
                 // Login failed
                 console.error('Login failed:', resultAction.payload);
@@ -91,7 +91,7 @@ export default function LoginPage() {
                 initial="hidden"
                 animate="visible"
             >
-                <Card className="w-[350px] shadow-2xl backdrop-blur-sm bg-white/90">
+                <Card className="w-[90vw] shadow-2xl backdrop-blur-sm bg-white/90">
                     <CardHeader className="space-y-1">
                         <motion.div variants={itemVariants}>
                             <CardTitle className="text-2xl text-center font-bold">Sign in</CardTitle>
@@ -181,16 +181,26 @@ export default function LoginPage() {
                     <CardFooter>
                         <motion.div variants={itemVariants} className="w-full">
                             <Link href="/reset" passHref>
-                                <Button variant="link" className="w-full text-sm text-gray-600 hover:text-gray-800">
+                                <Button variant="link" className="w-36 text-sm text-gray-600 hover:text-gray-800">
                                     Forgot password?
                                 </Button>
                             </Link>
                         </motion.div>
-                        <motion.div variants={itemVariants} className="w-full">
+                        <motion.div variants={itemVariants} className="w-36">
                             <Link href="/signup" passHref>
                                 <Button variant="outline" className="w-full">
                                     Create an account
                                 </Button>
+                            </Link>
+                        </motion.div>
+                    </CardFooter>
+                    <CardFooter>
+                        <motion.div variants={itemVariants} className="w-full flex justify-center align-baseline">
+                            <Link href="/search" passHref className="flex justify-center hover:text-gray-800">
+                                <Button variant="link" className="text-sm text-gray-600 flex">
+                                    Continue without logging in <ArrowRight className="w-4 h-4 ml-2 text-sm text-gray-600"/>
+                                </Button>
+
                             </Link>
                         </motion.div>
                     </CardFooter>

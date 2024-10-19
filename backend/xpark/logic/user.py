@@ -113,7 +113,6 @@ def create_token(user_id: uuid.UUID) -> str:
             )
 
             # Clean up any expired tokens in the database
-            # FIXME: Move to a background job so that it doesn't run on every login
             cur.execute("DELETE FROM user_tokens WHERE expiry <= NOW()")
 
             return token
@@ -122,11 +121,10 @@ def create_token(user_id: uuid.UUID) -> str:
 def validate_token_and_refresh(token: str) -> Result[uuid.UUID, str]:
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
-            # Check if the given token is still valid (not expired) and refresh its expiry time
             cur.execute(
                 """
                 UPDATE user_tokens
-                SET expiry = NOW() + INTERVAL '%s seconds'
+                SET expiry = NOW() + make_interval(secs => %s)
                 WHERE token = %s AND expiry > NOW()
                 RETURNING user_id
                 """,

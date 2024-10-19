@@ -17,7 +17,7 @@ export const loginHandler = http.post<never, LoginRequest>('v1/auth/login', asyn
     if (user && data.password === "password123") { // Replace with actual password validation when implemented
         const id : string = user.id ?? 'a927ff6d-9782-4b13-ac04-831f1066d503'
         const token: AuthResponse = {
-            userId: id,
+            name: 'John Doe',
             access_token: generateToken(),
         };
 

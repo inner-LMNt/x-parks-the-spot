@@ -93,7 +93,6 @@ export const createReservationHandler = http.post<
     owner_id: "owner1",
     locked: false,
   } as any;
-  const carInfo = carInfos.find((car) => car.id === car_info_id);
 
   if (!parkingSpace) {
     return HttpResponse.json(
@@ -102,12 +101,6 @@ export const createReservationHandler = http.post<
     );
   }
 
-  if (!carInfo) {
-    return HttpResponse.json(
-      { message: "Car information not found" },
-      { status: 404 }
-    );
-  }
 
   // Check if the parking space is locked by the user
   if (parkingSpace.locked && parkingSpace.locked_by !== renter_id) {
@@ -143,7 +136,7 @@ export const createReservationHandler = http.post<
     start_time,
     end_time,
     status: "booked",
-    car_info: carInfo,
+    car_info_id: 'car_id',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };

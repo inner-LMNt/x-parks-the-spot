@@ -1,22 +1,22 @@
 from flask import request
 from xpark.logic.user import validate_token_and_refresh
 from result import Ok, Err
-from typing import Callable, Any, Tuple, Protocol, TypedDict, Unpack
-import uuid
+from typing import Callable, Any, Tuple
 from functools import wraps
 
 
 # These two classes implement type-checking to ensure decorated functions have both the `token` and `user_id` arguments
-class AuthParams(TypedDict):
-    token: str
-    user_id: uuid.UUID
+# class AuthParams(TypedDict):
+#     token: str
+#     user_id: uuid.UUID
 
 
-class AuthFunction(Protocol):
-    def __call__(self, **kwargs: Unpack[AuthParams]) -> Tuple[Any, int]: ...
+# class AuthFunction(Protocol):
+#     def __call__(self, **kwargs: Unpack[AuthParams]) -> Tuple[Any, int]: ...
 
 
-def require_logged_in_user(next_fn: AuthFunction) -> Callable[..., Tuple[Any, int]]:
+# def require_logged_in_user(next_fn: AuthFunction) -> Callable[..., Tuple[Any, int]]:
+def require_logged_in_user(next_fn: Callable[..., Tuple[Any, int]]) -> Callable[..., Tuple[Any, int]]:
     @wraps(next_fn)
     def wrapper(*args: Any, **kwargs: Any) -> Tuple[Any, int]:
         # Extract the bearer auth

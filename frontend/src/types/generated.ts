@@ -629,7 +629,38 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Get all parking spaces owned by the authenticated user */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of parking spaces grouped by status */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            paidSpaces?: components["schemas"]["ParkingSpaceSummary"][];
+                            freeSpaces?: components["schemas"]["ParkingSpaceSummary"][];
+                            pendingSpaces?: components["schemas"]["ParkingSpaceSummary"][];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         put?: never;
         /** Create a new parking space */
         post: {
@@ -701,7 +732,7 @@ export interface paths {
                     radius?: number;
                     available_from?: string;
                     available_to?: string;
-                    free_only?: boolean;
+                    paid_status?: "ALL" | "PAID" | "FREE";
                     features?: string[];
                 };
                 header?: never;
@@ -1597,8 +1628,7 @@ export interface components {
         };
         AuthResponse: {
             access_token?: string;
-            /** Format: uuid */
-            userId: string;
+            name?: string;
         };
         LoginRequest: {
             /** Format: email */
@@ -1655,13 +1685,14 @@ export interface components {
             is_paid: boolean;
             /** Format: uuid */
             owner_id?: string;
+            name?: string;
             location: components["schemas"]["Location"];
             features?: string[];
             availability_schedule?: components["schemas"]["TimeSlot"][];
             pricing_info?: components["schemas"]["PricingInfo"];
             photos?: string[];
             /** @enum {string} */
-            verification_status?: "verified" | "pending" | "rejected";
+            status?: "verified" | "pending" | "rejected";
             dynamic_pricing_enabled?: boolean;
             cancellation_policy?: string;
             locked?: boolean;
@@ -1714,6 +1745,16 @@ export interface components {
             token: string;
         };
         CarInfoList: components["schemas"]["CarInfo"][];
+        ParkingSpaceSummary: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            location?: components["schemas"]["Location"];
+            features?: string[];
+            /** Format: float */
+            average_rating?: number;
+            availability?: boolean;
+        };
         ParkingSpaceCreateRequest: {
             /** Format: uuid */
             request_id?: string;
@@ -1725,15 +1766,6 @@ export interface components {
             cancellation_policy?: string;
             /** Format: uri */
             proof_of_ownership?: string;
-        };
-        ParkingSpaceSummary: {
-            /** Format: uuid */
-            id?: string;
-            location?: components["schemas"]["Location"];
-            features?: string[];
-            /** Format: float */
-            average_rating?: number;
-            availability?: boolean;
         };
         ParkingSpaceUpdateRequest: {
             /** Format: uuid */
@@ -1759,7 +1791,8 @@ export interface components {
             end_time?: string;
             /** @enum {string} */
             status?: "booked" | "active" | "completed" | "canceled";
-            car_info?: components["schemas"]["CarInfo"];
+            /** Format: uuid */
+            car_info_id?: string;
             /** Format: date-time */
             created_at?: string;
             /** Format: date-time */

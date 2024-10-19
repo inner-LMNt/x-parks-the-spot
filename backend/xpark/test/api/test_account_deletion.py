@@ -105,7 +105,7 @@ def test_delete_account(client: FlaskClient) -> None:
         "/api/unstable/auth/login",
         json={"email": "testuser@example.com", "password": "TestPassword123"},
     )
-    assert response.status_code == 201
+    assert response.status_code == 200
     token1 = cast(Dict[str, str], response.json)["access_token"]
 
     # Ensure both tokens work
