@@ -1,11 +1,7 @@
-// src/app/bookings/BookingsPage.tsx
-
-"use client";
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchUserReservations } from '@/features/reservations/reservationsSlice';
-import {CarInfo, Reservation} from '@/types/type';
+import { fetchUserReservations, cancelReservation } from '@/features/reservations/reservationsSlice';
+import { CarInfo, Reservation } from '@/types/type';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -15,6 +11,7 @@ import { Avatar } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { fetchUserCars, resetCarError } from '@/features/cars/carSlice';
 import { Button } from '@/components/ui/button';
+import DeleteReservationModal from '@/components/custom/DeleteReservationModal'; // Import the new modal component
 
 // SectionHeader Component
 function SectionHeader({ title }: { title: string }) {
@@ -37,18 +34,25 @@ function StatCard({ label, value }: { label: string; value: number }) {
 
 // ReservationCard Component
 function ReservationCard({
-                             reservation,
-                             isPast = false,
-                             carMap,
-                         }: {
+    reservation,
+    isPast = false,
+    carMap,
+    onCancel
+}: {
     reservation: Reservation;
     isPast?: boolean;
     carMap: { [key: string]: CarInfo };
+    onCancel: (reservation: Reservation) => void;
 }) {
     const router = useRouter();
 
     const handleClick = () => {
         router.push(`/bookings/${reservation.parking_space_id}`);
+    };
+
+    const handleCancelClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onCancel(reservation);
     };
 
     // Retrieve the car information using car_id
@@ -97,13 +101,19 @@ function ReservationCard({
                         <ArrowRightCircle className="w-5 h-5 text-blue-500" />
                     </div>
                 )}
+                <Button variant="destructive" onClick={handleCancelClick}>
+                    Cancel
+                </Button>
             </CardContent>
         </Card>
     );
 }
 
 export default function BookingsPage() {
-    const isLoggedIn = useAppSelector(state => state.user.isLoggedIn)
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+
+    const isLoggedIn = useAppSelector(state => state.user.isLoggedIn);
     if (!isLoggedIn) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 text-slate-900">
@@ -126,7 +136,7 @@ export default function BookingsPage() {
     // Create a carMap for efficient lookup
     const carMap = useMemo(() => {
         const map: { [key: string]: CarInfo } = {};
-        cars.forEach((car : CarInfo) => {
+        cars.forEach((car: CarInfo) => {
             map[car.id as string] = car;
         });
         console.log('Car Map:', map);
@@ -165,6 +175,21 @@ export default function BookingsPage() {
 
     // Combined Loading State
     const isLoading = loading || carsLoading;
+
+    const handleCancel = (reservation: Reservation) => {
+        setSelectedReservation(reservation);
+        setIsModalOpen(true);
+    };
+
+    const handleConfirmCancel = () => {
+        if (selectedReservation) {
+            if (selectedReservation?.id) {
+                dispatch(cancelReservation(selectedReservation.id));
+            }
+            setIsModalOpen(false);
+            setSelectedReservation(null);
+        }
+    };
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
@@ -225,7 +250,7 @@ export default function BookingsPage() {
                         <SectionHeader title="Current Reservations" />
                         <div className="grid gap-6">
                             {currentReservations.map((reservation: Reservation) => (
-                                <ReservationCard key={reservation.id} reservation={reservation} carMap={carMap} />
+                                <ReservationCard key={reservation.id} reservation={reservation} carMap={carMap} onCancel={handleCancel} />
                             ))}
                         </div>
                     </section>
@@ -237,7 +262,7 @@ export default function BookingsPage() {
                         <SectionHeader title="Upcoming Reservations" />
                         <div className="grid gap-6">
                             {upcomingReservations.map((reservation: Reservation) => (
-                                <ReservationCard key={reservation.id} reservation={reservation} carMap={carMap} />
+                                <ReservationCard key={reservation.id} reservation={reservation} carMap={carMap} onCancel={handleCancel} />
                             ))}
                         </div>
                     </section>
@@ -249,7 +274,7 @@ export default function BookingsPage() {
                         <SectionHeader title="Past Reservations" />
                         <div className="grid gap-6">
                             {pastReservations.map((reservation: Reservation) => (
-                                <ReservationCard key={reservation.id} reservation={reservation} isPast carMap={carMap} />
+                                <ReservationCard key={reservation.id} reservation={reservation} isPast carMap={carMap} onCancel={handleCancel} />
                             ))}
                         </div>
                     </section>
@@ -271,6 +296,11 @@ export default function BookingsPage() {
                 <div className="flex h-16">
                 </div>
             </div>
+            <DeleteReservationModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                reservation={selectedReservation!}
+            />
         </div>
     );
 }

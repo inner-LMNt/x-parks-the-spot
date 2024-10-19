@@ -19,10 +19,8 @@ import {
 } from '@react-google-maps/api';
 import { ParkingSpace } from '@/types/type';
 import { searchSpots } from '@/features/search/searchSlice';
-import { searchHandler } from '@/features/search/searchSlice';
 import { usePathname, useRouter } from 'next/navigation';
 import axios from 'axios';
-
 
 const default_center = {
   // Purdue University coords
@@ -242,8 +240,7 @@ export default function SearchPage() {
     }
 
     try {
-      await dispatch(searchHandler(request));
-      // await dispatch(searchSpots(request));
+      await dispatch(searchSpots(request));
       setIsSearchOpen(false);
     } catch (error) {
       console.error('Search failed:', error);
@@ -1029,7 +1026,7 @@ export default function SearchPage() {
         ref={navigationCardRef}
         className={`fixed bottom-0 left-0 w-full bg-gray-100 p-4 transition-transform duration-300 transform ${navigationMode ? 'translate-y-0' : 'translate-y-full'
           }`}
-        style={{ bottom: '64px', height: 'auto' }}
+        style={{ bottom: '0px', height: 'auto' }}
       >
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row justify-between items-center w-full">
