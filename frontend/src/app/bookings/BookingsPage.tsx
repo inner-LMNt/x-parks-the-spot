@@ -1,3 +1,7 @@
+// src/app/bookings/BookingsPage.tsx
+
+"use client";
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchUserReservations, cancelReservation } from '@/features/reservations/reservationsSlice';
