@@ -14,7 +14,7 @@ def test_api_create_parking_spot(client: FlaskClient) -> None:
     assert response.status_code == 201
     token = cast(Dict[str, str], response.json)["access_token"]
     response = client.post(
-        "/api/unstable/parking-spaces/",
+        "/api/unstable/parking-spaces",
         headers={"Authorization": "Bearer " + token},
         json={"lat": 40.423780934987015, "long": -86.92499152827456},
     )

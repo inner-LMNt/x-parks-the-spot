@@ -48,6 +48,7 @@ def verify_parking_space(
 @bp.post("")
 @require_logged_in_user
 def create_parking_space_route(user_id: uuid.UUID) -> Tuple[Any, int]:
+
     data = request.form.get("data")
     image_file = request.files.get("image")
 
