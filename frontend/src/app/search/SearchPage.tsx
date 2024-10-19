@@ -1021,6 +1021,7 @@ export default function SearchPage() {
         <div className="flex h-16">
         </div>
       </div>
+
       {/* navigation stuff */}
       <div
         ref={navigationCardRef}
@@ -1052,33 +1053,16 @@ export default function SearchPage() {
                 </div>
               ) : (
                 <div>
-                  {/* <h3 className="text-md font-semibold">From: {userLocation?.lat}, {userLocation?.lng}</h3>
-                  <h3 className="text-md font-semibold">To: {selectedSpot?.location.latitude}, {selectedSpot?.location.longitude}</h3> */}
-                  {/* <div className="border-b border-gray-300 my-4"></div> */}
                   <div className="mt-0">
                     <h3 className="text-md font-semibold">Step {currentStepIndex + 1}</h3>
                     <div className="w-3"></div>
-
-                    {/* <div className="flex items-center justify-between"> // Do we want this feature?
-                      <button
-                        onClick={() => setCurrentStepIndex(currentStepIndex - 1)}
-                        disabled={currentStepIndex === 0}
-                        className="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded focus:outline-none"
-                      >
-                        <ChevronLeft size={16} />
-                      </button>
-                      <h3 className="text-md font-semibold">Step {currentStepIndex + 1}</h3>
-                      <button
-                        onClick={() => setCurrentStepIndex(currentStepIndex + 1)}
-                        disabled={currentStepIndex === directions.routes[0].legs[0].steps.length - 1}
-                        className="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded focus:outline-none"
-                      >
-                        <ChevronRight size={16} />
-                      </button>
-                    </div> */}
                     <div className="w-8"></div>
                     {directions && (
-                      <span dangerouslySetInnerHTML={{ __html: directions.routes[0].legs[0].steps[currentStepIndex].instructions }} />
+                      <span
+                        dangerouslySetInnerHTML={{
+                          __html: directions.routes[0].legs[0].steps[currentStepIndex].instructions,
+                        }}
+                      />
                     )}
                     {directions && (
                       <div className="text-sm text-gray-600">
@@ -1086,6 +1070,30 @@ export default function SearchPage() {
                         <p>Duration: {directions.routes[0].legs[0].steps[currentStepIndex].duration?.text ?? ''}</p>
                       </div>
                     )}
+                    <div className="flex justify-between mt-4">
+                      <button
+                        onClick={() => setCurrentStepIndex((prev) => Math.max(prev - 1, 0))}
+                        className="px-3 py-2 bg-blue-500 text-white text-sm font-semibold rounded hover:bg-blue-700 focus:outline-none"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (directions) {
+                            setCurrentStepIndex((prev) => Math.min(prev + 1, directions.routes[0].legs[0].steps.length - 1));
+                          }
+                        }}
+                        className="px-3 py-2 bg-blue-500 text-white text-sm font-semibold rounded hover:bg-blue-700 focus:outline-none"
+                      >
+                        Next
+                      </button>
+                      <button
+                        onClick={() => setCurrentStepIndex(0)}
+                        className="px-3 py-2 bg-green-500 text-white text-sm font-semibold rounded hover:bg-green-700 focus:outline-none"
+                      >
+                        Current
+                      </button>
+                    </div>
                   </div>
                 </div>
               )
