@@ -423,7 +423,8 @@ def cancel_reservation_logic(
                 """
                 SELECT 
                     parking_space_id, 
-                    status
+                    status,
+                    start_time
                 FROM reservations
                 WHERE id = %s
                 """,
@@ -433,7 +434,7 @@ def cancel_reservation_logic(
             if not reservation:
                 return Err("Reservation not found.")
 
-            parking_space_id, status = reservation
+            parking_space_id, status, start_time = reservation
 
             if status == "canceled":
                 return Err("Reservation is already canceled.")
@@ -447,10 +448,15 @@ def cancel_reservation_logic(
                 """,
                 (str(reservation_id),),
             )
-            (renter_id,) = cur.fetchone() # type: ignore
+            (renter_id,) = cur.fetchone()  # type: ignore
 
             if str(renter_id) != str(user_id):
                 return Err("User not authorized to cancel this reservation.")
+
+            # Check if the current time is at least 2 hours before the reservation start time
+            current_time = datetime.datetime.now(timezone.utc)
+            if start_time - current_time < datetime.timedelta(hours=2):
+                return Err("Reservations can only be canceled at least 2 hours before the start time.")
 
             # Update the reservation status to canceled
             cur.execute(
