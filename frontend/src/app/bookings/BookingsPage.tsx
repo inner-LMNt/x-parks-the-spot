@@ -15,7 +15,7 @@ import { Avatar } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { fetchUserCars, resetCarError } from '@/features/cars/carSlice';
 import { Button } from '@/components/ui/button';
-import DeleteReservationModal from '@/components/custom/DeleteReservationModal'; // Import the new modal component
+import DeleteReservationModal from '@/components/custom/DeleteReservationModal';
 
 // SectionHeader Component
 function SectionHeader({ title }: { title: string }) {
@@ -177,6 +177,10 @@ export default function BookingsPage() {
         (reservation: Reservation) => new Date(reservation.end_time ?? now) < now
     );
 
+    const cancelledReservations = reservations.filter(
+        (reservation: Reservation) => reservation.status === 'canceled'
+    );
+
     // Combined Loading State
     const isLoading = loading || carsLoading;
 
@@ -284,6 +288,18 @@ export default function BookingsPage() {
                     </section>
                 )}
 
+                {/* Cancelled Reservations */}
+                {!isLoading && cancelledReservations.length > 0 && (
+                    <section className="mb-8">
+                        <SectionHeader title="Cancelled Reservations" />
+                        <div className="grid gap-6">
+                            {cancelledReservations.map((reservation: Reservation) => (
+                                <ReservationCard key={reservation.id} reservation={reservation} carMap={carMap} onCancel={handleCancel} />
+                            ))}
+                        </div>
+                    </section>
+                )}
+
                 {/* No Reservations */}
                 {!isLoading && reservations.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-64">
@@ -304,6 +320,7 @@ export default function BookingsPage() {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 reservation={selectedReservation!}
+                onConfirm={handleConfirmCancel}
             />
         </div>
     );

@@ -15,9 +15,9 @@ const initialState: SearchState = {
 };
 
 export const searchSpots = createAsyncThunk<
-    SearchResponse,
-    SearchRequest,
-    { rejectValue: string }
+  SearchResponse,
+  SearchRequest,
+  { rejectValue: string }
 >("search/spots", async (searchRequest, { rejectWithValue }) => {
   try {
     const response = await axios.post<SearchResponse>("/search", searchRequest);
@@ -37,25 +37,25 @@ const searchSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-        .addCase(searchSpots.pending, (state: SearchState) => {
-          state.loading = true;
-          state.error = null;
-        })
-        .addCase(searchSpots.fulfilled, (state: SearchState, action: any) => {
-          state.loading = false;
-          state.spots = action.payload;
-        })
-        .addCase(searchSpots.rejected, (state: SearchState, action) => {
-          state.loading = false;
-          state.error = action.payload as string;
-        })
-        .addMatcher(
-            (action: { type: string }): action is { type: "search/resetSpots" } =>
-                action.type === "search/resetSpots",
-            (state : SearchState) => {
-              console.log("Resetting spots");
-            }
-        );
+      .addCase(searchSpots.pending, (state: SearchState) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(searchSpots.fulfilled, (state: SearchState, action: any) => {
+        state.loading = false;
+        state.spots = action.payload;
+      })
+      .addCase(searchSpots.rejected, (state: SearchState, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addMatcher(
+        (action: { type: string }): action is { type: "search/resetSpots" } =>
+          action.type === "search/resetSpots",
+        (state: SearchState) => {
+          console.log("Resetting spots");
+        }
+      );
   },
 });
 

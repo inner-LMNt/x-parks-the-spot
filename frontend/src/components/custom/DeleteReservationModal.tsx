@@ -11,36 +11,38 @@ interface DeleteReservationModalProps {
     isOpen: boolean;
     onClose: () => void;
     reservation: Reservation;
+    onConfirm: () => void; // Add this line
 }
 
-const DeleteReservationModal: React.FC<DeleteReservationModalProps> = ({ isOpen, onClose, reservation }) => {
+const DeleteReservationModal: React.FC<DeleteReservationModalProps> = ({ isOpen, onClose, reservation, onConfirm }) => {
     const dispatch = useAppDispatch();
     const { loading, error } = useAppSelector((state) => state.reservations);
 
-    // useEffect(() => {
-    //     if (error) {
-    //         toast({
-    //             title: 'Failed to Cancel Reservation',
-    //             description: error,
-    //             variant: 'destructive',
-    //         });
-    //         dispatch(resetReservationError());
-    //     }
-    // }, [error, dispatch]);
+    useEffect(() => {
+        if (error) {
+            toast({
+                title: 'Failed to Cancel Reservation',
+                description: error,
+                variant: 'destructive',
+            });
+            // dispatch(resetReservationError()); // Uncomment if you have a reset action
+        }
+    }, [error, dispatch]);
 
     const handleDelete = async () => {
         try {
             if (reservation.id) {
                 await dispatch(cancelReservation(reservation.id)).unwrap();
+                toast({
+                    title: 'Reservation Cancelled',
+                    description: 'Your reservation has been cancelled successfully.',
+                    variant: 'success',
+                });
+                onConfirm(); // Call the onConfirm prop
+                onClose();
             } else {
                 console.error('Reservation ID is undefined');
             }
-            toast({
-                title: 'Reservation Cancelled',
-                description: 'Your reservation has been cancelled successfully.',
-                variant: 'success',
-            });
-            onClose();
         } catch (err) {
             console.error(err);
         }
