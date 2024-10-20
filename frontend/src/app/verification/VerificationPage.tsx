@@ -8,34 +8,68 @@ import { MapPin } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { getAllPendingSpots, verifyParkingSpot } from '@/features/owner/ownerSlice';
 import ImageWrapper from "@/components/custom/ImageWrapper";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function VerificationPage() {
     const dispatch = useAppDispatch();
     const { pendingSpots, loading, error } = useAppSelector(state => state.owner);
-    const [isListExpanded, setIsListExpanded] = useState(true); // Expand/collapse list of parking spots
+    const [isListExpanded, setIsListExpanded] = useState(true);
+    const [selectedSpot, setSelectedSpot] = useState<any>(null);
+    const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const [confirmInput, setConfirmInput] = useState("");
+    const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
+    const [errorMessage, setErrorMessage] = useState(""); // For displaying error message
 
-    // Fetch pending spots when the component mounts
     useEffect(() => {
         dispatch(getAllPendingSpots());
     }, [dispatch]);
 
-    // Handle verification of parking spots
     const handleVerification = async (spotId: string, is_verified: boolean) => {
         await dispatch(verifyParkingSpot({ spotId, is_verified }));
-        dispatch(getAllPendingSpots()); // Re-fetch spots after updating verification status
+        dispatch(getAllPendingSpots());
     };
 
-    // Toggle list of parking spots
     const toggleListExpansion = () => {
         setIsListExpanded(!isListExpanded);
     };
 
-    // Handle loading state
+    const openVerificationModal = (spot: any) => {
+        setSelectedSpot(spot);
+        setIsVerificationModalOpen(true);
+    };
+
+    const closeVerificationModal = () => {
+        setIsVerificationModalOpen(false);
+        setSelectedSpot(null);
+    };
+
+    const openConfirmModal = (action: "approve" | "reject", spot: any) => {
+        setSelectedSpot(spot);
+        setActionType(action);
+        setIsConfirmModalOpen(true);
+        setErrorMessage(""); // Clear previous error message
+    };
+
+    const closeConfirmModal = () => {
+        setIsConfirmModalOpen(false);
+        setConfirmInput("");
+    };
+
+    const confirmAction = async () => {
+        if (confirmInput === "confirm" && selectedSpot) {
+            const is_verified = actionType === "approve";
+            await handleVerification(selectedSpot.id, is_verified);
+            closeConfirmModal();
+        } else {
+            setErrorMessage("You must type 'confirm' to proceed."); // Set error message
+        }
+    };
+
     if (loading) {
         return <p className="text-center text-lg">Loading...</p>;
     }
 
-    // Handle error state
     if (error) {
         return <p className="text-red-500 text-center">Error: {error}</p>;
     }
@@ -91,16 +125,28 @@ export default function VerificationPage() {
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent className="pt-4">
+
                                                 <div className="flex justify-between items-center mb-4">
                                                     <span className="text-sm font-medium">{spot.is_paid ? 'Paid' : 'Free'}</span>
                                                 </div>
+
+                                                {spot.verification_photos && spot.verification_photos.length > 0 && (
+                                                    <Button
+                                                        variant="secondary"
+                                                        size="sm"
+                                                        className="mb-4 w-full"
+                                                        onClick={() => openVerificationModal(spot)}
+                                                    >
+                                                        View Verification
+                                                    </Button>
+                                                )}
 
                                                 <div className="flex justify-between">
                                                     <Button
                                                         variant="default"
                                                         size="sm"
                                                         className="flex-1 mr-2"
-                                                        onClick={() => handleVerification(spot.id, true)}
+                                                        onClick={() => openConfirmModal("approve", spot)}
                                                     >
                                                         Verify
                                                     </Button>
@@ -108,7 +154,7 @@ export default function VerificationPage() {
                                                         variant="destructive"
                                                         size="sm"
                                                         className="flex-1"
-                                                        onClick={() => handleVerification(spot.id, false)}
+                                                        onClick={() => openConfirmModal("reject", spot)}
                                                     >
                                                         Reject
                                                     </Button>
@@ -122,6 +168,60 @@ export default function VerificationPage() {
                     )}
                 </motion.div>
             </div>
+
+            {/* Modal for Verification Photos */}
+            {selectedSpot && (
+                <Dialog open={isVerificationModalOpen} onOpenChange={closeVerificationModal}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Verification Photos</DialogTitle>
+                        </DialogHeader>
+                        <div className="grid grid-cols-1 gap-4">
+                            {selectedSpot.verification_photos.map((photo: string, index: number) => (
+                                <div key={index} className="relative w-full h-60">
+                                    <ImageWrapper
+                                        src={photo}
+                                        alt={`Verification Photo ${index + 1}`}
+                                        layout="fill"
+                                        objectFit="cover"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                        <Button variant="secondary" className="mt-4" onClick={closeVerificationModal}>
+                            Close
+                        </Button>
+                    </DialogContent>
+                </Dialog>
+            )}
+
+            {/* Modal for Confirm Action */}
+            {isConfirmModalOpen && selectedSpot && (
+                <Dialog open={isConfirmModalOpen} onOpenChange={closeConfirmModal}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Confirm {actionType === "approve" ? "Verification" : "Rejection"}</DialogTitle>
+                        </DialogHeader>
+                        <p className="mb-4">
+                            To confirm the {actionType === "approve" ? "approval" : "rejection"} of this parking spot, type "confirm" in the box below.
+                        </p>
+                        <input
+                            type="text"
+                            value={confirmInput}
+                            onChange={(e) => setConfirmInput(e.target.value)}
+                            className="border border-gray-300 rounded-md w-full p-2 mb-2 text-black placeholder-gray-500"
+                            placeholder="Type 'confirm' to proceed"
+                        />
+                        {errorMessage && <p className="text-red-500 mb-4">{errorMessage}</p>}
+                        <Button variant="secondary" className="mr-4" onClick={confirmAction}>
+                            Submit
+                        </Button>
+                        <Button variant="destructive" onClick={closeConfirmModal}>
+                            Cancel
+                        </Button>
+                    </DialogContent>
+                </Dialog>
+            )}
         </div>
     );
 }

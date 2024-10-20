@@ -30,6 +30,7 @@ def get_all_pending_parking_spaces() -> Result[Dict[str, List[Dict[str, Any]]], 
                         availability_schedule,
                         pricing_info,
                         photos,
+                        verification_photos,  -- Include verification photos
                         created_at,
                         updated_at
                     FROM parking_spaces
@@ -60,6 +61,7 @@ def get_all_pending_parking_spaces() -> Result[Dict[str, List[Dict[str, Any]]], 
                         "availability_schedule": row_dict["availability_schedule"] or [],
                         "pricing_info": row_dict["pricing_info"] or {},
                         "photos": row_dict["photos"] or [],
+                        "verification_photos": row_dict["verification_photos"] or [],  # Add verification photos
                     }
 
                     pendingSpaces.append(parking_space)
@@ -271,15 +273,15 @@ def handle_submit_verification(
         # Save the image
         image_uri = save_image(image_file)
 
-        # Update the parking space status to "pending" and store the image
+        # Update the parking space status to "pending" and clear out the old verification_photos array, adding the new one
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
                     UPDATE parking_spaces
-                    SET verification_status = %s, photos = array_append(photos, %s), updated_at = NOW()
+                    SET verification_status = %s, verification_photos = ARRAY[%s], updated_at = NOW()
                     WHERE id = %s AND owner = %s
-                    RETURNING id, verification_status, photos, updated_at
+                    RETURNING id, verification_status, verification_photos, updated_at
                     """,
                     ('pending', image_uri, str(parking_space_id), str(user_id)),
                 )
@@ -291,7 +293,7 @@ def handle_submit_verification(
                 updated_parking_space = {
                     "id": str(result[0]),
                     "verification_status": result[1],
-                    "photos": result[2],
+                    "verification_photos": result[2],
                     "updated_at": result[3].isoformat(),
                 }
 
@@ -301,6 +303,7 @@ def handle_submit_verification(
     except Exception as e:
         print(f"Error occurred during verification: {str(e)}")
         return Err(str(e))
+
 
 
 
