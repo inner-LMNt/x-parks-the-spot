@@ -243,73 +243,49 @@ def handle_submit_verification(
         return Err(str(e))
 
 
-
-
 def create_parking_space(
     user_id: uuid.UUID,
-    data: Optional[str],
+    is_paid: bool,
+    name: Optional[str],
+    address: Optional[str],
+    latitude: Optional[float],
+    longitude: Optional[float],
+    availability_schedule: Optional[list],
+    pricing_info: Optional[Dict[str, Any]],
+    photo_timestamp: Optional[str],
     image_file: Optional[FileStorage],
 ) -> Result[Dict[str, Any], str]:
     try:
-        if not data:
-            return Err("Missing data")
-
-        data_dict = json.loads(data)
-
-        # Extract and validate required fields
-        is_paid = data_dict.get("is_paid", False)
-        location = data_dict.get("location", {})
-        latitude = location.get("latitude")
-        longitude = location.get("longitude")
-        address = location.get("address")
-
-        if latitude is None or longitude is None or address is None:
-            return Err("Missing location information")
-
-        # For paid spots, 'name', 'availability_schedule', and 'pricing_info' are required
-        name = data_dict.get("name", "") if is_paid else ""
-        features = data_dict.get("features", [])
-        availability_schedule = data_dict.get("availability_schedule", [])
-        pricing_info = data_dict.get("pricing_info", {})
-
-        if is_paid:
-            if not name:
-                return Err("Name is required for paid spots")
-            if not availability_schedule:
-                return Err("Availability schedule is required for paid spots")
-            if not pricing_info or "base_price" not in pricing_info:
-                return Err("Pricing info with base_price is required for paid spots")
-
-        # Optional fields with defaults
-        verification_status = data_dict.get("verification_status", "unverified")
-        dynamic_pricing_enabled = data_dict.get("dynamic_pricing_enabled", False)
-        cancellation_policy = data_dict.get("cancellation_policy", "standard")
-
-        # Handle image saving
+        # Step 2: Handle Image Saving Before Database Insertion
+        photos = []
         if image_file:
+            if not allowed_file(image_file.filename):
+                return Err("Unsupported file type for image.")
             image_uri = save_image(image_file)
-            photos = [image_uri]
+            if not image_uri:
+                return Err("Failed to save image.")
+            photos.append(image_uri)
         else:
-            photos = []
+            if is_paid:
+                # Image is required for paid spots
+                return Err("Image is required for paid spots.")
+            # For free spots, image is optional
 
         # Prepare data for database insertion
         parking_space_data = {
-            "owner_id": user_id,
+            "owner_id": str(user_id),
             "is_paid": is_paid,
             "name": name,
             "latitude": latitude,
             "longitude": longitude,
             "address": address,
-            "features": features,
             "availability_schedule": availability_schedule,
             "pricing_info": pricing_info,
             "photos": photos,
-            "verification_status": verification_status,
-            "dynamic_pricing_enabled": dynamic_pricing_enabled,
-            "cancellation_policy": cancellation_policy,
+            "photo_timestamp": photo_timestamp,
         }
 
-        # Insert into database
+        # Step 3: Insert Data into Database with a Single SQL Query Using COALESCE
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -320,16 +296,52 @@ def create_parking_space(
                         name,
                         location,
                         address,
-                        features,
                         availability_schedule,
                         pricing_info,
                         photos,
+                        photo_timestamp,
                         verification_status,
                         dynamic_pricing_enabled,
-                        cancellation_policy
+                        cancellation_policy,
+                        created_at,
+                        updated_at
                     )
-                    VALUES (%s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s, %s, %s, %s, %s, %s, %s, %s)
-                    RETURNING id, created_at, updated_at
+                    VALUES (
+                        %s,
+                        %s,
+                        COALESCE(%s, name),
+                        COALESCE(
+                            ST_SetSRID(ST_MakePoint(%s, %s), 4326),
+                            location
+                        ),
+                        COALESCE(%s, address),
+                        COALESCE(%s, availability_schedule),
+                        COALESCE(%s, pricing_info),
+                        COALESCE(%s, photos),
+                        COALESCE(%s, photo_timestamp),
+                        COALESCE(%s, verification_status),
+                        COALESCE(%s, dynamic_pricing_enabled),
+                        COALESCE(%s, cancellation_policy),
+                        NOW(),
+                        NOW()
+                    )
+                    RETURNING
+                        id,
+                        owner,
+                        is_paid,
+                        name,
+                        ST_Y(location::geometry) AS latitude,
+                        ST_X(location::geometry) AS longitude,
+                        address,
+                        availability_schedule,
+                        pricing_info,
+                        photos,
+                        photo_timestamp,
+                        verification_status,
+                        dynamic_pricing_enabled,
+                        cancellation_policy,
+                        created_at,
+                        updated_at
                     """,
                     (
                         parking_space_data["owner_id"],
@@ -338,70 +350,67 @@ def create_parking_space(
                         parking_space_data["longitude"],
                         parking_space_data["latitude"],
                         parking_space_data["address"],
-                        parking_space_data["features"],
-                        (
-                            json.dumps(parking_space_data["availability_schedule"])
-                            if parking_space_data["availability_schedule"]
-                            else None
-                        ),
-                        (
-                            json.dumps(parking_space_data["pricing_info"])
-                            if parking_space_data["pricing_info"]
-                            else None
-                        ),
-                        parking_space_data["photos"],
-                        parking_space_data["verification_status"],
-                        parking_space_data["dynamic_pricing_enabled"],
-                        parking_space_data["cancellation_policy"],
+                        json.dumps(parking_space_data["availability_schedule"]) if parking_space_data["availability_schedule"] else None,
+                        json.dumps(parking_space_data["pricing_info"]) if parking_space_data["pricing_info"] else None,
+                        json.dumps(parking_space_data["photos"]) if parking_space_data["photos"] else None,
+                        parking_space_data["photo_timestamp"],
+                        "unverified",  # Default verification_status
+                        False,          # Default dynamic_pricing_enabled
+                        "standard",     # Default cancellation_policy
                     ),
                 )
                 result = cur.fetchone()
-                parking_space_id, created_at, updated_at = result  # type: ignore
                 conn.commit()
+
+                if not result:
+                    return Err("Failed to create parking space.")
 
                 # Construct the response object
                 parking_space = {
-                    "id": str(parking_space_id),
-                    "owner_id": str(user_id),
-                    "is_paid": is_paid,
-                    "name": name,
+                    "id": str(result[0]),
+                    "owner_id": result[1],
+                    "is_paid": result[2],
+                    "name": result[3],
                     "location": {
-                        "latitude": latitude,
-                        "longitude": longitude,
-                        "address": address,
+                        "latitude": result[4],
+                        "longitude": result[5],
+                        "address": result[6],
                     },
-                    "features": features,
-                    "availability_schedule": availability_schedule,
-                    "pricing_info": pricing_info,
-                    "photos": photos,
-                    "verification_status": verification_status,
-                    "dynamic_pricing_enabled": dynamic_pricing_enabled,
-                    "cancellation_policy": cancellation_policy,
-                    "created_at": created_at.isoformat(),
-                    "updated_at": updated_at.isoformat(),
+                    "availability_schedule": result[7],
+                    "pricing_info": result[8],
+                    "photos": result[9],
+                    "photo_timestamp": result[10],
+                    "verification_status": result[11],
+                    "dynamic_pricing_enabled": result[12],
+                    "cancellation_policy": result[13],
+                    "created_at": result[14].isoformat(),
+                    "updated_at": result[15].isoformat(),
                 }
+
                 return Ok(parking_space)
 
     except Exception as e:
-        return Err(str(e))
+        # Log the exception as needed
+        return Err(f"An unexpected error occurred: {str(e)}")
 
-
-def save_image(image_file: FileStorage) -> str:
+def allowed_file(filename: str) -> bool:
     allowed_extensions = {"png", "jpg", "jpeg", "gif"}
-    if image_file.filename is None:
-        return ""
-    filename = secure_filename(image_file.filename)
-    extension = filename.rsplit(".", 1)[1].lower()
-    if "." in filename and extension in allowed_extensions:
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+
+def save_image(image_file: FileStorage) -> Optional[str]:
+    try:
+        filename = secure_filename(image_file.filename)
+        unique_filename = f"{uuid.uuid4()}_{filename}"
         images_dir = os.path.join(Config.STATIC_FOLDER, "images")
         os.makedirs(images_dir, exist_ok=True)
-        unique_filename = f"{uuid.uuid4()}.{extension}"
         filepath = os.path.join(images_dir, unique_filename)
         image_file.save(filepath)
         image_uri = f"/static/images/{unique_filename}"
         return image_uri
-    else:
-        return ""
+    except Exception as e:
+        # Log the exception as needed
+        print(f"Error saving image: {e}")
+        return None
 
 def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str]:
     with DB.pool.connection() as conn:
