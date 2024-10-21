@@ -1,3 +1,5 @@
+import json
+
 from . import bp
 from xpark.logic.parkingspace import (
     create_parking_space,
@@ -47,17 +49,16 @@ def verify_parking_space(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 @bp.post("")
 @require_logged_in_user
 def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    # Step 1: Unmarshal the JSON data from the form
-    data = request.form.get("data")
+    # Handle multipart/form-data
+    data = request.form.get('data')
     if not data:
-        return {"error": "Invalid input"}, 400
+        return {"error": "Missing data"}, 400
 
     try:
         data_dict = json.loads(data)
     except json.JSONDecodeError:
-        return {"error": "Invalid JSON data"}, 400
+        return {"error": "Invalid JSON format in 'data' field"}, 400
 
-    # Extract fields from the unmarshalled data
     is_paid = data_dict.get("is_paid", False)
     location = data_dict.get("location", {})
     address = location.get("address")
@@ -66,25 +67,12 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
     availability_schedule = data_dict.get("availability_schedule") if is_paid else None
     pricing_info = data_dict.get("pricing_info") if is_paid else None
     name = data_dict.get("name") if is_paid else None
-    photo_timestamp = data_dict.get("timestamp") if not is_paid else None
+    photo_timestamp = data_dict.get("photo_timestamp") if not is_paid else None
 
-    # Validate required fields based on the spot type
-    if is_paid:
-        if not name:
-            return {"error": "Name is required for paid spots"}, 400
-        if not availability_schedule:
-            return {"error": "Availability schedule is required for paid spots"}, 400
-        if not pricing_info or "base_price" not in pricing_info:
-            return {"error": "Pricing info with base_price is required for paid spots"}, 400
-    else:
-        if not address or latitude is None or longitude is None:
-            return {"error": "Missing location information for free spot"}, 400
-
-    # Retrieve the image file from the form
+    # Handle image file
     image_file = request.files.get("image")
 
-    # Invoke the business logic function to create the parking space
-    result = create_parking_space(
+    match create_parking_space(
         user_id=user_id,
         is_paid=is_paid,
         name=name,
@@ -95,14 +83,11 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
         pricing_info=pricing_info,
         photo_timestamp=photo_timestamp,
         image_file=image_file
-    )
-
-    # Handle the result and return appropriate response
-    if result.is_ok():
-        return result.unwrap(), 201
-    else:
-        return {"error": result.unwrap_err()}, 400
-
+    ):
+        case Ok(parking_space):
+            return parking_space, 201
+        case Err(e):
+            return {"err": e}, 400
 
 @bp.get("<parking_space_id>")
 def get_parking_space_route(parking_space_id: str) -> Tuple[Any, int]:

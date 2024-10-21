@@ -239,7 +239,6 @@ def handle_submit_verification(
                 return Ok(updated_parking_space)
 
     except Exception as e:
-        print(f"Error occurred during verification: {str(e)}")
         return Err(str(e))
 
 
@@ -255,37 +254,19 @@ def create_parking_space(
     photo_timestamp: Optional[str],
     image_file: Optional[FileStorage],
 ) -> Result[Dict[str, Any], str]:
+    # Handle Image Saving
+    photos = []
+    if image_file:
+        if not allowed_file(image_file.filename):
+            return Err("Unsupported file type for image.")
+        image_uri = save_image(image_file)
+        if not image_uri:
+            return Err("Failed to save image.")
+        photos.append(image_uri)
+    elif is_paid:
+        return Err("Image is required for paid spots.")
+
     try:
-        # Step 2: Handle Image Saving Before Database Insertion
-        photos = []
-        if image_file:
-            if not allowed_file(image_file.filename):
-                return Err("Unsupported file type for image.")
-            image_uri = save_image(image_file)
-            if not image_uri:
-                return Err("Failed to save image.")
-            photos.append(image_uri)
-        else:
-            if is_paid:
-                # Image is required for paid spots
-                return Err("Image is required for paid spots.")
-            # For free spots, image is optional
-
-        # Prepare data for database insertion
-        parking_space_data = {
-            "owner_id": str(user_id),
-            "is_paid": is_paid,
-            "name": name,
-            "latitude": latitude,
-            "longitude": longitude,
-            "address": address,
-            "availability_schedule": availability_schedule,
-            "pricing_info": pricing_info,
-            "photos": photos,
-            "photo_timestamp": photo_timestamp,
-        }
-
-        # Step 3: Insert Data into Database with a Single SQL Query Using COALESCE
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -307,91 +288,61 @@ def create_parking_space(
                         updated_at
                     )
                     VALUES (
-                        %s,
-                        %s,
-                        COALESCE(%s, name),
-                        COALESCE(
-                            ST_SetSRID(ST_MakePoint(%s, %s), 4326),
-                            location
-                        ),
-                        COALESCE(%s, address),
-                        COALESCE(%s, availability_schedule),
-                        COALESCE(%s, pricing_info),
-                        COALESCE(%s, photos),
-                        COALESCE(%s, photo_timestamp),
-                        COALESCE(%s, verification_status),
-                        COALESCE(%s, dynamic_pricing_enabled),
-                        COALESCE(%s, cancellation_policy),
-                        NOW(),
-                        NOW()
+                        %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s, %s, %s, %s, %s,
+                        'unverified', FALSE, 'standard', NOW(), NOW()
                     )
                     RETURNING
                         id,
-                        owner,
                         is_paid,
+                        verification_status,
                         name,
                         ST_Y(location::geometry) AS latitude,
                         ST_X(location::geometry) AS longitude,
                         address,
-                        availability_schedule,
-                        pricing_info,
                         photos,
-                        photo_timestamp,
-                        verification_status,
-                        dynamic_pricing_enabled,
-                        cancellation_policy,
                         created_at,
-                        updated_at
+                        updated_at,
+                        pricing_info,
+                        availability_schedule
                     """,
                     (
-                        parking_space_data["owner_id"],
-                        parking_space_data["is_paid"],
-                        parking_space_data["name"],
-                        parking_space_data["longitude"],
-                        parking_space_data["latitude"],
-                        parking_space_data["address"],
-                        json.dumps(parking_space_data["availability_schedule"]) if parking_space_data["availability_schedule"] else None,
-                        json.dumps(parking_space_data["pricing_info"]) if parking_space_data["pricing_info"] else None,
-                        json.dumps(parking_space_data["photos"]) if parking_space_data["photos"] else None,
-                        parking_space_data["photo_timestamp"],
-                        "unverified",  # Default verification_status
-                        False,          # Default dynamic_pricing_enabled
-                        "standard",     # Default cancellation_policy
+                        str(user_id),
+                        is_paid,
+                        name,
+                        longitude,
+                        latitude,
+                        address,
+                        json.dumps(availability_schedule) if availability_schedule else None,
+                        json.dumps(pricing_info) if pricing_info else None,
+                        photos,  # Pass the list directly, not as JSON
+                        photo_timestamp,
                     ),
                 )
                 result = cur.fetchone()
-                conn.commit()
 
                 if not result:
                     return Err("Failed to create parking space.")
 
-                # Construct the response object
-                parking_space = {
-                    "id": str(result[0]),
-                    "owner_id": result[1],
-                    "is_paid": result[2],
-                    "name": result[3],
-                    "location": {
-                        "latitude": result[4],
-                        "longitude": result[5],
-                        "address": result[6],
-                    },
-                    "availability_schedule": result[7],
-                    "pricing_info": result[8],
-                    "photos": result[9],
-                    "photo_timestamp": result[10],
-                    "verification_status": result[11],
-                    "dynamic_pricing_enabled": result[12],
-                    "cancellation_policy": result[13],
-                    "created_at": result[14].isoformat(),
-                    "updated_at": result[15].isoformat(),
+                columns = [
+                    'id', 'is_paid', 'verification_status', 'name',
+                    'latitude', 'longitude', 'address', 'photos',
+                    'created_at', 'updated_at',
+                    'pricing_info', 'availability_schedule'
+                ]
+                parking_space = dict(zip(columns, result))
+
+                # Format location data
+                parking_space['location'] = {
+                    "latitude": parking_space.pop('latitude'),
+                    "longitude": parking_space.pop('longitude'),
+                    "address": parking_space.pop('address')
                 }
 
                 return Ok(parking_space)
 
     except Exception as e:
-        # Log the exception as needed
-        return Err(f"An unexpected error occurred: {str(e)}")
+        print(f"Exception in create_parking_space: {e}")
+        return Err("An unexpected error occurred while creating the parking space.")
 
 def allowed_file(filename: str) -> bool:
     allowed_extensions = {"png", "jpg", "jpeg", "gif"}
@@ -481,10 +432,6 @@ def update_parking_space(
     price_per_hour: float,
     reverification_required: bool,
 ) -> Result[Dict[str, Any], str]:
-    print(availability_schedule)
-    print(price_per_hour)
-    print(json.dumps(availability_schedule))
-    print(json.dumps({"price_per_hour": price_per_hour}))
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             # Check if parking space exists and if the user is the owner
