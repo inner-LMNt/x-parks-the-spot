@@ -6,7 +6,7 @@ import BookingsPage from './BookingsPage'; // Adjust the import path based on yo
 import { Provider } from 'react-redux';
 import configureStore, { MockStoreEnhanced } from 'redux-mock-store';
 import thunk from 'redux-thunk';
-import { fetchUserReservations } from '@/features/reservations/reservationsSlice';
+import { fetchUserReservations, cancelReservation } from '@/features/reservations/reservationsSlice';
 import { toast } from '@/hooks/use-toast';
 
 // Initialize mock store without middlewares as per your setup
@@ -27,6 +27,7 @@ jest.mock('next/navigation', () => ({
 // Mock actions from reservationsSlice
 jest.mock('@/features/reservations/reservationsSlice', () => ({
     fetchUserReservations: jest.fn(),
+    cancelReservation: jest.fn(),
 }));
 
 // Mock the toast hook
@@ -127,6 +128,7 @@ describe('BookingsPage Component', () => {
 
         // Mock the implementation of actions
         (fetchUserReservations as jest.Mock).mockReturnValue({ type: 'reservations/fetchUserReservations' });
+        (cancelReservation as jest.Mock).mockReturnValue({ type: 'reservations/cancelReservation' });
     });
 
     afterEach(() => {
@@ -323,5 +325,127 @@ describe('BookingsPage Component', () => {
         );
 
         expect(screen.getByText(/Loading your reservations.../i)).toBeInTheDocument();
+    });
+
+    // Test the reservation cancellation flow
+    it('handles successful reservation cancellation', async () => {
+        render(
+            <Provider store={store}>
+                <BookingsPage />
+            </Provider>
+        );
+
+        // Click on the cancel button of the first reservation card
+        const cancelButton = screen.getAllByText('Cancel')[0];
+        fireEvent.click(cancelButton);
+
+        // Confirm the cancellation in the modal
+        const confirmButton = screen.getByText('Cancel Reservation');
+        fireEvent.click(confirmButton);
+
+        await waitFor(() => {
+            expect(cancelReservation).toHaveBeenCalledWith('1');
+            expect(toast).toHaveBeenCalledWith({
+                title: 'Reservation Cancelled',
+                description: 'Your reservation has been cancelled successfully.',
+                variant: 'success',
+            });
+        });
+    });
+
+    it('handles cancellation attempt within 2 hours of the reservation start time', async () => {
+        render(
+            <Provider store={store}>
+                <BookingsPage />
+            </Provider>
+        );
+
+        // Click on the cancel button of the first reservation card
+        const cancelButton = screen.getAllByText('Cancel')[0];
+        fireEvent.click(cancelButton);
+
+        // Confirm the cancellation in the modal
+        const confirmButton = screen.getByText('Cancel Reservation');
+        fireEvent.click(confirmButton);
+
+        await waitFor(() => {
+            expect(cancelReservation).not.toHaveBeenCalled();
+            expect(toast).toHaveBeenCalledWith({
+                title: 'Failed to Cancel Reservation',
+                description: 'Reservations can only be canceled at least 2 hours before the start time.',
+                variant: 'destructive',
+            });
+        });
+    });
+
+    it('handles cancellation attempt by a user who does not own the reservation', async () => {
+        store = mockStore({
+            user: {
+                isLoggedIn: true,
+                access_token: 'token',
+                location: { latitude: null, longitude: null },
+                loading: false,
+                error: null,
+            },
+            search: {
+                loading: false,
+                error: null,
+                spots: [],
+            },
+            reservations: {
+                loading: false,
+                error: null,
+                reservations: [
+                    {
+                        id: '1',
+                        parking_space_id: 'space1',
+                        renter_id: 'user2', // Different user
+                        owner_id: 'owner1',
+                        start_time: new Date(Date.now() - 60 * 60 * 1000).toISOString(), // 1 hour ago
+                        end_time: new Date(Date.now() + 60 * 60 * 1000).toISOString(),   // 1 hour later
+                        status: 'booked',
+                        car_info: {
+                            id: 'car1',
+                            make: 'Toyota',
+                            model: 'Camry',
+                            year: 2020,
+                            color: 'Blue',
+                            license_plate: 'ABC123'
+                        },
+                        created_at: '2024-10-01T12:00:00Z',
+                        updated_at: '2024-10-01T12:00:00Z'
+                    }
+                ],
+                carInfos: [],
+            },
+            parkingSpace: {
+                loading: false,
+                error: null,
+                parkingSpace: null,
+            }
+        });
+
+        render(
+            <Provider store={store}>
+                <BookingsPage />
+            </Provider>
+        );
+
+        // Click on the cancel button of the first reservation card
+        const cancelButton = screen.getAllByText('Cancel')[0];
+        fireEvent.click(cancelButton);
+
+        // Confirm the cancellation in the modal
+        const confirmButton = screen.getByText('Cancel Reservation');
+        fireEvent.click(confirmButton);
+
+        await waitFor(() => {
+            expect(cancelReservation).not.toHaveBeenCalled();
+            expect(toast).toHaveBeenCalledWith({
+                title: 'Failed to Cancel Reservation',
+                description: 'User not authorized to cancel this reservation.',
+                variant: 'destructive',
+            });
+        });
     });
 });
