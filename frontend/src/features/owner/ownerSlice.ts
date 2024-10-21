@@ -26,19 +26,6 @@ const initialState: OwnerState = {
 };
 
 
-export const getAllPendingSpots = createAsyncThunk<
-    { pendingSpaces: ParkingSpace[] },
-    void,
-    { rejectValue: string }
->("owner/getAllPendingSpots", async (_, { rejectWithValue }) => {
-    try {
-        const response = await axios.get("/parking-spaces/get-pending");
-        return response.data;
-    } catch (error: any) {
-        return rejectWithValue(error.response?.data?.error || "Failed to get pending parking spots");
-    }
-});
-
 // Async thunk to fetch owner spots
 export const getOwnerSpots = createAsyncThunk<
     OwnerSpotsResponse,
@@ -93,26 +80,6 @@ export const updateParkingSpot = createAsyncThunk<
     }
 );
 
-// Async thunk to verify or reject a parking spot
-export const verifyParkingSpot = createAsyncThunk<
-    ParkingSpace, // Return the updated ParkingSpace after verification
-    { spotId: string; is_verified: boolean }, // Argument: ID of the spot to verify/reject and the decision
-    { rejectValue: string }
->(
-    "owner/verifySpot",
-    async ({ spotId, is_verified }, { rejectWithValue }) => {
-        try {
-            console.log("spot ",spotId)
-            console.log("veri ",is_verified)
-            // Send the spotId and is_verified in the request body
-            const response = await axios.post(`/parking-spaces/verify-parking-space`, { spotId, is_verified });
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.error || "Failed to verify parking spot");
-        }
-    }
-);
-
 
 // Async thunk to submit verification
 export const submitVerification = createAsyncThunk<
@@ -148,7 +115,7 @@ const ownerSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            // Added reducers for getAllPendingSpots
+            /*// Added reducers for getAllPendingSpots
             .addCase(getAllPendingSpots.pending, (state: OwnerState) => {
                 state.loading = true;
                 state.error = null;
@@ -160,7 +127,7 @@ const ownerSlice = createSlice({
             .addCase(getAllPendingSpots.rejected, (state: OwnerState, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
-            })
+            })*/
 
             // Handle getOwnerSpots
             .addCase(getOwnerSpots.pending, (state: OwnerState) => {

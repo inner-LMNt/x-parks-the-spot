@@ -6,15 +6,28 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { MapPin } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { getAllPendingSpots, verifyParkingSpot } from '@/features/owner/ownerSlice';
+//import {verifyParkingSpot } from '@/features/owner/ownerSlice';
+import {getAllPendingSpots, verifyParkingSpot} from '@/features/admin/adminSlice';
 import ImageWrapper from "@/components/custom/ImageWrapper";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
+// Define the type for a pending spot
+interface PendingSpot {
+    id: string;
+    name: string;
+    is_paid: boolean;
+    photos: string[];
+    verification_photos?: string[];
+    location?: {
+        address?: string;
+    };
+}
+
 export default function VerificationPage() {
     const dispatch = useAppDispatch();
-    const { pendingSpots, loading, error } = useAppSelector(state => state.owner);
+    const { pendingSpots, loading, error } = useAppSelector(state => state.admin);
     const [isListExpanded, setIsListExpanded] = useState(true);
-    const [selectedSpot, setSelectedSpot] = useState<any>(null);
+    const [selectedSpot, setSelectedSpot] = useState<PendingSpot | null>(null); // Use the defined type
     const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [confirmInput, setConfirmInput] = useState("");
@@ -34,7 +47,7 @@ export default function VerificationPage() {
         setIsListExpanded(!isListExpanded);
     };
 
-    const openVerificationModal = (spot: any) => {
+    const openVerificationModal = (spot: PendingSpot) => { // Use the defined type
         setSelectedSpot(spot);
         setIsVerificationModalOpen(true);
     };
@@ -44,7 +57,7 @@ export default function VerificationPage() {
         setSelectedSpot(null);
     };
 
-    const openConfirmModal = (action: "approve" | "reject", spot: any) => {
+    const openConfirmModal = (action: "approve" | "reject", spot: PendingSpot) => { // Use the defined type
         setSelectedSpot(spot);
         setActionType(action);
         setIsConfirmModalOpen(true);
@@ -95,7 +108,7 @@ export default function VerificationPage() {
                     ) : (
                         isListExpanded && (
                             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                {pendingSpots.map((spot) => (
+                                {pendingSpots.map((spot: PendingSpot) => ( // Use the defined type
                                     <motion.div
                                         key={spot.id}
                                         initial={{ opacity: 0, scale: 0.9 }}
@@ -177,7 +190,7 @@ export default function VerificationPage() {
                             <DialogTitle>Verification Photos</DialogTitle>
                         </DialogHeader>
                         <div className="grid grid-cols-1 gap-4">
-                            {selectedSpot.verification_photos.map((photo: string, index: number) => (
+                            {selectedSpot.verification_photos?.map((photo: string, index: number) => (
                                 <div key={index} className="relative w-full h-60">
                                     <ImageWrapper
                                         src={photo}

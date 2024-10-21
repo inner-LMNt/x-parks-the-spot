@@ -9,7 +9,6 @@ import userEvent from '@testing-library/user-event';
 import {
     bookParkingSpace,
     resetError,
-    fetchUserCarInfos,
 } from '@/features/reservations/reservationsSlice';
 import {
     fetchParkingSpace,
@@ -17,6 +16,7 @@ import {
     lockParkingSpace,
 } from "@/features/parking-space/parkingSpaceSlice";
 import { toast } from '@/hooks/use-toast';
+import {fetchUserCars} from "@/features/cars/carSlice";
 
 // Initialize mock store without middlewares as per your setup
 const mockStore = configureStore([]);
@@ -40,7 +40,6 @@ jest.mock('next/navigation', () => ({
 jest.mock('@/features/reservations/reservationsSlice', () => ({
     bookParkingSpace: jest.fn(),
     resetError: jest.fn(),
-    fetchUserCarInfos: jest.fn(),
 }));
 
 jest.mock('@/features/parking-space/parkingSpaceSlice', () => ({
@@ -167,7 +166,6 @@ describe('ParkingSpaceBooking Component', () => {
             unwrap: jest.fn().mockResolvedValue({ /* mock payload */ }),
         }));
         (resetError as jest.Mock).mockReturnValue({ type: 'reservations/resetError' });
-        (fetchUserCarInfos as jest.Mock).mockReturnValue({ type: 'reservations/fetchUserCarInfos' });
     });
 
     afterEach(() => {
