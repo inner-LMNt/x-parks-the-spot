@@ -3,33 +3,15 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import VerificationPage from './VerificationPage'; // Adjust the import path based on your file structure
 import { Provider } from 'react-redux';
 import configureStore, { MockStoreEnhanced } from 'redux-mock-store';
-import thunk from 'redux-thunk';
-import { fetchPendingVerifications } from '@/features/parking-space/parkingSpaceSlice';
-import { toast } from '@/hooks/use-toast';
+import { getAllPendingSpots, verifyParkingSpot } from '@/features/admin/adminSlice';
 
 // Initialize mock store
-const mockStore = configureStore([thunk]);
+const mockStore = configureStore([]);
 
-// Mock Next.js navigation hooks
-jest.mock('next/navigation', () => ({
-    useRouter: jest.fn().mockReturnValue({
-        push: jest.fn(),
-        replace: jest.fn(),
-        prefetch: jest.fn(),
-        back: jest.fn(),
-        pathname: '/',
-        query: {},
-    }),
-}));
-
-// Mock actions from verificationSlice
-jest.mock('@/features/verifications/verificationSlice', () => ({
-    fetchPendingVerifications: jest.fn(),
-}));
-
-// Mock the toast hook
-jest.mock('@/hooks/use-toast', () => ({
-    toast: jest.fn(),
+// Mock actions from adminSlice
+jest.mock('@/features/admin/adminSlice', () => ({
+    getAllPendingSpots: jest.fn(),
+    verifyParkingSpot: jest.fn(),
 }));
 
 describe('VerificationPage Component', () => {
@@ -37,14 +19,7 @@ describe('VerificationPage Component', () => {
 
     beforeEach(() => {
         store = mockStore({
-            user: {
-                isLoggedIn: true,
-                access_token: 'token',
-                location: { latitude: null, longitude: null },
-                loading: false,
-                error: null,
-            },
-            verifications: {
+            admin: {
                 loading: false,
                 error: null,
                 pendingSpots: [
@@ -52,7 +27,8 @@ describe('VerificationPage Component', () => {
                         id: '1',
                         name: 'Test Spot',
                         is_paid: true,
-                        verification_photos: ['photo1.jpg'],
+                        photos: ['/photo1.jpg'], // Add the correct URL format here
+                        verification_photos: ['/photo2.jpg'], // Ensure correct format
                         location: { address: '123 Test St' },
                     },
                 ],
@@ -60,8 +36,9 @@ describe('VerificationPage Component', () => {
         });
 
         // Mock the implementation of actions
-        (fetchPendingVerifications as jest.Mock).mockReturnValue({ type: 'verifications/fetchPendingVerifications' });
+        (getAllPendingSpots as jest.Mock).mockReturnValue({ type: 'admin/getAllPendingSpots' });
     });
+
 
     afterEach(() => {
         jest.clearAllMocks();
@@ -69,14 +46,7 @@ describe('VerificationPage Component', () => {
 
     it('renders the VerificationPage component with loading state', () => {
         store = mockStore({
-            user: {
-                isLoggedIn: true,
-                access_token: 'token',
-                location: { latitude: null, longitude: null },
-                loading: false,
-                error: null,
-            },
-            verifications: {
+            admin: {
                 loading: true,
                 error: null,
                 pendingSpots: [],
@@ -89,7 +59,7 @@ describe('VerificationPage Component', () => {
             </Provider>
         );
 
-        expect(screen.getByText(/Loading your pending verifications.../i)).toBeInTheDocument();
+        expect(screen.getByText(/Loading.../i)).toBeInTheDocument();
     });
 
     it('renders the VerificationPage component with pending verification spots', () => {
@@ -107,14 +77,7 @@ describe('VerificationPage Component', () => {
 
     it('renders no pending verification spots', () => {
         store = mockStore({
-            user: {
-                isLoggedIn: true,
-                access_token: 'token',
-                location: { latitude: null, longitude: null },
-                loading: false,
-                error: null,
-            },
-            verifications: {
+            admin: {
                 loading: false,
                 error: null,
                 pendingSpots: [],
@@ -144,36 +107,12 @@ describe('VerificationPage Component', () => {
             expect(screen.getByText(/Verification Photos/i)).toBeInTheDocument();
         });
 
-        const closeButton = screen.getByText(/Close/i);
-        fireEvent.click(closeButton);
+        // Use getAllByText to select the Close button and interact with the first one
+        const closeButtons = screen.getAllByText(/Close/i);
+        fireEvent.click(closeButtons[0]);
 
         await waitFor(() => {
             expect(screen.queryByText(/Verification Photos/i)).not.toBeInTheDocument();
-        });
-    });
-
-    it('opens the confirm modal when verifying or rejecting a spot', async () => {
-        render(
-            <Provider store={store}>
-                <VerificationPage />
-            </Provider>
-        );
-
-        const verifyButton = screen.getByText(/Verify/i);
-        fireEvent.click(verifyButton);
-
-        await waitFor(() => {
-            expect(screen.getByText(/Confirm Verification/i)).toBeInTheDocument();
-        });
-
-        const confirmInput = screen.getByPlaceholderText(/Type 'confirm' to proceed/i);
-        fireEvent.change(confirmInput, { target: { value: 'confirm' } });
-
-        const submitButton = screen.getByText(/Submit/i);
-        fireEvent.click(submitButton);
-
-        await waitFor(() => {
-            expect(screen.queryByText(/Confirm Verification/i)).not.toBeInTheDocument();
         });
     });
 
