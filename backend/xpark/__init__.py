@@ -16,6 +16,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
 
     # Initialize Mailer
     from .utils.mailer import SMTPConn
+    from .utils.mailer import connect as mailer_connect
 
     if Config.SMTP_ENABLED:
         if Config.SMTP_TLS == "yes":
@@ -23,8 +24,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
         else:
             SMTPConn.conn = smtplib.SMTP()
 
-        SMTPConn.conn.connect(host=Config.SMTP_HOST)
-        SMTPConn.conn.login(user=Config.SMTP_USERNAME, password=Config.SMTP_PASSWORD)
+        mailer_connect()
 
     # Run SQL migrations in one transaction. Any failures will not modify the database
     with DB.pool.connection() as conn:
