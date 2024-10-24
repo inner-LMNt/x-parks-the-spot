@@ -22,7 +22,7 @@ jest.mock('next/navigation', () => ({
         pathname: '/',
         query: {},
     }),
-    useParams: jest.fn().mockReturnValue({ 'parking-space-id': 'space1' }),
+    useParams: jest.fn().mockReturnValue({ 'parking-space-id': '1692f1d6-a67b-4659-a555-bdf22359bd24' }),
     usePathname: jest.fn().mockReturnValue('/bookings/[parking-space-id]/reserve'),
     useSearchParams: jest.fn().mockReturnValue(new URLSearchParams({ previousUrl: '/bookings' })),
 }));
@@ -89,7 +89,7 @@ describe('ParkingSpaceBooking Component', () => {
             </Provider>
         );
 
-        expect(lockParkingSpace).toHaveBeenCalledWith({ parking_space_id: 'space1', lock_duration: 'PT5M' });
+        expect(lockParkingSpace).toHaveBeenCalledWith({ parking_space_id: '1692f1d6-a67b-4659-a555-bdf22359bd24', lock_duration: 'PT5M' });
         expect(toast).not.toHaveBeenCalled();
     });
 
@@ -165,7 +165,7 @@ describe('ParkingSpaceBooking Component', () => {
         // Assertions
         await waitFor(() => {
             expect(bookParkingSpace).toHaveBeenCalledWith({
-                parking_space_id: 'space1',
+                parking_space_id: '1692f1d6-a67b-4659-a555-bdf22359bd24',
                 start_time: new Date('2024-10-20T10:00:00').toISOString(),
                 end_time: new Date('2024-10-20T12:00:00').toISOString(),
                 car_info_id: 'car1',
@@ -348,6 +348,6 @@ describe('ParkingSpaceBooking Component', () => {
 
         unmount();
 
-        expect(unlockParkingSpace).toHaveBeenCalledWith('space1');
+        expect(unlockParkingSpace).toHaveBeenCalledWith('1692f1d6-a67b-4659-a555-bdf22359bd24');
     });
 });
