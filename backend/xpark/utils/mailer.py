@@ -45,7 +45,7 @@ def send_email(to: str, subject: str, content: str) -> None:
             SMTPConn.conn.send_message(email)
 
 
-def connect():
+def connect() -> None:
     # The lock should prevent race condition if two emails are sent, both require reconnects
     # I don't see it happening, but just in case, I guess
     with reconnect_lock:
