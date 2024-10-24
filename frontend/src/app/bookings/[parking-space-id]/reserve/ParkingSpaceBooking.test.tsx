@@ -31,10 +31,10 @@ describe('ParkingSpaceBooking Component', () => {
     beforeEach(async () => {
         injectStore(store);
 
-        await waitFor(() => store.dispatch(
+        await store.dispatch(
             //@ts-ignore
-            login({email: 'testuser@example.com', password: 'password123'})
-        ));
+            login({ email: 'testuser@example.com', password: 'password123' })
+        );
     });
 
     afterEach(() => {
@@ -94,11 +94,6 @@ describe('ParkingSpaceBooking Component', () => {
     });
 
     it('handles locking failure on mount', async () => {
-        (lockParkingSpace as jest.Mock).mockImplementation(() => ({
-            type: 'parkingSpace/lockParkingSpace/rejected',
-            payload: 'Locking failed.',
-            unwrap: jest.fn().mockRejectedValue('Locking failed.'), // Reject with string
-        }));
 
         const { push } = require('next/navigation').useRouter();
 
@@ -120,24 +115,6 @@ describe('ParkingSpaceBooking Component', () => {
     });
 
     it('handles successful booking submission', async () => {
-        // Mock the fulfilled action with .unwrap() resolving to an empty object or relevant payload
-        (bookParkingSpace as jest.Mock).mockImplementation(() => ({
-            type: 'reservations/bookParkingSpace/fulfilled',
-            payload: {},
-            unwrap: jest.fn().mockResolvedValue({ /* mock payload */ }),
-        }));
-
-        // Mock the router's push method correctly
-        const pushMock = jest.fn();
-        (require('next/navigation').useRouter as jest.Mock).mockReturnValue({
-            push: pushMock, // Correctly assign pushMock
-            replace: jest.fn(),
-            prefetch: jest.fn(),
-            back: jest.fn(),
-            pathname: '/',
-            query: {},
-        });
-
         render(
             <Provider store={store}>
                 <ParkingSpaceBooking />
@@ -362,11 +339,6 @@ describe('ParkingSpaceBooking Component', () => {
     });
 
     it('unlocks parking space on unmount', () => {
-        (unlockParkingSpace as jest.Mock).mockImplementation(() => ({
-            type: 'parkingSpace/unlockParkingSpace/fulfilled',
-            payload: {},
-            unwrap: jest.fn().mockResolvedValue({ /* mock payload */ }),
-        }));
 
         const { unmount } = render(
             <Provider store={store}>
