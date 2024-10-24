@@ -3,10 +3,10 @@ name: Node.js CI
 on:
   push:
     branches: ["main"]
-    paths: ["frontend/**", "flake.nix", "flake.lock", "backend/**", ".github/workflows/frontend.yml"]
+    paths: ["frontend/**", "flake.nix", "flake.lock", "backend/**", ".github/workflows/node.js.yml"]
   pull_request:
     branches: ["main"]
-    paths: ["frontend/**", "flake.nix", "flake.lock", "backend/**", ".github/workflows/frontend.yml"]
+    paths: ["frontend/**", "flake.nix", "flake.lock", "backend/**", ".github/workflows/node.js.yml"]
 
 defaults:
   run:
