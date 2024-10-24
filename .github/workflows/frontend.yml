@@ -48,7 +48,11 @@ jobs:
       run: npm run build --if-present
 
     - name: Backend Setup
-      run: PGPASSWORD="postgres" psql -U postgres -h 127.0.0.1 --password -c "create database xpark;"
+      run: |
+        psql -U postgres -h 127.0.0.1 --password -c "create database xpark;"
+        psql -U postgres -h 127.0.0.1 xpark < e2e-seed.sql
+      env:
+        PGPASSWORD: "postgres"
     - name: Start Backend Daemon
       run: |
         set -o pipefail
