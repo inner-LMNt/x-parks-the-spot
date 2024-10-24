@@ -7,10 +7,11 @@ import {Provider, useDispatch} from 'react-redux';
 import userEvent from '@testing-library/user-event';
 import {store} from '@/store';
 import { toast } from '@/hooks/use-toast';
-import {login} from "@/features/user/userSlice";
+import {login, register_acc} from "@/features/user/userSlice";
 import {injectStore} from "@/api/axiosInstance";
 import {lockParkingSpace, unlockParkingSpace} from "@/features/parking-space/parkingSpaceSlice";
 import {bookParkingSpace} from "@/features/reservations/reservationsSlice";
+import {useAppSelector} from "@/store/hooks";
 
 jest.mock('next/navigation', () => ({
     useRouter: jest.fn().mockReturnValue({
@@ -22,17 +23,18 @@ jest.mock('next/navigation', () => ({
         query: {},
     }),
     useParams: jest.fn().mockReturnValue({ 'parking-space-id': 'space1' }),
-    usePathname: jest.fn().mockReturnValue('/current/path'),
+    usePathname: jest.fn().mockReturnValue('/bookings/[parking-space-id]/reserve'),
     useSearchParams: jest.fn().mockReturnValue(new URLSearchParams({ previousUrl: '/bookings' })),
 }));
 describe('ParkingSpaceBooking Component', () => {
 
     beforeEach(async () => {
         injectStore(store);
-        await store.dispatch(
+
+        await waitFor(() => store.dispatch(
             //@ts-ignore
-            login({email: 'testuser@example.com', password: 'password123',})
-        );
+            login({email: 'testuser@example.com', password: 'password123'})
+        ));
     });
 
     afterEach(() => {
