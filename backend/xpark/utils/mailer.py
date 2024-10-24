@@ -51,7 +51,7 @@ def connect() -> None:
     with reconnect_lock:
         SMTPConn.conn.connect(host=Config.SMTP_HOST)
         SMTPConn.conn.login(user=Config.SMTP_USERNAME, password=Config.SMTP_PASSWORD)
-        SMTPConn.conn.ehlo() # Why doesn't this automatically get sent on reconnect?
+        SMTPConn.conn.ehlo()  # Why doesn't this automatically get sent on reconnect?
 
 
 def generate_templated_email(template: str, **kwargs: str) -> str:

@@ -3,15 +3,17 @@ from typing import Any
 from psycopg.rows import dict_row
 
 from xpark.utils.db import DB
+
+
 def search_query(
-        lat: float,
-        long: float,
-        radius_meters: float,
-        paid_status: str,
-        min_price: float,
-        max_price: float,
-        start_time: str,
-        end_time: str,
+    lat: float,
+    long: float,
+    radius_meters: float,
+    paid_status: str,
+    min_price: float,
+    max_price: float,
+    start_time: str,
+    end_time: str,
 ) -> list[dict[str, Any]]:
     paid = None
     if paid_status == "PAID":
@@ -20,7 +22,7 @@ def search_query(
         paid = False
 
     with DB.pool.connection() as conn:
-        with conn.cursor(row_factory = dict_row) as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
                 """
                 SELECT
@@ -50,16 +52,17 @@ def search_query(
                     "paid": paid,
                     "min_price": min_price,
                     "max_price": max_price,
-
-                }
+                },
             )
             parking_spaces = cur.fetchall()
             for parking_space in parking_spaces:
-                parking_space['location'] = {"latitude": parking_space['latitude'],
-                                             "longitude": parking_space['longitude'],
-                                             "address": parking_space['address']}
-                del parking_space['latitude']
-                del parking_space['longitude']
-                del parking_space['address']
+                parking_space["location"] = {
+                    "latitude": parking_space["latitude"],
+                    "longitude": parking_space["longitude"],
+                    "address": parking_space["address"],
+                }
+                del parking_space["latitude"]
+                del parking_space["longitude"]
+                del parking_space["address"]
 
             return parking_spaces
