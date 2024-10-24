@@ -7,7 +7,7 @@ import {Provider, useDispatch} from 'react-redux';
 import userEvent from '@testing-library/user-event';
 import {store} from '@/store';
 import { toast } from '@/hooks/use-toast';
-import {login, register_acc} from "@/features/user/userSlice";
+import {login, logout, register_acc} from "@/features/user/userSlice";
 import {injectStore} from "@/api/axiosInstance";
 import {lockParkingSpace, unlockParkingSpace} from "@/features/parking-space/parkingSpaceSlice";
 import {bookParkingSpace} from "@/features/reservations/reservationsSlice";
@@ -37,8 +37,12 @@ describe('ParkingSpaceBooking Component', () => {
         );
     });
 
-    afterEach(() => {
+    afterEach(async () => {
         jest.clearAllMocks();
+        await store.dispatch(
+            //@ts-ignore
+            logout()
+        );
     });
 
     it('renders the ParkingSpaceBooking component with loading state', () => {
