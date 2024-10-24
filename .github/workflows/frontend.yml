@@ -50,10 +50,21 @@ jobs:
     - name: Backend Setup
       run: PGPASSWORD="postgres" psql -U postgres -h 127.0.0.1 --password -c "create database xpark;"
     - name: Start Backend Daemon
-      run: "cd ../backend && flask run &"
+      run: |
+        set -o pipefail
+        cd ../backend
+        flask run &
       env:
         DATABASE_URI: "dbname=xpark user=postgres password=postgres host=127.0.0.1 port=5432"
         SECRET_KEY: test_key
+        FLASK_APP: "xpark:create_app()"
+        FLASK_RUN_PORT: 5001
+        FLASK_RUN_HOST: localhost
+        SMTP_FROM: '"X Parks The Spot" <xparkstaging@ersei.net>'
+        SMTP_USERNAME: xparkstaging@ersei.net
+        SMTP_TLS: no
+        SMTP_HOST: smtp.purelymail.com
+        SMTP_ENABLED: no
 
     - name: Test Frontend
       run: |
