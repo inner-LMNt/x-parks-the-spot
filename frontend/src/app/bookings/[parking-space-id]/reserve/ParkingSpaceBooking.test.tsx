@@ -3,25 +3,15 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ParkingSpaceBooking from './ParkingSpaceBooking'; // Adjust the import path based on your file structure
-import { Provider } from 'react-redux';
-import configureStore, { MockStoreEnhanced } from 'redux-mock-store';
+import {Provider, useDispatch} from 'react-redux';
 import userEvent from '@testing-library/user-event';
-import {
-    bookParkingSpace,
-    resetError,
-    fetchUserCarInfos,
-} from '@/features/reservations/reservationsSlice';
-import {
-    fetchParkingSpace,
-    unlockParkingSpace,
-    lockParkingSpace,
-} from "@/features/parking-space/parkingSpaceSlice";
+import {store} from '@/store';
 import { toast } from '@/hooks/use-toast';
+import {login} from "@/features/user/userSlice";
+import {injectStore} from "@/api/axiosInstance";
+import {lockParkingSpace, unlockParkingSpace} from "@/features/parking-space/parkingSpaceSlice";
+import {bookParkingSpace} from "@/features/reservations/reservationsSlice";
 
-// Initialize mock store without middlewares as per your setup
-const mockStore = configureStore([]);
-
-// Mock Next.js navigation hooks, including useSearchParams
 jest.mock('next/navigation', () => ({
     useRouter: jest.fn().mockReturnValue({
         push: jest.fn(),
@@ -35,139 +25,14 @@ jest.mock('next/navigation', () => ({
     usePathname: jest.fn().mockReturnValue('/current/path'),
     useSearchParams: jest.fn().mockReturnValue(new URLSearchParams({ previousUrl: '/bookings' })),
 }));
-
-// Mock actions from reservationsSlice and parkingSpaceSlice
-jest.mock('@/features/reservations/reservationsSlice', () => ({
-    bookParkingSpace: jest.fn(),
-    resetError: jest.fn(),
-    fetchUserCarInfos: jest.fn(),
-}));
-
-jest.mock('@/features/parking-space/parkingSpaceSlice', () => ({
-    fetchParkingSpace: jest.fn(),
-    lockParkingSpace: jest.fn(),
-    unlockParkingSpace: jest.fn(),
-}));
-
-// Mock the toast hook
-jest.mock('@/hooks/use-toast', () => ({
-    toast: jest.fn(),
-}));
-
 describe('ParkingSpaceBooking Component', () => {
-    let store: MockStoreEnhanced<unknown, {}>;
 
-    beforeEach(() => {
-        store = mockStore({
-            user: {
-                id: 'user1', // Add user ID
-                isLoggedIn: true,
-                access_token: 'token',
-                location: {
-                    latitude: null,
-                    longitude: null
-                },
-                loading: true,
-                error: null
-            },
-            search: {
-                loading: false,
-                error: null,
-                spots: [],
-            },
-            reservations: {
-                loading: false,
-                error: null,
-                reservations: [],
-                carInfos: [
-                    {
-                        id: 'car1',
-                        make: 'Toyota',
-                        model: 'Camry',
-                        year: 2020,
-                        color: 'Blue',
-                        license_plate: 'ABC123'
-                    },
-                    {
-                        id: 'car2',
-                        make: 'Honda',
-                        model: 'Civic',
-                        year: 2018,
-                        color: 'Red',
-                        license_plate: 'XYZ789'
-                    }
-                ],
-            },
-            parkingSpace: {
-                loading: false,
-                error: null,
-                parkingSpace: {
-                    id: 'space1',
-                    owner_id: 'owner1',
-                    location: {
-                        latitude: 38.37334,
-                        longitude: -85.596661,
-                        address: '3212 Deer Pointe Pl, Prospect, KY'
-                    },
-                    is_paid: true,
-                    features: ['Covered', 'EV Charging'],
-                    availability_schedule: [
-                        {
-                            day_of_week: 'Tuesday',
-                            start_time: '2024-10-15T05:00:00Z',
-                            end_time: '2024-10-15T21:00:00Z',
-                        },
-                        {
-                            day_of_week: 'Wednesday',
-                            start_time: '2024-10-16T05:00:00Z',
-                            end_time: '2024-10-16T21:00:00Z',
-                        },
-                    ],
-                    pricing_info: {
-                        base_price: 5,
-                        dynamic_pricing: true,
-                        dynamic_pricing_algorithm: 'standard',
-                    },
-                    photos: [
-                        'https://example.com/photos/parking1/photo1.jpg',
-                        'https://example.com/photos/parking1/photo2.jpg',
-                    ],
-                    verification_status: 'verified',
-                    dynamic_pricing_enabled: true,
-                    cancellation_policy: 'Free cancellation up to 24 hours before booking.',
-                    locked: false,
-                    created_at: '2024-09-01T12:00:00Z',
-                    updated_at: '2024-09-15T12:00:00Z',
-                },
-                lockStatus: 'idle',
-                lockExpiresAt: null,
-            }
-        });
-        Element.prototype.scrollIntoView = jest.fn();
-        // Mock the implementation of actions to include 'unwrap'
-        (fetchParkingSpace as jest.Mock).mockImplementation(() => ({
-            type: 'parkingSpace/fetchParkingSpace',
-            payload: {},
-            // Mock 'unwrap' method
-            unwrap: jest.fn().mockResolvedValue({ /* mock payload if needed */ }),
-        }));
-        (lockParkingSpace as jest.Mock).mockImplementation(() => ({
-            type: 'parkingSpace/lockParkingSpace',
-            payload: {},
-            unwrap: jest.fn().mockResolvedValue({ /* mock payload */ }),
-        }));
-        (unlockParkingSpace as jest.Mock).mockImplementation(() => ({
-            type: 'parkingSpace/unlockParkingSpace',
-            payload: {},
-            unwrap: jest.fn().mockResolvedValue({ /* mock payload */ }),
-        }));
-        (bookParkingSpace as jest.Mock).mockImplementation(() => ({
-            type: 'reservations/bookParkingSpace',
-            payload: {},
-            unwrap: jest.fn().mockResolvedValue({ /* mock payload */ }),
-        }));
-        (resetError as jest.Mock).mockReturnValue({ type: 'reservations/resetError' });
-        (fetchUserCarInfos as jest.Mock).mockReturnValue({ type: 'reservations/fetchUserCarInfos' });
+    beforeEach(async () => {
+        injectStore(store);
+        await store.dispatch(
+            //@ts-ignore
+            login({email: 'testuser@example.com', password: 'password123',})
+        );
     });
 
     afterEach(() => {
@@ -175,35 +40,6 @@ describe('ParkingSpaceBooking Component', () => {
     });
 
     it('renders the ParkingSpaceBooking component with loading state', () => {
-        store = mockStore({
-            user: {
-                id: 'user1', // Ensure user ID is present
-                isLoggedIn: true,
-                access_token: 'token',
-                location: { latitude: null, longitude: null },
-                loading: false,
-                error: null,
-            },
-            search: {
-                loading: false,
-                error: null,
-                spots: [],
-            },
-            reservations: {
-                loading: false,
-                error: null,
-                reservations: [],
-                carInfos: [],
-            },
-            parkingSpace: {
-                loading: true, // Loading state
-                error: null,
-                parkingSpace: null,
-                lockStatus: 'idle',
-                lockExpiresAt: null,
-            },
-        });
-
         render(
             <Provider store={store}>
                 <ParkingSpaceBooking />
@@ -214,88 +50,6 @@ describe('ParkingSpaceBooking Component', () => {
     });
 
     it('renders the ParkingSpaceBooking component with parking space data and car infos', () => {
-        store = mockStore({
-            user: {
-                id: 'user1', // Ensure user ID is present
-                isLoggedIn: true,
-                access_token: 'token',
-                location: { latitude: null, longitude: null },
-                loading: false,
-                error: null,
-            },
-            search: {
-                loading: false,
-                error: null,
-                spots: [],
-            },
-            reservations: {
-                loading: false,
-                error: null,
-                reservations: [],
-                carInfos: [
-                    {
-                        id: 'car1',
-                        make: 'Toyota',
-                        model: 'Camry',
-                        year: 2020,
-                        color: 'Blue',
-                        license_plate: 'ABC123'
-                    },
-                    {
-                        id: 'car2',
-                        make: 'Honda',
-                        model: 'Civic',
-                        year: 2018,
-                        color: 'Red',
-                        license_plate: 'XYZ789'
-                    }
-                ],
-            },
-            parkingSpace: {
-                loading: false,
-                error: null,
-                parkingSpace: {
-                    id: 'space1',
-                    owner_id: 'owner1',
-                    location: {
-                        latitude: 38.37334,
-                        longitude: -85.596661,
-                        address: '3212 Deer Pointe Pl, Prospect, KY'
-                    },
-                    is_paid: true,
-                    features: ['Covered', 'EV Charging'],
-                    availability_schedule: [
-                        {
-                            day_of_week: 'Tuesday',
-                            start_time: '2024-10-15T05:00:00Z',
-                            end_time: '2024-10-15T21:00:00Z',
-                        },
-                        {
-                            day_of_week: 'Wednesday',
-                            start_time: '2024-10-16T05:00:00Z',
-                            end_time: '2024-10-16T21:00:00Z',
-                        },
-                    ],
-                    pricing_info: {
-                        base_price: 5,
-                        dynamic_pricing: true,
-                        dynamic_pricing_algorithm: 'standard',
-                    },
-                    photos: [
-                        'https://example.com/photos/parking1/photo1.jpg',
-                        'https://example.com/photos/parking1/photo2.jpg',
-                    ],
-                    verification_status: 'verified',
-                    dynamic_pricing_enabled: true,
-                    cancellation_policy: 'Free cancellation up to 24 hours before booking.',
-                    locked: false,
-                    created_at: '2024-09-01T12:00:00Z',
-                    updated_at: '2024-09-15T12:00:00Z',
-                },
-                lockStatus: 'idle',
-                lockExpiresAt: null,
-            }
-        });
 
         render(
             <Provider store={store}>
@@ -326,11 +80,6 @@ describe('ParkingSpaceBooking Component', () => {
     });
 
     it('handles successful locking on mount', async () => {
-        (lockParkingSpace as jest.Mock).mockImplementation(() => ({
-            type: 'parkingSpace/lockParkingSpace/fulfilled',
-            payload: {},
-            unwrap: jest.fn().mockResolvedValue({ /* mock payload */ }),
-        }));
 
         render(
             <Provider store={store}>
@@ -590,80 +339,6 @@ describe('ParkingSpaceBooking Component', () => {
 
     it('handles session expiration', async () => {
         // Set lockExpiresAt to a past time to simulate expiration
-        store = mockStore({
-            user: {
-                id: 'user1', // Ensure user ID is present
-                isLoggedIn: true,
-                access_token: 'token',
-                location: { latitude: null, longitude: null },
-                loading: false,
-                error: null,
-            },
-            search: {
-                loading: false,
-                error: null,
-                spots: [],
-            },
-            reservations: {
-                loading: false,
-                error: null,
-                reservations: [],
-                carInfos: [
-                    {
-                        id: 'car1',
-                        make: 'Toyota',
-                        model: 'Camry',
-                        year: 2020,
-                        color: 'Blue',
-                        license_plate: 'ABC123'
-                    }
-                ],
-            },
-            parkingSpace: {
-                loading: false,
-                error: null,
-                parkingSpace: {
-                    id: 'space1',
-                    owner_id: 'owner1',
-                    location: {
-                        latitude: 38.37334,
-                        longitude: -85.596661,
-                        address: '3212 Deer Pointe Pl, Prospect, KY'
-                    },
-                    is_paid: true,
-                    features: ['Covered', 'EV Charging'],
-                    availability_schedule: [
-                        {
-                            day_of_week: 'Tuesday',
-                            start_time: '2024-10-15T05:00:00Z',
-                            end_time: '2024-10-15T21:00:00Z',
-                        },
-                        {
-                            day_of_week: 'Wednesday',
-                            start_time: '2024-10-16T05:00:00Z',
-                            end_time: '2024-10-16T21:00:00Z',
-                        },
-                    ],
-                    pricing_info: {
-                        base_price: 5,
-                        dynamic_pricing: true,
-                        dynamic_pricing_algorithm: 'standard',
-                    },
-                    photos: [
-                        'https://example.com/photos/parking1/photo1.jpg',
-                        'https://example.com/photos/parking1/photo2.jpg',
-                    ],
-                    verification_status: 'verified',
-                    dynamic_pricing_enabled: true,
-                    cancellation_policy: 'Free cancellation up to 24 hours before booking.',
-                    locked: true,
-                    created_at: '2024-09-01T12:00:00Z',
-                    updated_at: '2024-09-15T12:00:00Z',
-                },
-                lockStatus: 'locked',
-                lockExpiresAt: Date.now() - 1000, // Expired
-            }
-        });
 
         const { push } = require('next/navigation').useRouter();
 
