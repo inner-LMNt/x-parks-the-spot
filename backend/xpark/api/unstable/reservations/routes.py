@@ -52,9 +52,7 @@ def get_reservation_route(
     """
     Get reservation details by ID.
     """
-    reservation_uuid = uuid.UUID(reservation_id)
-
-    match get_reservation(user_id, reservation_uuid):
+    match get_reservation(user_id, uuid.UUID(reservation_id)):
         case Ok(reservation):
             return reservation, 200
         case Err(e):
