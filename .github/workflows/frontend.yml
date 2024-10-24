@@ -11,9 +11,6 @@ on:
 defaults:
   run:
     working-directory: frontend
-  env:
-    DATABASE_URI: "dbname=xpark user=postgres password=postgres host=127.0.0.1 port=5432"
-    SECRET_KEY: test_key
 
 jobs:
   test:
@@ -54,6 +51,9 @@ jobs:
       run: PGPASSWORD="postgres" psql -U postgres -h 127.0.0.1 --password -c "create database xpark;"
     - name: Start Backend Daemon
       run: "cd ../backend && flask run &"
+      env:
+        DATABASE_URI: "dbname=xpark user=postgres password=postgres host=127.0.0.1 port=5432"
+        SECRET_KEY: test_key
 
     - name: Test Frontend
       run: |
