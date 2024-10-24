@@ -3,6 +3,7 @@ from xpark.logic.cars import (
     add_car_info,
     update_car,
     delete_car,
+    get_car_info,
 )
 from . import bp
 from flask import request
@@ -14,8 +15,18 @@ import uuid
 
 @bp.get("")
 @require_logged_in_user
-def get_user_cars_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+def get(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     match get_user_cars(user_id):
+        case Ok(cars):
+            return cars, 200
+        case Err(e):
+            return {"err": e}, 500
+
+
+@bp.get("<car_id>")
+@require_logged_in_user
+def get_car(car_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match get_car_info(user_id, car_id=uuid.UUID(car_id)):
         case Ok(cars):
             return cars, 200
         case Err(e):
@@ -24,7 +35,7 @@ def get_user_cars_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 
 @bp.post("")
 @require_logged_in_user
-def add_car_info_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+def create(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     assert request.json
     match add_car_info(
         user_id,
@@ -35,15 +46,12 @@ def add_car_info_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         case Ok(car_info):
             return car_info, 201
         case Err(e):
-            if "not authorized" in e:
-                return {"err": e}, 403
-            else:
-                return {"err": e}, 400
+            return {"err": e}, 500
 
 
 @bp.patch("<car_id>")
 @require_logged_in_user
-def update(car_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+def patch(car_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     car_uuid = uuid.UUID(car_id)
 
     # For typing, we already know it exists
