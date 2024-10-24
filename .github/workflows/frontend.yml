@@ -64,7 +64,6 @@ jobs:
         SMTP_USERNAME: xparkstaging@ersei.net
         SMTP_TLS: no
         SMTP_HOST: smtp.purelymail.com
-        SMTP_ENABLED: no
 
     - name: Test Frontend
       run: |
