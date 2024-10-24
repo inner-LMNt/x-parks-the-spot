@@ -18,7 +18,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     from .utils.mailer import SMTPConn
     from .utils.mailer import connect as mailer_connect
 
-    if Config.SMTP_ENABLED:
+    if Config.SMTP_ENABLED == "yes":
         if Config.SMTP_TLS == "yes":
             SMTPConn.conn = smtplib.SMTP_SSL(Config.SMTP_HOST)
         else:

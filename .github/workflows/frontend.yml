@@ -1,4 +1,4 @@
-name: Node.js CI
+name: Frontend Tests
 
 on:
   push:
@@ -60,10 +60,10 @@ jobs:
         FLASK_APP: "xpark:create_app()"
         FLASK_RUN_PORT: 5001
         FLASK_RUN_HOST: localhost
-        SMTP_FROM: '"X Parks The Spot" <xparkstaging@ersei.net>'
-        SMTP_USERNAME: xparkstaging@ersei.net
+        SMTP_FROM: '"X Parks The Spot" <xpark@example.com>'
+        SMTP_USERNAME: xpark@example.com
         SMTP_TLS: no
-        SMTP_HOST: smtp.purelymail.com
+        SMTP_HOST: localhost
 
     - name: Test Frontend
       run: |

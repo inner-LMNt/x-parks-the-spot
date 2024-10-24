@@ -37,7 +37,7 @@ def send_email(to: str, subject: str, content: str) -> None:
     email["From"] = Config.SMTP_FROM
     email["To"] = to
 
-    if Config.SMTP_ENABLED:
+    if Config.SMTP_ENABLED == "yes":
         try:
             SMTPConn.conn.send_message(email)
         except smtplib.SMTPServerDisconnected:
