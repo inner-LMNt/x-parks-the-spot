@@ -17,34 +17,34 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: tiger; Type: SCHEMA; Schema: -; Owner: admin
+-- Name: tiger; Type: SCHEMA; Schema: -; Owner: postgres
 --
 
 CREATE SCHEMA tiger;
 
 
-ALTER SCHEMA tiger OWNER TO admin;
+ALTER SCHEMA tiger OWNER TO postgres;
 
 --
--- Name: tiger_data; Type: SCHEMA; Schema: -; Owner: admin
+-- Name: tiger_data; Type: SCHEMA; Schema: -; Owner: postgres
 --
 
 CREATE SCHEMA tiger_data;
 
 
-ALTER SCHEMA tiger_data OWNER TO admin;
+ALTER SCHEMA tiger_data OWNER TO postgres;
 
 --
--- Name: topology; Type: SCHEMA; Schema: -; Owner: admin
+-- Name: topology; Type: SCHEMA; Schema: -; Owner: postgres
 --
 
 CREATE SCHEMA topology;
 
 
-ALTER SCHEMA topology OWNER TO admin;
+ALTER SCHEMA topology OWNER TO postgres;
 
 --
--- Name: SCHEMA topology; Type: COMMENT; Schema: -; Owner: admin
+-- Name: SCHEMA topology; Type: COMMENT; Schema: -; Owner: postgres
 --
 
 COMMENT ON SCHEMA topology IS 'PostGIS Topology schema';
@@ -107,7 +107,7 @@ COMMENT ON EXTENSION postgis_topology IS 'PostGIS topology spatial types and fun
 
 
 --
--- Data for Name: spatial_ref_sys; Type: TABLE DATA; Schema: public; Owner: admin
+-- Data for Name: spatial_ref_sys; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 COPY public.spatial_ref_sys (srid, auth_name, auth_srid, srtext, proj4text) FROM stdin;
@@ -115,7 +115,7 @@ COPY public.spatial_ref_sys (srid, auth_name, auth_srid, srtext, proj4text) FROM
 
 
 --
--- Data for Name: geocode_settings; Type: TABLE DATA; Schema: tiger; Owner: admin
+-- Data for Name: geocode_settings; Type: TABLE DATA; Schema: tiger; Owner: postgres
 --
 
 COPY tiger.geocode_settings (name, setting, unit, category, short_desc) FROM stdin;
@@ -123,7 +123,7 @@ COPY tiger.geocode_settings (name, setting, unit, category, short_desc) FROM std
 
 
 --
--- Data for Name: pagc_gaz; Type: TABLE DATA; Schema: tiger; Owner: admin
+-- Data for Name: pagc_gaz; Type: TABLE DATA; Schema: tiger; Owner: postgres
 --
 
 COPY tiger.pagc_gaz (id, seq, word, stdword, token, is_custom) FROM stdin;
@@ -131,7 +131,7 @@ COPY tiger.pagc_gaz (id, seq, word, stdword, token, is_custom) FROM stdin;
 
 
 --
--- Data for Name: pagc_lex; Type: TABLE DATA; Schema: tiger; Owner: admin
+-- Data for Name: pagc_lex; Type: TABLE DATA; Schema: tiger; Owner: postgres
 --
 
 COPY tiger.pagc_lex (id, seq, word, stdword, token, is_custom) FROM stdin;
@@ -139,7 +139,7 @@ COPY tiger.pagc_lex (id, seq, word, stdword, token, is_custom) FROM stdin;
 
 
 --
--- Data for Name: pagc_rules; Type: TABLE DATA; Schema: tiger; Owner: admin
+-- Data for Name: pagc_rules; Type: TABLE DATA; Schema: tiger; Owner: postgres
 --
 
 COPY tiger.pagc_rules (id, rule, is_custom) FROM stdin;
@@ -147,7 +147,7 @@ COPY tiger.pagc_rules (id, rule, is_custom) FROM stdin;
 
 
 --
--- Data for Name: topology; Type: TABLE DATA; Schema: topology; Owner: admin
+-- Data for Name: topology; Type: TABLE DATA; Schema: topology; Owner: postgres
 --
 
 COPY topology.topology (id, name, srid, "precision", hasz) FROM stdin;
@@ -155,7 +155,7 @@ COPY topology.topology (id, name, srid, "precision", hasz) FROM stdin;
 
 
 --
--- Data for Name: layer; Type: TABLE DATA; Schema: topology; Owner: admin
+-- Data for Name: layer; Type: TABLE DATA; Schema: topology; Owner: postgres
 --
 
 COPY topology.layer (topology_id, layer_id, schema_name, table_name, feature_column, feature_type, level, child_id) FROM stdin;
@@ -163,7 +163,7 @@ COPY topology.layer (topology_id, layer_id, schema_name, table_name, feature_col
 
 
 --
--- Name: topology_id_seq; Type: SEQUENCE SET; Schema: topology; Owner: admin
+-- Name: topology_id_seq; Type: SEQUENCE SET; Schema: topology; Owner: postgres
 --
 
 SELECT pg_catalog.setval('topology.topology_id_seq', 1, false);
