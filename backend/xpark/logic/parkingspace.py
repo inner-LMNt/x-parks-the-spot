@@ -560,7 +560,7 @@ def delete_parking_space(
                 # Delete the image files
                 if photos:
                     for photo in photos:
-                        image_path = os.path.join(Config.STATIC_FOLDER, photo.lstrip('/'))
+                        image_path = os.path.join(Config.BASE_FOLDER, photo.lstrip('/'))
                         if os.path.exists(image_path):
                             os.remove(image_path)
 

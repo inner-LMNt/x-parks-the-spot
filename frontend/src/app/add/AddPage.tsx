@@ -62,6 +62,7 @@ export default function AddPage() {
   const [geoEnabled, setGeoEnabled] = useState(true);
   const [locationLoading, setLocationLoading] = useState(false);
   const [availabilityError, setAvailabilityError] = useState<string>('');
+  const [cameraLoaded, setCameraLoaded] = useState(false);
 
   /**
    * **Handle Image Selection**
@@ -638,15 +639,18 @@ export default function AddPage() {
                             ref={webcamRef}
                             screenshotFormat="image/jpeg"
                             className="w-full rounded-lg"
+                            onUserMedia={() => setCameraLoaded(true)}
                           />
-                          <Button
-                            type="button"
-                            onClick={handleCameraCapture}
-                            className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
-                          >
-                            <Camera className="w-4 h-4 mr-2" />
-                            Capture Photo
-                          </Button>
+                          {cameraLoaded && (
+                            <Button
+                              type="button"
+                              onClick={handleCameraCapture}
+                              className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
+                            >
+                              <Camera className="w-4 h-4 mr-2" />
+                              Capture Photo
+                            </Button>
+                          )}
                         </div>
                       ) : (
                         <div
