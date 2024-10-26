@@ -196,6 +196,10 @@ export default function AddPage() {
    * **Validate Availability Slot**
    */
   const validateAvailability = () => {
+    if (spotType === 'free') {
+      return true;
+    }
+
     let isValid = true;
     let errorMsg = '';
 
@@ -239,6 +243,7 @@ export default function AddPage() {
    * **Handle Form Submission**
    */
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    console.log(image)
     event.preventDefault();
     setIsSubmitting(true);
 
@@ -697,7 +702,7 @@ export default function AddPage() {
                     <Button
                       type="submit"
                       className="w-full"
-                      disabled={isSubmitting || loading || (spotType === 'free' && !image)}
+                      disabled={isSubmitting || loading || (!image)}
                     >
                       {isSubmitting || loading ? 'Adding Spot...' : 'Add Parking Spot'}
                     </Button>
