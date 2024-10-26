@@ -17,7 +17,7 @@ import uuid
 
 @bp.get("")
 @require_logged_in_user
-def get_owned_parking_spaces_route(user_id: uuid.UUID, token: str) -> Tuple[Any, int]: # use token?
+def get_owned_parking_spaces_route(user_id: uuid.UUID, token: str) -> Tuple[Any, int]: # use token eventually?
     match get_owned_parking_spaces(user_id):
         case Ok(data):
             return data, 200
@@ -46,7 +46,7 @@ def verify_parking_space(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 
 @bp.post("")
 @require_logged_in_user
-def create_parking_space_route(user_id: uuid.UUID, token: str) -> Tuple[Any, int]: # use token?
+def create_parking_space_route(user_id: uuid.UUID, token: str) -> Tuple[Any, int]: # use token eventually?
     data = request.form.get("data")
     image_file = request.files.get("image")
 

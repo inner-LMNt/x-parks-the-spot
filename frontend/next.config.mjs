@@ -5,7 +5,7 @@ const nextConfig = { output: 'standalone', reactStrictMode: false,
             {
                 protocol: 'http',
                 hostname: 'localhost',
-                port: '5001',
+                port: '5000',
                 pathname: '/static/images/**',
             },
         ],

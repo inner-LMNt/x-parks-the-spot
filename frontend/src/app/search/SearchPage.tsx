@@ -113,7 +113,7 @@ export default function SearchPage() {
     if (useCurrentLocation && userLocation) {
       setMapCenter(userLocation);
     }
-  }, [useCurrentLocation, userLocation]);
+  }, [useCurrentLocation]);
 
   const fetchAddressFromLocation = async (location: google.maps.LatLngLiteral) => {
     try {
@@ -916,9 +916,9 @@ export default function SearchPage() {
                 />
               )
             ))}
-            {mapCenter && (
+            {userLocation && (
               <Marker
-                position={mapCenter}
+                position={userLocation}
                 icon="https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
               />
             )}
@@ -1027,7 +1027,7 @@ export default function SearchPage() {
         ref={navigationCardRef}
         className={`fixed bottom-0 left-0 w-full bg-gray-100 p-4 transition-transform duration-300 transform ${navigationMode ? 'translate-y-0' : 'translate-y-full'
           }`}
-        style={{ bottom: '0px', height: 'auto' }}
+        style={{ bottom: '64px', height: 'auto' }}
       >
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row justify-between items-center w-full">
