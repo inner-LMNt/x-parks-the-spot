@@ -143,7 +143,7 @@ export const reset_password = createAsyncThunk<void, { token: string; newPasswor
 
             const response = await axios.post(`auth/reset-password/${token}`, {
                 token,
-                newPassword,
+                new_password: newPassword,
             });
             return response.data;
         } catch (error: any) {

@@ -661,11 +661,13 @@ export default function AddPage() {
                       {spotType !== 'free' && (
                           <input
                               type="file"
+                              name="image" // Ensure the name matches what's expected on the backend
                               accept="image/*"
                               onChange={handleImageChange}
                               ref={fileInputRef}
                               className="hidden"
-                              required
+                              // Remove the 'required' attribute
+                              // required
                           />
                       )}
                       <div className="flex justify-center mt-2">
@@ -682,13 +684,14 @@ export default function AddPage() {
                               }
                               setShowCamera(!showCamera);
                             }}
-                            disabled={spotType === 'free' ? false : false} // Allow toggling camera for both types
+                            disabled={false} // Allow toggling camera for both types
                         >
                           <Camera className="w-4 h-4 mr-2" />
                           {showCamera ? 'Hide Camera' : 'Use Camera'}
                         </Button>
                       </div>
                     </div>
+
 
                     {/* Submit Button */}
                     <Button
