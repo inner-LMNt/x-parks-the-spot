@@ -1,18 +1,19 @@
 'use client'
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {MapPin, Edit, Trash2, Plus, FileCheck2, ShieldEllipsis, ShieldCheck, ShieldX} from 'lucide-react';
+import { MapPin, Edit, Trash2, Plus, FileCheck2, ShieldEllipsis, ShieldCheck, ShieldX, RefreshCw } from 'lucide-react';
 import { ParkingSpace } from '@/types/type';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getOwnerSpots, deleteParkingSpot, verifyParkingSpot} from '@/features/owner/ownerSlice';
+import { getOwnerSpots, deleteParkingSpot, verifyParkingSpot } from '@/features/owner/ownerSlice';
 import ImageWrapper from "@/components/custom/ImageWrapper";
 import VerificationModal from '@/components/custom/VerificationModal'; // Import the verification modal
 import EditSpotModal from '@/components/custom/EditSpotModal'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"; // Import your dialog components
 
 export default function MySpotsPage() {
     const isLoggedIn = useAppSelector(state => state.user.isLoggedIn);
@@ -22,6 +23,14 @@ export default function MySpotsPage() {
 
     const [verificationModalOpen, setVerificationModalOpen] = useState(false);
     const [currentSpotId, setCurrentSpotId] = useState<string | null>(null);
+    const [domLoaded, setDomLoaded] = useState(false);
+
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [spotToDelete, setSpotToDelete] = useState<string | null>(null);
+
+    useEffect(() => {
+        setDomLoaded(true);
+    }, []);
 
     useEffect(() => {
         if (isLoggedIn) {
@@ -30,17 +39,25 @@ export default function MySpotsPage() {
         }
     }, [dispatch, isLoggedIn]);
 
-    const handleDelete = async (id: string) => {
-        const confirmDelete = window.confirm("Are you sure you want to delete this parking spot?");
-        if (confirmDelete) {
-            // Await the deletion and then re-fetch the spots
-            // @ts-ignore
-            await dispatch(deleteParkingSpot(id));
-            // @ts-ignore
-            dispatch(getOwnerSpots()); // Re-fetch the updated spots list
-        }
+    const openDeleteModal = (id: string) => {
+        setSpotToDelete(id);
+        setDeleteModalOpen(true);
     };
 
+    const closeDeleteModal = () => {
+        setSpotToDelete(null);
+        setDeleteModalOpen(false);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (spotToDelete) {
+            // @ts-ignore
+            await dispatch(deleteParkingSpot(spotToDelete));
+            // @ts-ignore
+            dispatch(getOwnerSpots()); // Re-fetch the updated spots list
+            closeDeleteModal();
+        }
+    };
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -103,9 +120,9 @@ export default function MySpotsPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {spots.map((spot) => (
                 <motion.div key={spot.id}
-                            initial={{opacity: 0, scale: 0.9}}
-                            animate={{opacity: 1, scale: 1}}
-                            transition={{duration: 0.3}}>
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}>
                     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
                         {/* Display Image if Exists */}
                         {spot.photos && (
@@ -123,7 +140,7 @@ export default function MySpotsPage() {
                         <CardHeader className="bg-gray-50">
                             <div className="flex justify-between items-center">
                                 <CardTitle className="flex items-center space-x-2">
-                                    <MapPin className={`w-5 h-5 ${spot.is_paid ? 'text-green-500' : 'text-blue-500'}`}/>
+                                    <MapPin className={`w-5 h-5 ${spot.is_paid ? 'text-green-500' : 'text-blue-500'}`} />
                                     <span>{spot.name || (spot.is_paid ? "Unnamed Spot" : "Free Spot")}</span>
                                 </CardTitle>
                             </div>
@@ -142,8 +159,8 @@ export default function MySpotsPage() {
                                 <span className="text-sm font-medium">{spot.is_paid ? 'Paid' : 'Free'}</span>
                                 <span
                                     className={`text-sm font-medium ${spot.availability_schedule && spot.availability_schedule.length > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {spot.is_paid ? (spot.availability_schedule && spot.availability_schedule.length > 0 ? 'Available' : 'Unavailable') : 'Always Available'}
-                            </span>
+                                    {spot.is_paid ? (spot.availability_schedule && spot.availability_schedule.length > 0 ? 'Available' : 'Unavailable') : 'Always Available'}
+                                </span>
                             </div>
 
                             {/* Display price and verification icon */}
@@ -200,20 +217,20 @@ export default function MySpotsPage() {
                                     className="mt-2 w-full bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300 hover:text-gray-900 transition-colors"
                                     variant="outline"
                                 >
-                                    <FileCheck2 className="w-4 h-4 mr-2"/>
+                                    <FileCheck2 className="w-4 h-4 mr-2" />
                                     Submit Verification
                                 </Button>
                             )}
 
                             <div className="flex justify-between mt-4">
                                 <Button variant="outline" size="sm" className="flex-1 mr-2"
-                                        onClick={() => openModal(spot)}>
-                                    <Edit className="w-4 h-4 mr-2"/>
+                                    onClick={() => openModal(spot)}>
+                                    <Edit className="w-4 h-4 mr-2" />
                                     Edit
                                 </Button>
                                 <Button variant="destructive" size="sm" className="flex-1"
-                                        onClick={() => handleDelete(spot.id as string)}>
-                                    <Trash2 className="w-4 h-4 mr-2"/>
+                                    onClick={() => openDeleteModal(spot.id as string)}>
+                                    <Trash2 className="w-4 h-4 mr-2" />
                                     Delete
                                 </Button>
                             </div>
@@ -226,85 +243,120 @@ export default function MySpotsPage() {
 
 
     return (
-        <div className="min-h-screen bg-gray-100 py-8">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-                <motion.div
-                    initial={{opacity: 0, y: 20}}
-                    animate={{opacity: 1, y: 0}}
-                    transition={{duration: 0.5}}
-                    className="bg-white shadow-md rounded-lg p-6 mb-8"
-                >
-                    <h1 className="text-3xl font-bold mb-2 text-black">My Parking Spots</h1>
-                    <p className="text-gray-600 mb-6">Manage and track your parking locations</p>
+        domLoaded && (
+            <div className="min-h-screen bg-gray-100 py-8">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className="bg-white shadow-md rounded-lg p-6 mb-8"
+                    >
+                        <div className="flex justify-between items-center mb-6">
+                            <div>
+                                <h1 className="text-3xl font-bold mb-2 text-black">My Parking Spots</h1>
+                                <p className="text-gray-600">Manage and track your parking locations</p>
+                            </div>
+                            <Button
+                                variant="default"
+                                onClick={() => dispatch(getOwnerSpots())}
+                                className="flex items-center"
+                            >
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                Refresh
+                            </Button>
+                        </div>
 
-                    {loading ? (
-                        <p>Loading...</p>
-                    ) : error ? (
-                        <p className="text-red-500">Error: {error}</p>
-                    ) : (paidSpots.length === 0 && freeSpots.length === 0 && pendingSpots.length === 0) ? (
-                        emptySpots
-                    ) : (
-                        <>
-                            {freeSpots.length > 0 && (
-                                <>
-                                    <h2 className="text-2xl font-bold mb-4 text-gray-900">Free Spots</h2>
-                                    {renderSpots(freeSpots)}
-                                </>
-                            )}
+                        {loading ? (
+                            <p>Loading...</p>
+                        ) : error ? (
+                            <p className="text-red-500">Error: {error}</p>
+                        ) : (paidSpots.length === 0 && freeSpots.length === 0 && pendingSpots.length === 0) ? (
+                            emptySpots
+                        ) : (
+                            <>
+                                {freeSpots.length > 0 && (
+                                    <>
+                                        <h2 className="text-2xl font-bold mb-4 text-gray-900">Free Spots</h2>
+                                        {renderSpots(freeSpots)}
+                                    </>
+                                )}
 
-                            {paidSpots.length > 0 && (
-                                <>
-                                    <h2 className="text-2xl font-bold mb-4 mt-8 text-gray-900">Paid Spots</h2>
-                                    {renderSpots(paidSpots)}
-                                </>
-                            )}
+                                {paidSpots.length > 0 && (
+                                    <>
+                                        <h2 className="text-2xl font-bold mb-4 mt-8 text-gray-900">Paid Spots</h2>
+                                        {renderSpots(paidSpots)}
+                                    </>
+                                )}
 
-                            {pendingSpots.length > 0 && (
-                                <>
-                                    <h2 className="text-2xl font-bold mb-4 mt-8 text-gray-900">Pending Spots</h2>
-                                    {renderSpots(pendingSpots)}
-                                </>
-                            )}
-                        </>
-                    )}
+                                {pendingSpots.length > 0 && (
+                                    <>
+                                        <h2 className="text-2xl font-bold mb-4 mt-8 text-gray-900">Pending Spots</h2>
+                                        {renderSpots(pendingSpots)}
+                                    </>
+                                )}
+                            </>
+                        )}
 
-                    {(freeSpots.length > 0 || paidSpots.length > 0 || pendingSpots.length > 0) && (
-                        <motion.div
-                            initial={{opacity: 0, y: 20}}
-                            animate={{opacity: 1, y: 0}}
-                            transition={{delay: 0.3, duration: 0.5}}
-                            className="mt-8"
-                        >
-                            <Link href="/add">
-                                <Button className="w-full sm:w-auto">
-                                    <Plus className="w-4 h-4 mr-2"/>
-                                    Add New Spot
-                                </Button>
-                            </Link>
-                        </motion.div>
-                    )}
-                </motion.div>
+                        {(freeSpots.length > 0 || paidSpots.length > 0 || pendingSpots.length > 0) && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3, duration: 0.5 }}
+                                className="mt-8"
+                            >
+                                <Link href="/add">
+                                    <Button className="w-full sm:w-auto">
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Add New Spot
+                                    </Button>
+                                </Link>
+                            </motion.div>
+                        )}
+                    </motion.div>
+                </div>
+
+                {/* Verification Modal */}
+                {currentSpotId && (
+                    <VerificationModal
+                        isOpen={verificationModalOpen}
+                        onClose={closeVerificationModal}
+                        spotId={currentSpotId}
+                    />
+                )}
+
+                {/* Edit Spot Modal */}
+                {selectedSpot && (
+                    <EditSpotModal
+                        isOpen={isModalOpen}
+                        onClose={closeModal}
+                        spot={selectedSpot}
+                    />
+                )}
+
+                {/* Delete Confirmation Modal */}
+                <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Confirm Deletion</DialogTitle>
+                            <DialogDescription>
+                                Are you sure you want to delete this parking spot? This action cannot be undone.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={closeDeleteModal}>
+                                Cancel
+                            </Button>
+                            <Button variant="destructive" onClick={handleConfirmDelete}>
+                                Delete
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <div className="flex h-16">
+                </div>
             </div>
-
-            {/* Verification Modal */}
-            {currentSpotId && (
-                <VerificationModal
-                    isOpen={verificationModalOpen}
-                    onClose={closeVerificationModal}
-                    spotId={currentSpotId}
-                />
-            )}
-
-            {/* Edit Spot Modal */}
-            {selectedSpot && (
-                <EditSpotModal
-                    isOpen={isModalOpen}
-                    onClose={closeModal}
-                    spot={selectedSpot}
-                />
-            )}
-            <div className="flex h-16">
-            </div>
-        </div>
+        )
     );
 }
