@@ -542,24 +542,34 @@ def update_parking_space(
 def delete_parking_space(
     user_id: uuid.UUID, parking_space_id: uuid.UUID
 ) -> Result[None, str]:
-    with DB.pool.connection() as conn:
-        with conn.cursor() as cur:
-            # Check if parking space exists and if the user is the owner
-            cur.execute(
-                "SELECT owner FROM parking_spaces WHERE id = %s",
-                (parking_space_id,),
-            )
-            result = cur.fetchone()
-            if not result:
-                return Err("Parking space not found")
-            (owner_id,) = result
-            if owner_id != user_id:
-                return Err("User not authorized to delete this parking space")
+    try:
+        with DB.pool.connection() as conn:
+            with conn.cursor() as cur:
+                # Check if parking space exists and if the user is the owner
+                cur.execute(
+                    "SELECT owner, photos FROM parking_spaces WHERE id = %s",
+                    (parking_space_id,),
+                )
+                result = cur.fetchone()
+                if not result:
+                    return Err("Parking space not found")
+                owner_id, photos = result
+                if owner_id != user_id:
+                    return Err("User not authorized to delete this parking space")
 
-            # Delete the parking space
-            cur.execute(
-                "DELETE FROM parking_spaces WHERE id = %s",
-                (parking_space_id,),
-            )
-            conn.commit()
-            return Ok(None)
+                # Delete the image files
+                if photos:
+                    for photo in photos:
+                        image_path = os.path.join(Config.STATIC_FOLDER, photo.lstrip('/'))
+                        if os.path.exists(image_path):
+                            os.remove(image_path)
+
+                # Delete the parking space
+                cur.execute(
+                    "DELETE FROM parking_spaces WHERE id = %s",
+                    (parking_space_id,),
+                )
+                conn.commit()
+                return Ok(None)
+    except Exception as e:
+        return Err(str(e))

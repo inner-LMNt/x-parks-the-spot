@@ -22,6 +22,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Camera, X, Upload, ArrowLeft, MapPin } from 'lucide-react';
 import Webcam from 'react-webcam';
 import { DaysOfWeek } from '@/types/type'; // Ensure DaysOfWeek enum is imported
+import { LoadScriptNext, Autocomplete } from '@react-google-maps/api';
 
 // Define days of the week enum
 
@@ -43,6 +44,10 @@ export default function AddPage() {
   const webcamRef = useRef<Webcam>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [autoComplete, setAutoComplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const onLoadAutocomplete = (autocompleteInstance: google.maps.places.Autocomplete) => {
+    setAutoComplete(autocompleteInstance);
+  };
 
   // Separate TimeSlot and is24Seven
   const [timeSlot, setTimeSlot] = useState<any>({
@@ -384,6 +389,19 @@ export default function AddPage() {
     }
   };
 
+  const onPlaceChanged = () => {
+    if (autoComplete) {
+      const place = autoComplete.getPlace();
+      if (place.geometry) {
+        const location = {
+          lat: place.geometry.location?.lat() || 0,
+          lng: place.geometry.location?.lng() || 0,
+        };
+        setUserLocation(location);
+      }
+    }
+  };
+
   useEffect(() => {
     setDomLoaded(true);
   }, []);
@@ -467,12 +485,16 @@ export default function AddPage() {
                     {spotType === 'rental' && (
                       <div className="space-y-2">
                         <Label htmlFor="address">Address</Label>
-                        <Input
-                          id="address"
-                          name="address"
-                          required
-                          placeholder="Full street address"
-                        />
+                        <LoadScriptNext googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string} libraries={['places']}>
+                          <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={onPlaceChanged}>
+                            <Input
+                              id="address"
+                              name="address"
+                              required
+                              placeholder="Full street address"
+                            />
+                          </Autocomplete>
+                        </LoadScriptNext>
                       </div>
                     )}
 
@@ -702,7 +724,7 @@ export default function AddPage() {
                     <Button
                       type="submit"
                       className="w-full"
-                      disabled={isSubmitting || loading || (!image)}
+                      disabled={isSubmitting || loading || !userLocation || !image}
                     >
                       {isSubmitting || loading ? 'Adding Spot...' : 'Add Parking Spot'}
                     </Button>
