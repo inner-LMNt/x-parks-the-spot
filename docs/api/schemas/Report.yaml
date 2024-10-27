@@ -1,0 +1,55 @@
+type: object
+required:
+  - id
+  - renter_id
+  - type
+  - description
+  - date
+  - time
+  - status
+  - created_at
+  - updated_at
+properties:
+  id:
+    type: string
+    format: uuid
+  renter_id:
+    type: string
+    format: uuid
+  type:
+    type: string
+    enum:
+      - Billing
+      - Technical
+      - Other
+    description: Type of the report.
+  description:
+    type: string
+    description: Detailed description of the issue.
+  date:
+    type: string
+    format: date
+    description: Date when the issue occurred.
+  time:
+    type: string
+    format: time
+    description: Time when the issue occurred.
+  status:
+    type: string
+    enum:
+      - open
+      - in_progress
+      - resolved
+    description: Current status of the report.
+  admin_response:
+    type: string
+    nullable: true
+    description: Response from the admin regarding the report.
+  created_at:
+    type: string
+    format: date-time
+    description: Timestamp when the report was created.
+  updated_at:
+    type: string
+    format: date-time
+    description: Timestamp when the report was last updated.

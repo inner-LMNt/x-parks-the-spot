@@ -1,0 +1,25 @@
+type: object
+required:
+  - type
+  - description
+  - date
+  - time
+properties:
+  type:
+    type: string
+    enum:
+      - Billing
+      - Technical
+      - Other
+    description: Type of the report.
+  description:
+    type: string
+    description: Detailed description of the issue.
+  date:
+    type: string
+    format: date
+    description: Date when the issue occurred.
+  time:
+    type: string
+    format: time
+    description: Time when the issue occurred.
