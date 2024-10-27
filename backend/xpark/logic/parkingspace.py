@@ -40,7 +40,10 @@ def get_all_pending_parking_spaces() -> Result[Dict[str, List[Dict[str, Any]]], 
                 rows = cur.fetchall()
 
                 # Retrieve column names
-                col_names = [desc[0] for desc in cur.description]
+                if cur.description is not None:
+                    col_names = [desc[0] for desc in cur.description]
+                else:
+                    col_names = []  # or handle the case where there are no columns
 
                 pendingSpaces = []
                 for row in rows:
