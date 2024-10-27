@@ -9,7 +9,7 @@ from result import Result, Ok, Err
 import datetime
 from datetime import timezone
 import logging
-from datetime import timezone, time as dt_time
+from datetime import time as dt_time
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -112,7 +112,7 @@ def create_reservation(
                 Check if the reservation from start_dt to end_dt fits within the availability schedule.
                 """
                 # Build a mapping from day_of_week to list of (start_time, end_time)
-                availability_map = {}
+                availability_map = {} # type: ignore
                 for slot in availability:
                     day = slot.get("day_of_week")
                     start_time_str = slot.get("start_time")  # Assuming "HH:MM"
@@ -123,10 +123,10 @@ def create_reservation(
 
                     try:
                         slot_start_time = datetime.datetime.strptime(
-                            start_time_str, "%H:%M"
+                            start_time_str, "%H:%M"  # type: ignore
                         ).time()
                         slot_end_time = datetime.datetime.strptime(
-                            end_time_str, "%H:%M"
+                            end_time_str, "%H:%M"  # type: ignore
                         ).time()
                     except ValueError:
                         continue  # Skip slots with invalid time format
@@ -321,7 +321,7 @@ def update_reservation_logic(
                         try:
                             car_info_uuid = uuid.UUID(value)
                             set_clauses.append(f"{key} = %s")
-                            values.append(str(car_info_uuid))
+                            values.append(str(car_info_uuid)) # type: ignore
                         except ValueError:
                             return Err("Invalid UUID format for car_info_id.")
                     elif key == "status":
@@ -363,7 +363,7 @@ def update_reservation_logic(
                     new_start_dt,
                 ),
             )
-            (overlap_count,) = cur.fetchone()
+            (overlap_count,) = cur.fetchone()  # type: ignore
             if overlap_count > 0:
                 return Err(
                     "Parking space is already reserved for the selected time slot."
@@ -376,7 +376,7 @@ def update_reservation_logic(
                 WHERE id = %s
                 RETURNING id, parking_space_id, start_time, end_time, car_info_id, renter_id, status, created_at, updated_at
             """
-            values.append(str(reservation_id))
+            values.append(str(reservation_id))  # type: ignore
             cur.execute(query, tuple(values))
             updated_reservation = cur.fetchone()
 
@@ -390,7 +390,7 @@ def update_reservation_logic(
                 status,
                 created_at,
                 updated_at,
-            ) = updated_reservation
+            ) = updated_reservation  # type: ignore
 
             # Commit the transaction
             conn.commit()
@@ -447,7 +447,7 @@ def cancel_reservation_logic(
                 """,
                 (str(reservation_id),),
             )
-            (renter_id,) = cur.fetchone()
+            (renter_id,) = cur.fetchone() # type: ignore
 
             if str(renter_id) != str(user_id):
                 return Err("User not authorized to cancel this reservation.")
@@ -465,203 +465,3 @@ def cancel_reservation_logic(
             conn.commit()
 
             return Ok(None)
-
-
-def lock_parking_space(
-    user_id: uuid.UUID, parking_space_id: uuid.UUID, lock_duration: str
-) -> Result[Dict[str, Any], str]:
-    """
-    Lock a parking space for a specified duration.
-    lock_duration should be in ISO 8601 duration format, e.g., 'PT15M' for 15 minutes.
-    """
-    try:
-        # Parse lock_duration
-        if not lock_duration.startswith("PT"):
-            return Err(
-                "Invalid lock_duration format. Use ISO 8601 duration, e.g., 'PT15M'."
-            )
-
-        # Handle only minutes for simplicity
-        minutes_str = lock_duration[2:-1]  # Remove 'PT' and 'M'
-        try:
-            minutes = int(minutes_str)
-        except ValueError:
-            return Err("Invalid lock_duration value. Minutes must be an integer.")
-
-        # Use timezone-aware datetime
-        now_utc = datetime.datetime.now(timezone.utc)
-        lock_until = now_utc + datetime.timedelta(minutes=minutes)
-        logger.debug("Attempting to lock parking space until %s", lock_until)
-
-        with DB.pool.connection() as conn:
-            with conn.cursor() as cur:
-                # Begin transaction
-                cur.execute("BEGIN;")
-                logger.debug("Transaction started.")
-
-                # Lock the row for update to prevent race conditions
-                cur.execute(
-                    """
-                    SELECT locked, locked_by, locked_until
-                    FROM parking_spaces
-                    WHERE id = %s
-                    FOR UPDATE
-                    """,
-                    (str(parking_space_id),),
-                )
-                parking_space = cur.fetchone()
-                logger.debug("Fetched parking space: %s", parking_space)
-
-                if not parking_space:
-                    conn.rollback()
-                    logger.error("Parking space not found.")
-                    return Err("Parking space not found.")
-
-                locked, locked_by, locked_until = parking_space
-
-                # Check if parking space is already locked by another user
-                if locked and str(locked_by) != str(user_id):
-                    conn.rollback()
-                    logger.error("Parking space is already locked by another user.")
-                    logger.error("Locked by:", locked_by, " Req by:", user_id)
-
-                    return Err("Parking space is already locked by another user.")
-
-                # Check for overlapping reservations
-                cur.execute(
-                    """
-                    SELECT COUNT(*)
-                    FROM reservations
-                    WHERE parking_space_id = %s
-                      AND status = 'active'
-                      AND (
-                          (start_time <= %s AND end_time > %s) OR
-                          (start_time < %s AND end_time >= %s) OR
-                          (start_time >= %s AND end_time <= %s)
-                      )
-                    """,
-                    (
-                        str(parking_space_id),
-                        lock_until,
-                        now_utc,
-                        lock_until,
-                        now_utc,
-                        now_utc,
-                        lock_until,
-                    ),
-                )
-                reservation_count = cur.fetchone()[0]
-                logger.debug(
-                    "Active reservations overlapping with lock period: %d",
-                    reservation_count,
-                )
-
-                if reservation_count > 0:
-                    conn.rollback()
-                    logger.error(
-                        "Parking space is reserved during the desired lock period."
-                    )
-                    return Err(
-                        "Parking space is reserved during the desired lock period."
-                    )
-
-                # If already locked by the same user, update the lock_until
-                if locked and str(locked_by) == str(user_id):
-                    logger.debug(
-                        "Parking space already locked by the user. Extending lock."
-                    )
-                else:
-                    logger.debug("Locking the parking space.")
-
-                # Lock the parking space
-                cur.execute(
-                    """
-                    UPDATE parking_spaces
-                    SET locked = TRUE,
-                        locked_by = %s,
-                        locked_until = %s
-                    WHERE id = %s
-                    """,
-                    (str(user_id), lock_until, str(parking_space_id)),
-                )
-                logger.debug("Updated parking space to locked until %s.", lock_until)
-
-                # Commit transaction
-                conn.commit()
-                logger.debug("Transaction committed.")
-
-                response_data = {"lock_until": lock_until}
-
-                return Ok(response_data)
-
-    except Exception as e:
-        logger.exception("Exception during locking parking space: %s", e)
-        return Err(str(e))
-
-
-def unlock_parking_space(
-    user_id: uuid.UUID, parking_space_id: uuid.UUID
-) -> Result[Dict[str, Any], str]:
-    """
-    Unlock a previously locked parking space.
-    """
-    try:
-        with DB.pool.connection() as conn:
-            with conn.cursor() as cur:
-                # Begin transaction
-                cur.execute("BEGIN;")
-                logger.debug("Transaction started for unlocking.")
-
-                # Fetch parking space with row lock
-                cur.execute(
-                    """
-                    SELECT locked, locked_by
-                    FROM parking_spaces
-                    WHERE id = %s
-                    FOR UPDATE
-                    """,
-                    (str(parking_space_id),),
-                )
-                parking_space = cur.fetchone()
-                logger.debug("Fetched parking space for unlocking: %s", parking_space)
-
-                if not parking_space:
-                    conn.rollback()
-                    logger.error("Parking space not found.")
-                    return Err("Parking space not found.")
-
-                locked, locked_by = parking_space
-
-                if not locked:
-                    conn.rollback()
-                    logger.error("Parking space is not currently locked.")
-                    return Err("Parking space is not currently locked.")
-
-                if str(locked_by) != str(user_id):
-                    conn.rollback()
-                    logger.error("Parking space is not locked by the user.")
-                    return Err("Parking space is not locked by the user.")
-
-                # Unlock the parking space
-                cur.execute(
-                    """
-                    UPDATE parking_spaces
-                    SET locked = FALSE,
-                        locked_by = NULL,
-                        locked_until = NULL
-                    WHERE id = %s
-                    """,
-                    (str(parking_space_id),),
-                )
-                logger.debug("Updated parking space to unlocked.")
-
-                # Commit transaction
-                conn.commit()
-                logger.debug("Transaction committed for unlocking.")
-
-                response_data = {"message": "Parking space unlocked successfully."}
-
-                return Ok(response_data)
-    except Exception as e:
-        logger.exception("Exception during unlocking parking space: %s", e)
-        return Err(str(e))

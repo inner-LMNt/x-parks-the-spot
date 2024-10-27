@@ -140,19 +140,19 @@ export const reset_password = createAsyncThunk<void, { token: string; newPasswor
     "user/reset_password",
     async ({ token, newPassword }, { rejectWithValue }) => {
         try {
+
             const response = await axios.post(`auth/reset-password/${token}`, {
                 new_password: newPassword, // Match the backend's expected field name
             });
             return response.data;
         } catch (error: any) {
             if (error.response?.status === 400) {
-                return rejectWithValue("Invalid token");
+                return rejectWithValue("Invalid token or password");
             }
             return rejectWithValue("Password reset failed");
         }
     }
 );
-
 
 export const reset_request = createAsyncThunk<
   void, // Return type of the payload creator

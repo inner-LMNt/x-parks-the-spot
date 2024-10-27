@@ -1,5 +1,4 @@
-import uuid
-from typing import cast
+from typing import Any
 
 from psycopg.rows import dict_row
 
@@ -13,7 +12,7 @@ def search_query(
         max_price: float,
         start_time: str,
         end_time: str,
-) -> list[uuid.UUID]:
+) -> list[dict[str, Any]]:
     paid = None
     if paid_status == "PAID":
         paid = True
