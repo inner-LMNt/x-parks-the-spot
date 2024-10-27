@@ -85,12 +85,12 @@ export default function MySpotsPage() {
 
     const getVerificationStatusIcon = (spot: ParkingSpace) => {
         if (spot.status === 'verified') {
-            return <ShieldCheck className="w-6 h-6 text-green-500" title="Verified" />;
+            return <ShieldCheck className="w-6 h-6 text-green-500" aria-label="Verified" />;
         }
         if (spot.status === 'pending') {
-            return <ShieldEllipsis className="w-6 h-6 text-yellow-500" title="Pending Verification" />;
+            return <ShieldEllipsis className="w-6 h-6 text-yellow-500" aria-label="Pending Verification" />;
         }
-        return <ShieldX className="w-6 h-6 text-red-500" title="Not Verified" />;
+        return <ShieldX className="w-6 h-6 text-red-500" aria-label="Not Verified" />;
     };
 
     const renderSpots = (spots: ParkingSpace[]) => (
