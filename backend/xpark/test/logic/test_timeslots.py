@@ -51,13 +51,21 @@ def test_coalesce() -> None:
 
     assert type(t1) is Ok
 
-    start_time = datetime(2024, 10, 26, 8, 1, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
-    end_time = datetime(2024, 10, 26, 9, 0, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
+    start_time = datetime(2024, 10, 26, 10, 1, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
+    end_time = datetime(2024, 10, 26, 11, 0, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
     t2 = add_paid_parking_space_time(
         user_id_create.ok_value, parking_space_id.ok_value["id"], start_time, end_time
     )
 
     assert type(t2) is Ok
+
+    start_time = datetime(2024, 10, 26, 7, 55, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
+    end_time = datetime(2024, 10, 26, 9, 0, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
+    t3 = add_paid_parking_space_time(
+        user_id_create.ok_value, parking_space_id.ok_value["id"], start_time, end_time
+    )
+
+    assert type(t3) is Ok
 
     # We now have two timeslots, one from 6-7, and one from 7-8.
     # These should be coalesced.
@@ -72,7 +80,7 @@ def test_coalesce() -> None:
             parking_space_id.ok_value["id"],
             Range(
                 datetime(2024, 10, 26, 6, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC")),
-                datetime(2024, 10, 26, 8, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC")),
+                datetime(2024, 10, 26, 9, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC")),
                 "[]",  # inclusive bounds
             ),
         )
@@ -84,8 +92,8 @@ def test_coalesce() -> None:
         assert tt[1:] == (
             parking_space_id.ok_value["id"],
             Range(
-                datetime(2024, 10, 26, 8, 1, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC")),
-                datetime(2024, 10, 26, 9, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC")),
+                datetime(2024, 10, 26, 10, 1, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC")),
+                datetime(2024, 10, 26, 11, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC")),
                 "[]",  # inclusive bounds
             ),
         )
