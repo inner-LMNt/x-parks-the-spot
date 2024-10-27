@@ -68,16 +68,17 @@ export const getDisputeRequests = createAsyncThunk<
 // Async thunk to create a new dispute (cancellation request)
 export const createDispute = createAsyncThunk<
     DisputeRequest,
-    { disputeType: string; message: string; parkingSpaceId: string },
+    { disputeType: string; message: string; reservationId?: string; parkingSpaceId?: string },
     { rejectValue: string }
 >(
     "admin/createDispute",
-    async ({ disputeType, message, parkingSpaceId }, { rejectWithValue }) => {
+    async ({ disputeType, message, reservationId, parkingSpaceId }, { rejectWithValue }) => {
         try {
             const response = await axios.post("/disputes", {
-                dispute_type: disputeType, // Type of dispute (e.g., 'cancellation')
-                message: message, // Message explaining the reason for the dispute
-                parking_space_id: parkingSpaceId, // ID of the parking space
+                dispute_type: disputeType,
+                message: message,
+                reservation_id: reservationId,  // Send reservation_id
+                parking_space_id: parkingSpaceId, // Send parking_space_id
             });
             return response.data;
         } catch (error: any) {
@@ -85,8 +86,6 @@ export const createDispute = createAsyncThunk<
         }
     }
 );
-
-
 
 
 // Async thunk to resolve a dispute or cancellation

@@ -18,6 +18,10 @@ interface DisputeRequest {
     parkingSpace?: {
         id: string;
         name: string;
+        location?: {
+            latitude: number;
+            longitude: number;
+        };
         address: string;
     };
 }
@@ -91,11 +95,18 @@ export default function AdminDisputesPage() {
                                                     <h3 className="font-semibold text-gray-700 mb-1">Linked Parking Spot</h3>
                                                     <div className="flex items-center space-x-2">
                                                         <MapPin className="w-4 h-4 text-blue-500" />
-                                                        <p className="text-gray-700">
+                                                        <p className="text-gray-700 font-medium">
                                                             {request.parkingSpace.name || 'Unnamed Spot'}
                                                         </p>
                                                     </div>
-                                                    <p className="text-gray-600 text-sm">{request.parkingSpace.address || 'Address not available'}</p>
+                                                    <p className="text-gray-600 text-sm">
+                                                        {request.parkingSpace.address || 'Address not available'}
+                                                    </p>
+                                                    {request.parkingSpace.location && (
+                                                        <p className="text-gray-600 text-sm">
+                                                            Location: {request.parkingSpace.location.latitude.toFixed(4)}, {request.parkingSpace.location.longitude.toFixed(4)}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             )}
 
