@@ -153,7 +153,7 @@ export default function SearchPage() {
           opacity: 1;
         }
         50% {
-          transform: scale(1.7);
+          transform: scale(1.6);
           opacity: 0.5;
         }
         100% {
@@ -166,8 +166,8 @@ export default function SearchPage() {
         transform-origin: center;
       }
     </style>
-    <circle cx="15" cy="15" r="9" fill="#4285F4" />
-    <circle cx="15" cy="15" r="9" fill="rgba(66, 133, 244, 0.5)" class="pulsating-circle" />
+    <circle cx="15" cy="15" r="9" fill="#4285F4" stroke="white" stroke-width="1" />
+    <circle cx="15" cy="15" r="9" fill="rgba(66, 133, 244, 0.5)" class="pulsating-circle" stroke="white" stroke-width="1" />
   </svg>
   `;
   const encodedSVG = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(pulsatingCircleSVG);
@@ -913,13 +913,16 @@ export default function SearchPage() {
                     lng: spot.location.longitude,
                   }}
                   onClick={() => handleSpotSelect(spot)}
+                  icon="https://maps.google.com/mapfiles/ms/icons/red-dot.png"
                 />
               )
             ))}
             {userLocation && (
               <Marker
                 position={userLocation}
-                icon="https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                icon={{
+                  url: encodedSVG,
+                }}
               />
             )}
             {selectedSpot && selectedSpot.location && (
