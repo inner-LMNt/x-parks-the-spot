@@ -165,7 +165,7 @@ export default function BookingsPage() {
     const now = new Date();
 
     const upcomingReservations = reservations.filter(
-        (reservation: Reservation) => new Date(reservation.start_time ?? now) > now
+        (reservation: Reservation) => new Date(reservation.start_time ?? now) > now && reservation.status !== 'canceled'
     );
 
     const currentReservations = reservations.filter(

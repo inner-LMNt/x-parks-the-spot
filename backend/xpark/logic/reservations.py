@@ -452,7 +452,10 @@ def cancel_reservation_logic(
 
             if str(renter_id) != str(user_id):
                 return Err("User not authorized to cancel this reservation.")
-
+            
+            if start_time.tzinfo is None:
+                start_time = start_time.replace(tzinfo=timezone.utc)
+                
             # Check if the current time is at least 2 hours before the reservation start time
             current_time = datetime.datetime.now(timezone.utc)
             if start_time - current_time < datetime.timedelta(hours=2):
