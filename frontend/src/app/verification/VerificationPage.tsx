@@ -6,8 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { MapPin } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-//import {verifyParkingSpot } from '@/features/owner/ownerSlice';
-import {getAllPendingSpots, verifyParkingSpot} from '@/features/admin/adminSlice';
+import { getAllPendingSpots, verifyParkingSpot } from '@/features/admin/adminSlice';
 import ImageWrapper from "@/components/custom/ImageWrapper";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -23,16 +22,18 @@ interface PendingSpot {
     };
 }
 
-export default function VerificationPage() {
+const VerificationPage: React.FC = () => {
     const dispatch = useAppDispatch();
     const { pendingSpots, loading, error } = useAppSelector(state => state.admin);
+
     const [isListExpanded, setIsListExpanded] = useState(true);
-    const [selectedSpot, setSelectedSpot] = useState<PendingSpot | null>(null); // Use the defined type
+    const [selectedSpot, setSelectedSpot] = useState<PendingSpot | null>(null);
     const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [confirmInput, setConfirmInput] = useState("");
     const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
-    const [errorMessage, setErrorMessage] = useState(""); // For displaying error message
+    const [errorMessage, setErrorMessage] = useState("");
+    const [expandedImage, setExpandedImage] = useState<string | null>(null); // State for expanded image
 
     useEffect(() => {
         dispatch(getAllPendingSpots());
@@ -44,10 +45,10 @@ export default function VerificationPage() {
     };
 
     const toggleListExpansion = () => {
-        setIsListExpanded(!isListExpanded);
+        setIsListExpanded(prev => !prev);
     };
 
-    const openVerificationModal = (spot: PendingSpot) => { // Use the defined type
+    const openVerificationModal = (spot: PendingSpot) => {
         setSelectedSpot(spot);
         setIsVerificationModalOpen(true);
     };
@@ -57,11 +58,11 @@ export default function VerificationPage() {
         setSelectedSpot(null);
     };
 
-    const openConfirmModal = (action: "approve" | "reject", spot: PendingSpot) => { // Use the defined type
+    const openConfirmModal = (action: "approve" | "reject", spot: PendingSpot) => {
         setSelectedSpot(spot);
         setActionType(action);
         setIsConfirmModalOpen(true);
-        setErrorMessage(""); // Clear previous error message
+        setErrorMessage("");
     };
 
     const closeConfirmModal = () => {
@@ -75,8 +76,16 @@ export default function VerificationPage() {
             await handleVerification(selectedSpot.id, is_verified);
             closeConfirmModal();
         } else {
-            setErrorMessage("You must type 'confirm' to proceed."); // Set error message
+            setErrorMessage("You must type 'confirm' to proceed.");
         }
+    };
+
+    const handleImageClick = (image: string) => {
+        setExpandedImage(image);
+    };
+
+    const closeExpandedImage = () => {
+        setExpandedImage(null);
     };
 
     if (loading) {
@@ -103,12 +112,12 @@ export default function VerificationPage() {
                         </Button>
                     </div>
 
-                    {pendingSpots && pendingSpots.length === 0 ? (
+                    {pendingSpots.length === 0 ? (
                         <p className="text-center">No pending verification spots available.</p>
                     ) : (
                         isListExpanded && (
                             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                {pendingSpots.map((spot: PendingSpot) => ( // Use the defined type
+                                {pendingSpots.map((spot: PendingSpot) => (
                                     <motion.div
                                         key={spot.id}
                                         initial={{ opacity: 0, scale: 0.9 }}
@@ -116,17 +125,18 @@ export default function VerificationPage() {
                                         transition={{ duration: 0.3 }}
                                     >
                                         <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                                            {spot.photos && (
-                                                <div className="relative w-full h-40">
+                                            {spot.photos && spot.photos.length > 0 && (
+                                                <div className="relative w-full h-40" onClick={() => handleImageClick(spot.photos[0])}>
                                                     <ImageWrapper
                                                         src={spot.photos[0]}
                                                         alt={spot.name || 'Parking Spot Image'}
                                                         layout="fill"
                                                         objectFit="cover"
-                                                        className="w-full h-48 object-cover"
+                                                        className="w-full h-48 object-cover cursor-pointer"
                                                     />
                                                 </div>
                                             )}
+
 
                                             <CardHeader className="bg-gray-50">
                                                 <CardTitle className="flex items-center space-x-2">
@@ -138,7 +148,6 @@ export default function VerificationPage() {
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent className="pt-4">
-
                                                 <div className="flex justify-between items-center mb-4">
                                                     <span className="text-sm font-medium">{spot.is_paid ? 'Paid' : 'Free'}</span>
                                                 </div>
@@ -182,6 +191,28 @@ export default function VerificationPage() {
                 </motion.div>
             </div>
 
+            {/* Modal for Expanded Image */}
+            {expandedImage && (
+                <Dialog open={!!expandedImage} onOpenChange={closeExpandedImage}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Expanded Image</DialogTitle>
+                        </DialogHeader>
+                        <div className="relative w-full h-96">
+                            <ImageWrapper
+                                src={expandedImage}
+                                alt="Expanded Parking Spot"
+                                layout="fill"
+                                objectFit="contain"
+                            />
+                        </div>
+                        <Button variant="secondary" className="mt-4" onClick={closeExpandedImage}>
+                            Close
+                        </Button>
+                    </DialogContent>
+                </Dialog>
+            )}
+
             {/* Modal for Verification Photos */}
             {selectedSpot && (
                 <Dialog open={isVerificationModalOpen} onOpenChange={closeVerificationModal}>
@@ -191,12 +222,13 @@ export default function VerificationPage() {
                         </DialogHeader>
                         <div className="grid grid-cols-1 gap-4">
                             {selectedSpot.verification_photos?.map((photo: string, index: number) => (
-                                <div key={index} className="relative w-full h-60">
+                                <div key={index} className="relative w-full h-60" onClick={() => handleImageClick(photo)}>
                                     <ImageWrapper
                                         src={photo}
                                         alt={`Verification Photo ${index + 1}`}
                                         layout="fill"
                                         objectFit="cover"
+                                        className="cursor-pointer"
                                     />
                                 </div>
                             ))}
@@ -238,3 +270,5 @@ export default function VerificationPage() {
         </div>
     );
 }
+
+export default VerificationPage;

@@ -35,6 +35,8 @@ def get_all_pending_parking_spaces() -> Result[Dict[str, List[Dict[str, Any]]], 
                         updated_at
                     FROM parking_spaces
                     WHERE verification_status = 'pending'
+                    ORDER BY created_at DESC
+                    LIMIT 10
                 """
                 cur.execute(query)
                 rows = cur.fetchall()
