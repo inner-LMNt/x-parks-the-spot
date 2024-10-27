@@ -33,17 +33,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'; // ShadCN Dialog components
 
-// Define days of the week enum (if not already defined)
-enum DaysOfWeek {
-  Monday = 'Monday',
-  Tuesday = 'Tuesday',
-  Wednesday = 'Wednesday',
-  Thursday = 'Thursday',
-  Friday = 'Friday',
-  Saturday = 'Saturday',
-  Sunday = 'Sunday',
-}
-
 const formatTime = (time: string): string => {
   return time; // Keeping time as "HH:mm" since backend expects time-only strings
 };
@@ -498,7 +487,7 @@ export default function AddPage() {
         },
         features: [], // Assuming features are handled elsewhere
         photos: [], // Will be handled via 'image' upload
-        photo_timestamp: photoTimestamp.toISOString(), // **Attach Timestamp**
+        photo_timestamp: photoTimestamp ? photoTimestamp.toISOString() : null, // **Attach Timestamp**
       };
 
       if (spotType === 'rental') {
@@ -933,7 +922,7 @@ export default function AddPage() {
                                 Cancel
                               </Button>
                               <Button
-                                  variant="primary"
+                                  variant="default"
                                   className="border border-white"
                                   onClick={confirmSubmission}
                               >
