@@ -9,9 +9,10 @@ import { ParkingSpace } from '@/types/type';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getOwnerSpots, deleteParkingSpot } from '@/features/owner/ownerSlice';
+import { getOwnerSpots } from '@/features/owner/ownerSlice'; // Removed deleteParkingSpot import
+import { createDispute } from '@/features/admin/adminSlice'; // Import createDispute for cancellation requests
 import ImageWrapper from "@/components/custom/ImageWrapper";
-import VerificationModal from '@/components/custom/VerificationModal'; // Import the verification modal
+import VerificationModal from '@/components/custom/VerificationModal';
 import EditSpotModal from '@/components/custom/EditSpotModal';
 
 export default function MySpotsPage() {
@@ -30,14 +31,17 @@ export default function MySpotsPage() {
         }
     }, [dispatch, isLoggedIn]);
 
-    const handleDelete = async (id: string) => {
-        const confirmDelete = window.confirm("Are you sure you want to delete this parking spot?");
-        if (confirmDelete) {
-            // Await the deletion and then re-fetch the spots
-            // @ts-ignore
-            await dispatch(deleteParkingSpot(id));
-            // @ts-ignore
-            dispatch(getOwnerSpots()); // Re-fetch the updated spots list
+    // **CHANGE**: Replaced handleDelete with handleCancellationRequest for requesting cancellations instead of deleting
+    const handleCancellationRequest = async (spotId: string) => {
+        const reason = prompt("Please provide a reason for cancellation:");
+        if (reason) {
+            // Dispatch a new dispute as a cancellation request for the parking spot
+            await dispatch(createDispute({
+                disputeType: "cancellation",
+                message: reason,
+                parkingSpaceId: spotId,
+            }));
+            alert("Cancellation request submitted.");
         }
     };
 
@@ -71,7 +75,6 @@ export default function MySpotsPage() {
             </Link>
         </motion.div>
     );
-
 
     const openVerificationModal = (spotId: string) => {
         setCurrentSpotId(spotId);
@@ -147,18 +150,7 @@ export default function MySpotsPage() {
                                 </div>
                             )}
 
-                            {/* Submit Verification Button for Unverified Spots */}
-                            {(spot.status !== 'pending' && spot.status !== 'verified') && (
-                                <Button
-                                    onClick={() => openVerificationModal(spot.id ?? '')}
-                                    className="mt-2 w-full bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300 hover:text-gray-900 transition-colors"
-                                    variant="outline"
-                                >
-                                    <FileCheck2 className="w-4 h-4 mr-2"/>
-                                    Submit Verification
-                                </Button>
-                            )}
-
+                            {/* **CHANGE**: Replace Delete button with Request Cancellation button */}
                             <div className="flex justify-between mt-4">
                                 <Button variant="outline" size="sm" className="flex-1 mr-2"
                                         onClick={() => openModal(spot)}>
@@ -166,9 +158,9 @@ export default function MySpotsPage() {
                                     Edit
                                 </Button>
                                 <Button variant="destructive" size="sm" className="flex-1"
-                                        onClick={() => handleDelete(spot.id as string)}>
+                                        onClick={() => handleCancellationRequest(spot.id as string)}>
                                     <Trash2 className="w-4 h-4 mr-2"/>
-                                    Delete
+                                    Request Cancellation {/* Change button label */}
                                 </Button>
                             </div>
                         </CardContent>

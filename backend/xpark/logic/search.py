@@ -1,5 +1,4 @@
 import uuid
-from typing import cast
 
 from psycopg.rows import dict_row
 
