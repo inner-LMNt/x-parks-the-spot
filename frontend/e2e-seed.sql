@@ -30,6 +30,60 @@ CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
 COMMENT ON EXTENSION postgis IS 'PostGIS geometry and geography spatial types and functions';
 
 
+--
+-- Name: coalesce_timetable_by_parking_space_id(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.coalesce_timetable_by_parking_space_id(selected_parking_space_id uuid) RETURNS SETOF tstzrange
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    curr paid_parking_allowed_availability;
+    prev paid_parking_allowed_availability;
+BEGIN
+    for curr in
+        SELECT * 
+        FROM paid_parking_allowed_availability
+		WHERE paid_parking_allowed_availability.parking_space_id = selected_parking_space_id
+        ORDER BY time
+    loop
+        if prev.time && curr.time then 
+            prev.time:= prev.time + curr.time;
+        else
+            if prev notnull then 
+                return next prev.time;
+            end if;
+            prev:= curr;
+        end if;
+    end loop;
+    return next prev.time;
+end $$;
+
+
+--
+-- Name: merge_ranges(tstzrange[]); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.merge_ranges(tstzrange[]) RETURNS SETOF tstzrange
+    LANGUAGE plpgsql
+    AS $_$
+declare
+    t tstzrange;
+    r tstzrange;
+begin
+    foreach t in array $1 loop
+        if r && t then r:= r + t;
+        else
+            if r notnull then return next r;
+            end if;
+            r:= t;
+        end if;
+    end loop;
+    if r notnull then return next r;
+    end if;
+end $_$;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -56,6 +110,17 @@ CREATE TABLE public.cars (
 
 CREATE TABLE public.migrations (
     migration_name text NOT NULL
+);
+
+
+--
+-- Name: paid_parking_allowed_availability; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.paid_parking_allowed_availability (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parking_space_id uuid NOT NULL,
+    "time" tstzrange NOT NULL
 );
 
 
@@ -101,6 +166,37 @@ CREATE TABLE public.reservations (
     updated_at timestamp without time zone DEFAULT now(),
     CONSTRAINT reservations_check CHECK ((end_time > start_time))
 );
+
+
+--
+-- Name: timetable_coalesce; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.timetable_coalesce (
+    id integer NOT NULL,
+    parking_space_id uuid NOT NULL,
+    "time" tstzrange NOT NULL
+);
+
+
+--
+-- Name: timetable_coalesce_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.timetable_coalesce_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: timetable_coalesce_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.timetable_coalesce_id_seq OWNED BY public.timetable_coalesce.id;
 
 
 --
@@ -213,6 +309,13 @@ CREATE TABLE public.users (
 
 
 --
+-- Name: timetable_coalesce id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.timetable_coalesce ALTER COLUMN id SET DEFAULT nextval('public.timetable_coalesce_id_seq'::regclass);
+
+
+--
 -- Name: user_delete_requests id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -256,6 +359,22 @@ COPY public.migrations (migration_name) FROM stdin;
 06-resettoken.sql
 07-cars.sql
 08-reservations.sql
+09-availability.sql
+10-spacecoalesce.sql
+\.
+
+
+--
+-- Data for Name: paid_parking_allowed_availability; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.paid_parking_allowed_availability (id, parking_space_id, "time") FROM stdin;
+3dbd25a3-7423-4d35-9771-66e527ed3afa	1692f1d6-a67b-4659-a555-bdf22359bd24	["2024-10-26 23:47:05.717214+00","2024-10-27 00:47:05.717214+00")
+d16c8e4d-39f4-4da8-9122-107308f624ca	1692f1d6-a67b-4659-a555-bdf22359bd24	["2024-10-27 00:17:28.045305+00","2024-10-27 01:47:28.045305+00")
+808b495b-3c1b-4dda-a442-a355e7bec6e7	1692f1d6-a67b-4659-a555-bdf22359bd24	["2024-10-27 00:46:38.373398+00","2024-10-27 01:47:38.373398+00")
+d4852d2d-3386-4735-ac12-5d6d735cad7c	1692f1d6-a67b-4659-a555-bdf22359bd24	["2024-10-27 01:45:55.148562+00","2024-10-27 02:47:55.148562+00")
+b32235db-d1ee-4cd6-9428-6d7f0152d6bd	1692f1d6-a67b-4659-a555-bdf22359bd24	["2024-10-27 04:52:47.93917+00","2024-10-27 05:52:47.93917+00")
+2367c46a-96e7-4f38-b84a-14d3e168e405	1692f1d6-a67b-4659-a555-bdf22359bd24	["2024-10-27 05:52:55.029553+00","2024-10-27 06:52:55.029553+00")
 \.
 
 
@@ -281,6 +400,14 @@ COPY public.reservations (id, parking_space_id, renter_id, car_info_id, start_ti
 --
 
 COPY public.spatial_ref_sys (srid, auth_name, auth_srid, srtext, proj4text) FROM stdin;
+\.
+
+
+--
+-- Data for Name: timetable_coalesce; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.timetable_coalesce (id, parking_space_id, "time") FROM stdin;
 \.
 
 
@@ -323,6 +450,15 @@ COPY public.user_tokens (id, user_id, token, expiry) FROM stdin;
 16	22b98560-9e2e-4446-b807-7a9958d09043	xpark_jmT-DV9b2L1zAXTLrbRASS8fGANVCOEnPjXRdtorpW0	2024-11-23 17:54:31.585106
 17	22b98560-9e2e-4446-b807-7a9958d09043	xpark_0KfaGAwYdzs2WAxdvPz5qBD5rN_XTxhdGpoPJDbEkdA	2024-11-23 17:54:31.740938
 18	22b98560-9e2e-4446-b807-7a9958d09043	xpark_4Pgr0hPG2RtosOSXieb_FFFy7FxZzhQge6eY_vz0DrI	2024-11-23 17:54:31.880841
+19	22b98560-9e2e-4446-b807-7a9958d09043	xpark_SAsK-oPL-Ma2G1e78BMeDfhpEIQgz8MAARsPJ4KNHtY	2024-11-23 17:57:13.636391
+20	22b98560-9e2e-4446-b807-7a9958d09043	xpark_mtSckmQN-xPecFDWc33R294Hh2vETm7LhzuYJ_RjabE	2024-11-23 17:57:13.72358
+21	22b98560-9e2e-4446-b807-7a9958d09043	xpark_LkXECCZ6X-gZre0bQ5U-PpH0noywZFhq8_xh0i8sTk8	2024-11-23 17:57:13.865818
+22	22b98560-9e2e-4446-b807-7a9958d09043	xpark_sm8fGTk-ps-Eue0Buuze4PIkXStc1k10e9VouOSABE0	2024-11-23 17:57:14.000145
+23	22b98560-9e2e-4446-b807-7a9958d09043	xpark_7d7cILcQSvjeCAePRp3XsoMi4ZlJO3qcr7YN8znU8cQ	2024-11-23 17:57:14.147773
+24	22b98560-9e2e-4446-b807-7a9958d09043	xpark_EMOncVcWZ6LYMOtvlXQA1Afq_sW8PblLg_GEJW57TOE	2024-11-23 17:57:14.291509
+25	22b98560-9e2e-4446-b807-7a9958d09043	xpark_kIsrdVRB5JmryDU7M7W0KXdtExV8g2aGmxHtuN7Fdb0	2024-11-23 17:57:14.443405
+26	22b98560-9e2e-4446-b807-7a9958d09043	xpark_HKsjKhOrNQX1vFoVqAnm4RfpmjsSFlRpTbmIvmxyjtM	2024-11-23 17:57:14.594351
+27	22b98560-9e2e-4446-b807-7a9958d09043	xpark_2gyrNQ1Url7Mj1WpAhWu9jDlvKZHxJpGX5bmD5l2eAo	2024-11-23 17:57:14.729018
 \.
 
 
@@ -333,6 +469,13 @@ COPY public.user_tokens (id, user_id, token, expiry) FROM stdin;
 COPY public.users (id, name, email, password_hash, deleted_at) FROM stdin;
 22b98560-9e2e-4446-b807-7a9958d09043	name	testuser@example.com	$argon2id$v=19$m=65536,t=3,p=4$WSd7sJymKSnAzd7tA9WWKg$kxkx/qHJGt+0xf5XOetIUEoMW/4UCgmxdqdwGApN8lo	\N
 \.
+
+
+--
+-- Name: timetable_coalesce_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.timetable_coalesce_id_seq', 13, true);
 
 
 --
@@ -353,7 +496,7 @@ SELECT pg_catalog.setval('public.user_pw_reset_requests_id_seq', 1, false);
 -- Name: user_tokens_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.user_tokens_id_seq', 18, true);
+SELECT pg_catalog.setval('public.user_tokens_id_seq', 27, true);
 
 
 --
@@ -381,6 +524,14 @@ ALTER TABLE ONLY public.migrations
 
 
 --
+-- Name: paid_parking_allowed_availability paid_parking_allowed_availability_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.paid_parking_allowed_availability
+    ADD CONSTRAINT paid_parking_allowed_availability_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: parking_spaces parking_spaces_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -394,6 +545,14 @@ ALTER TABLE ONLY public.parking_spaces
 
 ALTER TABLE ONLY public.reservations
     ADD CONSTRAINT reservations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: timetable_coalesce timetable_coalesce_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.timetable_coalesce
+    ADD CONSTRAINT timetable_coalesce_pkey PRIMARY KEY (id);
 
 
 --
@@ -469,6 +628,14 @@ ALTER TABLE ONLY public.cars
 
 
 --
+-- Name: paid_parking_allowed_availability paid_parking_allowed_availability_parking_space_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.paid_parking_allowed_availability
+    ADD CONSTRAINT paid_parking_allowed_availability_parking_space_id_fkey FOREIGN KEY (parking_space_id) REFERENCES public.parking_spaces(id);
+
+
+--
 -- Name: parking_spaces parking_spaces_owner_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -498,6 +665,14 @@ ALTER TABLE ONLY public.reservations
 
 ALTER TABLE ONLY public.reservations
     ADD CONSTRAINT reservations_renter_id_fkey FOREIGN KEY (renter_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: timetable_coalesce timetable_coalesce_parking_space_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.timetable_coalesce
+    ADD CONSTRAINT timetable_coalesce_parking_space_id_fkey FOREIGN KEY (parking_space_id) REFERENCES public.parking_spaces(id) ON DELETE CASCADE;
 
 
 --
