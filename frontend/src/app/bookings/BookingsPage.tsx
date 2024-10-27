@@ -67,6 +67,18 @@ function ReservationCard({
         console.log(`Reservation ID: ${reservation.id}, Car ID: ${reservation.car_info_id}, Car Info:`, car);
     }, [reservation, car]);
 
+    const now = new Date();
+    const startTime = new Date(reservation.start_time ?? now);
+    const isUpcoming = startTime > now && reservation.status !== 'canceled';
+    const timeTillCancel = startTime.getTime() - now.getTime() - 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+    const isCancellable = timeTillCancel > 0;
+
+    const formattimeTillCancel = (time: number) => {
+        const hours = Math.floor(time / (1000 * 60 * 60));
+        const minutes = Math.floor((time % (1000 * 60 * 60)) / (1000 * 60));
+        return `${hours}h ${minutes}m`;
+    };
+
     return (
         <Card
             className="cursor-pointer transition-transform transform hover:scale-105"
@@ -105,9 +117,26 @@ function ReservationCard({
                         <ArrowRightCircle className="w-5 h-5 text-blue-500" />
                     </div>
                 )}
-                <Button variant="destructive" onClick={handleCancelClick}>
-                    Cancel
-                </Button>
+                {isUpcoming && (
+                    <>
+                        {isCancellable ? (
+                            <p className="text-sm text-gray-700">
+                                Time to cancel: {formattimeTillCancel(timeTillCancel)}
+                            </p>
+                        ) : (
+                            <p className="text-sm text-red-500">
+                                Reservation is no longer cancellable
+                            </p>
+                        )}
+                        {isCancellable && (
+                            <div className="flex justify-center mt-4">
+                                <Button variant="destructive" onClick={handleCancelClick}>
+                                    Cancel
+                                </Button>
+                            </div>
+                        )}
+                    </>
+                )}
             </CardContent>
         </Card>
     );
@@ -130,6 +159,11 @@ export default function BookingsPage() {
     const reservations = useAppSelector((state) => state.reservations.reservations);
     const loading = useAppSelector((state) => state.reservations.loading);
     const error = useAppSelector((state) => state.reservations.error);
+    const [domLoaded, setDomLoaded] = useState(false);
+
+    useEffect(() => {
+        setDomLoaded(true);
+    }, []);
 
     // Selectors from the carSlice
     const cars = useAppSelector((state) => state.cars.cars);
@@ -191,137 +225,137 @@ export default function BookingsPage() {
 
     const handleConfirmCancel = () => {
         if (selectedReservation) {
-            if (selectedReservation?.id) {
-                dispatch(cancelReservation(selectedReservation.id));
-            }
             setIsModalOpen(false);
             setSelectedReservation(null);
         }
+        dispatch(fetchUserReservations());
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-gray-50">
-            <div className="flex-grow container mx-auto p-4 max-w-5xl">
-                {/* Header Section */}
-                <header className="flex flex-col items-center mb-8">
-                    <Avatar className="w-24 h-24 mb-4" />
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">{userName}</h1>
-                    <div className="flex space-x-12 mt-4">
-                        <StatCard label="Total Reservations" value={reservations.length} />
-                        <StatCard label="Years with Us" value={2} />
-                    </div>
-                </header>
+        domLoaded && (
+            <div className="min-h-screen flex flex-col bg-gray-50">
+                <div className="flex-grow container mx-auto p-4 max-w-5xl">
+                    {/* Header Section */}
+                    <header className="flex flex-col items-center mb-8">
+                        <Avatar className="w-24 h-24 mb-4" />
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">{userName}</h1>
+                        <div className="flex space-x-12 mt-4">
+                            <StatCard label="Total Reservations" value={reservations.length} />
+                            <StatCard label="Years with Us" value={2} />
+                        </div>
+                    </header>
 
-                {/* Your Cars Section */}
-                <section className="mb-8">
-                    <SectionHeader title="Your Cars" />
-                    <div className="grid gap-6">
-                        {isLoading ? (
-                            <div className="flex items-center justify-center">
-                                <Loader2 className="animate-spin text-gray-500 w-8 h-8" />
-                                <span className="ml-2 text-gray-500">Loading your data...</span>
+                    {/* Your Cars Section */}
+                    <section className="mb-8">
+                        <SectionHeader title="Your Cars" />
+                        <div className="grid gap-6">
+                            {isLoading ? (
+                                <div className="flex items-center justify-center">
+                                    <Loader2 className="animate-spin text-gray-500 w-8 h-8" />
+                                    <span className="ml-2 text-gray-500">Loading your data...</span>
+                                </div>
+                            ) : carsError ? (
+                                <p className="text-red-500">Error loading cars: {carsError}</p>
+                            ) : cars.length > 0 ? (
+                                cars.map((car: CarInfo) => (
+                                    <Card key={car.id} className="p-4">
+                                        <CardContent>
+                                            <p className="text-lg font-semibold">{car.make} {car.model}</p>
+                                            <p className="text-sm text-gray-600">License Plate: {car.license_plate}</p>
+                                            {/* Add more car details if needed */}
+                                        </CardContent>
+                                    </Card>
+                                ))
+                            ) : (
+                                <div>
+                                    <p>No cars available. Please add a car.</p>
+                                    <Button onClick={() => router.push('/profile/add-car')} className="mt-2">
+                                        Add a Car
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+
+                    {/* Global Loading Indicator */}
+                    {isLoading && (
+                        <div className="flex items-center justify-center my-4">
+                            <Loader2 className="animate-spin text-gray-500 w-8 h-8" />
+                            <span className="ml-2 text-gray-500">Loading your reservations...</span>
+                        </div>
+                    )}
+
+                    {/* Current Reservations */}
+                    {!isLoading && currentReservations.length > 0 && (
+                        <section className="mb-8">
+                            <SectionHeader title="Current Reservations" />
+                            <div className="grid gap-6">
+                                {currentReservations.map((reservation: Reservation) => (
+                                    <ReservationCard key={reservation.id} reservation={reservation} carMap={carMap} onCancel={handleCancel} />
+                                ))}
                             </div>
-                        ) : carsError ? (
-                            <p className="text-red-500">Error loading cars: {carsError}</p>
-                        ) : cars.length > 0 ? (
-                            cars.map((car: CarInfo) => (
-                                <Card key={car.id} className="p-4">
-                                    <CardContent>
-                                        <p className="text-lg font-semibold">{car.make} {car.model}</p>
-                                        <p className="text-sm text-gray-600">License Plate: {car.license_plate}</p>
-                                        {/* Add more car details if needed */}
-                                    </CardContent>
-                                </Card>
-                            ))
-                        ) : (
-                            <div>
-                                <p>No cars available. Please add a car.</p>
-                                <Button onClick={() => router.push('/profile/add-car')} className="mt-2">
-                                    Add a Car
-                                </Button>
+                        </section>
+                    )}
+
+                    {/* Upcoming Reservations */}
+                    {!isLoading && upcomingReservations.length > 0 && (
+                        <section className="mb-8">
+                            <SectionHeader title="Upcoming Reservations" />
+                            <div className="grid gap-6">
+                                {upcomingReservations.map((reservation: Reservation) => (
+                                    <ReservationCard key={reservation.id} reservation={reservation} carMap={carMap} onCancel={handleCancel} />
+                                ))}
                             </div>
-                        )}
+                        </section>
+                    )}
+
+                    {/* Past Reservations */}
+                    {!isLoading && pastReservations.length > 0 && (
+                        <section className="mb-8">
+                            <SectionHeader title="Past Reservations" />
+                            <div className="grid gap-6">
+                                {pastReservations.map((reservation: Reservation) => (
+                                    <ReservationCard key={reservation.id} reservation={reservation} isPast carMap={carMap} onCancel={handleCancel} />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* Cancelled Reservations */}
+                    {!isLoading && cancelledReservations.length > 0 && (
+                        <section className="mb-8">
+                            <SectionHeader title="Cancelled Reservations" />
+                            <div className="grid gap-6">
+                                {cancelledReservations.map((reservation: Reservation) => (
+                                    <ReservationCard key={reservation.id} reservation={reservation} carMap={carMap} onCancel={handleCancel} />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* No Reservations */}
+                    {!isLoading && reservations.length === 0 && (
+                        <div className="flex flex-col items-center justify-center h-64">
+                            <MapPin className="w-12 h-12 text-gray-400 mb-4" />
+                            {error && <p className="text-red-500">Failed to fetch reservations at this time.</p>}
+                            <p className="text-gray-500">You have no reservations.</p>
+                            <Link href="/search" passHref>
+                                <button className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition">
+                                    Make a Reservation
+                                </button>
+                            </Link>
+                        </div>
+                    )}
+                    <div className="flex h-16">
                     </div>
-                </section>
-
-                {/* Global Loading Indicator */}
-                {isLoading && (
-                    <div className="flex items-center justify-center my-4">
-                        <Loader2 className="animate-spin text-gray-500 w-8 h-8" />
-                        <span className="ml-2 text-gray-500">Loading your reservations...</span>
-                    </div>
-                )}
-
-                {/* Current Reservations */}
-                {!isLoading && currentReservations.length > 0 && (
-                    <section className="mb-8">
-                        <SectionHeader title="Current Reservations" />
-                        <div className="grid gap-6">
-                            {currentReservations.map((reservation: Reservation) => (
-                                <ReservationCard key={reservation.id} reservation={reservation} carMap={carMap} onCancel={handleCancel} />
-                            ))}
-                        </div>
-                    </section>
-                )}
-
-                {/* Upcoming Reservations */}
-                {!isLoading && upcomingReservations.length > 0 && (
-                    <section className="mb-8">
-                        <SectionHeader title="Upcoming Reservations" />
-                        <div className="grid gap-6">
-                            {upcomingReservations.map((reservation: Reservation) => (
-                                <ReservationCard key={reservation.id} reservation={reservation} carMap={carMap} onCancel={handleCancel} />
-                            ))}
-                        </div>
-                    </section>
-                )}
-
-                {/* Past Reservations */}
-                {!isLoading && pastReservations.length > 0 && (
-                    <section className="mb-8">
-                        <SectionHeader title="Past Reservations" />
-                        <div className="grid gap-6">
-                            {pastReservations.map((reservation: Reservation) => (
-                                <ReservationCard key={reservation.id} reservation={reservation} isPast carMap={carMap} onCancel={handleCancel} />
-                            ))}
-                        </div>
-                    </section>
-                )}
-
-                {/* Cancelled Reservations */}
-                {!isLoading && cancelledReservations.length > 0 && (
-                    <section className="mb-8">
-                        <SectionHeader title="Cancelled Reservations" />
-                        <div className="grid gap-6">
-                            {cancelledReservations.map((reservation: Reservation) => (
-                                <ReservationCard key={reservation.id} reservation={reservation} carMap={carMap} onCancel={handleCancel} />
-                            ))}
-                        </div>
-                    </section>
-                )}
-
-                {/* No Reservations */}
-                {!isLoading && reservations.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-64">
-                        <MapPin className="w-12 h-12 text-gray-400 mb-4" />
-                        {error && <p className="text-red-500">Failed to fetch reservations at this time.</p>}
-                        <p className="text-gray-500">You have no reservations.</p>
-                        <Link href="/search" passHref>
-                            <button className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition">
-                                Make a Reservation
-                            </button>
-                        </Link>
-                    </div>
-                )}
-                <div className="flex h-16">
                 </div>
+                <DeleteReservationModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    reservation={selectedReservation!}
+                    onConfirm={handleConfirmCancel}
+                />
             </div>
-            <DeleteReservationModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                reservation={selectedReservation!}
-                onConfirm={handleConfirmCancel}
-            />
-        </div>
+        )
     );
 }

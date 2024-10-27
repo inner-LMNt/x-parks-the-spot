@@ -435,7 +435,6 @@ def cancel_reservation_logic(
                 return Err("Reservation not found.")
 
             parking_space_id, status, start_time = reservation
-
             if status == "canceled":
                 return Err("Reservation is already canceled.")
 
@@ -455,7 +454,7 @@ def cancel_reservation_logic(
             
             if start_time.tzinfo is None:
                 start_time = start_time.replace(tzinfo=timezone.utc)
-                
+
             # Check if the current time is at least 2 hours before the reservation start time
             current_time = datetime.datetime.now(timezone.utc)
             if start_time - current_time < datetime.timedelta(hours=2):

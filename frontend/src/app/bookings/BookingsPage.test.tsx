@@ -347,7 +347,7 @@ describe('BookingsPage Component', () => {
             expect(cancelReservation).toHaveBeenCalledWith('1');
             expect(toast).toHaveBeenCalledWith({
                 title: 'Reservation Cancelled',
-                description: 'Your reservation has been cancelled successfully.',
+                description: 'Your reservation has been canceled successfully.',
                 variant: 'success',
             });
         });

@@ -25,7 +25,7 @@ const DeleteReservationModal: React.FC<DeleteReservationModalProps> = ({ isOpen,
                 description: error,
                 variant: 'destructive',
             });
-            // dispatch(resetReservationError()); // Uncomment if you have a reset action
+            // dispatch(resetReservationError()); // Uncomment if reset action
         }
     }, [error, dispatch]);
 
@@ -35,7 +35,7 @@ const DeleteReservationModal: React.FC<DeleteReservationModalProps> = ({ isOpen,
                 await dispatch(cancelReservation(reservation.id)).unwrap();
                 toast({
                     title: 'Reservation Cancelled',
-                    description: 'Your reservation has been cancelled successfully.',
+                    description: 'Your reservation has been canceled successfully.',
                     variant: 'success',
                 });
                 onConfirm(); // Call the onConfirm prop
@@ -64,7 +64,7 @@ const DeleteReservationModal: React.FC<DeleteReservationModalProps> = ({ isOpen,
                         <li><strong>End Time:</strong> {reservation.end_time ? new Date(reservation.end_time).toLocaleString() : 'N/A'}</li>
                     </ul>
                     <Separator />
-                    <div className="flex justify-end space-x-2 mt-4">
+                    <div className="flex justify-center space-x-2 mt-4">
                         <Button type="button" variant="ghost" onClick={onClose}>
                             Cancel
                         </Button>

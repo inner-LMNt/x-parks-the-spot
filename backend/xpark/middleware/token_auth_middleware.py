@@ -32,7 +32,6 @@ def require_logged_in_user(next_fn: Callable[..., Tuple[Any, int]]) -> Callable[
             case Ok(user_id):
                 kwargs["user_id"] = user_id
                 kwargs["token"] = token
-                print(args)
                 print(kwargs)
                 return next_fn(*args, **kwargs)
             case Err(e):
