@@ -117,7 +117,7 @@ const VerificationPage: React.FC = () => {
                     ) : (
                         isListExpanded && (
                             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                {pendingSpots.map((spot: PendingSpot) => (
+                                {pendingSpots.slice(0, 10).map((spot: PendingSpot) => (
                                     <motion.div
                                         key={spot.id}
                                         initial={{ opacity: 0, scale: 0.9 }}
