@@ -312,3 +312,35 @@ def is_paid_spot(parking_space_id: uuid.UUID) -> Result[bool, str]:
             if not parking_space:
                 return Err("Parking space doesn't exist")
             return Ok(parking_space[0])
+
+
+def handle_submit_verification(
+    parking_space_id: uuid.UUID,
+    image_file: Optional[FileStorage],
+    user_id: uuid.UUID,
+) -> Result[None, str]:
+
+    if image_file is None:
+        return Err("No image provided for verification")
+
+    # Save the image
+    image_uri = save_image(image_file)
+
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE parking_spaces
+                SET verification_status = %s, photos = array_append(photos, %s), updated_at = NOW()
+                WHERE id = %s AND owner = %s
+                RETURNING id, verification_status, photos, updated_at
+                """,
+                ("pending", image_uri, parking_space_id, user_id),
+            )
+            result = cur.fetchone()
+            if not result:
+                return Err(
+                    "Failed to update verification status or parking space not found"
+                )
+
+            return Ok(None)

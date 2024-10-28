@@ -7,6 +7,7 @@ from xpark.logic.parkingspace import (
     get_parking_space,
     is_paid_spot,
     get_owned_paid_parking_spaces,
+    handle_submit_verification,
 )
 from flask import request
 from result import Ok, Err
@@ -146,3 +147,16 @@ def delete_parking_space_route(
         case Err(e):
             status_code = 403 if "not authorized" in e else 404
             return {"err": e}, status_code
+
+@bp.post("<parking_space_id>/verify")
+@require_logged_in_user
+def verify_spot_route(
+    parking_space_id: str, token: str, user_id: uuid.UUID
+) -> Tuple[Any, int]:
+    spot_id = uuid.UUID(parking_space_id)
+    image_file = request.files.get("image")
+    match handle_submit_verification(user_id=user_id, parking_space_id=spot_id, image_file=image_file):
+        case Ok():
+            return {}, 200
+        case Err(_):
+            return {}, 404
