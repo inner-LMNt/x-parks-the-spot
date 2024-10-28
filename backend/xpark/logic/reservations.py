@@ -9,9 +9,9 @@ import psycopg
 
 
 class ReservationStatus(Enum):
-    book = "book"
-    cancel = "cancel"
-    complete = "complete"
+    book = "booked"
+    cancel = "canceled"
+    complete = "completed"
 
 
 def check_if_available(
@@ -25,10 +25,9 @@ def check_if_available(
         cur.execute(
             """
             SELECT count(id) FROM
-            paid_parking_allowed_availability
+            timetable_coalesce
             WHERE parking_space_id = %(spot_id)s
-            AND   end_time < %(start_time)s
-            AND   start_time >= %(end_time)s
+            AND   TSTZRANGE(%(start_time), %(end_time), '[]') <@ time
             """,
             {
                 "spot_id": parking_spot_id,
@@ -46,8 +45,7 @@ def check_if_available(
             SELECT count(id) FROM
             reservations
             WHERE parking_space_id = %(spot_id)s
-            AND   end_time > %(start_time)s
-            AND   start_time < %(end_time)s
+            AND   TSTZRANGE(%(start_time), %(end_time), '[]') && time
             """,
             {
                 "spot_id": parking_spot_id,
@@ -70,8 +68,8 @@ def get_user_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], st
                 SELECT 
                     id, 
                     parking_space_id, 
-                    start_time, 
-                    end_time, 
+                    lower(time) as start_time,
+                    upper(time) as end_time,
                     car_info_id, 
                     renter_id,
                     status,
@@ -108,23 +106,30 @@ def create_reservation(
                 """
                 INSERT INTO reservations (
                     parking_space_id,
-                    start_time,
-                    end_time,
+                    time,
                     car_info_id,
                     renter_id,
                     status,
                     created_at,
                     updated_at
-                ) VALUES (%s, %s, %s, %s, %s, 'book', NOW(), NOW())
+                ) VALUES (
+                    %(id)s,
+                    TSTZRANGE(%(start_time), %(end_time), '[]'),
+                    %(car_id)s,
+                    %(user_id)s,
+                    'book',
+                    NOW(),
+                    NOW()
+                )
                 RETURNING id, parking_space_id, start_time, end_time, car_info_id, status, created_at, updated_at
                 """,
-                (
-                    parking_space_uuid,
-                    start_time,
-                    end_time,
-                    car_info_uuid,
-                    user_id,
-                ),
+                {
+                    "id": parking_space_uuid,
+                    "start_time": start_time,
+                    "end_time": end_time,
+                    "car_id": car_info_uuid,
+                    "user_id": user_id,
+                },
             )
 
             reservation = cur.fetchone()
@@ -144,8 +149,8 @@ def get_reservation(
                 SELECT 
                     id,
                     parking_space_id, 
-                    start_time, 
-                    end_time, 
+                    lower(time) as start_time,
+                    upper(time) as end_time,
                     car_info_id, 
                     renter_id,
                     status,
@@ -176,8 +181,8 @@ def update_reservation(
                 """
                 SELECT 
                 id,
-                start_time,
-                end_time
+                lower(time) as start_time,
+                upper(time) as end_time
                 FROM reservations
                 WHERE id = %s AND renter_id = %s
                 """,
@@ -205,7 +210,7 @@ def update_reservation(
                 FROM reservations
                 WHERE parking_space_id = %s
                   AND id != %s
-                  AND status = 'book'
+                  AND status = 'booked'
                   AND (
                     (start_time < %s AND end_time > %s)
                   )
@@ -223,6 +228,7 @@ def update_reservation(
                     "Parking space is already reserved for the selected time slot."
                 )
 
+        # FIXME: finish this
         with conn.cursor(row_factory=dict_row) as cur:
             # Update the reservation
             cur.execute(
@@ -253,7 +259,7 @@ def cancel_reservation_logic(
             cur.execute(
                 """
                 UPDATE reservations
-                SET status = 'cancel', updated_at = NOW()
+                SET status = 'canceled', updated_at = NOW()
                 WHERE id = %s AND renter_id = %s AND status = 'book'
                 RETURNING status
                 """,

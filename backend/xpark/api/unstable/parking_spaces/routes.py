@@ -13,7 +13,7 @@ from result import Ok, Err
 from xpark.middleware.token_auth_middleware import require_logged_in_user
 from typing import Tuple, Any
 import uuid
-from json import JSONDecodeError, loads as load_json
+from flask.json import loads as load_json
 from typing import cast, Dict
 
 
@@ -37,7 +37,7 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
     # FIXME: limit size of JSON
     try:
         data = cast(Dict[str, Any], load_json(raw_data))
-    except JSONDecodeError:
+    except TypeError:
         return {"err": "bad input"}, 400
 
     if not data:
@@ -45,6 +45,7 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
 
     longitude = float(data["location"]["longitude"])
     latitude = float(data["location"]["latitude"])
+    address = data["location"]["address"]
 
     # TODO: get address from coordinates if not set
     if data["is_paid"]:
@@ -54,8 +55,9 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
             image_file=image_file,
             longitude=longitude,
             latitude=latitude,
-            address=data["location"]["address"],
+            address=address,
             price=float(data["pricing_info"]["base_price"]),
+            availability_schedule=data["availability_schedule"],
         )
     else:
         result = create_free_parking_space(
@@ -63,7 +65,7 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
             image_file=image_file,
             longitude=longitude,
             latitude=latitude,
-            address=data["address"],
+            address=address,
         )
 
     if result.is_ok():
@@ -110,6 +112,7 @@ def update_parking_space_route(
             address=request.json.get("location", {}).get("address"),
             price=price,
             name=request.json.get("name"),
+            availability_schedule=request.json.get("availability_schedule"),
         ):
             case Ok(parking_space):
                 return parking_space, 200

@@ -1,5 +1,6 @@
 import os
-from typing import Dict, Any, Optional
+import json
+from typing import Dict, Any, Optional, List
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
@@ -10,6 +11,7 @@ from xpark.config import Config
 from xpark.utils.db import DB
 from result import Result, Ok, Err
 import uuid
+from .timeslots import days_of_week_to_slots, recalculate_coalesce
 
 
 def get_owned_paid_parking_spaces(
@@ -32,6 +34,7 @@ def get_owned_paid_parking_spaces(
                         'base_price', price,
                         'dynamic_pricing', FALSE
                     ) as pricing_info,
+                    availability_schedule,
                     verification_status, 
                     photos,
                     created_at, 
@@ -54,6 +57,7 @@ def create_paid_parking_space(
     address: str,
     name: str,
     price: float,  # FIXME: do not pass around money as floats!!!
+    availability_schedule: List[Dict[str, str]],
 ) -> Result[Dict[str, Any], str]:
     # Save image
     if image_file:
@@ -75,6 +79,7 @@ def create_paid_parking_space(
                     photos,
                     verification_status,
                     name,
+                    availability_schedule,
                     price
                 )
                 VALUES (
@@ -85,6 +90,7 @@ def create_paid_parking_space(
 					%(photos)s,
 					'pending',
 					%(name)s,
+                    %(sched)s,
 					%(price)s
                 )
                 RETURNING id, created_at, updated_at
@@ -97,11 +103,17 @@ def create_paid_parking_space(
                     "photos": photos,
                     "name": name,
                     "price": price,
+                    "sched": json.dumps(availability_schedule),
                 },
             )
             parking_space = cur.fetchone()
             if not parking_space:
                 return Err("Error creating parking space")
+
+            # Regenerate availability schedule
+            days_of_week_to_slots(cur, parking_space["id"], availability_schedule)
+            # Recoalesce
+            recalculate_coalesce(cur, parking_space["id"])
 
             return Ok(parking_space)
 
@@ -203,6 +215,7 @@ def update_paid_parking_space(
     longitude: Optional[float],
     name: Optional[str],
     price: Optional[float],
+    availability_schedule: Optional[List[Dict[str, str]]],
 ) -> Result[Dict[str, Any], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -228,6 +241,7 @@ def update_paid_parking_space(
                 ),
                 name =       COALESCE(%(name)s, name),
                 price =      COALESCE(%(price)s, price),
+                availability_schedule = COALESCE(%(sched)s, availability_schedule),
                 updated_at = NOW()
                 WHERE id =   %(spot_id)s
                 RETURNING
@@ -244,6 +258,7 @@ def update_paid_parking_space(
                         'base_price', price,
                         'dynamic_pricing', FALSE
                     ) as pricing_info,
+                    availability_schedule,
                     photos,
                     created_at, 
                     updated_at
@@ -255,11 +270,22 @@ def update_paid_parking_space(
                     "name": name,
                     "price": price,
                     "spot_id": parking_space_id,
+                    "sched": (
+                        json.dumps(availability_schedule)
+                        if availability_schedule
+                        else availability_schedule
+                    ),
                 },
             )
             parking_space = cur.fetchone()
             if not parking_space:
                 return Err("Failed to update parking space")
+
+            if availability_schedule is not None:
+                # Regenerate availability schedule
+                days_of_week_to_slots(cur, parking_space["id"], availability_schedule)
+                # Recoalesce
+                recalculate_coalesce(cur, parking_space["id"])
 
             return Ok(parking_space)
 

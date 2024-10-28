@@ -1,8 +1,5 @@
 # Testing for the timeslots/coalescing
 
-from xpark.logic.timeslots import (
-    add_paid_parking_space_time,
-)
 from xpark.logic.parkingspace import (
     create_paid_parking_space,
 )
@@ -30,44 +27,26 @@ def test_coalesce() -> None:
 
     # Then create a parking space for the coalescing to work on
     parking_space_id = create_paid_parking_space(
-        user_id_create.ok_value, None, 0.0, 0.0, "address"
+        user_id_create.ok_value,
+        None,
+        0.0,
+        0.0,
+        "address",
+        name="name",
+        price=10.00,
+        availability_schedule=[
+            {"day_of_week": "Monday", "start_time": "00:00", "end_time": "23:59"},
+            {"day_of_week": "Tuesday", "start_time": "00:00", "end_time": "23:59"},
+            {"day_of_week": "Wednesday", "start_time": "00:00", "end_time": "23:59"},
+            {"day_of_week": "Thursday", "start_time": "00:00", "end_time": "23:59"},
+            {"day_of_week": "Friday", "start_time": "00:00", "end_time": "23:59"},
+            {"day_of_week": "Saturday", "start_time": "00:00", "end_time": "23:59"},
+            {"day_of_week": "Sunday", "start_time": "00:00", "end_time": "23:59"},
+        ],
     )
     assert type(parking_space_id) is Ok
 
-    # Then create timeslots for that parking spot
-    start_time = datetime(2024, 10, 26, 6, 0, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
-    end_time = datetime(2024, 10, 26, 7, 0, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
-    t0 = add_paid_parking_space_time(
-        user_id_create.ok_value, parking_space_id.ok_value["id"], start_time, end_time
-    )
-
-    assert type(t0) is Ok
-
-    start_time = datetime(2024, 10, 26, 7, 0, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
-    end_time = datetime(2024, 10, 26, 8, 0, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
-    t1 = add_paid_parking_space_time(
-        user_id_create.ok_value, parking_space_id.ok_value["id"], start_time, end_time
-    )
-
-    assert type(t1) is Ok
-
-    start_time = datetime(2024, 10, 26, 10, 1, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
-    end_time = datetime(2024, 10, 26, 11, 0, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
-    t2 = add_paid_parking_space_time(
-        user_id_create.ok_value, parking_space_id.ok_value["id"], start_time, end_time
-    )
-
-    assert type(t2) is Ok
-
-    start_time = datetime(2024, 10, 26, 7, 55, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
-    end_time = datetime(2024, 10, 26, 9, 0, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
-    t3 = add_paid_parking_space_time(
-        user_id_create.ok_value, parking_space_id.ok_value["id"], start_time, end_time
-    )
-
-    assert type(t3) is Ok
-
-    # We now have two timeslots, one from 6-7, and one from 7-8.
+    # We now have a bunch of timeslots
     # These should be coalesced.
     with DB.pool.connection() as conn:
         cur = conn.cursor()

@@ -1,9 +1,16 @@
 ALTER TABLE parking_spaces
 ADD COLUMN is_paid BOOLEAN DEFAULT FALSE,
+ADD COLUMN name TEXT,
+ADD COLUMN features TEXT[],
+ADD COLUMN availability_schedule JSONB,
+ADD COLUMN pricing_info JSONB,
 ADD COLUMN photos TEXT[],
 ADD COLUMN verification_status TEXT,
+ADD COLUMN dynamic_pricing_enabled BOOLEAN DEFAULT FALSE,
+ADD COLUMN cancellation_policy TEXT,
+ADD COLUMN locked BOOLEAN DEFAULT FALSE,
+ADD COLUMN locked_by UUID,
+ADD COLUMN locked_until TIMESTAMPTZ,
 ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW(),
 ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW(),
-ADD COLUMN address TEXT,
-ADD COLUMN price FLOAT,
-ADD COLUMN name TEXT;
+ADD COLUMN address TEXT;
