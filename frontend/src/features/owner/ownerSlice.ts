@@ -139,11 +139,10 @@ const ownerSlice = createSlice({
             })
             .addCase(getOwnerSpots.fulfilled, (state: OwnerState, action) => {
                 state.loading = false;
-                const { paidSpots, freeSpots, pendingSpots } = action.payload;
-
-                state.paidSpots = paidSpots;
-                state.freeSpots = freeSpots;
-                state.pendingSpots = pendingSpots;
+                const { spaces } = action.payload;
+                state.pendingSpots = spaces.filter(spot => spot.status === "pending");
+                state.paidSpots = spaces.filter(spot => spot.is_paid && spot.status !== "pending");
+                state.freeSpots = spaces.filter(spot => !spot.is_paid && spot.status !== "pending");
             })
             .addCase(getOwnerSpots.rejected, (state: OwnerState, action) => {
                 state.loading = false;

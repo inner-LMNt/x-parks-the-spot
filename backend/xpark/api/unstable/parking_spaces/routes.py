@@ -22,7 +22,7 @@ from typing import cast, Dict
 def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     match get_owned_paid_parking_spaces(user_id):
         case Ok(data):
-            return {"paidSpaces": data}, 200
+            return {"spaces": data}, 200
         case Err(e):
             return {"err": e}, 500
 
