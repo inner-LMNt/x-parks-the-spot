@@ -5,12 +5,28 @@ CREATE TABLE IF NOT EXISTS timetable_coalesce (
     FOREIGN KEY (parking_space_id) REFERENCES parking_spaces(id) ON DELETE CASCADE
 );
 
--- Convert start_time, end_time to tstzrange
-ALTER TABLE paid_parking_allowed_availability ADD time TSTZRANGE;
-UPDATE paid_parking_allowed_availability SET time = TSTZRANGE(start_time, end_time, '[]');
-ALTER TABLE paid_parking_allowed_availability DROP start_time;
-ALTER TABLE paid_parking_allowed_availability DROP end_time;
-ALTER TABLE paid_parking_allowed_availability ALTER time SET NOT NULL;
+-- Adjust parking space schema
+ALTER TABLE parking_spaces DROP features;
+ALTER TABLE parking_spaces DROP pricing_info;
+ALTER TABLE parking_spaces DROP dynamic_pricing_enabled;
+ALTER TABLE parking_spaces DROP locked;
+ALTER TABLE parking_spaces DROP locked_by;
+ALTER TABLE parking_spaces DROP locked_until;
+ALTER TABLE parking_spaces ADD price FLOAT;
+
+-- Adjust cars schema to include timezone
+ALTER TABLE cars ALTER created_at TYPE TIMESTAMPTZ;
+ALTER TABLE cars ALTER updated_at TYPE TIMESTAMPTZ;
+
+-- Adjust reservations schema to include timezone, and then convert to range
+ALTER TABLE reservations ALTER start_time TYPE TIMESTAMPTZ;
+ALTER TABLE reservations ALTER end_time TYPE TIMESTAMPTZ;
+ALTER TABLE reservations ADD time TSTZRANGE;
+UPDATE reservations SET time = TSTZRANGE(start_time, end_time, '[]');
+ALTER TABLE reservations DROP start_time;
+ALTER TABLE reservations DROP end_time;
+ALTER TABLE reservations ALTER created_at TYPE TIMESTAMPTZ;
+ALTER TABLE reservations ALTER updated_at TYPE TIMESTAMPTZ;
 
 -- Create the SQL function that generates the coalesced timezones
 CREATE OR REPLACE FUNCTION coalesce_timetable_by_parking_space_id(selected_parking_space_id UUID)

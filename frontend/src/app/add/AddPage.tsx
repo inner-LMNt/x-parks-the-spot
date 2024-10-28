@@ -117,7 +117,7 @@ export default function AddPage() {
       setTimeSlot({
         day_of_week: [],
         start_time: '00:00',
-        end_time: '24:00', // If we have this set to 00:00, then it is unknown whether the timeslot is zero length or for the whole day
+        end_time: '23:59', // If we have this set to 00:00, then it is unknown whether the timeslot is zero length or for the whole day
       });
     } else {
       setTimeSlot({
@@ -201,9 +201,9 @@ export default function AddPage() {
 
     if (is24Seven) {
       // For 24/7, ensure start_time and end_time are '00:00'
-      if (timeSlot.start_time !== '00:00' || timeSlot.end_time !== '00:00') {
+      if (timeSlot.start_time !== '00:00' || timeSlot.end_time !== '23:59') {
         isValid = false;
-        errorMsg = '24/7 slots must have start and end times set to 00:00.';
+        errorMsg = '24/7 slots must have start time set to 00:00 and end time set to 23:59.';
       }
     } else {
       // Check if at least one day is selected
@@ -311,7 +311,7 @@ export default function AddPage() {
         availability_schedule = Object.values(DaysOfWeek).map((day) => ({
           day_of_week: day,
           start_time: formatTime('00:00'),
-          end_time: formatTime('00:00'),
+          end_time: formatTime('23:59'),
         }));
       } else {
         availability_schedule = timeSlot.day_of_week.map((day: DaysOfWeek) => ({
