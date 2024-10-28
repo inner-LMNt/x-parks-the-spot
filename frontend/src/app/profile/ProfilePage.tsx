@@ -136,11 +136,11 @@ export default function ProfilePage() {
                 </AlertDialog>
 
                 {/* Settings and Reports Icons */}
-                <div className="absolute top-4 right-4 flex space-x-2">
+                <div className="absolute top-4 right-4 flex">
                     {/* Reports Icon */}
                     <Link href="/reports" passHref>
                         <Button variant="ghost" size="icon" className="p-2">
-                            <FileWarning className="w-6 h-6 text-yellow-500 hover:text-yellow-700" aria-label="Reports"/>
+                            <FileWarning className="w-6 h-6 text-gray-400 hover:text-gray-600" aria-label="Reports"/>
                         </Button>
                     </Link>
                     {/* Settings Icon */}

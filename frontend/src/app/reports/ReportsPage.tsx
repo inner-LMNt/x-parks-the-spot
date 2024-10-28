@@ -14,7 +14,22 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ChevronLeft, PlusCircle, ChevronDown, ChevronUp, Check, Settings, Wrench, DollarSign, Layers, Clock, Calendar, Car, MapPin } from 'lucide-react';
+import {
+    ChevronLeft,
+    PlusCircle,
+    ChevronDown,
+    ChevronUp,
+    Check,
+    Settings,
+    Wrench,
+    DollarSign,
+    Layers,
+    Clock,
+    Calendar,
+    Car,
+    MapPin,
+    ArrowLeft
+} from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { format, isValid } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
@@ -130,14 +145,18 @@ export default function ReportsPage() {
                         className="absolute left-0 flex items-center text-gray-800"
                         onClick={() => router.back()}
                     >
-                        <ChevronLeft className="w-5 h-5 mr-1"/>
-                        Back
+                        <ArrowLeft className="w-5 h-5 mr-1"/>
                     </Button>
                     <h1 className="text-3xl font-bold text-slate-950">Your Reports</h1>
                 </header>
 
                 <div className="flex justify-end mb-4">
-                    <Select onValueChange={(value) => setFilter(value)} value={filter || 'all'}>
+                    <Select
+                        onValueChange={(value) =>
+                            value === 'all' ? setFilter(null) : setFilter(value)
+                        }
+                        value={filter || 'all'}
+                    >
                         <SelectTrigger className="w-48 border border-gray-300 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200">
                             <SelectValue placeholder="Filter by type" />
                         </SelectTrigger>
