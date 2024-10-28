@@ -53,7 +53,7 @@ def check_if_available(
                 "start_time": start_time,
             },
         )
-        (count,) = cur.fetchone()  # type: ignore
+        count = cur.fetchone()["count"]  # type: ignore
         if int(count) > 0:
             return False
 
@@ -121,7 +121,7 @@ def create_reservation(
                     NOW(),
                     NOW()
                 )
-                RETURNING id, parking_space_id, start_time, end_time, car_info_id, status, created_at, updated_at
+                RETURNING id, parking_space_id, lower(time) as start_time, upper(time) as end_time, car_info_id, status, created_at, updated_at
                 """,
                 {
                     "id": parking_space_id,

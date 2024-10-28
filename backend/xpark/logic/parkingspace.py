@@ -88,7 +88,7 @@ def create_paid_parking_space(
                     ST_SetSRID(ST_MakePoint(%(long)s, %(lat)s),	4326),
 					%(addr)s,
 					%(photos)s,
-					'pending',
+					'unverified',
 					%(name)s,
                     %(sched)s,
 					%(price)s
