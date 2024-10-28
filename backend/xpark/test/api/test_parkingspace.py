@@ -48,7 +48,7 @@ def test_api_create_free_parking_spot(client: FlaskClient) -> None:
         "/api/unstable/parking-spaces", headers={"Authorization": "Bearer " + token}
     )
     assert response.status_code == 200
-    assert response.json == {"paidSpaces": []}
+    assert response.json == {"spaces": []}
 
     # response = client.post(
     #     "/api/unstable/search",
@@ -144,8 +144,8 @@ def test_api_create_paid_parking_spot(client: FlaskClient) -> None:
     )
     assert response.status_code == 200
     assert response.json
-    assert len(response.json["paidSpaces"]) == 1
-    assert response.json["paidSpaces"][0]["location"]["address"] == "aaa"
+    assert len(response.json["spaces"]) == 1
+    assert response.json["spaces"][0]["location"]["address"] == "aaa"
 
     # Modify the address
     response = client.patch(
@@ -172,7 +172,7 @@ def test_api_create_paid_parking_spot(client: FlaskClient) -> None:
     assert response.json
     assert len(response.json) == 1
     # Not checking the whole thing because the created_at and modified_at times are not stable across reruns
-    assert response.json["paidSpaces"][0]["location"]["address"] == "bbb"
+    assert response.json["spaces"][0]["location"]["address"] == "bbb"
 
     # Now delete
     response = client.delete(
