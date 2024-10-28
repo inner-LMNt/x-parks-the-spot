@@ -22,7 +22,7 @@ from typing import cast, Dict
 def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     match get_owned_paid_parking_spaces(user_id):
         case Ok(data):
-            return data, 200
+            return {"paidSpaces": data}, 200
         case Err(e):
             return {"err": e}, 500
 
@@ -43,17 +43,19 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
     if not data:
         return {"err": "Missing data"}, 400
 
-    longitude = float(data["long"])
-    latitude = float(data["lat"])
+    longitude = float(data["location"]["longitude"])
+    latitude = float(data["location"]["latitude"])
 
     # TODO: get address from coordinates if not set
     if data["is_paid"]:
         result = create_paid_parking_space(
+            name=data["name"],
             user_id=user_id,
             image_file=image_file,
             longitude=longitude,
             latitude=latitude,
-            address=data["address"],
+            address=data["location"]["address"],
+            price=float(data["pricing_info"]["base_price"]),
         )
     else:
         result = create_free_parking_space(
@@ -88,6 +90,12 @@ def update_parking_space_route(
 ) -> Tuple[Any, int]:
     parking_space_uuid = uuid.UUID(parking_space_id)
 
+    assert request.json is not None
+
+    # Convert to float only if it is not None
+    price_nullable = request.json.get("pricing_info", {}).get("base_price")
+    price = float(price_nullable) if price_nullable else price_nullable
+
     match is_paid_spot(parking_space_uuid):
         case Ok(a):
             is_paid = a
@@ -95,7 +103,13 @@ def update_parking_space_route(
             return {"err": "spot not found"}, 404
     if is_paid:
         match update_paid_parking_space(
-            user_id, parking_space_uuid, address=request.json.get("address")  # type: ignore
+            user_id=user_id,
+            parking_space_id=parking_space_uuid,
+            longitude=request.json.get("location", {}).get("longitude"),
+            latitude=request.json.get("location", {}).get("latitude"),
+            address=request.json.get("location", {}).get("address"),
+            price=price,
+            name=request.json.get("name"),
         ):
             case Ok(parking_space):
                 return parking_space, 200

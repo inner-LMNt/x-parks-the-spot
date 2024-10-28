@@ -117,7 +117,7 @@ export default function AddPage() {
       setTimeSlot({
         day_of_week: [],
         start_time: '00:00',
-        end_time: '00:00',
+        end_time: '24:00', // If we have this set to 00:00, then it is unknown whether the timeslot is zero length or for the whole day
       });
     } else {
       setTimeSlot({

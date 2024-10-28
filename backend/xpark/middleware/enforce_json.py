@@ -8,8 +8,8 @@ class RequireJSON(object):
         app.register_error_handler(ValueError, bad_uuid_returns_400)
 
 
-def keyerror_returns_400(_: KeyError) -> Tuple[Any, int]:
-    return {"err": "Missing fields"}, 400
+def keyerror_returns_400(e: KeyError) -> Tuple[Any, int]:
+    return {"err": f"Missing field {e}"}, 400
 
 
 def bad_uuid_returns_400(e: ValueError) -> Tuple[Any, int]:

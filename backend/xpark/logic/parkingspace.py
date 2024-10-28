@@ -22,10 +22,17 @@ def get_owned_paid_parking_spaces(
                 SELECT 
                     id,
                     is_paid, 
+                    name,
+                    json_build_object(
+                        'address', parking_spaces.address,
+                        'latitude', ST_Y(parking_spaces.location::geometry),
+                        'longitude', ST_X(parking_spaces.location::geometry)
+                    ) as location,
+                    json_build_object(
+                        'base_price', price,
+                        'dynamic_pricing', FALSE
+                    ) as pricing_info,
                     verification_status, 
-                    ST_Y(location::geometry) AS latitude, 
-                    ST_X(location::geometry) AS longitude, 
-                    address, 
                     photos,
                     created_at, 
                     updated_at
@@ -45,6 +52,8 @@ def create_paid_parking_space(
     longitude: float,
     latitude: float,
     address: str,
+    name: str,
+    price: float,  # FIXME: do not pass around money as floats!!!
 ) -> Result[Dict[str, Any], str]:
     # Save image
     if image_file:
@@ -64,9 +73,20 @@ def create_paid_parking_space(
                     location,
                     address,
                     photos,
-                    verification_status
+                    verification_status,
+                    name,
+                    price
                 )
-                VALUES (%(user_id)s, TRUE, ST_SetSRID(ST_MakePoint(%(long)s, %(lat)s), 4326), %(addr)s, %(photos)s, 'pending')
+                VALUES (
+                    %(user_id)s,
+                    TRUE,
+                    ST_SetSRID(ST_MakePoint(%(long)s, %(lat)s),	4326),
+					%(addr)s,
+					%(photos)s,
+					'pending',
+					%(name)s,
+					%(price)s
+                )
                 RETURNING id, created_at, updated_at
                 """,
                 {
@@ -75,6 +95,8 @@ def create_paid_parking_space(
                     "lat": latitude,
                     "addr": address,
                     "photos": photos,
+                    "name": name,
+                    "price": price,
                 },
             )
             parking_space = cur.fetchone()
@@ -147,8 +169,16 @@ def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str
                 SELECT
                     owner,
                     is_paid,
-                    ST_X(location::geometry) AS longitude,
-                    ST_Y(location::geometry) AS latitude,
+                    name,
+                    json_build_object(
+                        'address', address,
+                        'latitude', ST_Y(location::geometry),
+                        'longitude', ST_X(location::geometry)
+                    ) as location,
+                    json_build_object(
+                        'base_price', price,
+                        'dynamic_pricing', FALSE
+                    ) as pricing_info,
                     photos,
                     verification_status,
                     created_at,
@@ -169,6 +199,10 @@ def update_paid_parking_space(
     user_id: uuid.UUID,
     parking_space_id: uuid.UUID,
     address: Optional[str],
+    latitude: Optional[float],
+    longitude: Optional[float],
+    name: Optional[str],
+    price: Optional[float],
 ) -> Result[Dict[str, Any], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -181,24 +215,47 @@ def update_paid_parking_space(
             if not result:
                 return Err("Parking space not found")
 
+            # TODO: add more modification fields
+            # photos,
+            # verification_status,
             cur.execute(
                 """
                 UPDATE parking_spaces SET
-                address = COALESCE(%s, address),
+                address =    COALESCE(%(addr)s, address),
+                location =   ST_MakePoint(
+                    COALESCE(%(long)s, ST_X(location::geometry)),
+                    COALESCE(%(lat)s,  ST_Y(location::geometry))
+                ),
+                name =       COALESCE(%(name)s, name),
+                price =      COALESCE(%(price)s, price),
                 updated_at = NOW()
-                WHERE id = %s
+                WHERE id =   %(spot_id)s
                 RETURNING
                     id,
                     is_paid, 
+                    name,
                     verification_status, 
-                    ST_Y(location::geometry) AS latitude, 
-                    ST_X(location::geometry) AS longitude, 
-                    address, 
+                    json_build_object(
+                        'address',   parking_spaces.address,
+                        'latitude',  ST_Y(location::geometry),
+                        'longitude', ST_X(location::geometry)
+                    ) as location,
+                    json_build_object(
+                        'base_price', price,
+                        'dynamic_pricing', FALSE
+                    ) as pricing_info,
                     photos,
                     created_at, 
                     updated_at
                 """,
-                (address, parking_space_id),
+                {
+                    "addr": address,
+                    "lat": latitude,
+                    "long": longitude,
+                    "name": name,
+                    "price": price,
+                    "spot_id": parking_space_id,
+                },
             )
             parking_space = cur.fetchone()
             if not parking_space:
