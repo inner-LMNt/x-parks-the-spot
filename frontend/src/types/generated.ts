@@ -1678,7 +1678,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ReportListResponse"];
+                        "application/json": components["schemas"]["Report"];
                     };
                 };
                 /** @description Invalid input */
@@ -1735,7 +1735,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ReportListResponse"];
+                        "application/json": components["schemas"]["Report"];
                     };
                 };
                 /** @description Unauthorized */
@@ -1785,7 +1785,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ReportListResponse"];
+                        "application/json": components["schemas"]["Report"];
                     };
                 };
                 /** @description Invalid input */
@@ -2061,41 +2061,83 @@ export interface components {
             full_name?: string;
         };
         Report: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            parking_space_id?: string;
-            /** Format: uuid */
-            renter_id?: string;
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description Unique identifier for the report.
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @description Unique identifier of the reservation associated with this report.
+             */
+            reservation_id: string;
+            /**
+             * Format: uuid
+             * @description Unique identifier of the renter who created the report.
+             */
+            renter_id: string;
+            /**
+             * Format: uuid
+             * @description Unique identifier of the owner related to the reservation.
+             */
             owner_id?: string;
-            /** Format: date-time */
-            start_time?: string;
-            /** Format: date-time */
-            end_time?: string;
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description Unique identifier of the parking space involved in the reservation.
+             */
+            parking_space_id?: string;
+            /**
+             * Format: uuid
+             * @description Unique identifier of the car information related to the reservation.
+             */
             car_info_id?: string;
-            /** Format: date-time */
-            created_at?: string;
-            /** Format: date-time */
-            updated_at?: string;
-            /** @enum {string} */
-            type?: "Reservation";
-            description?: string;
+            /**
+             * Format: date-time
+             * @description Start time of the reservation.
+             */
+            start_time?: string;
+            /**
+             * Format: date-time
+             * @description End time of the reservation.
+             */
+            end_time?: string;
+            /**
+             * @description Type of the report.
+             * @enum {string}
+             */
+            type: "Billing" | "Technical" | "Other";
+            /** @description Detailed description of the issue. */
+            description: string;
+            /**
+             * Format: date
+             * @description Date when the issue occurred.
+             */
+            date: string;
+            /**
+             * Format: time
+             * @description Time when the issue occurred.
+             */
+            time: string;
+            /**
+             * @description Current status of the report.
+             * @enum {string}
+             */
+            status: "open" | "in_progress" | "resolved";
+            /** @description Response from the admin regarding the report. */
             admin_response?: string | null;
+            /**
+             * Format: date-time
+             * @description Timestamp when the report was created.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when the report was last updated.
+             */
+            updated_at: string;
         };
         ReportListResponse: components["schemas"]["Report"][];
         ReportCreateRequest: {
-            /**
-             * Format: uuid
-             * @description ID of the parking space related to the report.
-             */
-            parking_space_id: string;
-            /**
-             * Format: uuid
-             * @description ID of the renter creating the report.
-             */
-            renter_id: string;
             /**
              * @description Type of the report.
              * @enum {string}

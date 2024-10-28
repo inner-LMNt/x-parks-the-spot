@@ -850,7 +850,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: './schemas/ReportResponse.yaml'
+                $ref: './schemas/Report.yaml'
         '400':
           description: Invalid input
         '401':
@@ -878,7 +878,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: './schemas/ReportResponse.yaml'
+                $ref: './schemas/Report.yaml'
         '401':
           description: Unauthorized
         '403':
@@ -916,7 +916,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: './schemas/ReportResponse.yaml'
+                $ref: './schemas/Report.yaml'
         '400':
           description: Invalid input
         '401':

@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reservation_id UUID NOT NULL,
+    renter_id UUID NOT NULL,
+    owner_id UUID,
+    parking_space_id UUID,
+    car_info_id UUID,
+    start_time TIMESTAMPTZ,
+    end_time TIMESTAMPTZ,
+    description TEXT NOT NULL,
+    type VARCHAR(100) NOT NULL,
+    date DATE,
+    time TIME,
+    status VARCHAR(50) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'resolved')),
+    admin_response TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    FOREIGN KEY (owner_id) REFERENCES users(id),
+    FOREIGN KEY (renter_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE
+);
