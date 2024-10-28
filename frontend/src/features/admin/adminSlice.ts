@@ -21,7 +21,7 @@ export const getAllPendingSpots = createAsyncThunk<
     { rejectValue: string }
 >("admin/getAllPendingSpots", async (_, { rejectWithValue }) => {
     try {
-        const response = await axios.get("/parking-spaces/get-pending");
+        const response = await axios.get("/admin/get-pending");
         return response.data;
     } catch (error: any) {
         return rejectWithValue(error.response?.data?.error || "Failed to get pending parking spots");
@@ -35,7 +35,7 @@ export const verifyParkingSpot = createAsyncThunk<
     { rejectValue: string }
 >("admin/verifySpot", async ({ spotId, is_verified }, { rejectWithValue }) => {
     try {
-        const response = await axios.post(`/parking-spaces/verify-parking-space`, { spotId, is_verified });
+        const response = await axios.post(`/admin/verify-parking-space`, { spotId, is_verified });
         return response.data;
     } catch (error: any) {
         return rejectWithValue(error.response?.data?.error || "Failed to verify parking spot");
