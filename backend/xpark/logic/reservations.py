@@ -119,7 +119,7 @@ def create_reservation(
                     TSTZRANGE(%(start_time)s, %(end_time)s, '[]'),
                     %(car_id)s,
                     %(user_id)s,
-                    'book',
+                    'booked',
                     NOW(),
                     NOW()
                 )
@@ -262,7 +262,7 @@ def cancel_reservation_logic(
                 """
                 UPDATE reservations
                 SET status = 'canceled', updated_at = NOW()
-                WHERE id = %s AND renter_id = %s AND status = 'book'
+                WHERE id = %s AND renter_id = %s AND status = 'booked'
                 RETURNING status
                 """,
                 (reservation_id, user_id),
