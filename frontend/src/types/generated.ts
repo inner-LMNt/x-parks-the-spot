@@ -23,7 +23,13 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["RegisterRequest"];
+                    "application/json": {
+                        /** Format: email */
+                        email: string;
+                        /** Format: password */
+                        password: string;
+                        full_name: string;
+                    };
                 };
             };
             responses: {
@@ -33,7 +39,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["AuthResponse"];
+                        "application/json": paths["/auth/login"]["post"]["responses"]["200"]["content"]["application/json"]["schema"];
                     };
                 };
                 /** @description Invalid input */
@@ -70,7 +76,12 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["LoginRequest"];
+                    "application/json": {
+                        /** Format: email */
+                        email: string;
+                        /** Format: password */
+                        password: string;
+                    };
                 };
             };
             responses: {
@@ -80,7 +91,10 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["AuthResponse"];
+                        "application/json": {
+                            access_token?: string;
+                            name?: string;
+                        };
                     };
                 };
                 /** @description Unauthorized */
@@ -172,7 +186,10 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["PasswordResetRequest"];
+                    "application/json": {
+                        /** Format: email */
+                        email: string;
+                    };
                 };
             };
             responses: {
@@ -210,7 +227,11 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["PasswordResetConfirmRequest"];
+                    "application/json": {
+                        token: string;
+                        /** Format: password */
+                        new_password: string;
+                    };
                 };
             };
             responses: {
@@ -273,7 +294,33 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["User"];
+                        "application/json": {
+                            /** Format: uuid */
+                            id?: string;
+                            /** Format: email */
+                            email?: string;
+                            full_name?: string;
+                            /** @enum {string} */
+                            account_status?: "active" | "suspended" | "deleted";
+                            renter_profile?: {
+                                car_info?: paths["/cars"]["post"]["requestBody"]["content"]["application/json"]["schema"][];
+                                favorites?: string[];
+                            };
+                            owner_profile?: {
+                                parking_spaces?: paths["/parking-spaces"]["post"]["responses"]["201"]["content"]["application/json"]["schema"][];
+                                /** Format: float */
+                                earnings?: number;
+                            };
+                            spot_finder_profile?: {
+                                submissions?: string[];
+                                points_accumulated?: number;
+                            };
+                            notification_preferences?: paths["/users/me"]["put"]["requestBody"]["content"]["application/json"]["schema"]["notification_preferences"];
+                            /** Format: date-time */
+                            created_at?: string;
+                            /** Format: date-time */
+                            updated_at?: string;
+                        };
                     };
                 };
                 /** @description Unauthorized */
@@ -302,7 +349,15 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["UserUpdateRequest"];
+                    "application/json": {
+                        /** Format: email */
+                        email?: string;
+                        full_name?: string;
+                        notification_preferences?: {
+                            email_notifications?: boolean;
+                            push_notifications?: boolean;
+                        };
+                    };
                 };
             };
             responses: {
@@ -312,7 +367,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["User"];
+                        "application/json": paths["/users/me"]["get"]["responses"]["200"]["content"]["application/json"]["schema"];
                     };
                 };
                 /** @description Invalid input */
@@ -396,7 +451,9 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["UserDeletionConfirm"];
+                    "application/json": {
+                        token: string;
+                    };
                 };
             };
             responses: {
@@ -438,7 +495,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["CarInfoList"][];
+                        "application/json": paths["/cars"]["post"]["requestBody"]["content"]["application/json"]["schema"][][];
                     };
                 };
                 /** @description Unauthorized */
@@ -468,7 +525,17 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["CarInfo"];
+                    "application/json": {
+                        /** Format: uuid */
+                        id?: string;
+                        make: string;
+                        model: string;
+                        year?: number;
+                        color?: string;
+                        license_plate: string;
+                        state?: string;
+                        default?: boolean;
+                    };
                 };
             };
             responses: {
@@ -478,7 +545,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["CarInfo"];
+                        "application/json": paths["/cars"]["post"]["requestBody"]["content"]["application/json"]["schema"];
                     };
                 };
                 /** @description Invalid input */
@@ -646,9 +713,9 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            paidSpaces?: components["schemas"]["ParkingSpaceSummary"][];
-                            freeSpaces?: components["schemas"]["ParkingSpaceSummary"][];
-                            pendingSpaces?: components["schemas"]["ParkingSpaceSummary"][];
+                            paidSpaces?: paths["/search"]["post"]["responses"]["200"]["content"]["application/json"]["schema"]["items"][];
+                            freeSpaces?: paths["/search"]["post"]["responses"]["200"]["content"]["application/json"]["schema"]["items"][];
+                            pendingSpaces?: paths["/search"]["post"]["responses"]["200"]["content"]["application/json"]["schema"]["items"][];
                         };
                     };
                 };
@@ -672,7 +739,34 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["ParkingSpaceCreateRequest"];
+                    "application/json": {
+                        /** Format: uuid */
+                        request_id?: string;
+                        location: {
+                            /** Format: float */
+                            latitude: number;
+                            /** Format: float */
+                            longitude: number;
+                            address?: string;
+                        };
+                        features: string[];
+                        availability_schedule: {
+                            /** @enum {string} */
+                            day_of_week: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
+                            start_time: string;
+                            end_time: string;
+                        }[];
+                        pricing_info: {
+                            /** Format: float */
+                            base_price: number;
+                            dynamic_pricing?: boolean;
+                            dynamic_pricing_algorithm?: string;
+                        };
+                        dynamic_pricing_enabled?: boolean;
+                        cancellation_policy?: string;
+                        /** Format: uri */
+                        proof_of_ownership?: string;
+                    };
                 };
             };
             responses: {
@@ -682,7 +776,32 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ParkingSpace"];
+                        "application/json": {
+                            /** Format: uuid */
+                            id?: string;
+                            is_paid: boolean;
+                            /** Format: uuid */
+                            owner_id?: string;
+                            name?: string;
+                            location: paths["/parking-spaces"]["post"]["requestBody"]["content"]["application/json"]["schema"]["location"];
+                            features?: string[];
+                            availability_schedule?: paths["/parking-spaces"]["post"]["requestBody"]["content"]["application/json"]["schema"]["availability_schedule"]["items"][];
+                            pricing_info?: paths["/parking-spaces"]["post"]["requestBody"]["content"]["application/json"]["schema"]["pricing_info"];
+                            photos?: string[];
+                            /** @enum {string} */
+                            status?: "verified" | "pending" | "rejected";
+                            dynamic_pricing_enabled?: boolean;
+                            cancellation_policy?: string;
+                            locked?: boolean;
+                            /** Format: uuid */
+                            locked_by?: string;
+                            /** Format: date-time */
+                            locked_until?: string;
+                            /** Format: date-time */
+                            created_at?: string;
+                            /** Format: date-time */
+                            updated_at?: string;
+                        };
                     };
                 };
                 /** @description Invalid input */
@@ -747,7 +866,16 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ParkingSpaceSummary"][];
+                        "application/json": {
+                            /** Format: uuid */
+                            id?: string;
+                            name?: string;
+                            location?: paths["/parking-spaces"]["post"]["requestBody"]["content"]["application/json"]["schema"]["location"];
+                            features?: string[];
+                            /** Format: float */
+                            average_rating?: number;
+                            availability?: boolean;
+                        }[];
                     };
                 };
             };
@@ -783,7 +911,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ParkingSpace"];
+                        "application/json": paths["/parking-spaces"]["post"]["responses"]["201"]["content"]["application/json"]["schema"];
                     };
                 };
                 /** @description Unauthorized */
@@ -867,7 +995,15 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["ParkingSpaceUpdateRequest"];
+                    "application/json": {
+                        /** Format: uuid */
+                        request_id?: string;
+                        features?: string[];
+                        availability_schedule?: paths["/parking-spaces"]["post"]["requestBody"]["content"]["application/json"]["schema"]["availability_schedule"]["items"][];
+                        pricing_info?: paths["/parking-spaces"]["post"]["requestBody"]["content"]["application/json"]["schema"]["pricing_info"];
+                        dynamic_pricing_enabled?: boolean;
+                        cancellation_policy?: string;
+                    };
                 };
             };
             responses: {
@@ -877,7 +1013,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ParkingSpace"];
+                        "application/json": paths["/parking-spaces"]["post"]["responses"]["201"]["content"]["application/json"]["schema"];
                     };
                 };
                 /** @description Invalid input */
@@ -935,7 +1071,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Reservation"][];
+                        "application/json": paths["/reservations"]["post"]["responses"]["201"]["content"]["application/json"]["schema"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -965,7 +1101,18 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["ReservationCreateRequest"];
+                    "application/json": {
+                        /** Format: uuid */
+                        parking_space_id: string;
+                        /** Format: date-time */
+                        start_time: string;
+                        /** Format: date-time */
+                        end_time: string;
+                        /** Format: uuid */
+                        car_info_id: string;
+                        /** Format: uuid */
+                        renter_id: string;
+                    };
                 };
             };
             responses: {
@@ -975,7 +1122,28 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Reservation"];
+                        "application/json": {
+                            /** Format: uuid */
+                            id?: string;
+                            /** Format: uuid */
+                            parking_space_id?: string;
+                            /** Format: uuid */
+                            renter_id?: string;
+                            /** Format: uuid */
+                            owner_id?: string;
+                            /** Format: date-time */
+                            start_time?: string;
+                            /** Format: date-time */
+                            end_time?: string;
+                            /** @enum {string} */
+                            status?: "booked" | "active" | "completed" | "canceled";
+                            /** Format: uuid */
+                            car_info_id?: string;
+                            /** Format: date-time */
+                            created_at?: string;
+                            /** Format: date-time */
+                            updated_at?: string;
+                        };
                     };
                 };
                 /** @description Invalid input */
@@ -1032,7 +1200,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Reservation"];
+                        "application/json": paths["/reservations"]["post"]["responses"]["201"]["content"]["application/json"]["schema"];
                     };
                 };
                 /** @description Unauthorized */
@@ -1070,7 +1238,12 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["ReservationUpdateRequest"];
+                    "application/json": {
+                        /** Format: uuid */
+                        reservation_id: string;
+                        /** Format: date-time */
+                        end_time: string;
+                    };
                 };
             };
             responses: {
@@ -1080,7 +1253,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Reservation"];
+                        "application/json": paths["/reservations"]["post"]["responses"]["201"]["content"]["application/json"]["schema"];
                     };
                 };
                 /** @description Invalid input */
@@ -1327,7 +1500,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["SpotFinderSubmission"][];
+                        "application/json": paths["/spot-finder/submissions"]["post"]["responses"]["201"]["content"]["application/json"]["schema"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -1374,7 +1547,24 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["SpotFinderSubmission"];
+                        "application/json": {
+                            /** Format: uuid */
+                            id?: string;
+                            /** Format: uuid */
+                            spot_finder_id?: string;
+                            location?: paths["/parking-spaces"]["post"]["requestBody"]["content"]["application/json"]["schema"]["location"];
+                            /** Format: uri */
+                            photo_url?: string;
+                            /** Format: date-time */
+                            time?: string;
+                            /** @enum {string} */
+                            status?: "verified" | "pending" | "rejected";
+                            points_awarded?: number;
+                            /** Format: date-time */
+                            created_at?: string;
+                            /** Format: date-time */
+                            updated_at?: string;
+                        };
                     };
                 };
                 /** @description Invalid input */
@@ -1429,7 +1619,17 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Notification"][];
+                        "application/json": {
+                            /** Format: uuid */
+                            id?: string;
+                            /** Format: uuid */
+                            user_id?: string;
+                            type?: string;
+                            message?: string;
+                            read?: boolean;
+                            /** Format: date-time */
+                            timestamp?: string;
+                        }[];
                     };
                 };
                 /** @description Unauthorized */
@@ -1538,7 +1738,11 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["PublicUserProfile"][];
+                        "application/json": {
+                            /** Format: uuid */
+                            id?: string;
+                            full_name?: string;
+                        }[];
                     };
                 };
                 /** @description Unauthorized */
@@ -1618,239 +1822,7 @@ export interface paths {
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        RegisterRequest: {
-            /** Format: email */
-            email: string;
-            /** Format: password */
-            password: string;
-            full_name: string;
-        };
-        AuthResponse: {
-            access_token?: string;
-            name?: string;
-        };
-        LoginRequest: {
-            /** Format: email */
-            email: string;
-            /** Format: password */
-            password: string;
-        };
-        PasswordResetRequest: {
-            /** Format: email */
-            email: string;
-        };
-        PasswordResetConfirmRequest: {
-            token: string;
-            /** Format: password */
-            new_password: string;
-        };
-        CarInfo: {
-            /** Format: uuid */
-            id?: string;
-            make: string;
-            model: string;
-            year?: number;
-            color?: string;
-            license_plate: string;
-            state?: string;
-            default?: boolean;
-        };
-        RenterProfile: {
-            car_info?: components["schemas"]["CarInfo"][];
-            favorites?: string[];
-        };
-        Location: {
-            /** Format: float */
-            latitude: number;
-            /** Format: float */
-            longitude: number;
-            address?: string;
-        };
-        TimeSlot: {
-            /** @enum {string} */
-            day_of_week: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
-            start_time: string;
-            end_time: string;
-        };
-        PricingInfo: {
-            /** Format: float */
-            base_price: number;
-            dynamic_pricing?: boolean;
-            dynamic_pricing_algorithm?: string;
-        };
-        ParkingSpace: {
-            /** Format: uuid */
-            id?: string;
-            is_paid: boolean;
-            /** Format: uuid */
-            owner_id?: string;
-            name?: string;
-            location: components["schemas"]["Location"];
-            features?: string[];
-            availability_schedule?: components["schemas"]["TimeSlot"][];
-            pricing_info?: components["schemas"]["PricingInfo"];
-            photos?: string[];
-            /** @enum {string} */
-            status?: "verified" | "pending" | "rejected";
-            dynamic_pricing_enabled?: boolean;
-            cancellation_policy?: string;
-            locked?: boolean;
-            /** Format: uuid */
-            locked_by?: string;
-            /** Format: date-time */
-            locked_until?: string;
-            /** Format: date-time */
-            created_at?: string;
-            /** Format: date-time */
-            updated_at?: string;
-        };
-        OwnerProfile: {
-            parking_spaces?: components["schemas"]["ParkingSpace"][];
-            /** Format: float */
-            earnings?: number;
-        };
-        SpotFinderProfile: {
-            submissions?: string[];
-            points_accumulated?: number;
-        };
-        NotificationPreferences: {
-            email_notifications?: boolean;
-            push_notifications?: boolean;
-        };
-        User: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: email */
-            email?: string;
-            full_name?: string;
-            /** @enum {string} */
-            account_status?: "active" | "suspended" | "deleted";
-            renter_profile?: components["schemas"]["RenterProfile"];
-            owner_profile?: components["schemas"]["OwnerProfile"];
-            spot_finder_profile?: components["schemas"]["SpotFinderProfile"];
-            notification_preferences?: components["schemas"]["NotificationPreferences"];
-            /** Format: date-time */
-            created_at?: string;
-            /** Format: date-time */
-            updated_at?: string;
-        };
-        UserUpdateRequest: {
-            /** Format: email */
-            email?: string;
-            full_name?: string;
-            notification_preferences?: components["schemas"]["NotificationPreferences"];
-        };
-        UserDeletionConfirm: {
-            token: string;
-        };
-        CarInfoList: components["schemas"]["CarInfo"][];
-        ParkingSpaceSummary: {
-            /** Format: uuid */
-            id?: string;
-            name?: string;
-            location?: components["schemas"]["Location"];
-            features?: string[];
-            /** Format: float */
-            average_rating?: number;
-            availability?: boolean;
-        };
-        ParkingSpaceCreateRequest: {
-            /** Format: uuid */
-            request_id?: string;
-            location: components["schemas"]["Location"];
-            features: string[];
-            availability_schedule: components["schemas"]["TimeSlot"][];
-            pricing_info: components["schemas"]["PricingInfo"];
-            dynamic_pricing_enabled?: boolean;
-            cancellation_policy?: string;
-            /** Format: uri */
-            proof_of_ownership?: string;
-        };
-        ParkingSpaceUpdateRequest: {
-            /** Format: uuid */
-            request_id?: string;
-            features?: string[];
-            availability_schedule?: components["schemas"]["TimeSlot"][];
-            pricing_info?: components["schemas"]["PricingInfo"];
-            dynamic_pricing_enabled?: boolean;
-            cancellation_policy?: string;
-        };
-        Reservation: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            parking_space_id?: string;
-            /** Format: uuid */
-            renter_id?: string;
-            /** Format: uuid */
-            owner_id?: string;
-            /** Format: date-time */
-            start_time?: string;
-            /** Format: date-time */
-            end_time?: string;
-            /** @enum {string} */
-            status?: "booked" | "active" | "completed" | "canceled";
-            /** Format: uuid */
-            car_info_id?: string;
-            /** Format: date-time */
-            created_at?: string;
-            /** Format: date-time */
-            updated_at?: string;
-        };
-        ReservationCreateRequest: {
-            /** Format: uuid */
-            parking_space_id: string;
-            /** Format: date-time */
-            start_time: string;
-            /** Format: date-time */
-            end_time: string;
-            /** Format: uuid */
-            car_info_id: string;
-            /** Format: uuid */
-            renter_id: string;
-        };
-        ReservationUpdateRequest: {
-            /** Format: uuid */
-            reservation_id: string;
-            /** Format: date-time */
-            end_time: string;
-        };
-        SpotFinderSubmission: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            spot_finder_id?: string;
-            location?: components["schemas"]["Location"];
-            /** Format: uri */
-            photo_url?: string;
-            /** Format: date-time */
-            time?: string;
-            /** @enum {string} */
-            status?: "verified" | "pending" | "rejected";
-            points_awarded?: number;
-            /** Format: date-time */
-            created_at?: string;
-            /** Format: date-time */
-            updated_at?: string;
-        };
-        Notification: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            user_id?: string;
-            type?: string;
-            message?: string;
-            read?: boolean;
-            /** Format: date-time */
-            timestamp?: string;
-        };
-        PublicUserProfile: {
-            /** Format: uuid */
-            id?: string;
-            full_name?: string;
-        };
-    };
+    schemas: never;
     responses: never;
     parameters: never;
     requestBodies: never;
