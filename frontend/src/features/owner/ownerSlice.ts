@@ -4,9 +4,7 @@ import { ParkingSpace } from "@/types/type";
 import {logger} from "bs-logger";
 
 interface OwnerSpotsResponse {
-    paidSpots: ParkingSpace[];
-    freeSpots: ParkingSpace[];
-    pendingSpots: ParkingSpace[];
+    spaces: ParkingSpace[];
 }
 
 interface OwnerState {
@@ -140,9 +138,9 @@ const ownerSlice = createSlice({
             .addCase(getOwnerSpots.fulfilled, (state: OwnerState, action) => {
                 state.loading = false;
                 const { spaces } = action.payload;
-                state.pendingSpots = spaces.filter(spot => spot.status === "pending");
-                state.paidSpots = spaces.filter(spot => spot.is_paid && spot.status !== "pending");
-                state.freeSpots = spaces.filter(spot => !spot.is_paid && spot.status !== "pending");
+                state.pendingSpots = spaces.filter(spot => spot.verification_status === "pending");
+                state.paidSpots = spaces.filter(spot => spot.is_paid && spot.verification_status !== "pending");
+                state.freeSpots = spaces.filter(spot => !spot.is_paid && spot.verification_status !== "pending");
             })
             .addCase(getOwnerSpots.rejected, (state: OwnerState, action) => {
                 state.loading = false;
