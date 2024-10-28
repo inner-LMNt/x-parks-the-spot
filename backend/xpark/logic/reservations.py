@@ -228,7 +228,7 @@ def update_reservation(
                     "Parking space is already reserved for the selected time slot."
                 )
 
-        # FIXME: finish this
+        # TODO FIXME: finish this
         with conn.cursor(row_factory=dict_row) as cur:
             # Update the reservation
             cur.execute(
