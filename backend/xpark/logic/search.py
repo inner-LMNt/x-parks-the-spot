@@ -36,13 +36,13 @@ def search_query(
                     photos,
                     created_at, 
                     updated_at,
-                    pricing_info,
+                    price,
                     availability_schedule
                 FROM parking_spaces 
                 WHERE ST_DWithin(location, ST_MakePoint(%(long)s, %(lat)s), %(radius_meters)s)
                 AND is_paid = COALESCE(%(paid)s,is_paid)
-                AND (pricing_info ->> 'base_price')::float >= COALESCE(%(min_price)s, (pricing_info ->> 'base_price')::float)
-                AND (pricing_info ->> 'base_price')::float <= COALESCE(%(max_price)s, (pricing_info ->> 'base_price')::float)
+                AND price >= COALESCE(%(min_price)s, price)
+                AND price <= COALESCE(%(max_price)s, price)
                 LIMIT 30
                 """,
                 {
