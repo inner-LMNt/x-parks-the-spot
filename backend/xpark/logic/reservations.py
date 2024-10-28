@@ -66,16 +66,18 @@ def get_user_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], st
             cur.execute(
                 """
                 SELECT 
-                    id, 
+                    reservations.id, 
+                    parking_spaces.name,
                     parking_space_id, 
                     lower(time) as start_time,
                     upper(time) as end_time,
                     car_info_id, 
                     renter_id,
                     status,
-                    created_at,
-                    updated_at
-                FROM reservations
+                    reservations.created_at,
+                    reservations.updated_at
+                FROM reservations JOIN parking_spaces ON 
+                    reservations.parking_space_id = parking_spaces.id
                 WHERE renter_id = %s
             """,
                 (user_id,),
