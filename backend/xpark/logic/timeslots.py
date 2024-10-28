@@ -69,7 +69,7 @@ def days_of_week_to_slots(
             # Grow time by one minute in each direction (to handle seconds drift)
             # We can't subtract the minute value above, because it may be zero, and negative minutes is bad
             start_time = start_time_small + datetime.timedelta(minutes=-1)
-            end_time = end_time_small + datetime.timedelta(minutes=2)
+            end_time = end_time_small + datetime.timedelta(minutes=1)
 
             # Insert calculated date into timezone
             cur.execute(
