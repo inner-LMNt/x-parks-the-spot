@@ -36,6 +36,7 @@ def create_report(token: str, user_id: UUID) -> Tuple[Any, int]:
 
     reservation_id = data.get("reservation_id")
     description = data.get("description")
+    type = data.get("type")
 
     if not reservation_id or not description:
         return jsonify({"error": "Missing required fields"}), 400
@@ -46,7 +47,7 @@ def create_report(token: str, user_id: UUID) -> Tuple[Any, int]:
     except ValueError:
         return jsonify({"error": "Invalid reservation_id format"}), 400
 
-    result = create_report_logic(user_id, reservation_uuid, description)
+    result = create_report_logic(user_id, reservation_uuid, type, description)
     if result.is_ok():
         return jsonify(result.unwrap()), 201
     else:

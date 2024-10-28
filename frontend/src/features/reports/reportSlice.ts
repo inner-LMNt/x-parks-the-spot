@@ -80,7 +80,7 @@ const reportsSlice = createSlice({
             })
             .addCase(submitReport.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload || "Failed to submit report";
+                state.error = "Failed to submit report";
             });
     },
 });

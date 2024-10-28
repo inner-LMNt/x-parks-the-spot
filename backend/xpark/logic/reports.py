@@ -31,7 +31,7 @@ def get_user_reports_logic(user_id: UUID) -> Result[List[Dict[str, Any]], str]:
         return Err(f"Error fetching reports for user_id {user_id}: {str(e)}")
 
 
-def create_report_logic(user_id: UUID, reservation_id: UUID, description: str) -> Result[Dict[str, Any], str]:
+def create_report_logic(user_id: UUID, reservation_id: UUID, type: str, description: str) -> Result[Dict[str, Any], str]:
     try:
         with DB.pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
@@ -72,7 +72,7 @@ def create_report_logic(user_id: UUID, reservation_id: UUID, description: str) -
                         "renter_id": user_id,
                         "reservation_id": reservation_id,
                         "description": description,
-                        "type": "Reservation Dispute",
+                        "type": type,
                         "status": "open"
                     }
                 )
