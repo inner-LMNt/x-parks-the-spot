@@ -27,7 +27,7 @@ def check_if_available(
             SELECT count(id) FROM
             timetable_coalesce
             WHERE parking_space_id = %(spot_id)s
-            AND   TSTZRANGE(%(start_time), %(end_time), '[]') <@ time
+            AND   TSTZRANGE(%(start_time)s, %(end_time)s, '[]') <@ time
             """,
             {
                 "spot_id": parking_spot_id,
@@ -35,7 +35,7 @@ def check_if_available(
                 "start_time": start_time,
             },
         )
-        (count,) = cur.fetchone()  # type: ignore
+        count = cur.fetchone()["count"]  # type: ignore
         if int(count) == 0:
             return False
 
@@ -45,7 +45,7 @@ def check_if_available(
             SELECT count(id) FROM
             reservations
             WHERE parking_space_id = %(spot_id)s
-            AND   TSTZRANGE(%(start_time), %(end_time), '[]') && time
+            AND   TSTZRANGE(%(start_time)s, %(end_time)s, '[]') && time
             """,
             {
                 "spot_id": parking_spot_id,
@@ -85,10 +85,10 @@ def get_user_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], st
 
 def create_reservation(
     user_id: uuid.UUID,
-    parking_space_uuid: uuid.UUID,
+    parking_space_id: uuid.UUID,
     start_time: datetime.datetime,
     end_time: datetime.datetime,
-    car_info_uuid: uuid.UUID,
+    car_info_id: uuid.UUID,
 ) -> Result[Dict[str, Any], str]:
     if end_time <= start_time:
         return Err("End time must be after start time.")
@@ -99,7 +99,7 @@ def create_reservation(
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             # We're gonna do this all in one txn so that's why we passed conn
-            if not check_if_available(conn, parking_space_uuid, start_time, end_time):
+            if not check_if_available(conn, parking_space_id, start_time, end_time):
                 return Err("Spot not available")
             # Insert the reservation
             cur.execute(
@@ -114,7 +114,7 @@ def create_reservation(
                     updated_at
                 ) VALUES (
                     %(id)s,
-                    TSTZRANGE(%(start_time), %(end_time), '[]'),
+                    TSTZRANGE(%(start_time)s, %(end_time)s, '[]'),
                     %(car_id)s,
                     %(user_id)s,
                     'book',
@@ -124,10 +124,10 @@ def create_reservation(
                 RETURNING id, parking_space_id, start_time, end_time, car_info_id, status, created_at, updated_at
                 """,
                 {
-                    "id": parking_space_uuid,
+                    "id": parking_space_id,
                     "start_time": start_time,
                     "end_time": end_time,
-                    "car_id": car_info_uuid,
+                    "car_id": car_info_id,
                     "user_id": user_id,
                 },
             )

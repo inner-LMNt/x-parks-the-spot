@@ -156,9 +156,9 @@ const ownerSlice = createSlice({
             .addCase(deleteParkingSpot.fulfilled, (state: OwnerState, action) => {
                 state.loading = false;
                 const deletedSpotId = action.payload;
-                state.paidSpots = state.paidSpots.filter(spot => spot.is_paid && spot.status !== "pending");
-                state.freeSpots = state.freeSpots.filter(spot => !spot.is_paid && spot.status !== "pending");
-                state.pendingSpots = state.pendingSpots.filter(spot => spot.status === "pending");
+                state.paidSpots = state.paidSpots.filter(spot => spot.is_paid && spot.verification_status !== "pending");
+                state.freeSpots = state.freeSpots.filter(spot => !spot.is_paid && spot.verification_status !== "pending");
+                state.pendingSpots = state.pendingSpots.filter(spot => spot.verification_status === "pending");
             })
             .addCase(deleteParkingSpot.rejected, (state: OwnerState, action) => {
                 state.loading = false;

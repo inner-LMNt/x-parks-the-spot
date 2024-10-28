@@ -192,6 +192,7 @@ def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str
                         'dynamic_pricing', FALSE
                     ) as pricing_info,
                     photos,
+                    availability_schedule,
                     verification_status,
                     created_at,
                     updated_at
@@ -327,7 +328,7 @@ def handle_submit_verification(
     image_uri = save_image(image_file)
 
     with DB.pool.connection() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
                 """
                 UPDATE parking_spaces
