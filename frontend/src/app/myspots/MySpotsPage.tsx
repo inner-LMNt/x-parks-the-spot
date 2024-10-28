@@ -194,7 +194,7 @@ export default function MySpotsPage() {
                             )}
 
                             {/* Submit Verification Button for Unverified Spots */}
-                            {(spot.status !== 'pending' && spot.status !== 'verified') && (
+                            {(spot.status !== 'pending' && spot.status !== 'verified' && spot.is_paid) && (
                                 <Button
                                     onClick={() => openVerificationModal(spot.id ?? '')}
                                     className="mt-2 w-full bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300 hover:text-gray-900 transition-colors"
@@ -205,18 +205,20 @@ export default function MySpotsPage() {
                                 </Button>
                             )}
 
-                            <div className="flex justify-between mt-4">
-                                <Button variant="outline" size="sm" className="flex-1 mr-2"
-                                        onClick={() => openModal(spot)}>
-                                    <Edit className="w-4 h-4 mr-2"/>
-                                    Edit
-                                </Button>
-                                <Button variant="destructive" size="sm" className="flex-1"
-                                        onClick={() => handleDelete(spot.id as string)}>
-                                    <Trash2 className="w-4 h-4 mr-2"/>
-                                    Delete
-                                </Button>
-                            </div>
+                            {(spot.is_paid) && (
+                                <div className="flex justify-between mt-4">
+                                    <Button variant="outline" size="sm" className="flex-1 mr-2"
+                                            onClick={() => openModal(spot)}>
+                                        <Edit className="w-4 h-4 mr-2"/>
+                                        Edit
+                                    </Button>
+                                    <Button variant="destructive" size="sm" className="flex-1"
+                                            onClick={() => handleDelete(spot.id as string)}>
+                                        <Trash2 className="w-4 h-4 mr-2"/>
+                                        Delete
+                                    </Button>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </motion.div>
