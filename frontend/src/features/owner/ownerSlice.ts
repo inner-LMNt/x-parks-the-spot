@@ -4,9 +4,9 @@ import { ParkingSpace } from "@/types/type";
 import {logger} from "bs-logger";
 
 interface OwnerSpotsResponse {
-    paidSpaces: ParkingSpace[];
+    paidSpots: ParkingSpace[];
     freeSpots: ParkingSpace[];
-    pendingSpaces: ParkingSpace[];
+    pendingSpots: ParkingSpace[];
 }
 
 interface OwnerState {
@@ -139,11 +139,11 @@ const ownerSlice = createSlice({
             })
             .addCase(getOwnerSpots.fulfilled, (state: OwnerState, action) => {
                 state.loading = false;
-                const { paidSpaces, freeSpots, pendingSpaces } = action.payload;
+                const { paidSpots, freeSpots, pendingSpots } = action.payload;
 
-                state.paidSpots = paidSpaces;
+                state.paidSpots = paidSpots;
                 state.freeSpots = freeSpots;
-                state.pendingSpots = pendingSpaces;
+                state.pendingSpots = pendingSpots;
             })
             .addCase(getOwnerSpots.rejected, (state: OwnerState, action) => {
                 state.loading = false;
