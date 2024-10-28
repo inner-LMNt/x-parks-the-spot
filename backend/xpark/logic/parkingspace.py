@@ -4,7 +4,6 @@ from typing import Dict, Any, List, Optional
 from psycopg.rows import dict_row
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
-from xpark.utils.mailer import generate_templated_email, send_email
 from xpark.config import Config
 from xpark.utils.db import DB
 from result import Result, Ok, Err

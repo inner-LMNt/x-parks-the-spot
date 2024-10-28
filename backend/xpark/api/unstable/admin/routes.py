@@ -4,10 +4,10 @@ from xpark.logic.admin import (
     handle_verify_parking,
 )
 from flask import request
-from result import Result, Ok, Err
-from typing import Dict, Any, List, Optional
+from result import Ok, Err
+from typing import Any
 from xpark.middleware.token_auth_middleware import require_logged_in_user
-from typing import Tuple, Any
+from typing import Tuple
 import uuid
 
 @bp.get("get-pending")
