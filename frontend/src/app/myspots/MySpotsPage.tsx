@@ -242,7 +242,7 @@ export default function MySpotsPage() {
                     ) : error ? (
                         <p className="text-red-500">Error: {error}</p>
                     ) : (paidSpots === undefined && freeSpots === undefined && pendingSpots === undefined)
-                    || (paidSpots.length === 0 && freeSpots.length === 0 && pendingSpots.length === 0) ? (
+                        || (paidSpots.length === 0 && freeSpots.length === 0 && pendingSpots.length === 0) ? (
                         emptySpots
                     ) : (
                         <>
