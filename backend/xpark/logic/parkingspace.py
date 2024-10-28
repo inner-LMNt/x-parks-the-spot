@@ -332,8 +332,7 @@ def handle_submit_verification(
                 """
                 UPDATE parking_spaces
                 SET verification_status = %s, photos = array_append(photos, %s), updated_at = NOW()
-                WHERE id = %s AND owner = %s
-                RETURNING id, verification_status, photos, updated_at
+                WHERE id = %s AND owner = %s AND is_paid = true
                 """,
                 ("pending", image_uri, parking_space_id, user_id),
             )
