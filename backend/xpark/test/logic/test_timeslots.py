@@ -54,8 +54,10 @@ def test_coalesce() -> None:
         tt = cur.fetchone()
         assert tt is not None
 
-        today = datetime.today()
-        end = datetime.today() + timedelta(days=364)  # 7 days times 52 weeks = 364 days
+        today = datetime.now(tz=zoneinfo.ZoneInfo("America/New_York"))
+        end = datetime.now(tz=zoneinfo.ZoneInfo("America/New_York")) + timedelta(
+            days=364
+        )  # 7 days times 52 weeks = 364 days
 
         # Check the values of tt
         assert tt[1:] == (
