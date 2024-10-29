@@ -56,7 +56,7 @@ function ReservationCard({
 
     // Log for debugging
     useEffect(() => {
-        console.log(`Reservation ID: ${reservation.id}, Car ID: ${reservation.car_info_id}, Car Info:`, car);
+        console.log(`Reservation ID: ${reservation.name}, Car ID: ${reservation.car_info_id}, Car Info:`, car);
     }, [reservation, car]);
 
     return (
@@ -67,7 +67,7 @@ function ReservationCard({
             <CardHeader className="flex justify-between items-center">
                 <CardTitle className="flex items-center text-lg font-medium text-gray-900">
                     <MapPin className="w-5 h-5 mr-2 text-blue-500" />
-                    {reservation.parking_space_id /* Ideally, fetch parking_space_name */}
+                    {reservation.name}
                 </CardTitle>
                 <Badge variant="secondary">
                     {reservation.status}

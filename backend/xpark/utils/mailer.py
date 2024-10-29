@@ -8,6 +8,9 @@ import sys
 from pathlib import Path
 from typing import cast, Union
 from string import Template
+from threading import Lock
+
+reconnect_lock = Lock()
 
 MAILTEMPLATE_BASEDIR = os.path.join(
     cast(Path, os.path.dirname(str(sys.modules["xpark"].__file__))), "mail_templates"
@@ -34,8 +37,21 @@ def send_email(to: str, subject: str, content: str) -> None:
     email["From"] = Config.SMTP_FROM
     email["To"] = to
 
-    if Config.SMTP_ENABLED:
-        SMTPConn.conn.send_message(email)
+    if Config.SMTP_ENABLED == "yes":
+        try:
+            SMTPConn.conn.send_message(email)
+        except smtplib.SMTPServerDisconnected:
+            connect()
+            SMTPConn.conn.send_message(email)
+
+
+def connect() -> None:
+    # The lock should prevent race condition if two emails are sent, both require reconnects
+    # I don't see it happening, but just in case, I guess
+    with reconnect_lock:
+        SMTPConn.conn.connect(host=Config.SMTP_HOST)
+        SMTPConn.conn.login(user=Config.SMTP_USERNAME, password=Config.SMTP_PASSWORD)
+        SMTPConn.conn.ehlo()  # Why doesn't this automatically get sent on reconnect?
 
 
 def generate_templated_email(template: str, **kwargs: str) -> str:

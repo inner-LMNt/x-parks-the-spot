@@ -100,7 +100,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
         if (isOpen) {
             // Compute if the spot is 24/7
             const hasAllTimesZero = spot.availability_schedule?.every(
-                s => s.start_time === '00:00' && s.end_time === '00:00'
+                s => s.start_time === '00:00' && s.end_time === '23:59'
             );
             //@ts-ignore
             const hasSevenDays = spot?.availability_schedule?.length >= 7 ?? false;
@@ -154,10 +154,10 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
         let errorMsg = '';
 
         if (is24Seven) {
-            // For 24/7, ensure start_time and end_time are '00:00'
-            if (timeSlot.start_time !== '00:00' || timeSlot.end_time !== '00:00') {
+            // For 24/7, ensure start_time is '00:00' and end_time is '23:59'
+            if (timeSlot.start_time !== '00:00' || timeSlot.end_time !== '23:59') {
                 isValid = false;
-                errorMsg = '24/7 slots must have start and end times set to 00:00.';
+                errorMsg = '24/7 slots must have start time set to 00:00 and end times set to 23:59.';
             }
         } else {
             // Check if at least one day is selected
@@ -198,7 +198,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
             setTimeSlot({
                 day_of_week: [],
                 start_time: '00:00',
-                end_time: '00:00',
+                end_time: '23:59',
             });
         } else {
             setTimeSlot({
@@ -346,7 +346,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
                 newAvailabilitySchedule = Object.values(DaysOfWeek).map((day) => ({
                     day_of_week: day,
                     start_time: '00:00',
-                    end_time: '00:00',
+                    end_time: '23:59',
                 }));
             } else {
                 newAvailabilitySchedule = timeSlot.day_of_week.map((day: DaysOfWeek) => ({
@@ -530,7 +530,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
             ? Object.values(DaysOfWeek).map((day) => ({
                 day_of_week: day,
                 start_time: '00:00',
-                end_time: '00:00',
+                end_time: '23:59',
             }))
             : timeSlot.day_of_week.map((day: DaysOfWeek) => ({
                 day_of_week: day,
@@ -542,7 +542,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({ isOpen, onClose, spot }) 
             ? Object.values(DaysOfWeek).map((day) => ({
                 day_of_week: day,
                 start_time: '00:00',
-                end_time: '00:00',
+                end_time: '23:59',
             }))
             : spot.availability_schedule?.map(s => ({
             day_of_week: s.day_of_week,

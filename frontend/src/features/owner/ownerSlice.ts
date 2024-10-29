@@ -4,9 +4,7 @@ import { ParkingSpace } from "@/types/type";
 import {logger} from "bs-logger";
 
 interface OwnerSpotsResponse {
-    paidSpaces: ParkingSpace[];
-    freeSpots: ParkingSpace[];
-    pendingSpaces: ParkingSpace[];
+    spaces: ParkingSpace[];
 }
 
 interface OwnerState {
@@ -109,7 +107,7 @@ export const submitVerification = createAsyncThunk<
         try {
             console.log("made it")
             formData.append('spotID', spotId);
-            const response = await axios.post(`/parking-spaces/spot-verification`, formData, {
+            const response = await axios.post(`/parking-spaces/${spotId}/verify`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
@@ -139,11 +137,10 @@ const ownerSlice = createSlice({
             })
             .addCase(getOwnerSpots.fulfilled, (state: OwnerState, action) => {
                 state.loading = false;
-                const { paidSpaces, freeSpots, pendingSpaces } = action.payload;
-
-                state.paidSpots = paidSpaces;
-                state.freeSpots = freeSpots;
-                state.pendingSpots = pendingSpaces;
+                const { spaces } = action.payload;
+                state.pendingSpots = spaces.filter(spot => spot.verification_status === "pending");
+                state.paidSpots = spaces.filter(spot => spot.is_paid && spot.verification_status !== "pending");
+                state.freeSpots = spaces.filter(spot => !spot.is_paid && spot.verification_status !== "pending");
             })
             .addCase(getOwnerSpots.rejected, (state: OwnerState, action) => {
                 state.loading = false;
@@ -157,9 +154,9 @@ const ownerSlice = createSlice({
             .addCase(deleteParkingSpot.fulfilled, (state: OwnerState, action) => {
                 state.loading = false;
                 const deletedSpotId = action.payload;
-                state.paidSpots = state.paidSpots.filter(spot => spot.is_paid && spot.status !== "pending");
-                state.freeSpots = state.freeSpots.filter(spot => !spot.is_paid && spot.status !== "pending");
-                state.pendingSpots = state.pendingSpots.filter(spot => spot.status === "pending");
+                state.paidSpots = state.paidSpots.filter(spot => spot.is_paid && spot.verification_status !== "pending");
+                state.freeSpots = state.freeSpots.filter(spot => !spot.is_paid && spot.verification_status !== "pending");
+                state.pendingSpots = state.pendingSpots.filter(spot => spot.verification_status === "pending");
             })
             .addCase(deleteParkingSpot.rejected, (state: OwnerState, action) => {
                 state.loading = false;

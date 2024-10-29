@@ -1,11 +1,13 @@
 // jest.setup.js
-
+import dotenv from 'dotenv';
 import '@testing-library/jest-dom';
 
 // Polyfill for TextEncoder and TextDecoder
 import { TextEncoder, TextDecoder } from 'util';
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
+
+dotenv.config({ path: '.env.local' });
 
 // Mock Next.js router
 jest.mock('next/router', () => ({
