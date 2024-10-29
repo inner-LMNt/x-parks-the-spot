@@ -61,7 +61,7 @@ describe('BookingsPage Component', () => {
                 reservations: [
                     {
                         id: '1',
-                        parking_space_id: 'space1',
+                        parking_space_id: '1692f1d6-a67b-4659-a555-bdf22359bd24',
                         renter_id: 'user1',
                         owner_id: 'owner1',
                         start_time: new Date(Date.now() - 60 * 60 * 1000).toISOString(), // 1 hour ago
@@ -187,7 +187,7 @@ describe('BookingsPage Component', () => {
         // Since multiple 'booked' texts exist, we'll target them by their context
 
         // Current Reservation
-        const currentReservation = screen.getByText('space1');
+        const currentReservation = screen.getByText('1692f1d6-a67b-4659-a555-bdf22359bd24');
         expect(currentReservation).toBeInTheDocument();
         expect(screen.getAllByText(/booked/i)).toHaveLength(3); // Assuming all reservations have 'booked'
 
@@ -247,11 +247,11 @@ describe('BookingsPage Component', () => {
         );
 
         // Click on the first reservation card
-        const reservationCard = screen.getByText('space1');
+        const reservationCard = screen.getByText('1692f1d6-a67b-4659-a555-bdf22359bd24');
         fireEvent.click(reservationCard);
 
         await waitFor(() => {
-            expect(push).toHaveBeenCalledWith('/bookings/space1');
+            expect(push).toHaveBeenCalledWith('/bookings/1692f1d6-a67b-4659-a555-bdf22359bd24');
         });
     });
 

@@ -24,7 +24,7 @@ jest.mock('next/navigation', () => ({
         pathname: '/',
         query: {},
     }),
-    useParams: jest.fn().mockReturnValue({ 'parking-space-id': 'space1' }),
+    useParams: jest.fn().mockReturnValue({ 'parking-space-id': '1692f1d6-a67b-4659-a555-bdf22359bd24' }),
     usePathname: jest.fn().mockReturnValue('/current/path'),
 }));
 
@@ -309,7 +309,7 @@ describe('ParkingSpaceDetails Component', () => {
                 loading: false,
                 error: null,
                 parkingSpace: {
-                    id: 'space1',
+                    id: '1692f1d6-a67b-4659-a555-bdf22359bd24',
                     owner_id: 'owner1',
                     location: {
                         latitude: 38.37334,
@@ -383,7 +383,7 @@ describe('ParkingSpaceDetails Component', () => {
 
         await waitFor(() => {
             const { push } = require('next/navigation').useRouter();
-            expect(push).toHaveBeenCalledWith('/bookings/space1/reserve?previousUrl=%2Fcurrent%2Fpath');
+            expect(push).toHaveBeenCalledWith('/bookings/1692f1d6-a67b-4659-a555-bdf22359bd24/reserve?previousUrl=%2Fcurrent%2Fpath');
         });
     });
 
@@ -442,7 +442,7 @@ describe('ParkingSpaceDetails Component', () => {
         const retryButton = screen.getByRole('button', { name: /Retry/i });
         fireEvent.click(retryButton);
 
-        expect(fetchParkingSpace).toHaveBeenCalledWith('space1');
+        expect(fetchParkingSpace).toHaveBeenCalledWith('1692f1d6-a67b-4659-a555-bdf22359bd24');
     });
 
     it('displays no parking space found', () => {

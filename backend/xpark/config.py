@@ -31,6 +31,6 @@ class Config:
     SMTP_TLS = os.environ.get("SMTP_TLS") or "no"
     SMTP_HOST = os.environ.get("SMTP_HOST") or "localhost"
     SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD") or ""
-    SMTP_ENABLED = os.environ.get("SMTP_ENABLED")
+    SMTP_ENABLED = os.environ.get("SMTP_ENABLED") or "no"
 
     MAX_SEARCH_RADIUS_KM = 5
