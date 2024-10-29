@@ -2,14 +2,17 @@ type: object
 required:
   - id
   - reservation_id
-  - renter_id
   - type
   - description
-  - date
-  - time
   - status
   - created_at
   - updated_at
+  - admin_response
+  - owner_name
+  - parking_space_name
+  - start_time
+  - end_time
+  - parking_space_id
 properties:
   id:
     type: string
@@ -21,25 +24,10 @@ properties:
     format: uuid
     description: Unique identifier of the reservation associated with this report.
 
-  renter_id:
-    type: string
-    format: uuid
-    description: Unique identifier of the renter who created the report.
-
-  owner_id:
-    type: string
-    format: uuid
-    description: Unique identifier of the owner related to the reservation.
-
   parking_space_id:
     type: string
     format: uuid
     description: Unique identifier of the parking space involved in the reservation.
-
-  car_info_id:
-    type: string
-    format: uuid
-    description: Unique identifier of the car information related to the reservation.
 
   start_time:
     type: string
@@ -63,16 +51,6 @@ properties:
     type: string
     description: Detailed description of the issue.
 
-  date:
-    type: string
-    format: date
-    description: Date when the issue occurred.
-
-  time:
-    type: string
-    format: time
-    description: Time when the issue occurred.
-
   status:
     type: string
     enum:
@@ -95,3 +73,11 @@ properties:
     type: string
     format: date-time
     description: Timestamp when the report was last updated.
+
+  owner_name:
+    type: string
+    description: Name of the owner of the parking space.
+
+  parking_space_name:
+    type: string
+    description: Name of the parking space.

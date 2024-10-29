@@ -106,13 +106,10 @@ export default function ReportsPage() {
     };
 
     const handleSubmitReport = async (data: FormValues) => {
-        const currentDateTime = new Date();
-
         const reportData = {
             reservation_id: data.reservation_id,
             description: data.description,
             type: data.type,
-            timestamp: currentDateTime.toISOString(),
         };
 
         try {
@@ -345,7 +342,7 @@ export default function ReportsPage() {
                                                 </div>
                                                 <div className="flex items-center gap-1">
                                                     <Clock className="w-4 h-4" />
-                                                    <span>{report.time}</span>
+                                                    <span>{report.start_time}</span>
                                                 </div>
                                             </div>
                                         </div>

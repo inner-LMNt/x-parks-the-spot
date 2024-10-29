@@ -22,7 +22,7 @@ def test_reports(client: FlaskClient) -> None:
         json={
             "start_time": "2024-12-01T10:00:00Z",
             "end_time": "2024-12-01T11:00:00Z",
-            # Add other required reservation fields
+
         },
     )
     assert response.status_code == 201
@@ -93,7 +93,6 @@ def test_reports(client: FlaskClient) -> None:
         headers={"Authorization": "Bearer " + token},
         json={
             "description": "Test report description"
-            # Missing reservation_id
         },
     )
     assert response.status_code == 400

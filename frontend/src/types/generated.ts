@@ -2075,34 +2075,19 @@ export interface components {
             reservation_id: string;
             /**
              * Format: uuid
-             * @description Unique identifier of the renter who created the report.
-             */
-            renter_id: string;
-            /**
-             * Format: uuid
-             * @description Unique identifier of the owner related to the reservation.
-             */
-            owner_id?: string;
-            /**
-             * Format: uuid
              * @description Unique identifier of the parking space involved in the reservation.
              */
-            parking_space_id?: string;
-            /**
-             * Format: uuid
-             * @description Unique identifier of the car information related to the reservation.
-             */
-            car_info_id?: string;
+            parking_space_id: string;
             /**
              * Format: date-time
              * @description Start time of the reservation.
              */
-            start_time?: string;
+            start_time: string;
             /**
              * Format: date-time
              * @description End time of the reservation.
              */
-            end_time?: string;
+            end_time: string;
             /**
              * @description Type of the report.
              * @enum {string}
@@ -2111,22 +2096,12 @@ export interface components {
             /** @description Detailed description of the issue. */
             description: string;
             /**
-             * Format: date
-             * @description Date when the issue occurred.
-             */
-            date: string;
-            /**
-             * Format: time
-             * @description Time when the issue occurred.
-             */
-            time: string;
-            /**
              * @description Current status of the report.
              * @enum {string}
              */
             status: "open" | "in_progress" | "resolved";
             /** @description Response from the admin regarding the report. */
-            admin_response?: string | null;
+            admin_response: string | null;
             /**
              * Format: date-time
              * @description Timestamp when the report was created.
@@ -2137,6 +2112,10 @@ export interface components {
              * @description Timestamp when the report was last updated.
              */
             updated_at: string;
+            /** @description Name of the owner of the parking space. */
+            owner_name: string;
+            /** @description Name of the parking space. */
+            parking_space_name: string;
         };
         ReportListResponse: components["schemas"]["Report"][];
         ReportCreateRequest: {
