@@ -33,7 +33,7 @@ export const getOwnedParkingSpacesHandler = http.get<
 
     // Classify the user's spaces
     userSpaces.forEach((space) => {
-        if (space.status?.toUpperCase() === "PENDING") {
+        if (space.verification_status?.toUpperCase() === "PENDING") {
             pendingSpaces.push(space);
         } else if (space.is_paid) {
             paidSpaces.push(space);

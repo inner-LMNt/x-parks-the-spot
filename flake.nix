@@ -32,7 +32,10 @@
       {
         devShells.backend = backend.env;
         devShells.frontend = pkgs.mkShellNoCC {
-          packages = with pkgs; [ nodejs_22 ];
+          packages = with pkgs; [
+            nodejs_22
+            swagger-cli
+          ];
         };
       }
     );

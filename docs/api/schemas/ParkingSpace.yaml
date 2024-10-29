@@ -30,7 +30,7 @@ properties:
     items:
       type: string
       format: uri
-  status:
+  verification_status:
     type: string
     enum:
       - verified
