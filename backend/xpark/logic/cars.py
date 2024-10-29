@@ -91,8 +91,7 @@ def update_car(
             result = cur.fetchone()
             if not result:
                 return Err("Car not found.")
-            (car_owner_id,) = result
-            if car_owner_id != user_id:
+            if result["user_id"] != user_id:
                 return Err("User not authorized to update this car.")
 
             # If updating license_plate, ensure it's unique
@@ -116,7 +115,7 @@ def update_car(
                 make = COALESCE(%s, make),
                 model = COALESCE(%s, model),
                 license_plate = COALESCE(%s, license_plate),
-                updated_at = NOW(),
+                updated_at = NOW()
                 WHERE id = %s
                 RETURNING id, make, model, license_plate, created_at, updated_at
                 """,

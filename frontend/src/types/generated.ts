@@ -1902,7 +1902,7 @@ export interface components {
             pricing_info?: components["schemas"]["PricingInfo"];
             photos?: string[];
             /** @enum {string} */
-            status?: "verified" | "pending" | "rejected";
+            verification_status?: "verified" | "pending" | "rejected";
             dynamic_pricing_enabled?: boolean;
             cancellation_policy?: string;
             locked?: boolean;
@@ -1991,6 +1991,8 @@ export interface components {
             id?: string;
             /** Format: uuid */
             parking_space_id?: string;
+            /** Format: uuid */
+            name?: string;
             /** Format: uuid */
             renter_id?: string;
             /** Format: uuid */

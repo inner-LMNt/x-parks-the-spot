@@ -1,0 +1,84 @@
+name: Frontend Tests
+
+on:
+  push:
+    branches: ["main"]
+    paths: ["frontend/**", "flake.nix", "flake.lock", "backend/**", ".github/workflows/node.js.yml"]
+  pull_request:
+    branches: ["main"]
+    paths: ["frontend/**", "flake.nix", "flake.lock", "backend/**", ".github/workflows/node.js.yml"]
+
+defaults:
+  run:
+    working-directory: frontend
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+
+
+    steps:
+    - uses: actions/checkout@v4
+
+    # Set up backend dependencies
+    - uses: DeterminateSystems/nix-installer-action@main
+      name: "Install Nix"
+    - uses: DeterminateSystems/magic-nix-cache-action@main
+      name: "Set up cache"
+    - uses: nicknovitski/nix-develop@a2060d116a50b36dfab02280af558e73ab52427d
+      name: "Install backend dependencies"
+      with:
+        arguments: ".#backend"
+
+    - name: Use Node.js 22
+      uses: actions/setup-node@v3
+      with:
+        node-version: '22'
+    - name: Install frontend dependencies
+      run: npm install
+    - name: Build
+      run: npm run build --if-present
+
+    - name: Backend Setup
+      run: |
+        psql -U postgres -h 127.0.0.1 --password -c "create database xpark;"
+        psql -U postgres -h 127.0.0.1 xpark < e2e-seed.sql
+      env:
+        PGPASSWORD: "postgres"
+    - name: Start Backend Daemon
+      run: |
+        set -o pipefail
+        cd ../backend
+        flask run &
+      env:
+        DATABASE_URI: "dbname=xpark user=postgres password=postgres host=127.0.0.1 port=5432"
+        SECRET_KEY: test_key
+        FLASK_APP: "xpark:create_app()"
+        FLASK_RUN_PORT: 5001
+        FLASK_RUN_HOST: localhost
+        SMTP_FROM: '"X Parks The Spot" <xpark@example.com>'
+        SMTP_USERNAME: xpark@example.com
+        SMTP_TLS: no
+        SMTP_HOST: localhost
+
+    - name: Test Frontend
+      run: |
+        set -o pipefail
+        rm -rf .next
+        npm run test:coverage | tail -n +6 | sed '$d' > coverage.md
+        sed -i '2,$ s/^/| /; 2,$ s/$/ |/' coverage.md
+    - name: "Report Code Coverage"
+      if: github.event_name == 'pull_request'
+      uses: thollander/actions-comment-pull-request@v2
+      with:
+        filePath: frontend/coverage.md
+        comment_tag: coverage_frontend
+        mode: recreate

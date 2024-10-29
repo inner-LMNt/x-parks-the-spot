@@ -6,6 +6,9 @@ properties:
   parking_space_id:
     type: string
     format: uuid
+  name:
+    type: string
+    format: uuid
   renter_id:
     type: string
     format: uuid
