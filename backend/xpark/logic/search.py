@@ -36,7 +36,10 @@ def search_query(
                     photos,
                     created_at, 
                     updated_at,
-                    price,
+                    json_build_object(
+                        'base_price', price,
+                        'dynamic_pricing', FALSE
+                    ) as pricing_info,
                     availability_schedule
                 FROM parking_spaces 
                 WHERE ST_DWithin(location, ST_MakePoint(%(long)s, %(lat)s), %(radius_meters)s)

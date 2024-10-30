@@ -23,9 +23,8 @@ properties:
     type: array
     items:
       $ref: './TimeSlot.yaml'
-  price:
-    type: number
-    format: float
+  pricing_info:
+    $ref: './PricingInfo.yaml'
   photos:
     type: array
     items:

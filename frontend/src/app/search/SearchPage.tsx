@@ -1,41 +1,35 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Slider } from '@/components/ui/slider';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import React, {useEffect, useRef, useState} from 'react';
+import {motion} from 'framer-motion';
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Button} from "@/components/ui/button";
+import {useAppDispatch, useAppSelector} from '@/store/hooks';
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Slider} from '@/components/ui/slider';
+import {Dialog, DialogContent} from "@/components/ui/dialog";
 import {
-  MapPin,
-  Navigation,
-  ChevronUp,
-  ChevronDown,
-  ShieldCheck,
-  ShieldEllipsis,
-  ShieldX,
   ArrowDown,
   ArrowUp,
+  ChevronDown,
+  ChevronUp,
   DollarSign,
-  SquareParking,
-  Badge, ParkingSquare
+  MapPin,
+  Navigation,
+  ParkingSquare,
+  ShieldCheck,
+  ShieldEllipsis,
+  ShieldX
 } from 'lucide-react';
-import {
-  Autocomplete,
-  GoogleMap,
-  LoadScriptNext,
-  Marker,
-  DirectionsRenderer,
-  InfoWindow,
-} from '@react-google-maps/api';
-import {ParkingSpace} from '@/types/type';
-import { searchSpots } from '@/features/search/searchSlice';
-import { usePathname, useRouter } from 'next/navigation';
+import {Autocomplete, DirectionsRenderer, GoogleMap, InfoWindow, LoadScriptNext, Marker,} from '@react-google-maps/api';
+import {DaysOfWeek, ParkingSpace, TimeSlot} from '@/types/type';
+import {searchSpots} from '@/features/search/searchSlice';
+import {usePathname, useRouter} from 'next/navigation';
 import axios from 'axios';
 import ImageWrapper from "@/components/custom/ImageWrapper";
+import {Badge} from "@/components/ui/badge";
+import {components} from "@/types/generated";
 
 const default_center = {
   // Purdue University coords
@@ -528,41 +522,63 @@ export default function SearchPage() {
     setPaidStatus([]);
   };
 
-  const getAvailabilitySummary = (availabilitySchedule) => {
+  const getAvailableDays = (availabilitySchedule: components["schemas"]["TimeSlot"][] | undefined) => {
     if (!availabilitySchedule || availabilitySchedule.length === 0) {
-      return 'No availability information';
+      return [];
+    }
+    const daysOfWeekOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const days = availabilitySchedule.map(({ day_of_week }) => day_of_week);
+    return days.sort(
+        (a, b) => daysOfWeekOrder.indexOf(a) - daysOfWeekOrder.indexOf(b)
+    );
+  };
+
+// Helper function to determine the time range
+  const getTimeRange = (availabilitySchedule: any) => {
+    if (!availabilitySchedule || availabilitySchedule.length === 0) {
+      return '';
     }
 
-    // Check if the spot is available 24/7
-    const is247 = availabilitySchedule.length === 7 && availabilitySchedule.every((schedule) =>
-        schedule.start_time === '00:00' && schedule.end_time === '23:59'
+    // Get all unique time ranges
+    const timeRanges = new Set(
+        // @ts-ignore
+        availabilitySchedule.map(({ start_time, end_time }) => `${start_time} - ${end_time}`)
     );
 
-    if (is247) {
-      return 'Available 24/7';
-    }
-
-    // Group availability by time slots
-    const daysOfWeekOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const groupedByTime = {};
-
-    availabilitySchedule.forEach(({ day_of_week, start_time, end_time }) => {
-      const timeRange = `${start_time} - ${end_time}`;
-      if (!groupedByTime[timeRange]) {
-        groupedByTime[timeRange] = [];
+    // If only one time range exists
+    if (timeRanges.size === 1) {
+      const timeRange = timeRanges.values().next().value;
+      // Check if time range is 00:00 - 23:59
+      if (timeRange === '00:00 - 23:59') {
+        return '24 hours';
+      } else {
+        return `${timeRange}`;
       }
-      groupedByTime[timeRange].push(day_of_week);
-    });
+    } else {
+      // Multiple time ranges
+      return 'Various times';
+    }
+  };
 
-    // Generate summary strings
-    const summaries = Object.entries(groupedByTime).map(([timeRange, days]) => {
-      // Sort days according to daysOfWeekOrder
-      days.sort((a, b) => daysOfWeekOrder.indexOf(a) - daysOfWeekOrder.indexOf(b));
-      const dayList = days.join(', ');
-      return `${dayList}: ${timeRange}`;
-    });
+// Helper function to check if the spot is available 24/7
+  const isAvailable247 = (availabilitySchedule: any) => {
+    if (!availabilitySchedule || availabilitySchedule.length === 0) {
+      return false;
+    }
+    //@ts-ignore
+    const days = availabilitySchedule.map(({ day_of_week }) => day_of_week);
+    const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-    return summaries.join('; ');
+    // Check if all days are included
+    const hasAllDays = daysOfWeek.every((day : any) => days.includes(day));
+
+    // Check if time is 00:00 - 23:59 for all entries
+    const isAllTime247 = availabilitySchedule.every(
+        //@ts-ignore
+        ({ start_time, end_time }) => start_time === '00:00' && end_time === '23:59'
+    );
+
+    return hasAllDays && isAllTime247;
   };
 
   // Function to close the modal
@@ -1101,11 +1117,25 @@ export default function SearchPage() {
                           {spot.is_paid && (
                               <>
                                 <p className="text-md">
-                                  Price: ${spot.price}
+                                  Price: ${spot?.pricing_info?.base_price || 'N/A'}
                                 </p>
-                                <p className="text-md">
-                                  Availability: {getAvailabilitySummary(spot.availability_schedule)}
-                                </p>
+                                {isAvailable247(spot.availability_schedule) ? (
+                                    <p className="text-md mt-2">Available 24/7</p>
+                                ) : (
+                                    <div className="flex items-center flex-wrap mt-2">
+                                      <p className="text-md mr-2">Available:</p>
+                                      {getAvailableDays(spot.availability_schedule).map((day) => (
+                                          <Badge key={day} className="mr-1 mb-1" variant="secondary">
+                                            {day.slice(0, 3)}
+                                          </Badge>
+                                      ))}
+                                      <div className="flex">
+                                        Hours:
+                                        <p className="text-md ml-2">{getTimeRange(spot.availability_schedule)}</p>
+                                      </div>
+
+                                    </div>
+                                )}
                                 <p className="text-md">Address: {spot.location.address || 'Not specified'}</p>
                                 <p className="text-md">Average Rating: {'No ratings'}</p>
                               </>
