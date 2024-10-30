@@ -2078,6 +2078,8 @@ export interface components {
              * @description Unique identifier of the parking space involved in the reservation.
              */
             parking_space_id: string;
+            /** @description Address of parking space. */
+            parking_space_address: string;
             /**
              * Format: date-time
              * @description Start time of the reservation.

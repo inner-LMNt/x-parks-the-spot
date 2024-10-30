@@ -1,5 +1,5 @@
 # src/features/reports/logic.py
-
+import time
 from typing import Any, Dict, List
 from uuid import UUID
 from psycopg.rows import dict_row
@@ -22,6 +22,7 @@ def get_user_reports_logic(user_id: UUID) -> Result[List[Dict[str, Any]], str]:
                     reports.updated_at,
                     users.name as owner_name,
                     parking_spaces.name as parking_space_name,
+                    parking_spaces.address as parking_space_address,
                     lower(reservations.time) as start_time, 
                     upper(reservations.time) as end_time, 
                     reservations.parking_space_id
@@ -74,6 +75,7 @@ def create_report_logic(user_id: UUID, reservation_id: UUID, type: str, descript
                                 reports.updated_at,
                                 users.name as owner_name,
                                 parking_spaces.name as parking_space_name,
+                                parking_spaces.address as parking_space_address,
                                 lower(reservations.time) as start_time, 
                                 upper(reservations.time) as end_time, 
                                 reservations.parking_space_id
@@ -107,6 +109,7 @@ def get_report_by_id_logic(report_id: UUID, user_id: UUID) -> Result[Dict[str, A
                     reports.updated_at,
                     users.name as owner_name,
                     parking_spaces.name as parking_space_name,
+                    parking_spaces.address as parking_space_address,
                     lower(reservations.time) as start_time, 
                     upper(reservations.time) as end_time, 
                     reservations.parking_space_id

@@ -10,6 +10,7 @@ required:
   - admin_response
   - owner_name
   - parking_space_name
+  - parking_space_address
   - start_time
   - end_time
   - parking_space_id
@@ -28,6 +29,10 @@ properties:
     type: string
     format: uuid
     description: Unique identifier of the parking space involved in the reservation.
+
+  parking_space_address:
+    type: string
+    description: Address of parking space.
 
   start_time:
     type: string
