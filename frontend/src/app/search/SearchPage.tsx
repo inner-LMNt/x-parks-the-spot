@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from '@/components/ui/slider';
 import { updateSpot } from '@/features/user/userSlice';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { MapPin, Navigation, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, ArrowDown, ArrowUp, DollarSign } from 'lucide-react';
 import {
   Autocomplete,
@@ -23,6 +23,8 @@ import {ParkingSpace} from '@/types/type';
 import { searchSpots } from '@/features/search/searchSlice';
 import { usePathname, useRouter } from 'next/navigation';
 import axios from 'axios';
+import Webcam from "react-webcam";
+
 
 const default_center = {
   // Purdue University coords
@@ -79,10 +81,12 @@ export default function SearchPage() {
   const listRef = useRef<HTMLDivElement>(null);
   const currentUrl = usePathname();
   const isLoggedIn = useAppSelector(state => state.user.isLoggedIn);
-
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [currentSpotId, setCurrentSpotId] = useState<string | null>(null);
+  const webcamRef = useRef<Webcam>(null);
+  const DISTANCE_THRESHOLD = 200; // Maximum distance in meters
 
   const openUpdateStatusDialog = (spotId: string) => {
     setCurrentSpotId(spotId);
@@ -93,19 +97,50 @@ export default function SearchPage() {
     setIsDialogOpen(false);
     setCurrentSpotId(null);
     setPhoto(null);
+    setPreviewUrl(null); // Clear the preview
+    setIsCameraActive(true); // Reset camera to active
   };
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const isWithinDistance = () => {
+    if (!userLocation || !selectedSpot || !selectedSpot.location) {
+      return false;
+    }
+
+    const spotLocation = {
+      lat: selectedSpot.location.latitude,
+      lng: selectedSpot.location.longitude,
+    };
+
+    const distance = calculateDistance(userLocation, spotLocation);
+    console.log("Distance: ", distance)
+    return distance <= DISTANCE_THRESHOLD;
+  };
+  /**
+   * **Submit Spot Status Update**
+   */
+  const handleSubmit = async () => {
+    if (!currentSpotId || !userLocation) {
+      console.error("No spot selected or user location unavailable.");
+      return;
+    }
+
+    // Prepare form data for API submission
+    const formData = new FormData();
+    formData.append('spotId', currentSpotId);
+    formData.append('latitude', userLocation.lat.toString());
+    formData.append('longitude', userLocation.lng.toString());
+    if (photo) formData.append('photo', photo);
+
+    try {
+      await dispatch(updateSpot(formData)).unwrap();
+      console.log("Spot status updated successfully.");
+      closeUpdateStatusDialog();
+    } catch (error) {
+      console.error("Failed to update spot status:", error);
     }
   };
+
+  const [isCameraActive, setIsCameraActive] = useState(true);
 
   const handleCameraCapture = useCallback(() => {
     const imageSrc = webcamRef.current?.getScreenshot();
@@ -115,11 +150,17 @@ export default function SearchPage() {
           .then((res) => res.blob())
           .then((blob) => {
             const file = new File([blob], 'camera_capture.jpg', { type: 'image/jpeg' });
-            setImage(file);
+            setPhoto(file);
+            setIsCameraActive(false); // Switch to preview mode
           });
-      setShowCamera(false);
     }
   }, []);
+
+  const handleRetake = () => {
+    setPreviewUrl(null);
+    setPhoto(null);
+    setIsCameraActive(true); // Reactivate the camera
+  };
 
   useEffect(() => {
     // @ts-ignore
@@ -551,7 +592,7 @@ export default function SearchPage() {
                   {/* Existing content and other buttons */}
 
                   <Button
-                      onClick={() => openUpdateStatusDialog(spot.id)}
+                      onClick={() => spot.id && openUpdateStatusDialog(spot.id)}
                       className="mt-2 w-full bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300 hover:text-gray-900 transition-colors"
                   >
                     Update Spot Status
@@ -1021,74 +1062,73 @@ export default function SearchPage() {
                       {/* ShadCN Dialog */}
                       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
-                          <Button onClick={() => openUpdateStatusDialog(selectedSpot.id)} className="mt-2">
+                          <Button onClick={() => selectedSpot?.id && openUpdateStatusDialog(selectedSpot.id)}>
                             Update Spot Status
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="bg-white p-6 rounded-lg shadow-lg w-full">
 
-                          <DialogHeader>
-                            <DialogTitle className="text-lg text-gray-800 font-bold">Submit Verification Photo</DialogTitle>
-                            <DialogDescription className="text-sm text-gray-500">
-                              Use your camera to take a photo for verification.
-                            </DialogDescription>
-                          </DialogHeader>
+                        <DialogPortal>
+                          <DialogOverlay />
+                          <DialogContent className="bg-white p-6 rounded-lg shadow-lg w-full">
+                            <DialogHeader>
+                              <DialogTitle className="text-lg text-gray-800 font-bold">Submit Verification Photo</DialogTitle>
+                              <DialogDescription className="text-sm text-gray-500">
+                                Use your camera to take a photo for verification.
+                              </DialogDescription>
+                            </DialogHeader>
 
-                          {/* Distance Check and Camera Capture */}
-                          {userLocation && selectedSpot?.location && (() => {
-                            const calculateDistance = (loc1, loc2) => {
-                              const R = 6371e3; // Earth's radius in meters
-                              const lat1 = (loc1.lat * Math.PI) / 180;
-                              const lat2 = (loc2.latitude * Math.PI) / 180;
-                              const dLat = ((loc2.latitude - loc1.lat) * Math.PI) / 180;
-                              const dLng = ((loc2.longitude - loc1.lng) * Math.PI) / 180;
-
-                              const a =
-                                  Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                                  Math.cos(lat1) * Math.cos(lat2) *
-                                  Math.sin(dLng / 2) * Math.sin(dLng / 2);
-                              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                              return R * c;
-                            };
-
-                            const distance = calculateDistance(userLocation, selectedSpot.location);
-                            const isCloseEnough = distance <= 200; // Adjust this as necessary
-
-                            return isCloseEnough ? (
-                                <>
-                                  <div className="mt-4 w-full flex justify-center">
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        capture="environment" // Ensures camera is used
-                                        onChange={handleImageChange}
-                                        className="w-full p-2 border border-gray-300 rounded-lg"
-                                    />
-                                  </div>
-                                  <Button
-                                      onClick={handleImageChange}
-                                      className="mt-4 w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
-                                  >
-                                    Submit Photo
-                                  </Button>
-                                </>
+                            {isWithinDistance() ? (
+                                previewUrl ? (
+                                    <>
+                                      {/* Display photo preview */}
+                                      <img src={previewUrl || undefined} alt="Preview" className="w-full mt-4 rounded-lg" />
+                                      <div className="flex mt-4 space-x-2">
+                                        <Button onClick={handleRetake} className="bg-yellow-500 text-white py-2 rounded-lg">
+                                          Retake
+                                        </Button>
+                                        <DialogClose asChild>
+                                          <Button onClick={handleSubmit} className="bg-green-500 text-white py-2 rounded-lg">
+                                            Submit Photo
+                                          </Button>
+                                        </DialogClose>
+                                        <Button onClick={closeUpdateStatusDialog} className="bg-gray-300 text-gray-800 py-2 rounded-lg">
+                                          Cancel
+                                        </Button>
+                                      </div>
+                                    </>
+                                ) : (
+                                    <>
+                                      {/* Show webcam for photo capture */}
+                                      <div className="mt-4 w-full flex justify-center">
+                                        <Webcam
+                                            audio={false}
+                                            ref={webcamRef}
+                                            screenshotFormat="image/jpeg"
+                                            className="w-full rounded-lg"
+                                        />
+                                      </div>
+                                      <Button
+                                          onClick={handleCameraCapture}
+                                          className="mt-4 w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
+                                      >
+                                        Capture Photo
+                                      </Button>
+                                      <Button onClick={closeUpdateStatusDialog} className="mt-2 w-full bg-gray-300 text-gray-800 py-2 rounded-lg">
+                                        Cancel
+                                      </Button>
+                                    </>
+                                )
                             ) : (
-                                <p className="mt-4 text-red-500 text-sm font-semibold">
-                                  Not close enough to the spot to update.
-                                </p>
-                            );
-                          })()}
-
-                          <DialogClose asChild>
-                            <Button
-                                onClick={closeUpdateStatusDialog}
-                                className="mt-2 w-full bg-gray-300 text-gray-800 py-2 rounded-lg hover:bg-gray-400"
-                            >
-                              Cancel
-                            </Button>
-                          </DialogClose>
-                        </DialogContent>
+                                <div className="mt-4 text-center text-red-500 font-semibold">
+                                  You are too far away from the parking spot to upload a verification photo.
+                                  <p className="text-sm mt-2">Move closer to the spot and try again.</p>
+                                </div>
+                            )}
+                          </DialogContent>
+                        </DialogPortal>
                       </Dialog>
+
+
 
                     </div>
                   </InfoWindow>
