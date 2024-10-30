@@ -6,7 +6,6 @@ from typing import Tuple, Any
 
 @bp.post("")
 def search() -> Tuple[Any, int]:
-    print(request.json)
     return (
         search_query(
             lat=request.json["latitude"],  # type: ignore

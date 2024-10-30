@@ -85,12 +85,12 @@ export default function MySpotsPage() {
     };
 
     const getVerificationStatusIcon = (spot: ParkingSpace) => {
-        console.log("next ", spot.status)
-        if (spot.status === 'verified') {
+        console.log("next ", spot.verification_status)
+        if (spot.verification_status === 'verified') {
             // @ts-ignore
             return <ShieldCheck className="w-6 h-6 text-green-500" title="Verified" />;
         }
-        if (spot.status === 'pending') {
+        if (spot.verification_status === 'pending') {
             // @ts-ignore
             return <ShieldEllipsis className="w-6 h-6 text-yellow-500" title="Pending Verification" />;
         }
@@ -155,7 +155,7 @@ export default function MySpotsPage() {
                             )}
 
                             {/* Verification Buttons for Pending Spots */}
-                            {spot.status === 'pending' && (
+                            {spot.verification_status === 'pending' && (
                                 <div className="flex justify-between">
                                     <Button
                                         variant="default"
@@ -194,7 +194,7 @@ export default function MySpotsPage() {
                             )}
 
                             {/* Submit Verification Button for Unverified Spots */}
-                            {(spot.status !== 'pending' && spot.status !== 'verified') && (
+                            {(spot.verification_status !== 'pending' && spot.verification_status !== 'verified' && spot.is_paid) && (
                                 <Button
                                     onClick={() => openVerificationModal(spot.id ?? '')}
                                     className="mt-2 w-full bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300 hover:text-gray-900 transition-colors"
@@ -205,18 +205,20 @@ export default function MySpotsPage() {
                                 </Button>
                             )}
 
-                            <div className="flex justify-between mt-4">
-                                <Button variant="outline" size="sm" className="flex-1 mr-2"
-                                        onClick={() => openModal(spot)}>
-                                    <Edit className="w-4 h-4 mr-2"/>
-                                    Edit
-                                </Button>
-                                <Button variant="destructive" size="sm" className="flex-1"
-                                        onClick={() => handleDelete(spot.id as string)}>
-                                    <Trash2 className="w-4 h-4 mr-2"/>
-                                    Delete
-                                </Button>
-                            </div>
+                            {(spot.is_paid) && (
+                                <div className="flex justify-between mt-4">
+                                    <Button variant="outline" size="sm" className="flex-1 mr-2"
+                                            onClick={() => openModal(spot)}>
+                                        <Edit className="w-4 h-4 mr-2"/>
+                                        Edit
+                                    </Button>
+                                    <Button variant="destructive" size="sm" className="flex-1"
+                                            onClick={() => handleDelete(spot.id as string)}>
+                                        <Trash2 className="w-4 h-4 mr-2"/>
+                                        Delete
+                                    </Button>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </motion.div>
@@ -241,25 +243,26 @@ export default function MySpotsPage() {
                         <p>Loading...</p>
                     ) : error ? (
                         <p className="text-red-500">Error: {error}</p>
-                    ) : (paidSpots.length === 0 && freeSpots.length === 0 && pendingSpots.length === 0) ? (
+                    ) : (paidSpots === undefined && freeSpots === undefined && pendingSpots === undefined)
+                        || (paidSpots.length === 0 && freeSpots.length === 0 && pendingSpots.length === 0) ? (
                         emptySpots
                     ) : (
                         <>
-                            {freeSpots.length > 0 && (
+                            {freeSpots?.length > 0 && (
                                 <>
                                     <h2 className="text-2xl font-bold mb-4 text-gray-900">Free Spots</h2>
                                     {renderSpots(freeSpots)}
                                 </>
                             )}
 
-                            {paidSpots.length > 0 && (
+                            {paidSpots?.length > 0 && (
                                 <>
                                     <h2 className="text-2xl font-bold mb-4 mt-8 text-gray-900">Paid Spots</h2>
                                     {renderSpots(paidSpots)}
                                 </>
                             )}
 
-                            {pendingSpots.length > 0 && (
+                            {pendingSpots?.length > 0 && (
                                 <>
                                     <h2 className="text-2xl font-bold mb-4 mt-8 text-gray-900">Pending Spots</h2>
                                     {renderSpots(pendingSpots)}
@@ -268,7 +271,7 @@ export default function MySpotsPage() {
                         </>
                     )}
 
-                    {(freeSpots.length > 0 || paidSpots.length > 0 || pendingSpots.length > 0) && (
+                    {(freeSpots?.length > 0 || paidSpots?.length > 0 || pendingSpots?.length > 0) && (
                         <motion.div
                             initial={{opacity: 0, y: 20}}
                             animate={{opacity: 1, y: 0}}
