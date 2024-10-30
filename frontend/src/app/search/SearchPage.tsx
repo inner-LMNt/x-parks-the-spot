@@ -499,6 +499,9 @@ export default function SearchPage() {
 
   // Handle restricted actions and show modal if not logged in
   const reserveSpot = (parkingSpaceId: string | undefined) => {
+    if (!parkingSpaceId) {
+      return;
+    }
     if (!isLoggedIn) {
       setShowLoginModal(true); // Show login modal if not logged in
       return;
@@ -992,7 +995,7 @@ export default function SearchPage() {
                             </div>
                         )}
 
-                        <p className="truncate text-gray-600 text-[10px] mb-1">📍 {selectedSpot.location.address || 'Address not specified'}</p>
+                        <p className="truncate text-gray-600 text-[10px] mb-1">📍 {selectedSpot.location.address || 'No Address Found'}</p>
                         <p className="text-gray-500 text-[10px] mb-1">{selectedSpot.location.latitude.toFixed(4)}, {selectedSpot.location.longitude.toFixed(4)}</p>
 
                         <div className="flex gap-1">
@@ -1004,14 +1007,23 @@ export default function SearchPage() {
                             <Navigation className="mr-1 h-3 w-3" />
                             Navigate
                           </Button>
-                          <Button
-                              onClick={() => reserveSpot(selectedSpot.id)}
-                              className="flex-1 h-6 text-[10px]"
-                              variant="default"
-                          >
-                            <DollarSign className="mr-1 h-3 w-3" />
-                            Reserve
-                          </Button>
+                          {selectedSpot.is_paid ? (
+                              <Button
+                                  onClick={() => reserveSpot(selectedSpot?.id)}
+                                  className="flex-1 h-6 text-[10px]"
+                                  variant="default"
+                              >
+                                <DollarSign className="mr-1 h-3 w-3" />
+                                Reserve
+                              </Button>
+                          ) : (
+                              <Button
+                                  className="flex-1 h-6 text-[10px]"
+                                  variant="default"
+                              >
+                                Update Status
+                              </Button>
+                          )}
                         </div>
                       </div>
                     </InfoWindow>

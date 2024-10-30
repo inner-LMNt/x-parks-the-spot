@@ -141,6 +141,12 @@ def create_free_parking_space(
     else:
         photos = []
 
+    # Provide default values
+    default_name = f'Spot Logged at {timestamp_dt.strftime("%I:%M %p, %B %d %Y")}'
+    default_verification_status = 'unverified'
+    default_availability_schedule = json.dumps([])  # or another appropriate default
+    default_price = 0
+
     # Insert into database
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -152,12 +158,27 @@ def create_free_parking_space(
                     location,
                     address,
                     photos,
-                    photo_timestamp
+                    photo_timestamp,
+                    verification_status,
+                    name,
+                    availability_schedule,
+                    price
                 )
-                VALUES (%s, FALSE, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s, %s, %s)
+                VALUES (%s, FALSE, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id, created_at, updated_at
                 """,
-                (user_id, longitude, latitude, address, photos, timestamp_dt),  # Pass the datetime object instead of string
+                (
+                    user_id,
+                    longitude,
+                    latitude,
+                    address,
+                    photos,
+                    timestamp_dt,
+                    default_verification_status,
+                    default_name,
+                    default_availability_schedule,
+                    default_price,
+                ),
             )
             parking_space = cur.fetchone()
             if not parking_space:
