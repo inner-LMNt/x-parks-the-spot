@@ -31,8 +31,6 @@ def create_report(token: str, user_id: UUID) -> Tuple[Any, int]:
     Create a new report.
     """
     data = request.get_json()
-    if not data:
-        return jsonify({"error": "Invalid input"}), 400
 
     reservation_id = data.get("reservation_id")
     description = data.get("description")
@@ -74,22 +72,15 @@ def get_report(report_id: str, token: str, user_id: UUID) -> Tuple[Any, int]:
     else:
         return jsonify({"error": result.unwrap_err()}), 400
 
-
 @bp.route("/<report_id>", methods=["PUT"])
 @require_logged_in_user
 def update_report_admin_response(report_id: str, token: str, user_id: UUID) -> Tuple[Any, int]:
     """
     Update a report's admin response.
     """
-    # Validate UUID
-    try:
-        report_uuid = UUID(report_id)
-    except ValueError:
-        return jsonify({"error": "Invalid report ID format"}), 400
+    report_uuid = UUID(report_id)
 
     data = request.get_json()
-    if not data or "admin_response" not in data:
-        return jsonify({"error": "Missing admin_response field"}), 400
 
     admin_response = data.get("admin_response")
 
@@ -100,3 +91,4 @@ def update_report_admin_response(report_id: str, token: str, user_id: UUID) -> T
         return jsonify({"error": "Report not found or unauthorized"}), 404
     else:
         return jsonify({"error": result.unwrap_err()}), 400
+
