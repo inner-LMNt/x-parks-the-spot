@@ -1,5 +1,5 @@
 import uuid
-from typing import Dict, Any, List
+from typing import Optional, Dict, Any, List
 from psycopg.rows import dict_row
 from xpark.utils.db import DB
 from result import Result, Ok, Err
@@ -173,18 +173,22 @@ def get_reservation(
 def update_reservation(
     user_id: uuid.UUID,
     reservation_id: uuid.UUID,
-    start_time: str | None = None,
-    end_time: str | None = None,
-    car_info_uuid: uuid.UUID | None = None,
+    start_time: Optional[str] = None,
+    end_time: Optional[str] = None,
+    car_info_uuid: Optional[uuid.UUID] = None,
 ) -> Result[Dict[str, Any], str]:
+    """
+    Update an existing reservation with new start and/or end times.
+    """
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
+            # Fetch the existing reservation details
             cur.execute(
                 """
                 SELECT 
-                id,
-                lower(time) as start_time,
-                upper(time) as end_time
+                    parking_space_id,
+                    lower(time) AS start_time,
+                    upper(time) AS end_time
                 FROM reservations
                 WHERE id = %s AND renter_id = %s
                 """,
@@ -194,18 +198,45 @@ def update_reservation(
             if not reservation:
                 return Err("Reservation not found")
 
-            parking_space_id, original_start_time, original_end_time = reservation
+            # If the cursor returns a dict, access values by keys
+            parking_space_id = reservation['parking_space_id']
+            original_start_time = reservation['start_time']
+            original_end_time = reservation['end_time']
 
+            # Determine the new start and end times
             new_start_time = start_time or original_start_time
             new_end_time = end_time or original_end_time
 
-            # If updating time, check for overlaps
-            new_start_dt = datetime.datetime.fromisoformat(new_start_time)
-            new_end_dt = datetime.datetime.fromisoformat(new_end_time)
+            # Convert to datetime objects if necessary
+            if isinstance(new_start_time, str):
+                new_start_dt = datetime.datetime.fromisoformat(new_start_time)
+            elif isinstance(new_start_time, datetime.datetime):
+                new_start_dt = new_start_time
+            else:
+                return Err("Invalid start time format")
 
+            if isinstance(new_end_time, str):
+                new_end_dt = datetime.datetime.fromisoformat(new_end_time)
+            elif isinstance(new_end_time, datetime.datetime):
+                new_end_dt = new_end_time
+            else:
+                return Err("Invalid end time format")
+
+            # Ensure times are timezone-aware (assuming UTC if not)
+            if new_start_dt.tzinfo is None:
+                new_start_dt = new_start_dt.replace(tzinfo=datetime.timezone.utc)
+            if new_end_dt.tzinfo is None:
+                new_end_dt = new_end_dt.replace(tzinfo=datetime.timezone.utc)
+
+            # Validate that end time is after start time
             if new_end_dt <= new_start_dt:
                 return Err("End time must be after start time.")
 
+            # Prepare the time range as text for SQL
+            new_start_iso = new_start_dt.isoformat()
+            new_end_iso = new_end_dt.isoformat()
+
+            # Check for overlapping reservations
             cur.execute(
                 """
                 SELECT COUNT(*) 
@@ -213,36 +244,34 @@ def update_reservation(
                 WHERE parking_space_id = %s
                   AND id != %s
                   AND status = 'booked'
-                  AND (
-                    (start_time < %s AND end_time > %s)
-                  )
+                  AND time && tstzrange(%s, %s, '[)')
                 """,
                 (
                     parking_space_id,
                     reservation_id,
-                    new_end_dt,
-                    new_start_dt,
+                    new_start_iso,
+                    new_end_iso,
                 ),
             )
-            (overlap_count,) = cur.fetchone()  # type: ignore
+            (overlap_count,) = cur.fetchone()
             if overlap_count > 0:
-                return Err(
-                    "Parking space is already reserved for the selected time slot."
-                )
+                return Err("Parking space is already reserved for the selected time slot.")
 
-        # TODO FIXME: finish this
+        # Update the reservation
         with conn.cursor(row_factory=dict_row) as cur:
-            # Update the reservation
             cur.execute(
                 """
                 UPDATE reservations SET
-                start_time = %s,
-                end_time = %s,
-                updated_at = NOW()
+                    time = tstzrange(%s, %s, '[)'),
+                    updated_at = NOW()
                 WHERE id = %s
-                RETURNING id, parking_space_id, start_time, end_time, car_info_id, renter_id, status, created_at, updated_at
+                RETURNING id, parking_space_id, time, car_info_id, renter_id, status, created_at, updated_at
                 """,
-                (start_time, end_time),
+                (
+                    new_start_iso,
+                    new_end_iso,
+                    reservation_id,
+                ),
             )
             updated_reservation = cur.fetchone()
 
@@ -273,3 +302,94 @@ def cancel_reservation_logic(
                 return Err("Reservation not found")
 
             return Ok(None)
+
+def get_max_extension_time_logic(
+    user_id: uuid.UUID, reservation_id: uuid.UUID
+) -> Result[str, str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Fetch reservation details
+            cur.execute(
+                """
+                SELECT 
+                    upper(reservations.time) AS end_time,
+                    reservations.parking_space_id
+                FROM reservations
+                WHERE reservations.id = %s AND reservations.renter_id = %s
+                """,
+                (reservation_id, user_id),
+            )
+            reservation = cur.fetchone()
+
+            if not reservation:
+                print("Reservation not found or not authorized")
+                return Err("Reservation not found or not authorized")
+
+            current_end_time = reservation["end_time"]
+            parking_space_id = reservation["parking_space_id"]
+
+            if not current_end_time:
+                print("Invalid reservation end time")
+                return Err("Invalid reservation end time")
+
+            # Ensure current_end_time is timezone-aware
+            if current_end_time.tzinfo is None:
+                current_end_time = current_end_time.replace(tzinfo=tzutc())
+
+            # Fetch availability ranges that include the current end time
+            cur.execute(
+                """
+                SELECT time
+                FROM paid_parking_allowed_availability
+                WHERE parking_space_id = %s AND time @> %s::timestamptz
+                """,
+                (parking_space_id, current_end_time),
+            )
+            availability_records = cur.fetchall()
+
+            if not availability_records:
+                print("No available slots for extension")
+                return Err("No available slots for extension")
+
+            # Determine the maximum extension time from availability ranges
+            max_extension_time = None
+            for record in availability_records:
+                availability_range = record["time"]
+                if availability_range.upper_inf:
+                    potential_max_time = datetime.max.replace(tzinfo=tzutc())
+                else:
+                    potential_max_time = availability_range.upper
+
+                if max_extension_time is None or potential_max_time > max_extension_time:
+                    max_extension_time = potential_max_time
+
+            if max_extension_time is None:
+                print("Unable to determine maximum extension time")
+                return Err("Unable to determine maximum extension time")
+
+            # Check for overlapping future reservations
+            cur.execute(
+                """
+                SELECT MIN(lower(res.time)) as next_reservation_start
+                FROM reservations res
+                WHERE res.parking_space_id = %s AND lower(res.time) > %s
+                """,
+                (parking_space_id, current_end_time),
+            )
+            next_reservation = cur.fetchone()
+
+            if next_reservation and next_reservation["next_reservation_start"]:
+                next_reservation_start = next_reservation["next_reservation_start"]
+                if next_reservation_start < max_extension_time:
+                    max_extension_time = next_reservation_start
+
+            # Ensure max_extension_time is after current_end_time
+            if max_extension_time <= current_end_time:
+                print("No available time for extension")
+                return Err("No available time for extension")
+
+            # Convert to ISO format
+            max_extension_time_iso = max_extension_time.isoformat()
+
+            return Ok(max_extension_time_iso)
+

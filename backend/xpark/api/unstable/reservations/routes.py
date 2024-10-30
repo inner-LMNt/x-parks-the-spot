@@ -3,7 +3,7 @@ from xpark.logic.reservations import (
     get_reservation,
     create_reservation,
     get_user_reservations,
-    cancel_reservation_logic,
+    cancel_reservation_logic, get_max_extension_time_logic,
 )
 from . import bp
 from flask import request
@@ -89,6 +89,26 @@ def update_reservation_route(
             else:
                 return {"err": e}, 400
 
+@bp.get("<reservation_id>/max-extension")
+@require_logged_in_user
+def get_max_extension_time_route(
+    reservation_id: str, token: str, user_id: uuid.UUID
+) -> Tuple[Any, int]:
+    """
+    Get maximum extension time for a reservation.
+    """
+    reservation_uuid = uuid.UUID(reservation_id)
+
+    match get_max_extension_time_logic(user_id, reservation_uuid):
+        case Ok(max_extension_time):
+            return {"maxExtensionTime": max_extension_time}, 200
+        case Err(e):
+            if "not authorized" in e:
+                return {"err": e}, 403
+            elif "not found" in e:
+                return {"err": e}, 404
+            else:
+                return {"err": e}, 400
 
 @bp.delete("<reservation_id>")
 @require_logged_in_user
