@@ -46,7 +46,6 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
 
     longitude = float(data["location"]["longitude"])
     latitude = float(data["location"]["latitude"])
-    address = data["location"]["address"]
 
     # TODO: get address from coordinates if not set
     if data["is_paid"]:
@@ -56,9 +55,10 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
             image_file=image_file,
             longitude=longitude,
             latitude=latitude,
-            address=address,
+            address=data["location"]["address"],
             price=float(data["pricing_info"]["base_price"]),
             availability_schedule=data["availability_schedule"],
+            photo_timestamp=data["photo_timestamp"],
         )
     else:
         result = create_free_parking_space(
@@ -66,7 +66,8 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
             image_file=image_file,
             longitude=longitude,
             latitude=latitude,
-            address=address,
+            address="",
+            photo_timestamp=data["photo_timestamp"]
         )
 
     if result.is_ok():

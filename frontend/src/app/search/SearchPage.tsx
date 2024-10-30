@@ -964,13 +964,13 @@ export default function SearchPage() {
                           <h2 className="font-bold text-sm truncate">
                             {selectedSpot.name || 'Unnamed Parking Space'}
                           </h2>
-                          {selectedSpot.status === 'verified' && (
+                          {selectedSpot.verification_status === 'verified' && (
                               <ShieldCheck className="w-4 h-4 text-green-500" />
                           )}
-                          {selectedSpot.status === 'pending' && (
+                          {selectedSpot.verification_status === 'pending' && (
                               <ShieldEllipsis className="w-4 h-4 text-yellow-500" />
                           )}
-                          {(!selectedSpot.status || selectedSpot.status === 'rejected') && (
+                          {(!selectedSpot.verification_status || selectedSpot.verification_status === 'rejected') && (
                               <ShieldX className="w-4 h-4 text-red-500" />
                           )}
                         </div>

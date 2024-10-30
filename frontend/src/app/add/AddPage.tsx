@@ -1,3 +1,5 @@
+// src/pages/add.tsx
+
 'use client';
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
@@ -207,7 +209,7 @@ export default function AddPage() {
       setTimeSlot({
         day_of_week: [],
         start_time: '00:00',
-        end_time: '23:59', // If we have this set to 00:00, then it is unknown whether the timeslot is zero length or for the whole day
+        end_time: '23:59',
       });
     } else {
       setTimeSlot({
@@ -274,7 +276,7 @@ export default function AddPage() {
       // For 24/7, ensure start_time and end_time are '00:00'
       if (timeSlot.start_time !== '00:00' || timeSlot.end_time !== '23:59') {
         isValid = false;
-        errorMsg = '24/7 slots must have start time set to 00:00 and end time set to 23:59.';
+        errorMsg = '24/7 slots must start at 00:00 and end at 23:59.';
       }
     } else {
       // Check if at least one day is selected
@@ -311,521 +313,631 @@ export default function AddPage() {
    */
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    console.log('Form submitted. Showing confirmation modal.');
+    // Show confirmation modal before submission
+    setShowConfirmationModal(true);
+  };
+
+  /**
+   * **Confirm Submission After Modal**
+   */
+  /**
+   * **Confirm Submission After Modal**
+   */
+  const confirmSubmission = async () => {
+    console.log('Confirm submission clicked.');
+    setShowConfirmationModal(false);
     setIsSubmitting(true);
 
-    // Validate availability before proceeding
-    if (!validateAvailability()) {
-      toast({
-        title: 'Validation Error',
-        description: availabilityError || 'Please fix the errors in your availability schedule.',
-        variant: 'destructive',
-      });
-      setIsSubmitting(false);
-      return;
-    }
-
-    const formData = new FormData(event.currentTarget);
-    let name = '';
-    let latitude: number | undefined;
-    let longitude: number | undefined;
-    let price: number | null = null;
-
-    let address = '';
-
-    if (spotType === 'rental') {
-      name = formData.get('name') as string;
-      address = formData.get('address') as string;
-
-      if (!userLocation) {
-        toast({
-          title: 'Error',
-          description: 'Please use your location.',
-          variant: 'destructive',
-        });
-        setIsSubmitting(false);
-        return;
-      }
-      latitude = userLocation.lat;
-      longitude = userLocation.lng;
-
-      const priceValue = formData.get('price');
-      if (priceValue) {
-        price = parseFloat(priceValue as string);
-        if (isNaN(price) || price < 0) {
+    try {
+      // Validate availability only for rental spots
+      if (spotType === 'rental') {
+        if (!validateAvailability()) {
+          console.log('Availability validation failed:', availabilityError);
           toast({
-            title: 'Invalid Price',
-            description: 'Please enter a valid price.',
+            title: 'Validation Error',
+            description: availabilityError || 'Please fix the errors in your availability schedule.',
             variant: 'destructive',
           });
           setIsSubmitting(false);
           return;
         }
       }
-    } else {
-      if (!userLocation) {
+
+      // Ensure image and location are present for free spots
+      if (spotType === 'free') {
+        if (!image || !userLocation || !photoTimestamp) {
+          console.log('Missing required fields for free spot.');
+          toast({
+            title: 'Missing Information',
+            description: 'Please ensure you have uploaded a photo, captured your location, and the timestamp.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+        const timeDiffSeconds = calculateTimeDifferenceSeconds();
+        console.log('Time difference (seconds):', timeDiffSeconds);
+        if (timeDiffSeconds > 30) { // **Increased from 15 to 30**
+          console.log('Timestamp is beyond the allowed time frame:', timeDiffSeconds, 'seconds.');
+          toast({
+            title: 'Timestamp Error',
+            description: 'The photo was not captured within the allowed time frame. Please try again.',
+            variant: 'destructive',
+          });
+          handleRemoveImage(); // Remove image if timestamp is invalid
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Ensure image and location are present for rental spots
+      if (spotType === 'rental') {
+        if (!image) {
+          console.log('Image not uploaded for rental spot.');
+          toast({
+            title: 'Image Required',
+            description: 'Please capture or upload an image of the rental parking spot.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
+        if (!userLocation) {
+          console.log('Location not captured for rental spot.');
+          toast({
+            title: 'Location Required',
+            description: 'Please capture your location.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
+        if (!photoTimestamp) {
+          console.log('Timestamp missing for rental spot.');
+          toast({
+            title: 'Timestamp Missing',
+            description: 'Please ensure the photo timestamp is captured.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Prepare FormData
+      const formData = new FormData();
+
+      let name = spotType === 'free' ? 'Free Spot' : (document.getElementById('name') as HTMLInputElement)?.value || '';
+      let latitude: number | undefined;
+      let longitude: number | undefined;
+      let price: number | null = null;
+      let address = '';
+
+      if (spotType === 'rental') {
+        name = (document.getElementById('name') as HTMLInputElement).value;
+        address = (document.getElementById('address') as HTMLInputElement).value;
+
+        latitude = userLocation?.lat;
+        longitude = userLocation?.lng;
+
+        const priceValue = (document.getElementById('price') as HTMLInputElement).value;
+        if (priceValue) {
+          price = parseFloat(priceValue);
+          if (isNaN(price) || price < 0) {
+            console.log('Invalid price entered:', priceValue);
+            toast({
+              title: 'Invalid Price',
+              description: 'Please enter a valid price.',
+              variant: 'destructive',
+            });
+            setIsSubmitting(false);
+            return;
+          }
+        }
+      } else {
+        latitude = userLocation?.lat;
+        longitude = userLocation?.lng;
+      }
+
+      // Build the availability_schedule array based on the single slot
+      let availability_schedule: any[] = [];
+      if (spotType === 'rental') {
+        if (is24Seven) {
+          availability_schedule = Object.values(DaysOfWeek).map((day) => ({
+            day_of_week: day,
+            start_time: formatTime('00:00'),
+            end_time: formatTime('23:59'),
+          }));
+        } else {
+          availability_schedule = timeSlot.day_of_week.map((day: DaysOfWeek) => ({
+            day_of_week: day,
+            start_time: formatTime(timeSlot.start_time),
+            end_time: formatTime(timeSlot.end_time),
+          }));
+        }
+      }
+
+      const data: any = {
+        is_paid: spotType === 'rental',
+        location: {
+          latitude,
+          longitude,
+          address: spotType === 'rental' ? address : undefined,
+        },
+        features: [], // Assuming features are handled elsewhere
+        photos: [], // Will be handled via 'image' upload
+        photo_timestamp: photoTimestamp ? photoTimestamp.toISOString() : null, // **Attach Timestamp**
+      };
+
+      if (spotType === 'rental') {
+        data.name = name;
+        data.availability_schedule = availability_schedule;
+        data.pricing_info = {
+          base_price: price,
+          dynamic_pricing: false, // Modify if dynamic pricing is needed
+        };
+      }
+
+      formData.append('data', JSON.stringify(data));
+
+      if (image) {
+        formData.append('image', image);
+      }
+
+      console.log('Dispatching addParkingSpot with FormData:', data);
+
+      try {
+        await dispatch(addParkingSpot(formData)).unwrap();
+        console.log('Parking spot added successfully.');
+        toast({
+          title: 'Spot Added Successfully!',
+          description: 'Your parking spot has been added.',
+        });
+        dispatch(resetState());
+        setShowSuccessModal(true);
+      } catch (error: any) {
+        console.error('Error adding parking spot:', error);
         toast({
           title: 'Error',
-          description: 'Location is not available. Please enable location services.',
+          description: error?.message || 'Failed to add parking spot.',
           variant: 'destructive',
         });
+      } finally {
         setIsSubmitting(false);
-        return;
       }
-      latitude = userLocation.lat;
-      longitude = userLocation.lng;
-    }
-
-    // Build the availability_schedule array based on the single slot
-    let availability_schedule: any[] = [];
-    if (spotType === 'rental') {
-      if (is24Seven) {
-        availability_schedule = Object.values(DaysOfWeek).map((day) => ({
-          day_of_week: day,
-          start_time: formatTime('00:00'),
-          end_time: formatTime('23:59'),
-        }));
-      } else {
-        availability_schedule = timeSlot.day_of_week.map((day: DaysOfWeek) => ({
-          day_of_week: day,
-          start_time: formatTime(timeSlot.start_time),
-          end_time: formatTime(timeSlot.end_time),
-        }));
-      }
-    }
-
-    const data: any = {
-      is_paid: spotType === 'rental',
-      location: {
-        latitude,
-        longitude,
-        address,
-      },
-      features: [], // Assuming features are handled elsewhere
-      photos: [], // Assuming photos are handled via 'image' upload
-    };
-
-    if (spotType === 'rental') {
-      data.name = name;
-      data.availability_schedule = availability_schedule;
-      data.pricing_info = {
-        base_price: price,
-        dynamic_pricing: false, // Modify if dynamic pricing is needed
-      };
-    }
-
-    const formSubmitData = new FormData();
-    formSubmitData.append('data', JSON.stringify(data));
-
-    if (image) {
-      formSubmitData.append('image', image);
-    } else {
-      // If spot type is 'free' and image is not provided, show an error
-      if (spotType === 'free') {
-        toast({
-          title: 'Image Required',
-          description: 'Please capture an image of the free parking spot.',
-          variant: 'destructive',
-        });
-        setIsSubmitting(false);
-        return;
-      }
-    }
-
-    try {
-      await dispatch(addParkingSpot(formSubmitData)).unwrap();
+    } catch (outerError) {
+      console.error('Unexpected error during submission:', outerError);
       toast({
-        title: 'Spot Added Successfully!',
-        description: 'Your new parking spot has been added.',
-      });
-      dispatch(resetState());
-      router.push('/myspots');
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error?.message || 'Failed to add parking spot.',
+        title: 'Unexpected Error',
+        description: 'An unexpected error occurred. Please try again later.',
         variant: 'destructive',
       });
-    } finally {
       setIsSubmitting(false);
     }
   };
 
   useEffect(() => {
+    dispatch({ type: "add/errorReset" });
+  }, [spotType, dispatch]);
+
+  useEffect(() => {
     setDomLoaded(true);
   }, []);
+
   return (
       domLoaded && (
-      <div className="flex flex-col min-h-screen bg-gray-100">
-        <div className="flex-grow overflow-y-auto">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl py-6">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-            >
-              <Card className="shadow-md mb-20">
-                <CardHeader className="relative">
-                  <Button
-                      variant="ghost"
-                      onClick={() => router.back()}
-                      className="absolute left-4 top-4 p-0"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                  </Button>
-                  <div className="text-center">
-                    <CardTitle className="text-2xl">Add a Parking Spot</CardTitle>
-                    <CardDescription>
-                      Fill in the details to list your parking spot
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Spot Type Selection */}
-                    <div className="space-y-2">
-                      <Label>Spot Type</Label>
-                      <RadioGroup
-                          defaultValue="free"
-                          onValueChange={(value) => {
-                            setSpotType(value as 'free' | 'rental');
-                            setUserLocation(null);
-                            setImage(null); // Reset image when spot type changes
-                            setPreviewUrl(null); // Reset preview
-                            setAvailabilityError(''); // Reset local availability error
-                            dispatch(resetState()); // Reset Redux error state
-                            if (value !== 'rental') {
-                              setTimeSlot({
-                                day_of_week: [],
-                                start_time: '',
-                                end_time: '',
-                              });
-                              setIs24Seven(false);
-                            }
-                          }}
-                          className="flex space-x-4"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="free" id="free" />
-                          <Label htmlFor="free">Free</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="rental" id="rental" />
-                          <Label htmlFor="rental">For Rent</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-
-                    {/* Spot Name (Only for Rental) */}
-                    {spotType === 'rental' && (
-                        <div className="space-y-2">
-                          <Label htmlFor="name">Spot Name</Label>
-                          <Input
-                              id="name"
-                              name="name"
-                              required
-                              placeholder="e.g. Downtown Parking"
-                          />
-                        </div>
-                    )}
-
-                    {/* Address (Only for Rental) */}
-                    {spotType === 'rental' && (
-                        <div className="space-y-2">
-                          <Label htmlFor="address">Address</Label>
-                          <Input
-                              id="address"
-                              name="address"
-                              required
-                              placeholder="Full street address"
-                          />
-                        </div>
-                    )}
-
-                    {/* Location Section */}
-                    <div className="space-y-2">
-                      <Label>Location</Label>
+          <div className="flex flex-col min-h-screen bg-gray-100">
+            <div className="flex-grow overflow-y-auto">
+              <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl py-6">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
+                  <Card className="shadow-md mb-20">
+                    <CardHeader className="relative">
                       <Button
-                          type="button"
-                          variant="outline"
-                          onClick={getUserLocation}
-                          disabled={locationLoading}
-                          className="flex items-center space-x-2"
+                          variant="ghost"
+                          onClick={() => router.back()}
+                          className="absolute left-4 top-4 p-0"
                       >
-                        <MapPin className="w-4 h-4" />
-                        <span>{locationLoading ? 'Locating...' : 'Use My Location'}</span>
+                        <ArrowLeft className="w-4 h-4" />
                       </Button>
-                      {geoEnabled ? (
-                          userLocation ? (
-                              <div>
-                                <p>Latitude: {userLocation.lat}</p>
-                                <p>Longitude: {userLocation.lng}</p>
-                              </div>
-                          ) : (
-                              <p>Your current location will be used for the spot.</p>
-                          )
-                      ) : (
-                          <p>Geolocation is not enabled. Please enable location services.</p>
-                      )}
-                    </div>
+                      <div className="text-center">
+                        <CardTitle className="text-2xl">Add a Parking Spot</CardTitle>
+                        <CardDescription>
+                          Fill in the details to list your parking spot
+                        </CardDescription>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+                        {/* Spot Type Selection */}
+                        <div className="space-y-2">
+                          <Label>Spot Type</Label>
+                          <RadioGroup
+                              defaultValue="free"
+                              onValueChange={(value) => {
+                                console.log('Spot type changed to:', value);
+                                setSpotType(value as 'free' | 'rental');
+                                setUserLocation(null);
+                                setImage(null); // Reset image when spot type changes
+                                setPreviewUrl(null); // Reset preview
+                                setAvailabilityError(''); // Reset local availability error
+                                setPhotoTimestamp(null); // Reset timestamp
+                                dispatch(resetState()); // Reset Redux error state
+                                if (value !== 'rental') {
+                                  setTimeSlot({
+                                    day_of_week: [],
+                                    start_time: '',
+                                    end_time: '',
+                                  });
+                                  setIs24Seven(false);
+                                }
+                              }}
+                              className="flex space-x-4"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="free" id="free" />
+                              <Label htmlFor="free">Free</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="rental" id="rental" />
+                              <Label htmlFor="rental">For Rent</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
 
-                    {/* Availability Schedule (Only for Rental) */}
-                    {spotType === 'rental' && (
-                        <>
-                          <div className="space-y-4">
-                            <Label>Availability Schedule</Label>
-                            <div className="space-y-2 border p-4 rounded-md">
-                              {/* Slot Header */}
-                              <div className="flex justify-between items-center">
-                                <Label>Time Slot</Label>
-                              </div>
+                        {/* Spot Name (Only for Rental) */}
+                        {spotType === 'rental' && (
+                            <div className="space-y-2">
+                              <Label htmlFor="name">Spot Name</Label>
+                              <Input
+                                  id="name"
+                                  name="name"
+                                  required
+                                  placeholder="e.g. Downtown Parking"
+                              />
+                            </div>
+                        )}
 
-                              {/* 24/7 Checkbox */}
-                              <div className="flex items-center space-x-2">
-                                <Checkbox
-                                    id={`24seven`}
-                                    checked={is24Seven}
-                                    onCheckedChange={(checked) => {
-                                      handle24SevenToggle(checked as boolean);
-                                    }}
-                                />
-                                <Label htmlFor={`24seven`}>24/7</Label>
-                              </div>
+                        {/* Address (Only for Rental) */}
+                        {spotType === 'rental' && (
+                            <div className="space-y-2">
+                              <Label htmlFor="address">Address</Label>
+                              <Input
+                                  id="address"
+                                  name="address"
+                                  required
+                                  placeholder="Full street address"
+                              />
+                            </div>
+                        )}
 
-                              {/* Time Inputs (Only if Not 24/7) */}
-                              {!is24Seven && (
+                        {/* Location Section (Only for Rental) */}
+                        {spotType === 'rental' && photoTimestamp && (
+                            <div className="space-y-2">
+                              <Label>Location</Label>
+                              {!userLocation && (
+                                  <Button
+                                      type="button"
+                                      variant="outline"
+                                      onClick={captureLocation}
+                                      disabled={locationLoading}
+                                      className="flex items-center space-x-2"
+                                  >
+                                    <MapPin className="w-4 h-4" />
+                                    <span>{locationLoading ? 'Locating...' : 'Use My Location'}</span>
+                                  </Button>
+                              )}
+                              {locationLoading && <p>Capturing location...</p>}
+                              {!locationLoading && (
                                   <>
-                                    <div className="grid grid-cols-2 gap-4">
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`start_time`}>Start Time</Label>
-                                        <Input
-                                            id={`start_time`}
-                                            type="time"
-                                            value={timeSlot.start_time}
-                                            onChange={(e) =>
-                                                setTimeSlot((prev: any) => ({
-                                                  ...prev,
-                                                  start_time: e.target.value,
-                                                }))
-                                            }
-                                            required
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`end_time`}>End Time</Label>
-                                        <Input
-                                            id={`end_time`}
-                                            type="time"
-                                            value={timeSlot.end_time}
-                                            onChange={(e) =>
-                                                setTimeSlot((prev: any) => ({
-                                                  ...prev,
-                                                  end_time: e.target.value,
-                                                }))
-                                            }
-                                            required
-                                        />
-                                      </div>
-                                    </div>
-
-                                    {/* Days of the Week */}
-                                    <div className="space-y-2">
-                                      <Label>Days of the Week</Label>
-                                      <div className="grid grid-cols-2 gap-2">
-                                        {Object.values(DaysOfWeek).map((day) => (
-                                            <div key={day} className="flex items-center space-x-2">
-                                              <Checkbox
-                                                  id={`${day}`}
-                                                  checked={timeSlot.day_of_week.includes(day)}
-                                                  onCheckedChange={(checked) => {
-                                                    handleDaySelection(day as DaysOfWeek, checked as boolean);
-                                                  }}
-                                              />
-                                              <Label htmlFor={`${day}`}>{day}</Label>
-                                            </div>
-                                        ))}
-                                      </div>
-                                    </div>
+                                    {userLocation ? (
+                                        <div className="mt-2">
+                                          <p><strong>Latitude:</strong> {userLocation.lat}</p>
+                                          <p><strong>Longitude:</strong> {userLocation.lng}</p>
+                                        </div>
+                                    ) : geoEnabled ? (
+                                        <p>Click 'Use My Location' to capture your current location for the spot.</p>
+                                    ) : (
+                                        <p>Geolocation is not enabled. Please enable location services.</p>
+                                    )}
                                   </>
                               )}
-
-                              {/* Display error message if any */}
-                              {availabilityError && (
-                                  <p className="text-red-500 text-sm">{availabilityError}</p>
-                              )}
                             </div>
-                          </div>
+                        )}
 
-                          {/* Price Input (Only for Rental) */}
-                          <div className="space-y-2">
-                            <Label htmlFor="price">Price per Hour ($)</Label>
-                            <Input
-                                id="price"
-                                name="price"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                required
-                                placeholder="e.g. 5.00"
-                            />
-                          </div>
-                        </>
-                    )}
+                        {/* Availability Schedule (Only for Rental) */}
+                        {spotType === 'rental' && (
+                            <>
+                              <div className="space-y-4">
+                                <Label>Availability Schedule</Label>
+                                <div className="space-y-2 border p-4 rounded-md">
+                                  {/* Slot Header */}
+                                  <div className="flex justify-between items-center">
+                                    <Label>Time Slot</Label>
+                                  </div>
 
-                    {/* Spot Image Upload Section */}
-                    <div className="space-y-2">
-                      <Label>Spot Image</Label>
-                      {showCamera ? (
-                          <div className="relative">
-                            <Webcam
-                                audio={false}
-                                ref={webcamRef}
-                                screenshotFormat="image/jpeg"
-                                className="w-full rounded-lg"
-                            />
+                                  {/* 24/7 Checkbox */}
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id={`24seven`}
+                                        checked={is24Seven}
+                                        onCheckedChange={(checked) => {
+                                          handle24SevenToggle(checked as boolean);
+                                        }}
+                                    />
+                                    <Label htmlFor={`24seven`}>24/7</Label>
+                                  </div>
+
+                                  {/* Time Inputs (Only if Not 24/7) */}
+                                  {!is24Seven && (
+                                      <>
+                                        <div className="grid grid-cols-2 gap-4">
+                                          <div className="space-y-2">
+                                            <Label htmlFor={`start_time`}>Start Time</Label>
+                                            <Input
+                                                id={`start_time`}
+                                                type="time"
+                                                value={timeSlot.start_time}
+                                                onChange={(e) =>
+                                                    setTimeSlot((prev: any) => ({
+                                                      ...prev,
+                                                      start_time: e.target.value,
+                                                    }))
+                                                }
+                                                required
+                                            />
+                                          </div>
+                                          <div className="space-y-2">
+                                            <Label htmlFor={`end_time`}>End Time</Label>
+                                            <Input
+                                                id={`end_time`}
+                                                type="time"
+                                                value={timeSlot.end_time}
+                                                onChange={(e) =>
+                                                    setTimeSlot((prev: any) => ({
+                                                      ...prev,
+                                                      end_time: e.target.value,
+                                                    }))
+                                                }
+                                                required
+                                            />
+                                          </div>
+                                        </div>
+
+                                        {/* Days of the Week */}
+                                        <div className="space-y-2">
+                                          <Label>Days of the Week</Label>
+                                          <div className="grid grid-cols-2 gap-2">
+                                            {Object.values(DaysOfWeek).map((day) => (
+                                                <div key={day} className="flex items-center space-x-2">
+                                                  <Checkbox
+                                                      id={`${day}`}
+                                                      checked={timeSlot.day_of_week.includes(day)}
+                                                      onCheckedChange={(checked) => {
+                                                        handleDaySelection(day as DaysOfWeek, checked as boolean);
+                                                      }}
+                                                  />
+                                                  <Label htmlFor={`${day}`}>{day}</Label>
+                                                </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      </>
+                                  )}
+
+                                  {/* Display error message if any */}
+                                  {availabilityError && (
+                                      <p className="text-red-500 text-sm">{availabilityError}</p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Price Input (Only for Rental) */}
+                              <div className="space-y-2">
+                                <Label htmlFor="price">Price per Hour ($)</Label>
+                                <Input
+                                    id="price"
+                                    name="price"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    required
+                                    placeholder="e.g. 5.00"
+                                />
+                              </div>
+                            </>
+                        )}
+
+                        {/* Spot Image Upload Section */}
+                        <div className="space-y-2">
+                          <Label>Spot Image</Label>
+                          {showCamera ? (
+                              <div className="relative">
+                                <Webcam
+                                    audio={false}
+                                    ref={webcamRef}
+                                    screenshotFormat="image/jpeg"
+                                    className="w-full rounded-lg"
+                                />
+                                <Button
+                                    type="button"
+                                    onClick={handleCameraCapture}
+                                    className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
+                                >
+                                  <Camera className="w-4 h-4 mr-2" />
+                                  Capture Photo
+                                </Button>
+                              </div>
+                          ) : (
+                              <>
+                                {spotType === 'rental' && (
+                                    <div
+                                        className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-gray-400 transition-colors"
+                                        onClick={handleImageClick}
+                                    >
+                                      {previewUrl ? (
+                                          <div className="relative">
+                                            <img
+                                                src={previewUrl}
+                                                alt="Preview"
+                                                className="max-w-full h-auto mx-auto rounded-lg"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleRemoveImage();
+                                                }}
+                                                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                            >
+                                              <X size={16} />
+                                            </button>
+                                          </div>
+                                      ) : (
+                                          <div className="flex flex-col items-center py-8">
+                                            <Upload size={48} className="text-gray-400 mb-2" />
+                                            <p className="text-sm text-gray-500">
+                                              Click to upload an image or use camera
+                                            </p>
+                                          </div>
+                                      )}
+                                    </div>
+                                )}
+                                {spotType === 'free' && previewUrl && (
+                                    <div className="relative">
+                                      <img
+                                          src={previewUrl}
+                                          alt="Preview"
+                                          className="max-w-full h-auto mx-auto rounded-lg"
+                                      />
+                                      <button
+                                          type="button"
+                                          onClick={handleRemoveImage}
+                                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                      >
+                                        <X size={16} />
+                                      </button>
+                                    </div>
+                                )}
+                              </>
+                          )}
+                          {/* File Input */}
+                          {spotType === 'rental' && (
+                              <input
+                                  type="file"
+                                  name="image"
+                                  accept="image/*"
+                                  onChange={handleImageChange}
+                                  ref={fileInputRef}
+                                  className="hidden"
+                              />
+                          )}
+                          <div className="flex justify-center mt-2">
                             <Button
                                 type="button"
-                                onClick={handleCameraCapture}
-                                className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
+                                variant="outline"
+                                onClick={() => {
+                                  setShowCamera(!showCamera);
+                                }}
+                                disabled={false} // Allow toggling camera for both types
                             >
                               <Camera className="w-4 h-4 mr-2" />
-                              Capture Photo
+                              {showCamera ? 'Hide Camera' : 'Use Camera'}
                             </Button>
                           </div>
-                      ) : (
-                          <div
-                              className={`border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-gray-400 transition-colors ${
-                                  spotType === 'free' ? 'opacity-50 cursor-not-allowed' : ''
-                              }`}
-                              onClick={spotType === 'free' ? undefined : handleImageClick}
-                          >
-                            {previewUrl ? (
-                                <div className="relative">
-                                  <img
-                                      src={previewUrl}
-                                      alt="Preview"
-                                      className="max-w-full h-auto mx-auto rounded-lg"
-                                  />
-                                  <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRemoveImage();
-                                      }}
-                                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                                  >
-                                    <X size={16} />
-                                  </button>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center py-8">
-                                  <Upload size={48} className={`text-gray-400 mb-2 ${spotType === 'free' ? 'opacity-50' : ''}`} />
-                                  <p className="text-sm text-gray-500">
-                                    {spotType === 'free'
-                                        ? 'Image upload is disabled for free spots.'
-                                        : 'Click to upload an image or use camera'}
-                                  </p>
-                                </div>
-                            )}
-                          </div>
-                      )}
-                      {/* Disable the file input if spotType is 'free' */}
-                      {spotType !== 'free' && (
-                          <input
-                              type="file"
-                              name="image" // Ensure the name matches what's expected on the backend
-                              accept="image/*"
-                              onChange={handleImageChange}
-                              ref={fileInputRef}
-                              className="hidden"
-                              // Remove the 'required' attribute
-                              // required
-                          />
-                      )}
-                      <div className="flex justify-center mt-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => {
-                              if (spotType === 'free') {
-                                toast({
-                                  title: 'Image Upload Disabled',
-                                  description: 'Image uploading is disabled for free spots. Please capture an image using the camera.',
-                                  variant: 'destructive',
-                                });
-                              }
-                              setShowCamera(!showCamera);
-                            }}
-                            disabled={false} // Allow toggling camera for both types
-                        >
-                          <Camera className="w-4 h-4 mr-2" />
-                          {showCamera ? 'Hide Camera' : 'Use Camera'}
-                        </Button>
-                      </div>
-                    </div>
 
-
-                    {/* Submit Button */}
-                    <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={isSubmitting || loading || (spotType === 'free' && !image)}
-                    >
-                      {isSubmitting || loading ? 'Adding Spot...' : 'Add Parking Spot'}
-                    </Button>
-
-                          {/* Display Error Message if Any */}
-                          {error && (
-                              <p className="text-red-500 text-center mt-2">{error}</p>
+                          {/* Display Location and Timestamp for Free Spots */}
+                          {spotType === 'free' && photoTaken && photoTimestamp && (
+                              <div className="mt-4 p-4 border rounded-md bg-white">
+                                {userLocation ? (
+                                    <>
+                                      <p><strong>Latitude:</strong> {userLocation.lat}</p>
+                                      <p><strong>Longitude:</strong> {userLocation.lng}</p>
+                                    </>
+                                ) : (
+                                    <p>Capturing location...</p>
+                                )}
+                                {photoTimestamp && (
+                                    <p><strong>Timestamp:</strong> {photoTimestamp.toLocaleString()}</p>
+                                )}
+                              </div>
                           )}
-                        </form>
+                        </div>
 
-                        {/* Confirmation Modal */}
-                        <Dialog open={showConfirmationModal} onOpenChange={setShowConfirmationModal}>
-                          <DialogContent className="w-96"> {/* Added w-96 class here */}
-                            <DialogHeader>
-                              <DialogTitle>Confirm Submission</DialogTitle>
-                              <DialogDescription>
-                                Are you sure you want to submit this parking spot?
-                              </DialogDescription>
-                            </DialogHeader>
-                            <DialogFooter>
-                              <Button variant="outline" onClick={() => setShowConfirmationModal(false)}>
-                                Cancel
-                              </Button>
-                              <Button
-                                  variant="default"
-                                  className="border border-white"
-                                  onClick={confirmSubmission}
-                              >
-                                Confirm
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
+                        {/* Submit Button */}
+                        <Button
+                            type="submit"
+                            className="w-full"
+                            disabled={
+                                isSubmitting ||
+                                loading ||
+                                (spotType === 'free' && (!image || !userLocation)) ||
+                                (spotType === 'rental' && !image)
+                            }
+                        >
+                          {isSubmitting || loading ? 'Adding Spot...' : 'Add Parking Spot'}
+                        </Button>
 
-                        {/* Success Modal */}
-                        <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-                          <DialogContent className="w-96"> {/* Added w-96 class here */}
-                            <DialogHeader>
-                              <DialogTitle>Success!</DialogTitle>
-                              <DialogDescription>
-                                Your parking spot has been successfully added.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <DialogFooter>
-                              <Button onClick={() => {
-                                setShowSuccessModal(false);
-                                router.push('/myspots');
-                              }}>Close</Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </div>
+                        {/* Display Error Message if Any */}
+                        {error && (
+                            <p className="text-red-500 text-center mt-2">{error}</p>
+                        )}
+                      </form>
+
+                      {/* Confirmation Modal */}
+                      <Dialog open={showConfirmationModal} onOpenChange={setShowConfirmationModal}>
+                        <DialogContent className="w-96"> {/* Added w-96 class here */}
+                          <DialogHeader>
+                            <DialogTitle>Confirm Submission</DialogTitle>
+                            <DialogDescription>
+                              Are you sure you want to submit this parking spot?
+                            </DialogDescription>
+                          </DialogHeader>
+                          <DialogFooter>
+                            <Button variant="outline" onClick={() => setShowConfirmationModal(false)}>
+                              Cancel
+                            </Button>
+                            <Button
+                                variant="default"
+                                className="border border-white"
+                                onClick={confirmSubmission}
+                            >
+                              Confirm
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+
+                      {/* Success Modal */}
+                      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+                        <DialogContent className="w-96"> {/* Added w-96 class here */}
+                          <DialogHeader>
+                            <DialogTitle>Success!</DialogTitle>
+                            <DialogDescription>
+                              Your parking spot has been successfully added.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <DialogFooter>
+                            <Button onClick={() => {
+                              setShowSuccessModal(false);
+                              router.push('/myspots');
+                            }}>Close</Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </div>
             </div>
-        )
-    );
-  }
+          </div>
+      )
+  );
+}

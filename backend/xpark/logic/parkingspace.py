@@ -1,5 +1,6 @@
 import os
 import json
+from datetime import datetime
 from typing import Dict, Any, Optional, List
 
 from werkzeug.datastructures import FileStorage
@@ -58,6 +59,7 @@ def create_paid_parking_space(
     name: str,
     price: float,  # FIXME: do not pass around money as floats!!!
     availability_schedule: List[Dict[str, str]],
+    photo_timestamp: str
 ) -> Result[Dict[str, Any], str]:
     # Save image
     if image_file:
@@ -65,7 +67,7 @@ def create_paid_parking_space(
         photos = [image_uri]
     else:
         photos = []
-
+    print(photo_timestamp)
     # Insert into database
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -80,7 +82,8 @@ def create_paid_parking_space(
                     verification_status,
                     name,
                     availability_schedule,
-                    price
+                    price,
+                    photo_timestamp
                 )
                 VALUES (
                     %(user_id)s,
@@ -91,7 +94,8 @@ def create_paid_parking_space(
 					'unverified',
 					%(name)s,
                     %(sched)s,
-					%(price)s
+					%(price)s,
+					%(photo_timestamp)s
                 )
                 RETURNING id, created_at, updated_at
                 """,
@@ -104,6 +108,7 @@ def create_paid_parking_space(
                     "name": name,
                     "price": price,
                     "sched": json.dumps(availability_schedule),
+                    "photo_timestamp": photo_timestamp
                 },
             )
             parking_space = cur.fetchone()
@@ -124,7 +129,11 @@ def create_free_parking_space(
     longitude: float,
     latitude: float,
     address: str,
+    photo_timestamp: str
 ) -> Result[Dict[str, Any], str]:
+    # Convert ISO string to datetime
+    timestamp_dt = datetime.fromisoformat(photo_timestamp.replace('Z', '+00:00'))
+
     # Save image
     if image_file:
         image_uri = save_image(image_file)
@@ -142,19 +151,19 @@ def create_free_parking_space(
                     is_paid,
                     location,
                     address,
-                    photos
+                    photos,
+                    photo_timestamp
                 )
-                VALUES (%s, FALSE, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s, %s)
+                VALUES (%s, FALSE, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s, %s, %s)
                 RETURNING id, created_at, updated_at
                 """,
-                (user_id, longitude, latitude, address, photos),
+                (user_id, longitude, latitude, address, photos, timestamp_dt),  # Pass the datetime object instead of string
             )
             parking_space = cur.fetchone()
             if not parking_space:
                 return Err("Error creating parking space")
 
             return Ok(parking_space)
-
 
 # TODO: Review
 def save_image(image_file: FileStorage) -> str:
