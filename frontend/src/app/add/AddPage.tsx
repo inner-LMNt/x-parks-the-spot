@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Camera, X, Upload, ArrowLeft, MapPin } from 'lucide-react';
 import Webcam from 'react-webcam';
 import { DaysOfWeek } from '@/types/type'; // Ensure DaysOfWeek enum is imported
@@ -48,10 +48,11 @@ export default function AddPage() {
   const [image, setImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [photoTimestamp, setPhotoTimestamp] = useState<Date | null>(null); // **State for Timestamp**
+  const [locationTimestamp, setLocationTimestamp] = useState<Date | null> (null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const webcamRef = useRef<Webcam>(null);
   const [photoTaken, setPhotoTaken] = useState<boolean>(false);
-  const [showCamera, setShowCamera] = useState(false);
+  const [showCamera, setShowCamera] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Separate TimeSlot and is24Seven
@@ -146,7 +147,6 @@ export default function AddPage() {
 
 
 
-// Update captureLocation function to use the current timestamp
   const captureLocation = useCallback(() => {
     setLocationLoading(true);
     if (navigator.geolocation) {
@@ -157,12 +157,14 @@ export default function AddPage() {
               lng: position.coords.longitude,
             };
             console.log('Location captured:', location);
+
             setUserLocation(location);
+            setLocationTimestamp(new Date()); // Store location timestamp
             setGeoEnabled(true);
             setLocationLoading(false);
           },
           (error) => {
-            console.error("Error: The Geolocation service failed.", error);
+            console.error('Error: The Geolocation service failed.', error);
             setGeoEnabled(false);
             setLocationLoading(false);
             toast({
@@ -198,7 +200,16 @@ export default function AddPage() {
         });
       }
     }
-  }, [spotType, setLocationLoading, setUserLocation, setGeoEnabled, toast, handleRemoveImage]);
+  }, [
+    spotType,
+    setLocationLoading,
+    setUserLocation,
+    setGeoEnabled,
+    setLocationTimestamp,
+    toast,
+    handleRemoveImage,
+  ]);
+
 
   /**
    * **Handle 24/7 Toggle**
@@ -243,8 +254,9 @@ export default function AddPage() {
    */
   const calculateTimeDifferenceSeconds = (): number => {
     if (!photoTimestamp) return Infinity;
-    const now = new Date();
-    return Math.abs(now.getTime() - photoTimestamp.getTime()) / 1000;
+    if (!locationTimestamp) return Infinity;
+
+    return Math.abs(locationTimestamp.getTime() - photoTimestamp.getTime()) / 1000;
   };
 
   /**
@@ -363,7 +375,7 @@ export default function AddPage() {
           console.log('Timestamp is beyond the allowed time frame:', timeDiffSeconds, 'seconds.');
           toast({
             title: 'Timestamp Error',
-            description: 'The photo was not captured within the allowed time frame. Please try again.',
+            description: 'The your photo and location must be captured less than 30 seconds apart. Please try again.',
             variant: 'destructive',
           });
           handleRemoveImage(); // Remove image if timestamp is invalid
@@ -490,25 +502,26 @@ export default function AddPage() {
 
       console.log('Dispatching addParkingSpot with FormData:', data);
 
-      try {
-        await dispatch(addParkingSpot(formData)).unwrap();
+      const result = await dispatch(addParkingSpot(formData));
+      if (addParkingSpot.fulfilled.match(result)) {
         console.log('Parking spot added successfully.');
         toast({
           title: 'Spot Added Successfully!',
           description: 'Your parking spot has been added.',
+          variant: 'success',
         });
         dispatch(resetState());
         setShowSuccessModal(true);
-      } catch (error: any) {
+      }
+      else{
         console.error('Error adding parking spot:', error);
         toast({
           title: 'Error',
           description: error?.message || 'Failed to add parking spot.',
           variant: 'destructive',
         });
-      } finally {
-        setIsSubmitting(false);
       }
+      setIsSubmitting(false);
     } catch (outerError) {
       console.error('Unexpected error during submission:', outerError);
       toast({
@@ -564,6 +577,7 @@ export default function AddPage() {
                               onValueChange={(value) => {
                                 console.log('Spot type changed to:', value);
                                 setSpotType(value as 'free' | 'rental');
+                                setShowCamera(value == 'free')
                                 setUserLocation(null);
                                 setImage(null); // Reset image when spot type changes
                                 setPreviewUrl(null); // Reset preview

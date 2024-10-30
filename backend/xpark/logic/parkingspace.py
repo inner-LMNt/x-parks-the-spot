@@ -59,7 +59,6 @@ def create_paid_parking_space(
     name: str,
     price: float,  # FIXME: do not pass around money as floats!!!
     availability_schedule: List[Dict[str, str]],
-    photo_timestamp: str
 ) -> Result[Dict[str, Any], str]:
     # Save image
     if image_file:
@@ -67,7 +66,6 @@ def create_paid_parking_space(
         photos = [image_uri]
     else:
         photos = []
-    print(photo_timestamp)
     # Insert into database
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -95,7 +93,7 @@ def create_paid_parking_space(
 					%(name)s,
                     %(sched)s,
 					%(price)s,
-					%(photo_timestamp)s
+					NOW()
                 )
                 RETURNING id, created_at, updated_at
                 """,
@@ -108,7 +106,6 @@ def create_paid_parking_space(
                     "name": name,
                     "price": price,
                     "sched": json.dumps(availability_schedule),
-                    "photo_timestamp": photo_timestamp
                 },
             )
             parking_space = cur.fetchone()
@@ -129,11 +126,7 @@ def create_free_parking_space(
     longitude: float,
     latitude: float,
     address: str,
-    photo_timestamp: str
 ) -> Result[Dict[str, Any], str]:
-    # Convert ISO string to datetime
-    timestamp_dt = datetime.fromisoformat(photo_timestamp.replace('Z', '+00:00'))
-
     # Save image
     if image_file:
         image_uri = save_image(image_file)
@@ -142,7 +135,7 @@ def create_free_parking_space(
         photos = []
 
     # Provide default values
-    default_name = f'Spot Logged at {timestamp_dt.strftime("%I:%M %p, %B %d %Y")}'
+    default_name = f'Spot Logged at {datetime.now().strftime("%I:%M %p, %B %d %Y")}'
     default_verification_status = 'unverified'
     default_availability_schedule = json.dumps([])  # or another appropriate default
     default_price = 0
@@ -164,7 +157,7 @@ def create_free_parking_space(
                     availability_schedule,
                     price
                 )
-                VALUES (%s, FALSE, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, FALSE, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s, %s, NOW(), %s, %s, %s, %s)
                 RETURNING id, created_at, updated_at
                 """,
                 (
@@ -173,7 +166,6 @@ def create_free_parking_space(
                     latitude,
                     address,
                     photos,
-                    timestamp_dt,
                     default_verification_status,
                     default_name,
                     default_availability_schedule,

@@ -58,7 +58,6 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
             address=data["location"]["address"],
             price=float(data["pricing_info"]["base_price"]),
             availability_schedule=data["availability_schedule"],
-            photo_timestamp=data["photo_timestamp"],
         )
     else:
         result = create_free_parking_space(
@@ -67,7 +66,6 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
             longitude=longitude,
             latitude=latitude,
             address="",
-            photo_timestamp=data["photo_timestamp"]
         )
 
     if result.is_ok():
