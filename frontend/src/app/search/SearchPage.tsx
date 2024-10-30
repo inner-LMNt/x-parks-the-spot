@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from '@/components/ui/slider';
+import { updateSpot } from '@/features/user/userSlice';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { MapPin, Navigation, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, ArrowDown, ArrowUp, DollarSign } from 'lucide-react';
 import {
   Autocomplete,
@@ -78,6 +80,46 @@ export default function SearchPage() {
   const currentUrl = usePathname();
   const isLoggedIn = useAppSelector(state => state.user.isLoggedIn);
 
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [currentSpotId, setCurrentSpotId] = useState<string | null>(null);
+
+  const openUpdateStatusDialog = (spotId: string) => {
+    setCurrentSpotId(spotId);
+    setIsDialogOpen(true);
+  };
+
+  const closeUpdateStatusDialog = () => {
+    setIsDialogOpen(false);
+    setCurrentSpotId(null);
+    setPhoto(null);
+  };
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCameraCapture = useCallback(() => {
+    const imageSrc = webcamRef.current?.getScreenshot();
+    if (imageSrc) {
+      setPreviewUrl(imageSrc);
+      fetch(imageSrc)
+          .then((res) => res.blob())
+          .then((blob) => {
+            const file = new File([blob], 'camera_capture.jpg', { type: 'image/jpeg' });
+            setImage(file);
+          });
+      setShowCamera(false);
+    }
+  }, []);
 
   useEffect(() => {
     // @ts-ignore
@@ -494,6 +536,34 @@ export default function SearchPage() {
     router.push(`/bookings/${parkingSpaceId}/reserve?previousUrl=${encodeURIComponent(currentUrl ?? '/search')}`);
   };
 
+  const renderSpots = (spots: ParkingSpace[]) => (
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {spots.map((spot) => (
+            <motion.div
+                key={spot.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+            >
+              <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                {/* Existing image and card content here */}
+                <CardContent className="pt-4">
+                  {/* Existing content and other buttons */}
+
+                  <Button
+                      onClick={() => openUpdateStatusDialog(spot.id)}
+                      className="mt-2 w-full bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300 hover:text-gray-900 transition-colors"
+                  >
+                    Update Spot Status
+                  </Button>
+
+                </CardContent>
+              </Card>
+            </motion.div>
+        ))}
+      </div>
+  );
+
   useEffect(() => {
     const adjustMapHeight = () => {
       if (navigationCardRef.current) {
@@ -545,6 +615,7 @@ export default function SearchPage() {
   };
 
   return (domLoaded &&
+
       <div
           className="min-h-screen bg-gray-50 text-gray-900 flex flex-col"
           style={{ height: '100vh', overflow: 'hidden' }}
@@ -946,6 +1017,79 @@ export default function SearchPage() {
                           Reserve
                         </Button>
                       </div>
+
+                      {/* ShadCN Dialog */}
+                      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button onClick={() => openUpdateStatusDialog(selectedSpot.id)} className="mt-2">
+                            Update Spot Status
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-white p-6 rounded-lg shadow-lg w-full">
+
+                          <DialogHeader>
+                            <DialogTitle className="text-lg text-gray-800 font-bold">Submit Verification Photo</DialogTitle>
+                            <DialogDescription className="text-sm text-gray-500">
+                              Use your camera to take a photo for verification.
+                            </DialogDescription>
+                          </DialogHeader>
+
+                          {/* Distance Check and Camera Capture */}
+                          {userLocation && selectedSpot?.location && (() => {
+                            const calculateDistance = (loc1, loc2) => {
+                              const R = 6371e3; // Earth's radius in meters
+                              const lat1 = (loc1.lat * Math.PI) / 180;
+                              const lat2 = (loc2.latitude * Math.PI) / 180;
+                              const dLat = ((loc2.latitude - loc1.lat) * Math.PI) / 180;
+                              const dLng = ((loc2.longitude - loc1.lng) * Math.PI) / 180;
+
+                              const a =
+                                  Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                                  Math.cos(lat1) * Math.cos(lat2) *
+                                  Math.sin(dLng / 2) * Math.sin(dLng / 2);
+                              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                              return R * c;
+                            };
+
+                            const distance = calculateDistance(userLocation, selectedSpot.location);
+                            const isCloseEnough = distance <= 200; // Adjust this as necessary
+
+                            return isCloseEnough ? (
+                                <>
+                                  <div className="mt-4 w-full flex justify-center">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        capture="environment" // Ensures camera is used
+                                        onChange={handleImageChange}
+                                        className="w-full p-2 border border-gray-300 rounded-lg"
+                                    />
+                                  </div>
+                                  <Button
+                                      onClick={handleImageChange}
+                                      className="mt-4 w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
+                                  >
+                                    Submit Photo
+                                  </Button>
+                                </>
+                            ) : (
+                                <p className="mt-4 text-red-500 text-sm font-semibold">
+                                  Not close enough to the spot to update.
+                                </p>
+                            );
+                          })()}
+
+                          <DialogClose asChild>
+                            <Button
+                                onClick={closeUpdateStatusDialog}
+                                className="mt-2 w-full bg-gray-300 text-gray-800 py-2 rounded-lg hover:bg-gray-400"
+                            >
+                              Cancel
+                            </Button>
+                          </DialogClose>
+                        </DialogContent>
+                      </Dialog>
+
                     </div>
                   </InfoWindow>
               )}
@@ -1028,6 +1172,7 @@ export default function SearchPage() {
       >
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row justify-between items-center w-full">
+
             <CardTitle className="text-lg">Directions</CardTitle>
             {navigationMode && (
               <button
