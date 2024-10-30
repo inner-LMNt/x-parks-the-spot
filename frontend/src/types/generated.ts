@@ -1673,12 +1673,6 @@ export interface components {
             start_time: string;
             end_time: string;
         };
-        PricingInfo: {
-            /** Format: float */
-            base_price: number;
-            dynamic_pricing?: boolean;
-            dynamic_pricing_algorithm?: string;
-        };
         ParkingSpace: {
             /** Format: uuid */
             id?: string;
@@ -1689,7 +1683,8 @@ export interface components {
             location: components["schemas"]["Location"];
             features?: string[];
             availability_schedule?: components["schemas"]["TimeSlot"][];
-            pricing_info?: components["schemas"]["PricingInfo"];
+            /** Format: float */
+            price?: number;
             photos?: string[];
             /** @enum {string} */
             verification_status?: "verified" | "pending" | "rejected";
@@ -1754,6 +1749,12 @@ export interface components {
             /** Format: float */
             average_rating?: number;
             availability?: boolean;
+        };
+        PricingInfo: {
+            /** Format: float */
+            base_price: number;
+            dynamic_pricing?: boolean;
+            dynamic_pricing_algorithm?: string;
         };
         ParkingSpaceCreateRequest: {
             /** Format: uuid */

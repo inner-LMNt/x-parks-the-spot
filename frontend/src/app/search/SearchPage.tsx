@@ -20,7 +20,8 @@ import {
   ArrowDown,
   ArrowUp,
   DollarSign,
-  Badge
+  SquareParking,
+  Badge, ParkingSquare
 } from 'lucide-react';
 import {
   Autocomplete,
@@ -324,30 +325,6 @@ export default function SearchPage() {
     setIsListExpanded(!isListExpanded);
   };
 
-  useEffect(() => {
-    const handleListScroll = () => {
-      if (listRef.current) {
-        const scrollTop = listRef.current.scrollTop;
-        if (scrollTop > 0) {
-          setIsListExpanded(true);
-        } else {
-          setIsListExpanded(false);
-        }
-      }
-    };
-
-    const listElement = listRef.current;
-    if (listElement) {
-      listElement.addEventListener('scroll', handleListScroll);
-    }
-
-    return () => {
-      if (listElement) {
-        listElement.removeEventListener('scroll', handleListScroll);
-      }
-    };
-  }, []);
-
   // Watch user location and check if within 50 feet of destination
   useEffect(() => {
     let watchId: number;
@@ -549,6 +526,43 @@ export default function SearchPage() {
     setEndTime(undefined);
     //setSelectedFeatures([]);
     setPaidStatus([]);
+  };
+
+  const getAvailabilitySummary = (availabilitySchedule) => {
+    if (!availabilitySchedule || availabilitySchedule.length === 0) {
+      return 'No availability information';
+    }
+
+    // Check if the spot is available 24/7
+    const is247 = availabilitySchedule.length === 7 && availabilitySchedule.every((schedule) =>
+        schedule.start_time === '00:00' && schedule.end_time === '23:59'
+    );
+
+    if (is247) {
+      return 'Available 24/7';
+    }
+
+    // Group availability by time slots
+    const daysOfWeekOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const groupedByTime = {};
+
+    availabilitySchedule.forEach(({ day_of_week, start_time, end_time }) => {
+      const timeRange = `${start_time} - ${end_time}`;
+      if (!groupedByTime[timeRange]) {
+        groupedByTime[timeRange] = [];
+      }
+      groupedByTime[timeRange].push(day_of_week);
+    });
+
+    // Generate summary strings
+    const summaries = Object.entries(groupedByTime).map(([timeRange, days]) => {
+      // Sort days according to daysOfWeekOrder
+      days.sort((a, b) => daysOfWeekOrder.indexOf(a) - daysOfWeekOrder.indexOf(b));
+      const dayList = days.join(', ');
+      return `${dayList}: ${timeRange}`;
+    });
+
+    return summaries.join('; ');
   };
 
   // Function to close the modal
@@ -1068,26 +1082,43 @@ export default function SearchPage() {
                   { (parkingSpots).map((spot: ParkingSpace) => (
                       <Card key={spot.id} className="shadow-sm">
                         <CardHeader>
-                          <CardTitle className="text-base">{spot.name || 'Unnamed Parking Space'}</CardTitle>
+                          <CardTitle className="text-base flex items-center justify-between">
+                            {spot.name || 'Unnamed Parking Space'}
+                            {spot.is_paid ? (
+                                <span className="ml-2 text-green-600 flex items-center">
+          <DollarSign className="h-4 w-4 mr-1" />
+          Paid
+        </span>
+                            ) : (
+                                <span className="ml-2 text-blue-600 flex items-center">
+          <ParkingSquare className="h-4 w-4 mr-1" />
+          Free
+        </span>
+                            )}
+                          </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          {spot.location && (
+                          {spot.is_paid && (
                               <>
-                                <p className="text-sm">Address: {spot.location.address || 'Not specified'}</p>
-                                <p className="text-sm">Latitude: {spot.location.latitude.toFixed(4)}</p>
-                                <p className="text-sm">Longitude: {spot.location.longitude.toFixed(4)}</p>
+                                <p className="text-md">
+                                  Price: ${spot.price}
+                                </p>
+                                <p className="text-md">
+                                  Availability: {getAvailabilitySummary(spot.availability_schedule)}
+                                </p>
+                                <p className="text-md">Address: {spot.location.address || 'Not specified'}</p>
+                                <p className="text-md">Average Rating: {'No ratings'}</p>
                               </>
                           )}
-                          <p className="text-sm">Average Rating: {'No ratings'}</p>
-                          <p className="text-sm">Availability: {'Available'}</p>
-                          {/*{spot.features && spot.features.length > 0 && (*/}
-                          {/*    <p className="text-sm">Features: {spot.features.join(', ')}</p>*/}
-                          {/*)}*/}
+
+                          {!spot.is_paid && spot.location && (
+                              <p className="text-md">Location: {spot.location.longitude}, {spot.location.longitude}</p>
+                          )}
                           <Button
                               onClick={() => handleSpotSelect(spot)}
-                              className="mt-2 w-full text-sm px-3 py-2"
+                              className="mt-2 w-full text-sm px-3 py-2 flex items-center justify-center"
                           >
-                            <MapPin className="mr-2 h-4 w-4"/>
+                            <MapPin className="mr-2 h-4 w-4" />
                             Select
                           </Button>
                         </CardContent>
