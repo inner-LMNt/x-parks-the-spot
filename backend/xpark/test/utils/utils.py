@@ -1,3 +1,5 @@
+import uuid
+
 from flask.testing import FlaskClient
 from typing import Dict, Any, List, Union, Optional
 from datetime import datetime, timedelta, timezone
@@ -82,21 +84,58 @@ def create_test_parking_space(client: FlaskClient, token: str, is_paid: bool = T
     return str(data["id"])
 
 
-def create_test_car(client: FlaskClient, token: str) -> str:
+def create_test_car(client: FlaskClient, token: str, license_plate: Optional[str] = None) -> str:
     """Helper to create a test car and return its ID"""
+    if license_plate is None:
+        # Generate a unique license plate
+        license_plate = f"TEST-{uuid.uuid4().hex[:8]}"
+
     response = client.post(
         "/api/unstable/cars",
         headers={"Authorization": f"Bearer {token}"},
         json={
             "make": "Toyota",
             "model": "Camry",
-            "license_plate": "PA TEST-123"
+            "license_plate": license_plate
         }
     )
     if response.status_code != 201:
         print(f"Car creation failed with status {response.status_code}")
         print(f"Response: {response.get_json()}")
 
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data is not None
+    return str(data["id"])
+
+
+def create_test_reservation_at_time(
+        client: FlaskClient,
+        token: str,
+        space_id: str,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+        car_id: Optional[str] = None,
+) -> str:
+    """Helper to create a test reservation with specific times"""
+    if start_time is None:
+        start_time = datetime.now(timezone.utc) + timedelta(hours=1)
+    if end_time is None:
+        end_time = start_time + timedelta(hours=1)
+    if car_id is None:
+        # Create car with unique license plate
+        car_id = create_test_car(client, token)
+
+    response = client.post(
+        "/api/unstable/reservations",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "parking_space_id": space_id,
+            "start_time": start_time.isoformat(),
+            "end_time": end_time.isoformat(),
+            "car_info_id": car_id
+        }
+    )
     assert response.status_code == 201
     data = response.get_json()
     assert data is not None
@@ -125,40 +164,6 @@ def create_test_reservation(client: FlaskClient, token: str, space_id: str) -> s
     data = response.get_json()
     assert data is not None
     return str(data["id"])
-
-
-def create_test_reservation_at_time(
-    client: FlaskClient,
-    token: str,
-    space_id: str,
-    start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None,
-    car_id: Optional[str] = None,
-) -> str:
-    """Helper to create a test reservation with specific times"""
-    if start_time is None:
-        start_time = datetime.now(timezone.utc) + timedelta(hours=1)
-    if end_time is None:
-        end_time = start_time + timedelta(hours=1)
-    if car_id is None:
-        car_id = create_test_car(client, token)
-
-    # Use ISO format with timezone for creation
-    response = client.post(
-        "/api/unstable/reservations",
-        headers={"Authorization": f"Bearer {token}"},
-        json={
-            "parking_space_id": space_id,
-            "start_time": start_time.isoformat(),
-            "end_time": end_time.isoformat(),
-            "car_info_id": car_id
-        }
-    )
-    assert response.status_code == 201
-    data = response.get_json()
-    assert data is not None
-    return str(data["id"])
-
 
 def create_sequential_reservations(
         client: FlaskClient,

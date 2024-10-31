@@ -290,6 +290,16 @@ def get_max_extension_time_logic(
             if not current_end_time:
                 return Err("Invalid reservation end time")
 
+            # First check if there's at least 30 minutes available
+            min_extension = current_end_time + datetime.timedelta(minutes=30)
+            if not check_if_available(
+                    conn=conn,
+                    parking_spot_id=reservation["parking_space_id"],
+                    start_time=current_end_time + datetime.timedelta(seconds=1),
+                    end_time=min_extension,
+            ):
+                return Err("No available time for extension")
+
             # Search by hour first (up to a week)
             max_hours = 24 * 7
             available_hour = None
@@ -308,9 +318,6 @@ def get_max_extension_time_logic(
 
             if available_hour is None:
                 available_hour = max_hours
-
-            if available_hour == 0:
-                return Err("No available time for extension")
 
             # Binary search for exact minute within the last available hour
             start_minute = 0
