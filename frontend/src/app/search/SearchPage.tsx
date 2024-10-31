@@ -24,7 +24,7 @@ import { searchSpots } from '@/features/search/searchSlice';
 import { usePathname, useRouter } from 'next/navigation';
 import axios from 'axios';
 import Webcam from "react-webcam";
-import { useToast } from '@/components/ui/use-toast';
+import {useToast} from '@/hooks/use-toast';
 
 
 const default_center = {
@@ -89,6 +89,7 @@ export default function SearchPage() {
   const [currentSpotId, setCurrentSpotId] = useState<string | null>(null);
   const webcamRef = useRef<Webcam>(null);
   const DISTANCE_THRESHOLD = 200; // Maximum distance in meters
+  const [includeTakenSpots, setIncludeTakenSpots] = useState(false); // Default to showing only available spots
 
   const openUpdateStatusDialog = (spotId: string) => {
     setCurrentSpotId(spotId);
@@ -303,7 +304,11 @@ export default function SearchPage() {
       radius: searchRadius,
       paid_status: 'ALL',
     };
-
+    if (includeTakenSpots) {
+      request.is_taken = true;
+    } else {
+      request.is_taken = false;
+    }
     if (selectedFilters.includes('minPrice') && minPrice !== undefined) {
       request.min_price = minPrice;
     }
@@ -646,6 +651,7 @@ export default function SearchPage() {
     { key: 'endTime', label: 'End Time' },
     // { key: 'features', label: 'Features' },
     { key: 'paidStatus', label: 'Paid Status' }, // New Paid Status Filter
+    { key: 'allowTaken', label: 'Include Taken Spots' },
   ];
 
   // Handle Deselect All
@@ -894,6 +900,21 @@ export default function SearchPage() {
                                 className="w-full text-sm"
                             />
                           </div>
+                      )}
+                      {selectedFilters.includes('allowTaken') && (
+                          <div className="flex flex-col mb-4">
+                            <Label className="text-sm mb-1">Include Taken Spots:</Label>
+                            <div className="flex items-center">
+                              <input
+                                  type="checkbox"
+                                  id="include_taken"
+                                  checked={includeTakenSpots}
+                                  onChange={(e) => setIncludeTakenSpots(e.target.checked)}
+                                  className="mr-2"
+                              />
+                            </div>
+                          </div>
+
                       )}
 
                       {/*{selectedFilters.includes('features') && (*/}

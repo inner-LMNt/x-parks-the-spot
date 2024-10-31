@@ -254,6 +254,7 @@ def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str
                         'dynamic_pricing', FALSE
                     ) as pricing_info,
                     photos,
+                    is_taken,
                     availability_schedule,
                     verification_status,
                     created_at,

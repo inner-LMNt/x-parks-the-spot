@@ -14,13 +14,15 @@ def search_query(
     max_price: float,
     start_time: str,
     end_time: str,
+    is_taken: bool = False
 ) -> list[dict[str, Any]]:
     paid = None
     if paid_status == "PAID":
         paid = True
     elif paid_status == "UNPAID":
         paid = False
-
+    if is_taken:
+        is_taken = None
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
@@ -28,7 +30,8 @@ def search_query(
                 SELECT
                     id,
                     is_paid, 
-                    verification_status, 
+                    verification_status,
+                    is_taken,
                     name,
                     ST_Y(location::geometry) AS latitude, 
                     ST_X(location::geometry) AS longitude, 
@@ -43,6 +46,7 @@ def search_query(
                 AND is_paid = COALESCE(%(paid)s,is_paid)
                 AND price >= COALESCE(%(min_price)s, price)
                 AND price <= COALESCE(%(max_price)s, price)
+                AND is_taken = COALESCE(%(is_taken)s, is_taken)
                 LIMIT 30
                 """,
                 {
@@ -52,6 +56,7 @@ def search_query(
                     "paid": paid,
                     "min_price": min_price,
                     "max_price": max_price,
+                    "is_taken": is_taken
                 },
             )
             parking_spaces = cur.fetchall()

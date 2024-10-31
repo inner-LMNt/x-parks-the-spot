@@ -16,6 +16,7 @@ def search() -> Tuple[Any, int]:
             max_price=request.json.get("max_price"),  # type: ignore
             start_time=request.json.get("start_time"),  # type: ignore
             end_time=request.json.get("end_time"),  # type: ignore
+            is_taken=request.json.get("is_taken")  # type: ignore
         ),
         200,
     )
