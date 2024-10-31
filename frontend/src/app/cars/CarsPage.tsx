@@ -13,10 +13,7 @@ import {
 } from '@/components/ui/card'
 import { useDispatch, useSelector } from 'react-redux'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
-import {
-  fetchUserCars,
-  deleteCar,
-} from '@/features/cars/carSlice'
+import { fetchUserCars, deleteCar } from '@/features/cars/carSlice'
 import { Car } from 'lucide-react' // Imported FileWarning
 import { Button } from '@/components/ui/button'
 import AddCarModal from '@/components/custom/AddCarModal'
@@ -66,36 +63,56 @@ export default function CarsPage() {
     )
   }
 
+  const renderCars = (cars: CarInfo[]) => (
+    <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
+      {cars.map((car: CarInfo) => (
+        <motion.div
+          key={car.id}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card
+            className='overflow-hidden hover:shadow-lg transition-shadow duration-300'
+            onClick={() => {
+              // @ts-ignore
+              dispatch(openEditCarModal(car))
+            }}
+          >
+            <CardHeader className='bg-gray-50'>
+              <div className='flex justify-between items-center'>
+                <CardTitle className='flex items-center space-x-2'>
+                  <span>
+                    {car.make} {car.model}
+                  </span>
+                </CardTitle>
+              </div>
+            </CardHeader>
+          </Card>
+        </motion.div>
+      ))}
+    </div>
+  )
+
   return (
     <div className='min-h-screen flex flex-col items-center justify-between bg-gray-50 p-4 md:p-8 text-gray-900'>
       <div className='relative w-full max-w-md md:max-w-lg lg:max-w-xl text-center white rounded-lg p-6 md:p-8'>
-        {cars.map((car: CarInfo) => (
-          <motion.div
-            key={car.id}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card
-              className='overflow-hidden hover:shadow-lg transition-shadow duration-300'
-              onClick={() => {
-                // @ts-ignore
-                dispatch(openEditCarModal(car))
-              }}
-            >
-              <CardHeader className='bg-gray-50'>
-                <div className='flex justify-between items-center'>
-                  <CardTitle className='flex items-center space-x-2'>
-                    <span>
-                      {car.make} {car.model}
-                    </span>
-                  </CardTitle>
-                </div>
-              </CardHeader>
-            </Card>
-          </motion.div>
-        ))}
-
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className='bg-white shadow-md rounded-lg p-6 mb-8'
+        >
+          <h1 className='text-3xl font-bold mb-2 text-black'>My Cars</h1>
+          <p className='text-gray-600 mb-6'>Manage your cars</p>
+          {loading ? (
+            <p>Loading...</p>
+          ) : error ? (
+            <p className='text-red-500'>Error: {error}</p>
+          ) : (
+            renderCars(cars)
+          )}
+        </motion.div>
         <div className='text-left mb-6'>
           <Button
             variant='outline'

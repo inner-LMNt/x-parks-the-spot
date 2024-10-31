@@ -1,8 +1,9 @@
 // src/components/EditCarModal.tsx
 
 import React, { useState, useEffect } from 'react'
+import { Trash } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
-import { updateCar, resetCarError } from '@/features/cars/carSlice'
+import { updateCar, deleteCar, resetCarError, fetchUserCars } from '@/features/cars/carSlice'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -40,6 +41,20 @@ const EditCarModal: React.FC<EditCarModalProps> = ({
 			dispatch(resetCarError())
 		}
 	}, [error, dispatch])
+
+	const handleDelete = async (id: string) => {
+		const confirmDelete = window.confirm(
+			'Are you sure you want to delete this car?',
+		)
+		if (confirmDelete) {
+			onClose()
+			// Await the deletion and then re-fetch the cars
+			// @ts-ignore
+			await dispatch(deleteCar(id))
+			// @ts-ignore
+			dispatch(fetchUserCars()) // Re-fetch the cars
+		}
+	}
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
@@ -126,6 +141,14 @@ const EditCarModal: React.FC<EditCarModalProps> = ({
 						</div>
 						<Separator />
 						<div className='flex justify-end space-x-2'>
+							<Button
+								variant='destructive'
+								size='icon'
+								disabled={loading}
+								onClick={() => handleDelete(car.id as string)}
+							>
+								<Trash className='w-4 h-4' />
+							</Button>
 							<Button type='button' variant='ghost' onClick={onClose}>
 								Cancel
 							</Button>
