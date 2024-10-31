@@ -68,15 +68,9 @@ def handle_verify_parking(parking_space_id: uuid.UUID, is_verified: bool) -> Res
                 """,
                 (verification_status, str(parking_space_id)),
             )
-            result = cur.fetchone()
-            if not result:
+            updated_space = cur.fetchone()
+            if not updated_space:
                 return Err(f"Failed to update the verification status of parking space with ID {parking_space_id}.")
-
-            updated_space = {
-                "id": result["id"],
-                "verification_status": result["verification_status"],
-                "updated_at": result["updated_at"].isoformat(),
-            }
 
     # Step 3: Fetch the user's name and email by user ID
     with DB.pool.connection() as conn:
