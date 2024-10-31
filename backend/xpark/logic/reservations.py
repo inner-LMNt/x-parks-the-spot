@@ -1,4 +1,5 @@
 import uuid
+import zoneinfo
 from typing import Optional, Dict, Any, List
 from psycopg.rows import dict_row
 from xpark.utils.db import DB
@@ -262,8 +263,9 @@ def cancel_reservation_logic(
 
             return Ok(None)
 
+
 def get_max_extension_time_logic(
-    user_id: uuid.UUID, reservation_id: uuid.UUID
+        user_id: uuid.UUID, reservation_id: uuid.UUID
 ) -> Result[str, str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -271,84 +273,70 @@ def get_max_extension_time_logic(
             cur.execute(
                 """
                 SELECT 
-                    upper(reservations.time) AS end_time,
-                    reservations.parking_space_id
+                    parking_space_id,
+                    lower(time) AS start_time,
+                    upper(time) AS end_time,
+                    car_info_id
                 FROM reservations
-                WHERE reservations.id = %s AND reservations.renter_id = %s
+                WHERE id = %s AND renter_id = %s
                 """,
                 (reservation_id, user_id),
             )
             reservation = cur.fetchone()
 
             if not reservation:
-                print("Reservation not found or not authorized")
                 return Err("Reservation not found or not authorized")
 
             current_end_time = reservation["end_time"]
-            parking_space_id = reservation["parking_space_id"]
-
             if not current_end_time:
-                print("Invalid reservation end time")
                 return Err("Invalid reservation end time")
 
-            # Ensure current_end_time is timezone-aware
-            if current_end_time.tzinfo is None:
-                current_end_time = current_end_time.replace(tzinfo=tzutc())
+            # Search by hour first (up to a week)
+            max_hours = 24 * 7
+            available_hour = None
 
-            # Fetch availability ranges that include the current end time
-            cur.execute(
-                """
-                SELECT time
-                FROM paid_parking_allowed_availability
-                WHERE parking_space_id = %s AND time @> %s::timestamptz
-                """,
-                (parking_space_id, current_end_time),
-            )
-            availability_records = cur.fetchall()
+            for hour in range(1, max_hours + 1):
+                test_end_time = current_end_time + datetime.timedelta(hours=hour)
 
-            if not availability_records:
-                print("No available slots for extension")
-                return Err("No available slots for extension")
+                if not check_if_available(
+                        conn=conn,
+                        parking_spot_id=reservation["parking_space_id"],
+                        start_time=current_end_time + datetime.timedelta(seconds=1),
+                        end_time=test_end_time,
+                ):
+                    available_hour = hour - 1
+                    break
 
-            # Determine the maximum extension time from availability ranges
-            max_extension_time = None
-            for record in availability_records:
-                availability_range = record["time"]
-                if availability_range.upper_inf:
-                    potential_max_time = datetime.max.replace(tzinfo=tzutc())
-                else:
-                    potential_max_time = availability_range.upper
+            if available_hour is None:
+                available_hour = max_hours
 
-                if max_extension_time is None or potential_max_time > max_extension_time:
-                    max_extension_time = potential_max_time
-
-            if max_extension_time is None:
-                print("Unable to determine maximum extension time")
-                return Err("Unable to determine maximum extension time")
-
-            # Check for overlapping future reservations
-            cur.execute(
-                """
-                SELECT MIN(lower(res.time)) as next_reservation_start
-                FROM reservations res
-                WHERE res.parking_space_id = %s AND lower(res.time) > %s
-                """,
-                (parking_space_id, current_end_time),
-            )
-            next_reservation = cur.fetchone()
-
-            if next_reservation and next_reservation["next_reservation_start"]:
-                next_reservation_start = next_reservation["next_reservation_start"]
-                if next_reservation_start < max_extension_time:
-                    max_extension_time = next_reservation_start
-
-            # Ensure max_extension_time is after current_end_time
-            if max_extension_time <= current_end_time:
-                print("No available time for extension")
+            if available_hour == 0:
                 return Err("No available time for extension")
 
-            # Convert to ISO format
-            max_extension_time_iso = max_extension_time.isoformat()
+            # Binary search for exact minute within the last available hour
+            start_minute = 0
+            end_minute = 60
+            last_valid_time = None
 
-            return Ok(max_extension_time_iso)
+            while start_minute <= end_minute:
+                mid_minute = (start_minute + end_minute) // 2
+                test_end_time = current_end_time + datetime.timedelta(
+                    hours=available_hour,
+                    minutes=mid_minute
+                )
 
+                if check_if_available(
+                        conn=conn,
+                        parking_spot_id=reservation["parking_space_id"],
+                        start_time=current_end_time + datetime.timedelta(seconds=1),
+                        end_time=test_end_time,
+                ):
+                    last_valid_time = test_end_time
+                    start_minute = mid_minute + 1
+                else:
+                    end_minute = mid_minute - 1
+
+            if not last_valid_time:
+                last_valid_time = current_end_time + datetime.timedelta(hours=available_hour)
+
+            return Ok(last_valid_time.isoformat())
