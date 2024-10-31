@@ -35,19 +35,18 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
     raw_data = request.form.get("data")
     image_file = request.files.get("image")
     if not raw_data:
-        return {"err": "Missing data"}, 400
+        return {"err": "Missing data"}, 402
     # FIXME: limit size of JSON
     try:
         data = cast(Dict[str, Any], load_json(raw_data))
     except TypeError:
-        return {"err": "bad input"}, 400
+        return {"err": "bad input"}, 403
 
     if not data:
-        return {"err": "Missing data"}, 400
+        return {"err": "Missing data"}, 405
 
     longitude = float(data["location"]["longitude"])
     latitude = float(data["location"]["latitude"])
-    address = data["location"]["address"]
 
     # TODO: get address from coordinates if not set
     if data["is_paid"]:
@@ -73,7 +72,7 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
     if result.is_ok():
         return result.unwrap(), 201
     else:
-        return {"err": result.unwrap_err()}, 400
+        return {"err": result.unwrap_err()}, 406
 
 
 @bp.get("<parking_space_id>")
@@ -170,10 +169,8 @@ def update_parking_space_taken(parking_space_id: str, token: str, user_id: uuid.
     parking_space_uuid = uuid.UUID(parking_space_id)
 
     # Call helper function to perform the update
-    result = update_taken(user_id=user_id, parking_space_id=parking_space_uuid, image_file=image_file)
-
-    # Return response based on the result
-    if isinstance(result, Ok):
+    match update_taken(user_id=user_id, parking_space_id=parking_space_uuid, image_file=image_file)
+    case Ok(reservation):
         return {"updated_space": result.value}, 200
-    else:
-        return {"err": result.value}, 400
+    case Err(e):
+        return {"err": e}, 400

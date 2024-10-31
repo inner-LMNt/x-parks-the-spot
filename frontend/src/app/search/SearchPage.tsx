@@ -428,30 +428,6 @@ export default function SearchPage() {
     setIsListExpanded(!isListExpanded);
   };
 
-  useEffect(() => {
-    const handleListScroll = () => {
-      if (listRef.current) {
-        const scrollTop = listRef.current.scrollTop;
-        if (scrollTop > 0) {
-          setIsListExpanded(true);
-        } else {
-          setIsListExpanded(false);
-        }
-      }
-    };
-
-    const listElement = listRef.current;
-    if (listElement) {
-      listElement.addEventListener('scroll', handleListScroll);
-    }
-
-    return () => {
-      if (listElement) {
-        listElement.removeEventListener('scroll', handleListScroll);
-      }
-    };
-  }, []);
-
   // Watch user location and check if within 50 feet of destination
   useEffect(() => {
     let watchId: number;
@@ -621,21 +597,17 @@ export default function SearchPage() {
         {spots.map((spot) => (
             <motion.div
                 key={spot.id}
-                initial={{opacity: 0, scale: 0.9}}
-                animate={{opacity: 1, scale: 1}}
-                transition={{duration: 0.3}}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
             >
               <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                {/* Existing image and card content here */}
                 <CardContent className="pt-4">
-                  {/* Existing content and other buttons */}
+                  {/* Display 'Taken' indicator if the spot is taken */}
+                  {spot.is_taken && (
+                      <Badge className="bg-red-500 text-white mb-2">Taken</Badge>
+                  )}
 
-                  <Button
-                      onClick={() => spot.id && openUpdateStatusDialog(spot.id)}
-                      className="mt-2 w-full bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300 hover:text-gray-900 transition-colors"
-                  >
-                    Update Spot Status
-                  </Button>
 
                 </CardContent>
               </Card>
@@ -643,6 +615,7 @@ export default function SearchPage() {
         ))}
       </div>
   );
+
 
   useEffect(() => {
     const adjustMapHeight = () => {
@@ -1223,18 +1196,21 @@ export default function SearchPage() {
                                 Reserve
                               </Button>
                           ) : (
-                              <Button className="flex-1 h-6 text-[10px]" variant="default">
-                                Update Status
-                              </Button>
+                              <div>
+                              </div>
+
                           )}
+
                         </div>
 
                         {/* ShadCN Dialog */}
                         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                           <DialogTrigger asChild>
+                            {!selectedSpot.is_paid && !selectedSpot.is_taken && (
                             <Button onClick={() => selectedSpot.id && openUpdateStatusDialog(selectedSpot.id)}>
                               Update Spot Status
                             </Button>
+                            )}
                           </DialogTrigger>
 
                           <DialogPortal>
@@ -1342,17 +1318,26 @@ export default function SearchPage() {
                         <CardHeader>
                           <CardTitle className="text-base flex items-center justify-between">
                             {spot.name || 'Unnamed Parking Space'}
-                            {spot.is_paid ? (
-                                <span className="ml-2 text-green-600 flex items-center">
-          <DollarSign className="h-4 w-4 mr-1"/>
-          Paid
+                            {spot.is_taken ? (
+                                    <span className="ml-2 text-orange-600 flex items-center">
+            <ShieldX className="h-4 w-4 mr-1"/>
+            Taken: Free
         </span>
+
                             ) : (
-                                <span className="ml-2 text-blue-600 flex items-center">
-          <ParkingSquare className="h-4 w-4 mr-1"/>
-          Free
+                                spot.is_paid ? (
+                                    <span className="ml-2 text-green-600 flex items-center">
+            <DollarSign className="h-4 w-4 mr-1"/>
+            Paid
         </span>
+                                ) : (
+                                    <span className="ml-2 text-blue-600 flex items-center">
+            <ParkingSquare className="h-4 w-4 mr-1"/>
+            Free
+        </span>
+                                )
                             )}
+
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -1382,15 +1367,6 @@ export default function SearchPage() {
                                 <p className="text-md">Average Rating: {'No ratings'}</p>
                               </>
                           )}
-                          {spot.location && (
-                              <>
-                                <p className="text-sm">Address: {spot.location.address || 'Not specified'}</p>
-                                <p className="text-sm">Latitude: {spot.location.latitude.toFixed(4)}</p>
-                                <p className="text-sm">Longitude: {spot.location.longitude.toFixed(4)}</p>
-                              </>
-                          )}
-                          <p className="text-sm">Average Rating: {'No ratings'}</p>
-                          <p className="text-sm">Availability: {'Available'}</p>
                           {!spot.is_paid && spot.location && (
                               <p className="text-md">Location: {spot.location.longitude}, {spot.location.longitude}</p>
                           )}
