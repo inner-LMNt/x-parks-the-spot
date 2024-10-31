@@ -20,6 +20,7 @@ def check_if_available(
     start_time: datetime.datetime,
     end_time: datetime.datetime,
 ) -> bool:
+    print(start_time, end_time)
     with conn.cursor(row_factory=dict_row) as cur:
         # Check if the spot has a proper timeslot
         cur.execute(
@@ -27,7 +28,7 @@ def check_if_available(
             SELECT count(id) FROM
             timetable_coalesce
             WHERE parking_space_id = %(spot_id)s
-            AND   TSTZRANGE(%(start_time)s, %(end_time)s, '[]') <@ time
+            AND TSTZRANGE(%(start_time)s, %(end_time)s, '[]') <@ time
             """,
             {
                 "spot_id": parking_spot_id,
@@ -54,6 +55,7 @@ def check_if_available(
             },
         )
         count = cur.fetchone()["count"]  # type: ignore
+        print(count)
         if int(count) > 0:
             return False
 
@@ -173,22 +175,20 @@ def get_reservation(
 def update_reservation(
     user_id: uuid.UUID,
     reservation_id: uuid.UUID,
-    start_time: Optional[str] = None,
-    end_time: Optional[str] = None,
-    car_info_uuid: Optional[uuid.UUID] = None,
+    start_time: Optional[datetime.datetime] = None,
+    end_time: Optional[datetime.datetime] = None,
+    car_info_id: Optional[uuid.UUID] = None,
 ) -> Result[Dict[str, Any], str]:
-    """
-    Update an existing reservation with new start and/or end times.
-    """
+
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            # Fetch the existing reservation details
             cur.execute(
                 """
                 SELECT 
                     parking_space_id,
                     lower(time) AS start_time,
-                    upper(time) AS end_time
+                    upper(time) AS end_time,
+                    car_info_id
                 FROM reservations
                 WHERE id = %s AND renter_id = %s
                 """,
@@ -197,87 +197,46 @@ def update_reservation(
             reservation = cur.fetchone()
             if not reservation:
                 return Err("Reservation not found")
+            print(start_time,end_time)
+            if start_time is not None:
+                if not check_if_available(
+                        conn=conn,
+                        parking_spot_id=reservation["parking_space_id"],
+                        start_time=start_time,
+                        end_time=reservation["start_time"] - datetime.timedelta(seconds=1),
+                ):
+                    return Err("Cannot extend booking to this time")
+            if end_time is not None:
+                if not check_if_available(
+                    conn=conn,
+                    parking_spot_id=reservation["parking_space_id"],
+                    start_time=reservation["end_time"] + datetime.timedelta(seconds=1),
+                    end_time=end_time,
+                ):
+                    return Err("Cannot extend booking to this time")
 
-            # If the cursor returns a dict, access values by keys
-            parking_space_id = reservation['parking_space_id']
-            original_start_time = reservation['start_time']
-            original_end_time = reservation['end_time']
-
-            # Determine the new start and end times
-            new_start_time = start_time or original_start_time
-            new_end_time = end_time or original_end_time
-
-            # Convert to datetime objects if necessary
-            if isinstance(new_start_time, str):
-                new_start_dt = datetime.datetime.fromisoformat(new_start_time)
-            elif isinstance(new_start_time, datetime.datetime):
-                new_start_dt = new_start_time
-            else:
-                return Err("Invalid start time format")
-
-            if isinstance(new_end_time, str):
-                new_end_dt = datetime.datetime.fromisoformat(new_end_time)
-            elif isinstance(new_end_time, datetime.datetime):
-                new_end_dt = new_end_time
-            else:
-                return Err("Invalid end time format")
-
-            # Ensure times are timezone-aware (assuming UTC if not)
-            if new_start_dt.tzinfo is None:
-                new_start_dt = new_start_dt.replace(tzinfo=datetime.timezone.utc)
-            if new_end_dt.tzinfo is None:
-                new_end_dt = new_end_dt.replace(tzinfo=datetime.timezone.utc)
-
-            # Validate that end time is after start time
-            if new_end_dt <= new_start_dt:
-                return Err("End time must be after start time.")
-
-            # Prepare the time range as text for SQL
-            new_start_iso = new_start_dt.isoformat()
-            new_end_iso = new_end_dt.isoformat()
-
-            # Check for overlapping reservations
-            cur.execute(
-                """
-                SELECT COUNT(*) 
-                FROM reservations
-                WHERE parking_space_id = %s
-                  AND id != %s
-                  AND status = 'booked'
-                  AND time && tstzrange(%s, %s, '[)')
-                """,
-                (
-                    parking_space_id,
-                    reservation_id,
-                    new_start_iso,
-                    new_end_iso,
-                ),
-            )
-            (overlap_count,) = cur.fetchone()
-            if overlap_count > 0:
-                return Err("Parking space is already reserved for the selected time slot.")
-
-        # Update the reservation
+            if not start_time:
+                start_time = reservation["start_time"]
+            if not end_time:
+                end_time = reservation["end_time"]
+        print("updating")
+        # Update reservation
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
                 """
                 UPDATE reservations SET
-                    time = tstzrange(%s, %s, '[)'),
+                    time = tstzrange(%s, %s, '[]'),
                     updated_at = NOW()
                 WHERE id = %s
-                RETURNING id, parking_space_id, time, car_info_id, renter_id, status, created_at, updated_at
+                RETURNING id, parking_space_id, lower(time) as start_time, upper(time) as end_time, car_info_id, renter_id, status, created_at, updated_at
                 """,
                 (
-                    new_start_iso,
-                    new_end_iso,
+                    start_time,
+                    end_time,
                     reservation_id,
                 ),
             )
             updated_reservation = cur.fetchone()
-
-            if not updated_reservation:
-                return Err("Error updating reservation")
-
             return Ok(updated_reservation)
 
 

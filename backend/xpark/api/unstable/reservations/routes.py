@@ -1,3 +1,6 @@
+import zoneinfo
+from datetime import datetime
+
 from xpark.logic.reservations import (
     update_reservation,
     get_reservation,
@@ -64,21 +67,27 @@ def get_reservation_route(
                 return {"err": e}, 400
 
 
-@bp.put("<reservation_id>")
+@bp.route("/<reservation_id>", methods=["PUT"])
 @require_logged_in_user
 def update_reservation_route(
-    reservation_id: str, token: str, user_id: uuid.UUID
+        reservation_id: str, token: str, user_id: uuid.UUID
 ) -> Tuple[Any, int]:
     """
     Update an existing reservation.
     """
     data = request.get_json()
-    if not data:
-        return {"err": "Invalid input"}, 400
 
+    start_time = data.get("start_time")
+    end_time = data.get("end_time")
+    car_info_uuid = data.get("car_info_uuid")
+    if end_time is not None:
+        end_time = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
+    if start_time is not None:
+        start_time = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
     reservation_uuid = uuid.UUID(reservation_id)
 
-    match update_reservation(user_id, reservation_uuid, data):
+    # Call update_reservation with individual parameters
+    match update_reservation(user_id, reservation_uuid, start_time, end_time, car_info_uuid):
         case Ok(reservation):
             return reservation, 200
         case Err(e):
@@ -88,6 +97,7 @@ def update_reservation_route(
                 return {"err": e}, 404
             else:
                 return {"err": e}, 400
+
 
 @bp.get("<reservation_id>/max-extension")
 @require_logged_in_user
