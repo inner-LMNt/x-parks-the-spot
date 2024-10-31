@@ -82,3 +82,6 @@ export enum DaysOfWeek {
   Saturday = 'Saturday',
   Sunday = 'Sunday',
 }
+
+export type Report = components["schemas"]["Report"];
+export type ReportCreateRequest = components["schemas"]["ReportCreateRequest"]

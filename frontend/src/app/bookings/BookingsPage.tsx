@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { MapPin, Clock, Calendar, ArrowRightCircle, Loader2 } from 'lucide-react';
+import {MapPin, Clock, Calendar, ArrowRightCircle, Loader2, FileWarning} from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { fetchUserCars, resetCarError } from '@/features/cars/carSlice';
@@ -168,24 +168,24 @@ export default function BookingsPage() {
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
-            <div className="flex-grow container mx-auto p-4 max-w-5xl">
+            <div className="flex-grow container mx-auto p-4 max-w-5xl mt-2">
                 {/* Header Section */}
                 <header className="flex flex-col items-center mb-8">
-                    <Avatar className="w-24 h-24 mb-4" />
+
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">{userName}</h1>
                     <div className="flex space-x-12 mt-4">
-                        <StatCard label="Total Reservations" value={reservations.length} />
-                        <StatCard label="Years with Us" value={2} />
+                        <StatCard label="Total Reservations" value={reservations.length}/>
+                        <StatCard label="Years with Us" value={2}/>
                     </div>
                 </header>
 
                 {/* Your Cars Section */}
                 <section className="mb-8">
-                    <SectionHeader title="Your Cars" />
+                    <SectionHeader title="Your Cars"/>
                     <div className="grid gap-6">
                         {isLoading ? (
                             <div className="flex items-center justify-center">
-                                <Loader2 className="animate-spin text-gray-500 w-8 h-8" />
+                                <Loader2 className="animate-spin text-gray-500 w-8 h-8"/>
                                 <span className="ml-2 text-gray-500">Loading your data...</span>
                             </div>
                         ) : carsError ? (
@@ -214,18 +214,26 @@ export default function BookingsPage() {
                 {/* Global Loading Indicator */}
                 {isLoading && (
                     <div className="flex items-center justify-center my-4">
-                        <Loader2 className="animate-spin text-gray-500 w-8 h-8" />
+                        <Loader2 className="animate-spin text-gray-500 w-8 h-8"/>
                         <span className="ml-2 text-gray-500">Loading your reservations...</span>
                     </div>
                 )}
+                <SectionHeader title="Reports"/>
+                <div className="text-left mb-4 text-slate-950">
+                    <Link href="/reports" passHref>
+                        <Button variant="outline">
+                            <FileWarning className="mr-2"/> Report a reservation issue
+                        </Button>
+                    </Link>
+                </div>
 
                 {/* Current Reservations */}
                 {!isLoading && currentReservations.length > 0 && (
                     <section className="mb-8">
-                        <SectionHeader title="Current Reservations" />
+                        <SectionHeader title="Current Reservations"/>
                         <div className="grid gap-6">
                             {currentReservations.map((reservation: Reservation) => (
-                                <ReservationCard key={reservation.id} reservation={reservation} carMap={carMap} />
+                                <ReservationCard key={reservation.id} reservation={reservation} carMap={carMap}/>
                             ))}
                         </div>
                     </section>
@@ -234,10 +242,10 @@ export default function BookingsPage() {
                 {/* Upcoming Reservations */}
                 {!isLoading && upcomingReservations.length > 0 && (
                     <section className="mb-8">
-                        <SectionHeader title="Upcoming Reservations" />
+                        <SectionHeader title="Upcoming Reservations"/>
                         <div className="grid gap-6">
                             {upcomingReservations.map((reservation: Reservation) => (
-                                <ReservationCard key={reservation.id} reservation={reservation} carMap={carMap} />
+                                <ReservationCard key={reservation.id} reservation={reservation} carMap={carMap}/>
                             ))}
                         </div>
                     </section>
@@ -246,10 +254,10 @@ export default function BookingsPage() {
                 {/* Past Reservations */}
                 {!isLoading && pastReservations.length > 0 && (
                     <section className="mb-8">
-                        <SectionHeader title="Past Reservations" />
+                        <SectionHeader title="Past Reservations"/>
                         <div className="grid gap-6">
                             {pastReservations.map((reservation: Reservation) => (
-                                <ReservationCard key={reservation.id} reservation={reservation} isPast carMap={carMap} />
+                                <ReservationCard key={reservation.id} reservation={reservation} isPast carMap={carMap}/>
                             ))}
                         </div>
                     </section>
@@ -258,11 +266,12 @@ export default function BookingsPage() {
                 {/* No Reservations */}
                 {!isLoading && reservations.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-64">
-                        <MapPin className="w-12 h-12 text-gray-400 mb-4" />
+                        <MapPin className="w-12 h-12 text-gray-400 mb-4"/>
                         {error && <p className="text-red-500">Failed to fetch reservations at this time.</p>}
                         <p className="text-gray-500">You have no reservations.</p>
                         <Link href="/search" passHref>
-                            <button className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition">
+                            <button
+                                className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition">
                                 Make a Reservation
                             </button>
                         </Link>

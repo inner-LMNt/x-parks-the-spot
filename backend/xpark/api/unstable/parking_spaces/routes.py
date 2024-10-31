@@ -2,6 +2,7 @@ from . import bp
 from xpark.logic.parkingspace import (
     create_free_parking_space,
     create_paid_parking_space,
+    update_paid_parking_space,
     delete_free_parking_space,
     get_parking_space,
     is_paid_spot,
@@ -57,7 +58,7 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
             image_file=image_file,
             longitude=longitude,
             latitude=latitude,
-            address=address,
+            address=data["location"]["address"],
             price=float(data["pricing_info"]["base_price"]),
             availability_schedule=data["availability_schedule"],
         )
@@ -67,7 +68,7 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
             image_file=image_file,
             longitude=longitude,
             latitude=latitude,
-            address=address,
+            address="",
         )
 
     if result.is_ok():
@@ -106,7 +107,7 @@ def update_parking_space_route(
         case Err(_):
             return {"err": "spot not found"}, 404
     if is_paid:
-        match  update_parking_space(
+        match update_paid_parking_space(
             user_id=user_id,
             parking_space_id=parking_space_uuid,
             longitude=request.json.get("location", {}).get("longitude"),

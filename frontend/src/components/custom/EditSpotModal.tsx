@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateParkingSpot, resetError } from '@/features/owner/ownerSlice';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { RootState, AppDispatch } from '@/store';
 import { ParkingSpace, DaysOfWeek, TimeSlot } from '@/types/type';
 import {
