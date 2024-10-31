@@ -181,7 +181,7 @@ def update_reservation(
     Update an existing reservation with new start and/or end times.
     """
     with DB.pool.connection() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
             # Fetch the existing reservation details
             cur.execute(
                 """
