@@ -19,6 +19,7 @@ import { MapPin, Calendar, Clock, ArrowLeft } from "lucide-react";
 import { format, parseISO, isValid, differenceInMinutes } from "date-fns";
 import { motion } from "framer-motion";
 import { fetchParkingSpace } from "@/features/parking-space/parkingSpaceSlice";
+import {Reservation} from "@/types/type";
 
 // Removed ShadCN Dialog Imports
 
@@ -26,7 +27,7 @@ const ExtendReservationPage = () => {
     const dispatch = useAppDispatch();
     const router = useRouter();
     const params = useParams();
-    const reservationId = params?.["reservation-id"] ?? "";
+    const reservationId = (params?.["reservation-id"] ?? "") as string;
 
     const [newEndTime, setNewEndTime] = useState("");
     const [maxExtensionTime, setMaxExtensionTime] = useState("");
@@ -37,16 +38,13 @@ const ExtendReservationPage = () => {
     // State to control the confirmation card visibility
     const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
 
-    // Normalize reservationId to lowercase for consistent matching
-    const normalizedReservationId = reservationId.toLowerCase();
-
     // Select current_spot from Redux store
     const current_spot = useAppSelector((state) => state.parkingSpace.parkingSpace);
 
     // Select reservation from Redux store with normalized ID
     const reservation = useAppSelector((state) => {
         const foundReservation = state.reservations.reservations.find(
-            (r) => r.id.toLowerCase() === normalizedReservationId
+            (r: Reservation) => r.id === reservationId
         );
         return foundReservation;
     });
@@ -66,11 +64,12 @@ const ExtendReservationPage = () => {
 
             if (!reservation) {
                 setIsLoading(true);
+                // @ts-ignore
                 const resultAction = await dispatch(fetchReservationById(reservationId));
                 if (fetchReservationById.fulfilled.match(resultAction)) {
                     const fetchedReservation = resultAction.payload;
                     console.log("Fetched Reservation:", fetchedReservation);
-                    // Correctly access parking_space_id from fetchedReservation
+                    // @ts-ignore
                     dispatch(fetchParkingSpace(fetchedReservation.parking_space_id));
                 } else if (fetchReservationById.rejected.match(resultAction)) {
                     toast({
@@ -86,7 +85,7 @@ const ExtendReservationPage = () => {
             }
         };
         fetchReservation();
-    }, [dispatch, reservationId, reservation, normalizedReservationId]);
+    }, [dispatch, reservationId, reservation]);
 
     // Initialize newEndTime when reservation is available
     useEffect(() => {
@@ -101,6 +100,7 @@ const ExtendReservationPage = () => {
     useEffect(() => {
         const fetchMaxExtension = async () => {
             if (reservation) {
+                // @ts-ignore
                 const resultAction = await dispatch(getMaxExtensionTime(reservation.id));
                 if (getMaxExtensionTime.fulfilled.match(resultAction)) {
                     const { maxExtensionTime } = resultAction.payload;
@@ -155,7 +155,7 @@ const ExtendReservationPage = () => {
     // Handle actual reservation extension
     const handleConfirmExtend = async () => {
         setIsSubmitting(true);
-
+        // @ts-ignore
         const resultAction = await dispatch(
             updateReservation({
                 id: reservationId,

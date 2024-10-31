@@ -128,7 +128,7 @@ export const bookParkingSpace = createAsyncThunk<
  */
 export const updateReservation = createAsyncThunk<
     Reservation,
-    { id: string; updateData: ReservationUpdateRequest },
+    { id: string; updateData: any },
     { rejectValue: string }
 >(
     "reservations/updateReservation",
