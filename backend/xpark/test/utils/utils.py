@@ -90,11 +90,13 @@ def create_test_car(client: FlaskClient, token: str) -> str:
         json={
             "make": "Toyota",
             "model": "Camry",
-            "year": 2020,
-            "color": "Blue",
-            "license_plate": "TEST123"
+            "license_plate": "PA TEST-123"
         }
     )
+    if response.status_code != 201:
+        print(f"Car creation failed with status {response.status_code}")
+        print(f"Response: {response.get_json()}")
+
     assert response.status_code == 201
     data = response.get_json()
     assert data is not None
@@ -123,3 +125,60 @@ def create_test_reservation(client: FlaskClient, token: str, space_id: str) -> s
     data = response.get_json()
     assert data is not None
     return str(data["id"])
+
+
+def create_test_reservation_at_time(
+    client: FlaskClient,
+    token: str,
+    space_id: str,
+    start_time: datetime = None,
+    end_time: datetime = None,
+    car_id: str = None,
+) -> str:
+    """Helper to create a test reservation with specific times"""
+    if start_time is None:
+        start_time = datetime.now(timezone.utc) + timedelta(hours=1)
+    if end_time is None:
+        end_time = start_time + timedelta(hours=1)
+    if car_id is None:
+        car_id = create_test_car(client, token)
+
+    # Use ISO format with timezone for creation
+    response = client.post(
+        "/api/unstable/reservations",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "parking_space_id": space_id,
+            "start_time": start_time.isoformat(),
+            "end_time": end_time.isoformat(),
+            "car_info_id": car_id
+        }
+    )
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data is not None
+    return str(data["id"])
+
+
+def create_sequential_reservations(
+        client: FlaskClient,
+        token: str,
+        space_id: str,
+        num_reservations: int,
+        hours_between: int = 1
+) -> list[str]:
+    """Create multiple sequential reservations with gaps between them"""
+    reservation_ids = []
+    start_time = datetime.now(timezone.utc) + timedelta(hours=1)
+
+    for i in range(num_reservations):
+        end_time = start_time + timedelta(hours=1)
+        reservation_id = create_test_reservation_at_time(
+            client, token, space_id,
+            start_time=start_time,
+            end_time=end_time
+        )
+        reservation_ids.append(reservation_id)
+        start_time = end_time + timedelta(hours=hours_between)
+
+    return reservation_ids
