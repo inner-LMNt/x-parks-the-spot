@@ -6,7 +6,7 @@ from xpark.logic.admin import (
 from flask import request
 from result import Ok, Err
 from typing import Any
-from xpark.middleware.token_auth_middleware import require_logged_in_user, require_admin
+from xpark.middleware.token_auth_middleware import require_admin
 from typing import Tuple
 import uuid
 
