@@ -86,9 +86,10 @@ const ExtendReservationPage = () => {
                     toast({
                         title: "Error",
                         description:
-                            resultAction.payload || "Failed to get maximum extension time",
+                            "There is no availability to extend this reservation",
                         variant: "destructive",
                     });
+                    router.push("/bookings");
                 }
             }
         };

@@ -1,11 +1,15 @@
 import uuid
 from typing import Optional, Dict, Any, List
+from zoneinfo import ZoneInfo
+
 from psycopg.rows import dict_row
 from xpark.utils.db import DB
 from result import Result, Ok, Err
 import datetime
 from enum import Enum
 import psycopg
+
+from xpark.utils.mailer import send_email
 
 
 class ReservationStatus(Enum):
@@ -237,7 +241,123 @@ def update_reservation(
                 ),
             )
             updated_reservation = cur.fetchone()
-            return Ok(updated_reservation)
+        if not updated_reservation:
+            return Err("Failed to update reservation")
+
+        # Fetch the parking space owner's ID, address, and price from the parking_spaces table
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT owner, address, price
+                FROM parking_spaces
+                WHERE id = %s
+                """,
+                (updated_reservation["parking_space_id"],),
+            )
+            parking_space = cur.fetchone()
+            if not parking_space:
+                return Err("Parking space not found")
+            owner_id = parking_space["owner"]
+            parking_address = parking_space.get("address", "Unknown Location")
+            parking_price = parking_space.get("price", 0.0)  # Assuming price is a float representing price per hour
+
+        # Fetch the owner's email and name from the users table
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT email, name
+                FROM users
+                WHERE id = %s
+                """,
+                (owner_id,),
+            )
+            owner = cur.fetchone()
+            if not owner:
+                return Err("Owner not found")
+            owner_email = owner["email"]
+            owner_name = owner.get("name", "Owner")
+
+        # Fetch renter's information from the users table
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT name, email
+                FROM users
+                WHERE id = %s
+                """,
+                (user_id,),
+            )
+            renter = cur.fetchone()
+            if not renter:
+                renter_name = "A user"
+            else:
+                renter_name = renter.get("name", "A user")
+
+        # Fetch car details from the cars table
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT license_plate, make, model
+                FROM cars
+                WHERE id = %s
+                """,
+                (updated_reservation["car_info_id"],),
+            )
+            car = cur.fetchone()
+            if not car:
+                car_info = "Unknown Car"
+            else:
+                car_info = f"{car['make']} {car['model']} (License Plate: {car['license_plate']})"
+
+        # Calculate extension length and extra money earned
+        extension_delta = updated_reservation['end_time'] - reservation['end_time']
+        if extension_delta.total_seconds() > 0:
+            extension_hours = extension_delta.total_seconds() / 3600
+            # Round to two decimal places for currency formatting
+            extra_earned = round(extension_hours * parking_price, 2)
+            # Format extension length into hours and minutes
+            hours = int(extension_hours)
+            minutes = int((extension_hours - hours) * 60)
+            extension_length_str = f"{hours} hours and {minutes} minutes"
+        else:
+            extension_length_str = "No extension"
+            extra_earned = 0.0
+
+        # Convert start_time and end_time to EST
+        est = ZoneInfo("America/New_York")
+        start_time_est = updated_reservation['start_time'].replace(tzinfo=ZoneInfo("UTC")).astimezone(est).strftime(
+            "%B %d, %Y %I:%M %p EST")
+        end_time_est = updated_reservation['end_time'].replace(tzinfo=ZoneInfo("UTC")).astimezone(est).strftime(
+            "%B %d, %Y %I:%M %p EST")
+
+        # Prepare the email content
+        email_subject = "XPark Booking Extension Notification"
+        email_content = f"""Hello {owner_name},
+
+        We would like to inform you that {renter_name} has extended their booking for your parking space located at {parking_address}.
+
+        Updated Reservation Details:
+        - Reservation ID: {updated_reservation['id']}
+        - Start Time: {start_time_est}
+        - End Time: {end_time_est}
+        - Car: {car_info}
+        - Extension Length: {extension_length_str}
+        - Extra Earned: ${extra_earned}
+
+        If you have any questions or concerns, please feel free to contact us.
+
+        Best regards,
+        XPark Team
+        """
+
+        # Send the email to the parking space owner
+        send_email(
+            subject=email_subject,
+            to=owner_email,
+            content=email_content,
+        )
+
+        return Ok(updated_reservation)
 
 
 def cancel_reservation_logic(
