@@ -311,6 +311,8 @@ def update_taken(
             if not cur.fetchone():
                 return Err("Parking space not found or user not authorized to update")
 
+            updated_name = f'Updated at {datetime.now().strftime("%I:%M %p, %B %d %Y")}'
+
             # Handle photo processing if an image is provided
             new_photo_url = []
             if image_file:
@@ -325,6 +327,7 @@ def update_taken(
                 """
                 UPDATE parking_spaces
                 SET
+                    name = %(updated_name)s,
                     is_taken = TRUE,
                     updated_at = NOW(),
                     photos = %(new_photo_url)s || photos  -- Prepend new photo to the existing photos
@@ -332,6 +335,7 @@ def update_taken(
                 RETURNING id, photos, is_taken, updated_at
                 """,
                 {
+                    "updated_name": updated_name,
                     "new_photo_url": new_photo_url,
                     "parking_space_id": parking_space_id,
                 },

@@ -106,6 +106,9 @@ export default function SearchPage() {
   const webcamRef = useRef<Webcam>(null);
   const DISTANCE_THRESHOLD = 200; // Maximum distance in meters
   const [includeTakenSpots, setIncludeTakenSpots] = useState(false); // Default to showing only available spots
+  const [photoTimestamp, setPhotoTimestamp] = useState<string | null>(null);
+  const [photoLocation, setPhotoLocation] = useState<string | null>(null);
+
 
   const openUpdateStatusDialog = (spotId: string) => {
     setCurrentSpotId(spotId);
@@ -143,11 +146,21 @@ export default function SearchPage() {
       return;
     }
 
+    // Check if a photo is uploaded before submitting
+    if (!photo) {
+      toast({
+        title: 'Photo Required',
+        description: 'Please upload a photo before submitting.',
+        variant: 'destructive',
+      });
+      return; // Exit if no photo is uploaded
+    }
+
     // Prepare form data for API submission
     const formData = new FormData();
     formData.append('latitude', userLocation.lat.toString());
     formData.append('longitude', userLocation.lng.toString());
-    if (photo) formData.append('photo', photo);
+    formData.append('photo', photo);
 
     // Wrap formData and currentSpotId in an object that matches markSpotTaken's expected parameter type
     const submissionData = {
@@ -161,32 +174,39 @@ export default function SearchPage() {
       toast({
         title: 'Spot Update Successful',
         description: 'The parking spot status was updated successfully.',
-        variant: 'success', // Assuming 'success' variant exists in your toast setup
+        variant: 'success',
       });
-      //closeUpdateStatusDialog();
+      closeUpdateStatusDialog();
     } catch (error) {
       console.error("Failed to update spot status:", error);
       toast({
         title: 'Spot Update Failed',
         description: 'Failed to update the parking spot status. Please try again.',
-        variant: 'destructive', // Assuming 'destructive' variant exists for error messages
+        variant: 'destructive',
       });
     }
-  }
+  };
 
-  const handleCameraCapture = useCallback(() => {
+  const handleCameraCapture = useCallback(async () => {
     const imageSrc = webcamRef.current?.getScreenshot();
     if (imageSrc) {
       setPreviewUrl(imageSrc);
       fetch(imageSrc)
           .then((res) => res.blob())
           .then((blob) => {
-            const file = new File([blob], 'camera_capture.jpg', {type: 'image/jpeg'});
+            const file = new File([blob], 'camera_capture.jpg', { type: 'image/jpeg' });
             setPhoto(file);
             setIsCameraActive(false); // Switch to preview mode
+            setPhotoTimestamp(new Date().toLocaleString()); // Capture current timestamp
+            if (userLocation) {
+              setPhotoLocation(`${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`);
+            } else {
+              setPhotoLocation('Location unavailable'); // Fallback if location is not available
+            }
           });
     }
-  }, []);
+  }, [address]);
+
 
   const handleRetake = () => {
     setPreviewUrl(null);
@@ -1223,6 +1243,13 @@ export default function SearchPage() {
                                   Use your camera to take a photo for verification.
                                 </DialogDescription>
                               </DialogHeader>
+                              {photoTimestamp && (
+                                  <p className="text-gray-600 text-sm mb-2">Captured at: {photoTimestamp}</p>
+                              )}
+                              {photoLocation && (
+                                  <p className="text-gray-600 text-sm mb-2">Location: {photoLocation}</p>
+                              )}
+
 
                               {isWithinDistance() ? (
                                   previewUrl ? (
@@ -1262,6 +1289,14 @@ export default function SearchPage() {
                                         >
                                           Capture Photo
                                         </Button>
+                                        
+                                        <Button
+                                            onClick={handleSubmit}
+                                            className="w-full bg-green-500 text-white py-2 rounded-lg"
+                                        >
+                                            Submit Photo
+                                        </Button>
+
                                         <Button onClick={closeUpdateStatusDialog}
                                                 className="mt-2 w-full bg-gray-300 text-gray-800 py-2 rounded-lg">
                                           Cancel
