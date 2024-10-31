@@ -17,6 +17,7 @@ import uuid
 from flask.json import loads as load_json
 from typing import cast, Dict
 
+
 @bp.get("")
 @require_logged_in_user
 def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:

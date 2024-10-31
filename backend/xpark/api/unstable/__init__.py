@@ -18,7 +18,6 @@ bp.register_blueprint(parking_space_bp)
 bp.register_blueprint(search_bp)
 bp.register_blueprint(reservations_bp)
 bp.register_blueprint(cars_bp)
-bp.register_blueprint(reports_bp)
 bp.register_blueprint(admin_bp)
 bp.register_blueprint(reports_bp)
 

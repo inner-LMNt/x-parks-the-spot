@@ -150,44 +150,6 @@ export default function MySpotsPage() {
                                 </div>
                             )}
 
-                            {/* Verification Buttons for Pending Spots */}
-                            {spot.verification_status === 'pending' && (
-                                <div className="flex justify-between">
-                                    <Button
-                                        variant="default"
-                                        size="sm"
-                                        className="flex-1 mr-2"
-                                        onClick={async () => {
-                                            // @ts-ignore
-                                            await dispatch(verifyParkingSpot({
-                                                spotId: spot.id ?? '',
-                                                is_verified: true
-                                            }));
-                                            // @ts-ignore
-
-                                            dispatch(getOwnerSpots()); // Re-fetch after verifying
-                                        }}
-                                    >
-                                        Verify
-                                    </Button>
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        className="flex-1"
-                                        onClick={async () => {
-                                            // @ts-ignore
-                                            await dispatch(verifyParkingSpot({
-                                                spotId: spot.id ?? '',
-                                                is_verified: false
-                                            }));
-                                            // @ts-ignore
-                                            dispatch(getOwnerSpots()); // Re-fetch after rejecting
-                                        }}
-                                    >
-                                        Reject
-                                    </Button>
-                                </div>
-                            )}
 
                             {/* Submit Verification Button for Unverified Spots */}
                             {(spot.verification_status !== 'pending' && spot.verification_status !== 'verified' && spot.is_paid) && (

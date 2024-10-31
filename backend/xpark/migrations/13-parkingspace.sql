@@ -1,2 +1,2 @@
 ALTER TABLE parking_spaces
-ADD COLUMN photo_timestamp TIMESTAMPTZ;
+ADD COLUMN verification_photos TEXT[];
