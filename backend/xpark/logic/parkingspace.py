@@ -14,7 +14,7 @@ from result import Result, Ok, Err
 import uuid
 from .timeslots import days_of_week_to_slots, recalculate_coalesce
 
-def update_parking_space(
+def update_paid_parking_space(
     user_id: uuid.UUID,
     parking_space_id: uuid.UUID,
     latitude: Optional[float] = None,

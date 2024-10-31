@@ -8,7 +8,6 @@ from xpark.logic.parkingspace import (
     is_paid_spot,
     get_owned_paid_parking_spaces,
     handle_submit_verification,
-    update_parking_space,
     update_taken,
 )
 from flask import request

@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useRef, useState, useCallback} from 'react';
 import {motion} from 'framer-motion';
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
@@ -9,7 +9,6 @@ import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {Slider} from '@/components/ui/slider';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
-import { MapPin, Navigation, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, ArrowDown, ArrowUp, DollarSign } from 'lucide-react';
 import {
   Autocomplete,
   GoogleMap,
@@ -18,7 +17,6 @@ import {
   DirectionsRenderer,
   InfoWindow,
 } from '@react-google-maps/api';
-import {ParkingSpace} from '@/types/type';
 import { markSpotTaken } from '@/features/parking-space/parkingSpaceSlice';
 import { searchSpots } from '@/features/search/searchSlice';
 import { usePathname, useRouter } from 'next/navigation';
@@ -36,8 +34,6 @@ import {
   ShieldX
 } from 'lucide-react';
 import {DaysOfWeek, ParkingSpace, TimeSlot} from '@/types/type';
-import {searchSpots} from '@/features/search/searchSlice';
-import {usePathname, useRouter} from 'next/navigation';
 import axios from 'axios';
 import Webcam from "react-webcam";
 import {useToast} from '@/hooks/use-toast';
@@ -53,7 +49,7 @@ const default_center = {
 };
 
 export default function SearchPage() {
-  const { toast } = useToast();
+  const {toast} = useToast();
   const router = useRouter();
   const dispatch = useAppDispatch();
 
@@ -89,9 +85,9 @@ export default function SearchPage() {
   const [endTime, setEndTime] = useState<string | undefined>(undefined);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const featuresOptions = [
-    { value: 'covered', label: 'Covered Parking' },
-    { value: 'electric', label: 'Electric Charging' },
-    { value: 'accessible', label: 'Accessible' },
+    {value: 'covered', label: 'Covered Parking'},
+    {value: 'electric', label: 'Electric Charging'},
+    {value: 'accessible', label: 'Accessible'},
     // Add more options as needed
   ];
 
@@ -185,7 +181,7 @@ export default function SearchPage() {
       fetch(imageSrc)
           .then((res) => res.blob())
           .then((blob) => {
-            const file = new File([blob], 'camera_capture.jpg', { type: 'image/jpeg' });
+            const file = new File([blob], 'camera_capture.jpg', {type: 'image/jpeg'});
             setPhoto(file);
             setIsCameraActive(false); // Switch to preview mode
           });
@@ -250,15 +246,15 @@ export default function SearchPage() {
   };
 
   const enableGeolocation = (
-    <div className="p-4 bg-gray-100 rounded-md">
-      <p className="text-lg font-semibold mb-2">Please enable geolocation to search for parking spots near you.</p>
-      <p className="mb-2">To enable geolocation:</p>
-      <ol className="list-decimal list-inside ml-4">
-        <li className="mb-1">Go to your browser settings.</li>
-        <li className="mb-1">Allow location access for this site.</li>
-        <li className="mb-1">Reload the page after enabling it.</li>
-      </ol>
-    </div>
+      <div className="p-4 bg-gray-100 rounded-md">
+        <p className="text-lg font-semibold mb-2">Please enable geolocation to search for parking spots near you.</p>
+        <p className="mb-2">To enable geolocation:</p>
+        <ol className="list-decimal list-inside ml-4">
+          <li className="mb-1">Go to your browser settings.</li>
+          <li className="mb-1">Allow location access for this site.</li>
+          <li className="mb-1">Reload the page after enabling it.</li>
+        </ol>
+      </div>
   );
 
   const pulsatingCircleSVG = `
@@ -462,40 +458,41 @@ export default function SearchPage() {
 
     if (navigationMode && selectedSpot) {
       watchId = navigator.geolocation.watchPosition(
-        (position) => {
-          const location = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          // add random int to differentiate console logs
-          console.log("User location updated:", location, Math.random());
+          (position) => {
+            const location = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            // add random int to differentiate console logs
+            console.log("User location updated:", location, Math.random());
 
-          setUserLocation(location);
-          updateCurrentStep(location);
+            setUserLocation(location);
+            updateCurrentStep(location);
 
-          const distance = calculateDistance(location, {
-            lat: selectedSpot.location.latitude,
-            lng: selectedSpot.location.longitude,
-          });
+            const distance = calculateDistance(location, {
+              lat: selectedSpot.location.latitude,
+              lng: selectedSpot.location.longitude,
+            });
 
-          console.log("Distance to destination:", distance);
+            console.log("Distance to destination:", distance);
 
-          if (distance < 50) {
-            setReachedDestination(true);
-            setDirections(null);
-          } else {
-            setReachedDestination(false);
+            if (distance < 50) {
+              setReachedDestination(true);
+              setDirections(null);
+            } else {
+              setReachedDestination(false);
+            }
+          },
+          (error) => {
+            console.error("Error getting position:", error);
+          },
+          {
+            enableHighAccuracy: false,
+            maximumAge: 5000,
           }
-        },
-        (error) => {
-          console.error("Error getting position:", error);
-        },
-        {
-          enableHighAccuracy: false,
-          maximumAge: 5000,
-        }
       );
-    };
+    }
+    ;
 
     return () => {
       if (watchId) {
@@ -509,24 +506,24 @@ export default function SearchPage() {
 
     if (!navigationMode) {
       watchId = navigator.geolocation.watchPosition(
-        (position) => {
-          const location = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          console.log("User location updated (non-navigation mode):", location, Math.random());
+          (position) => {
+            const location = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            console.log("User location updated (non-navigation mode):", location, Math.random());
 
-          setUserLocation(location);
+            setUserLocation(location);
 
-          // You can add any additional logic here if needed
-        },
-        (error) => {
-          console.error("Error getting position:", error);
-        },
-        {
-          enableHighAccuracy: false,
-          maximumAge: 5000,
-        }
+            // You can add any additional logic here if needed
+          },
+          (error) => {
+            console.error("Error getting position:", error);
+          },
+          {
+            enableHighAccuracy: false,
+            maximumAge: 5000,
+          }
       );
     }
 
@@ -545,8 +542,8 @@ export default function SearchPage() {
     const db = (location2.lng - location1.lng) * Math.PI / 180;
 
     const a = Math.sin(da / 2) * Math.sin(da / 2) +
-      Math.cos(a1) * Math.cos(a2) *
-      Math.sin(db / 2) * Math.sin(db / 2);
+        Math.cos(a1) * Math.cos(a2) *
+        Math.sin(db / 2) * Math.sin(db / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     const distance = R * c; // in meters
@@ -584,7 +581,6 @@ export default function SearchPage() {
       }
     }
   };
-
 
 
   const handleSliderChange = (value: number[]) => {
@@ -625,9 +621,9 @@ export default function SearchPage() {
         {spots.map((spot) => (
             <motion.div
                 key={spot.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3 }}
+                initial={{opacity: 0, scale: 0.9}}
+                animate={{opacity: 1, scale: 1}}
+                transition={{duration: 0.3}}
             >
               <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
                 {/* Existing image and card content here */}
@@ -668,13 +664,13 @@ export default function SearchPage() {
 
   // Define available filters
   const availableFilters = [
-    { key: 'minPrice', label: 'Min Price' },
-    { key: 'maxPrice', label: 'Max Price' },
-    { key: 'startTime', label: 'Start Time' },
-    { key: 'endTime', label: 'End Time' },
+    {key: 'minPrice', label: 'Min Price'},
+    {key: 'maxPrice', label: 'Max Price'},
+    {key: 'startTime', label: 'Start Time'},
+    {key: 'endTime', label: 'End Time'},
     // { key: 'features', label: 'Features' },
-    { key: 'paidStatus', label: 'Paid Status' }, // New Paid Status Filter
-    { key: 'allowTaken', label: 'Include Taken Spots' },
+    {key: 'paidStatus', label: 'Paid Status'}, // New Paid Status Filter
+    {key: 'allowTaken', label: 'Include Taken Spots'},
   ];
 
   // Handle Deselect All
@@ -693,7 +689,7 @@ export default function SearchPage() {
       return [];
     }
     const daysOfWeekOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const days = availabilitySchedule.map(({ day_of_week }) => day_of_week);
+    const days = availabilitySchedule.map(({day_of_week}) => day_of_week);
     return days.sort(
         (a, b) => daysOfWeekOrder.indexOf(a) - daysOfWeekOrder.indexOf(b)
     );
@@ -708,7 +704,7 @@ export default function SearchPage() {
     // Get all unique time ranges
     const timeRanges = new Set(
         // @ts-ignore
-        availabilitySchedule.map(({ start_time, end_time }) => `${start_time} - ${end_time}`)
+        availabilitySchedule.map(({start_time, end_time}) => `${start_time} - ${end_time}`)
     );
 
     // If only one time range exists
@@ -732,16 +728,16 @@ export default function SearchPage() {
       return false;
     }
     //@ts-ignore
-    const days = availabilitySchedule.map(({ day_of_week }) => day_of_week);
+    const days = availabilitySchedule.map(({day_of_week}) => day_of_week);
     const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
     // Check if all days are included
-    const hasAllDays = daysOfWeek.every((day : any) => days.includes(day));
+    const hasAllDays = daysOfWeek.every((day: any) => days.includes(day));
 
     // Check if time is 00:00 - 23:59 for all entries
     const isAllTime247 = availabilitySchedule.every(
         //@ts-ignore
-        ({ start_time, end_time }) => start_time === '00:00' && end_time === '23:59'
+        ({start_time, end_time}) => start_time === '00:00' && end_time === '23:59'
     );
 
     return hasAllDays && isAllTime247;
@@ -762,9 +758,9 @@ export default function SearchPage() {
 
       <div
           className="min-h-screen bg-gray-50 text-gray-900 flex flex-col"
-          style={{ height: '100vh', overflow: 'hidden' }}
+          style={{height: '100vh', overflow: 'hidden'}}
       >
-      <script src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
+        <script src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
 
         {/* Show login button next to search if the user is not logged in */}
         {!isLoggedIn && (
@@ -879,7 +875,7 @@ export default function SearchPage() {
                                     value={filter.key}
                                     checked={selectedFilters.includes(filter.key)}
                                     onChange={(e) => {
-                                      const { value, checked } = e.target;
+                                      const {value, checked} = e.target;
                                       if (checked) {
                                         setSelectedFilters([...selectedFilters, value]);
                                       } else {
@@ -1035,7 +1031,7 @@ export default function SearchPage() {
                                     value="paid"
                                     checked={paidStatus.includes('paid')}
                                     onChange={(e) => {
-                                      const { value, checked } = e.target;
+                                      const {value, checked} = e.target;
                                       if (checked) {
                                         setPaidStatus([...paidStatus, value]);
                                       } else {
@@ -1052,7 +1048,7 @@ export default function SearchPage() {
                                     value="unpaid"
                                     checked={paidStatus.includes('unpaid')}
                                     onChange={(e) => {
-                                      const { value, checked } = e.target;
+                                      const {value, checked} = e.target;
                                       if (checked) {
                                         setPaidStatus([...paidStatus, value]);
                                       } else {
@@ -1080,7 +1076,7 @@ export default function SearchPage() {
                                   value={address}
                                   onChange={(e) => setAddress(e.target.value)}
                                   className="w-full text-sm"
-							      placeholder="Enter an address"
+                                  placeholder="Enter an address"
                               />
                             </Autocomplete>
                           </div>
@@ -1111,7 +1107,7 @@ export default function SearchPage() {
 
         <div
             ref={mapRef}
-            className={`transition-all duration-300`}
+            className="transition-all duration-300"
             style={{
               height: isLoggedIn ? (isListExpanded ? `calc(100vh - 64px)` : '50vh') : (isListExpanded ? '100vh' : '50vh'),
               flexShrink: 0,
@@ -1144,20 +1140,22 @@ export default function SearchPage() {
                       />
                   )
               ))}
+
               {mapCenter && (
                   <Marker
                       position={mapCenter}
                       icon="https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
                   />
               )}
+
               {selectedSpot && selectedSpot.location && (
                   <>
+                    {/* Dialog for Image Modal */}
                     <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
                       <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black/90">
                         <div className="relative w-96 h-[80vh]">
                           <ImageWrapper
-                              // @ts-ignore
-                              src={selectedSpot.photos[0]}
+                              src={selectedSpot.photos?.[0] || ''}
                               alt={selectedSpot.name || 'Parking Spot'}
                               layout="fill"
                               objectFit="contain"
@@ -1167,6 +1165,7 @@ export default function SearchPage() {
                       </DialogContent>
                     </Dialog>
 
+                    {/* Info Window */}
                     <InfoWindow
                         position={{
                           lat: selectedSpot.location.latitude,
@@ -1180,13 +1179,13 @@ export default function SearchPage() {
                             {selectedSpot.name || 'Unnamed Parking Space'}
                           </h2>
                           {selectedSpot.verification_status === 'verified' && (
-                              <ShieldCheck className="w-4 h-4 text-green-500" />
+                              <ShieldCheck className="w-4 h-4 text-green-500"/>
                           )}
                           {selectedSpot.verification_status === 'pending' && (
-                              <ShieldEllipsis className="w-4 h-4 text-yellow-500" />
+                              <ShieldEllipsis className="w-4 h-4 text-yellow-500"/>
                           )}
                           {(!selectedSpot.verification_status || selectedSpot.verification_status === 'rejected') && (
-                              <ShieldX className="w-4 h-4 text-red-500" />
+                              <ShieldX className="w-4 h-4 text-red-500"/>
                           )}
                         </div>
 
@@ -1195,9 +1194,9 @@ export default function SearchPage() {
                                 onClick={() => setShowImageModal(true)}
                                 className="relative w-full h-20 mb-1 overflow-hidden rounded cursor-pointer group"
                             >
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors z-10" />
+                              <div
+                                  className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors z-10"/>
                               <ImageWrapper
-                                  // @ts-ignore
                                   src={selectedSpot.photos[0]}
                                   alt={selectedSpot.name || 'Parking Spot'}
                                   layout="fill"
@@ -1208,166 +1207,128 @@ export default function SearchPage() {
                         )}
 
                         <p className="truncate text-gray-600 text-[10px] mb-1">📍 {selectedSpot.location.address || 'No Address Found'}</p>
-                        <p className="text-gray-500 text-[10px] mb-1">{selectedSpot.location.latitude.toFixed(4)}, {selectedSpot.location.longitude.toFixed(4)}</p>
+                        <p className="text-gray-500 text-[10px] mb-1">
+                          {selectedSpot.location.latitude.toFixed(4)}, {selectedSpot.location.longitude.toFixed(4)}
+                        </p>
 
                         <div className="flex gap-1">
-                          <Button
-                              onClick={getDirections}
-                              className="flex-1 h-6 text-[10px]"
-                              variant="outline"
-                          >
-                            <Navigation className="mr-1 h-3 w-3" />
+                          <Button onClick={getDirections} className="flex-1 h-6 text-[10px]" variant="outline">
+                            <Navigation className="mr-1 h-3 w-3"/>
                             Navigate
                           </Button>
                           {selectedSpot.is_paid ? (
-                              <Button
-                                  onClick={() => reserveSpot(selectedSpot?.id)}
-                                  className="flex-1 h-6 text-[10px]"
-                                  variant="default"
-                              >
-                                <DollarSign className="mr-1 h-3 w-3" />
+                              <Button onClick={() => reserveSpot(selectedSpot.id)} className="flex-1 h-6 text-[10px]"
+                                      variant="default">
+                                <DollarSign className="mr-1 h-3 w-3"/>
                                 Reserve
                               </Button>
                           ) : (
-                              <Button
-                                  className="flex-1 h-6 text-[10px]"
-                                  variant="default"
-                              >
+                              <Button className="flex-1 h-6 text-[10px]" variant="default">
                                 Update Status
                               </Button>
                           )}
                         </div>
+
+                        {/* ShadCN Dialog */}
+                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button onClick={() => selectedSpot.id && openUpdateStatusDialog(selectedSpot.id)}>
+                              Update Spot Status
+                            </Button>
+                          </DialogTrigger>
+
+                          <DialogPortal>
+                            <DialogOverlay/>
+                            <DialogContent className="bg-white p-6 rounded-lg shadow-lg w-full">
+                              <DialogHeader>
+                                <DialogTitle className="text-lg text-gray-800 font-bold">Submit Verification
+                                  Photo</DialogTitle>
+                                <DialogDescription className="text-sm text-gray-500">
+                                  Use your camera to take a photo for verification.
+                                </DialogDescription>
+                              </DialogHeader>
+
+                              {isWithinDistance() ? (
+                                  previewUrl ? (
+                                      <>
+                                        <img src={previewUrl || undefined} alt="Preview"
+                                             className="w-full mt-4 rounded-lg"/>
+                                        <div className="flex mt-4 space-x-2">
+                                          <Button onClick={handleRetake}
+                                                  className="bg-yellow-500 text-white py-2 rounded-lg">
+                                            Retake
+                                          </Button>
+                                          <DialogClose asChild>
+                                            <Button onClick={handleSubmit}
+                                                    className="bg-green-500 text-white py-2 rounded-lg">
+                                              Submit Photo
+                                            </Button>
+                                          </DialogClose>
+                                          <Button onClick={closeUpdateStatusDialog}
+                                                  className="bg-gray-300 text-gray-800 py-2 rounded-lg">
+                                            Cancel
+                                          </Button>
+                                        </div>
+                                      </>
+                                  ) : (
+                                      <>
+                                        <div className="mt-4 w-full flex justify-center">
+                                          <Webcam
+                                              audio={false}
+                                              ref={webcamRef}
+                                              screenshotFormat="image/jpeg"
+                                              className="w-full rounded-lg"
+                                          />
+                                        </div>
+                                        <Button
+                                            onClick={handleCameraCapture}
+                                            className="mt-4 w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
+                                        >
+                                          Capture Photo
+                                        </Button>
+                                        <Button onClick={closeUpdateStatusDialog}
+                                                className="mt-2 w-full bg-gray-300 text-gray-800 py-2 rounded-lg">
+                                          Cancel
+                                        </Button>
+                                      </>
+                                  )
+                              ) : (
+                                  <div className="mt-4 text-center text-red-500 font-semibold">
+                                    You are too far away from the parking spot to upload a verification photo.
+                                    <p className="text-sm mt-2">Move closer to the spot and try again.</p>
+                                  </div>
+                              )}
+                            </DialogContent>
+                          </DialogPortal>
+                        </Dialog>
                       </div>
                     </InfoWindow>
                   </>
-                  <InfoWindow
-                      position={{
-                        lat: selectedSpot.location.latitude,
-                        lng: selectedSpot.location.longitude,
-                      }}
-                      onCloseClick={() => setSelectedSpot(null)}
-                  >
-                    <div className="text-sm">
-                      <h2 className="font-semibold">{selectedSpot.name || 'Unnamed Parking Space'}</h2>
-                      <p>Address: {selectedSpot.location.address || 'Not specified'}</p>
-                      <p>Latitude: {selectedSpot.location.latitude.toFixed(4)}</p>
-                      <p>Longitude: {selectedSpot.location.longitude.toFixed(4)}</p>
-                      {/*{selectedSpot.features && selectedSpot.features.length > 0 && (*/}
-                      {/*    <p>Features: {selectedSpot.features.join(', ')}</p>*/}
-                      {/*)}*/}
-                      <div className="flex items-center space-x-2">
-                        <Button onClick={getDirections} className="mt-2 text-xs px-3 py-1">
-                          <Navigation className="mr-1 h-4 w-4" />
-                          Directions
-                        </Button>
-                        <Button onClick={() => { reserveSpot(selectedSpot.id) }} className="mt-2 text-xs px-3 py-1">
-                          <DollarSign className="mr-1 h-4 w-4" />
-                          Reserve
-                        </Button>
-                      </div>
-
-                      {/* ShadCN Dialog */}
-                      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button onClick={() => selectedSpot?.id && openUpdateStatusDialog(selectedSpot.id)}>
-                            Update Spot Status
-                          </Button>
-                        </DialogTrigger>
-
-                        <DialogPortal>
-                          <DialogOverlay />
-                          <DialogContent className="bg-white p-6 rounded-lg shadow-lg w-full">
-                            <DialogHeader>
-                              <DialogTitle className="text-lg text-gray-800 font-bold">Submit Verification Photo</DialogTitle>
-                              <DialogDescription className="text-sm text-gray-500">
-                                Use your camera to take a photo for verification.
-                              </DialogDescription>
-                            </DialogHeader>
-
-                            {isWithinDistance() ? (
-                                previewUrl ? (
-                                    <>
-                                      {/* Display photo preview */}
-                                      <img src={previewUrl || undefined} alt="Preview" className="w-full mt-4 rounded-lg" />
-                                      <div className="flex mt-4 space-x-2">
-                                        <Button onClick={handleRetake} className="bg-yellow-500 text-white py-2 rounded-lg">
-                                          Retake
-                                        </Button>
-                                        <DialogClose asChild>
-                                          <Button onClick={handleSubmit} className="bg-green-500 text-white py-2 rounded-lg">
-                                            Submit Photo
-                                          </Button>
-                                        </DialogClose>
-                                        <Button onClick={closeUpdateStatusDialog} className="bg-gray-300 text-gray-800 py-2 rounded-lg">
-                                          Cancel
-                                        </Button>
-                                      </div>
-                                    </>
-                                ) : (
-                                    <>
-                                      {/* Show webcam for photo capture */}
-                                      <div className="mt-4 w-full flex justify-center">
-                                        <Webcam
-                                            audio={false}
-                                            ref={webcamRef}
-                                            screenshotFormat="image/jpeg"
-                                            className="w-full rounded-lg"
-                                        />
-                                      </div>
-                                      <Button
-                                          onClick={handleCameraCapture}
-                                          className="mt-4 w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
-                                      >
-                                        Capture Photo
-                                      </Button>
-                                      <Button onClick={closeUpdateStatusDialog} className="mt-2 w-full bg-gray-300 text-gray-800 py-2 rounded-lg">
-                                        Cancel
-                                      </Button>
-                                    </>
-                                )
-                            ) : (
-                                <div className="mt-4 text-center text-red-500 font-semibold">
-                                  You are too far away from the parking spot to upload a verification photo.
-                                  <p className="text-sm mt-2">Move closer to the spot and try again.</p>
-                                </div>
-                            )}
-                          </DialogContent>
-                        </DialogPortal>
-                      </Dialog>
-
-
-
-                    </div>
-                  </InfoWindow>
               )}
-              {directions && <DirectionsRenderer directions={directions} />}
+
+              {directions && <DirectionsRenderer directions={directions}/>}
             </GoogleMap>
           </LoadScriptNext>
 
           <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
             <button onClick={handleArrowClick} className="focus:outline-none">
               {isListExpanded ? (
-                  <motion.div
-                      animate={{ y: [0, 10, 0] }}
-                      transition={{ repeat: Infinity, duration: 1 }}
-                  >
+                  <motion.div animate={{y: [0, 10, 0]}} transition={{repeat: Infinity, duration: 1}}>
                     <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center drop-shadow-md">
-                      <ArrowDown size={24} className="text-gray-500" />
+                      <ArrowDown size={24} className="text-gray-500"/>
                     </div>
                   </motion.div>
               ) : (
-                  <motion.div
-                      animate={{ y: [0, 10, 0] }}
-                      transition={{ repeat: Infinity, duration: 1 }}
-                  >
+                  <motion.div animate={{y: [0, 10, 0]}} transition={{repeat: Infinity, duration: 1}}>
                     <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center drop-shadow-md">
-                      <ArrowUp size={24} className="text-gray-500" />
+                      <ArrowUp size={24} className="text-gray-500"/>
                     </div>
                   </motion.div>
               )}
             </button>
           </div>
         </div>
+
 
         <div className="flex-grow overflow-y-auto" ref={listRef}>
           <div className="mx-auto max-w-xl p-4">
@@ -1376,51 +1337,51 @@ export default function SearchPage() {
             ) : (
                 <div className="grid grid-cols-1 gap-4">
 
-                  { (parkingSpots).map((spot: ParkingSpace) => (
+                  {(parkingSpots).map((spot: ParkingSpace) => (
                       <Card key={spot.id} className="shadow-sm">
                         <CardHeader>
                           <CardTitle className="text-base flex items-center justify-between">
                             {spot.name || 'Unnamed Parking Space'}
                             {spot.is_paid ? (
                                 <span className="ml-2 text-green-600 flex items-center">
-          <DollarSign className="h-4 w-4 mr-1" />
+          <DollarSign className="h-4 w-4 mr-1"/>
           Paid
         </span>
                             ) : (
                                 <span className="ml-2 text-blue-600 flex items-center">
-          <ParkingSquare className="h-4 w-4 mr-1" />
+          <ParkingSquare className="h-4 w-4 mr-1"/>
           Free
         </span>
                             )}
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {spot.is_paid && (
-                                <>
-                                    <p className="text-md">
-                                        Price: ${spot?.pricing_info?.base_price || 'N/A'}
-                                    </p>
-                                    {isAvailable247(spot.availability_schedule) ? (
-                                        <p className="text-md mt-2">Available 24/7</p>
-                                    ) : (
-                                        <div className="flex items-center flex-wrap mt-2">
-                                            <p className="text-md mr-2">Available:</p>
-                                            {getAvailableDays(spot.availability_schedule).map((day) => (
-                                                <Badge key={day} className="mr-1 mb-1" variant="secondary">
-                                                    {day.slice(0, 3)}
-                                                </Badge>
-                                            ))}
-                                            <div className="flex">
-                                                Hours:
-                                                <p className="text-md ml-2">{getTimeRange(spot.availability_schedule)}</p>
-                                            </div>
+                          {spot.is_paid && (
+                              <>
+                                <p className="text-md">
+                                  Price: ${spot?.pricing_info?.base_price || 'N/A'}
+                                </p>
+                                {isAvailable247(spot.availability_schedule) ? (
+                                    <p className="text-md mt-2">Available 24/7</p>
+                                ) : (
+                                    <div className="flex items-center flex-wrap mt-2">
+                                      <p className="text-md mr-2">Available:</p>
+                                      {getAvailableDays(spot.availability_schedule).map((day) => (
+                                          <Badge key={day} className="mr-1 mb-1" variant="secondary">
+                                            {day.slice(0, 3)}
+                                          </Badge>
+                                      ))}
+                                      <div className="flex">
+                                        Hours:
+                                        <p className="text-md ml-2">{getTimeRange(spot.availability_schedule)}</p>
+                                      </div>
 
-                                        </div>
-                                    )}
-                                    <p className="text-md">Address: {spot.location.address || 'Not specified'}</p>
-                                    <p className="text-md">Average Rating: {'No ratings'}</p>
-                                </>
-                            )}
+                                    </div>
+                                )}
+                                <p className="text-md">Address: {spot.location.address || 'Not specified'}</p>
+                                <p className="text-md">Average Rating: {'No ratings'}</p>
+                              </>
+                          )}
                           {spot.location && (
                               <>
                                 <p className="text-sm">Address: {spot.location.address || 'Not specified'}</p>
@@ -1431,13 +1392,13 @@ export default function SearchPage() {
                           <p className="text-sm">Average Rating: {'No ratings'}</p>
                           <p className="text-sm">Availability: {'Available'}</p>
                           {!spot.is_paid && spot.location && (
-                                <p className="text-md">Location: {spot.location.longitude}, {spot.location.longitude}</p>
+                              <p className="text-md">Location: {spot.location.longitude}, {spot.location.longitude}</p>
                           )}
                           <Button
                               onClick={() => handleSpotSelect(spot)}
                               className="mt-2 w-full text-sm px-3 py-2 flex items-center justify-center"
                           >
-                            <MapPin className="mr-2 h-4 w-4" />
+                            <MapPin className="mr-2 h-4 w-4"/>
                             Select
                           </Button>
                         </CardContent>
@@ -1449,46 +1410,46 @@ export default function SearchPage() {
           <div className="flex h-16">
           </div>
         </div>
-      {/* navigation stuff */}
-      <div
-        ref={navigationCardRef}
-        className={`fixed bottom-0 left-0 w-full bg-gray-100 p-4 transition-transform duration-300 transform ${navigationMode ? 'translate-y-0' : 'translate-y-full'
-          }`}
-        style={{ bottom: '64px', height: 'auto' }}
-      >
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row justify-between items-center w-full">
+        {/* navigation stuff */}
+        <div
+            ref={navigationCardRef}
+            className={`fixed bottom-0 left-0 w-full bg-gray-100 p-4 transition-transform duration-300 transform ${navigationMode ? 'translate-y-0' : 'translate-y-full'
+            }`}
+            style={{bottom: '64px', height: 'auto'}}
+        >
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row justify-between items-center w-full">
 
-            <CardTitle className="text-lg">Directions</CardTitle>
-            {navigationMode && (
-              <button
-                onClick={() => {
-                  setNavigationMode(false);
-                  setCurrentStepIndex(0);
-                  setDirections(null);
-                }}
-                className="mt-2 px-3 py-2 bg-red-500 text-white text-sm font-semibold rounded hover:bg-red-700 focus:outline-none"
-              >
-                Exit Navigation
-              </button>
-            )}
-          </CardHeader>
-          <CardContent>
-            {navigationMode ? (
-              reachedDestination ? (
-                <div className="text-center">
-                  <h3 className="text-md font-semibold mb-4">You've reached your destination</h3>
-                </div>
-              ) : (
-                <div>
-                  {/* <h3 className="text-md font-semibold">From: {userLocation?.lat}, {userLocation?.lng}</h3>
+              <CardTitle className="text-lg">Directions</CardTitle>
+              {navigationMode && (
+                  <button
+                      onClick={() => {
+                        setNavigationMode(false);
+                        setCurrentStepIndex(0);
+                        setDirections(null);
+                      }}
+                      className="mt-2 px-3 py-2 bg-red-500 text-white text-sm font-semibold rounded hover:bg-red-700 focus:outline-none"
+                  >
+                    Exit Navigation
+                  </button>
+              )}
+            </CardHeader>
+            <CardContent>
+              {navigationMode ? (
+                  reachedDestination ? (
+                      <div className="text-center">
+                        <h3 className="text-md font-semibold mb-4">You've reached your destination</h3>
+                      </div>
+                  ) : (
+                      <div>
+                        {/* <h3 className="text-md font-semibold">From: {userLocation?.lat}, {userLocation?.lng}</h3>
                   <h3 className="text-md font-semibold">To: {selectedSpot?.location.latitude}, {selectedSpot?.location.longitude}</h3> */}
-                  {/* <div className="border-b border-gray-300 my-4"></div> */}
-                  <div className="mt-0">
-                    <h3 className="text-md font-semibold">Step {currentStepIndex + 1}</h3>
-                    <div className="w-3"></div>
+                        {/* <div className="border-b border-gray-300 my-4"></div> */}
+                        <div className="mt-0">
+                          <h3 className="text-md font-semibold">Step {currentStepIndex + 1}</h3>
+                          <div className="w-3"></div>
 
-                    {/* <div className="flex items-center justify-between"> // Do we want this feature?
+                          {/* <div className="flex items-center justify-between"> // Do we want this feature?
                       <button
                         onClick={() => setCurrentStepIndex(currentStepIndex - 1)}
                         disabled={currentStepIndex === 0}
@@ -1505,25 +1466,26 @@ export default function SearchPage() {
                         <ChevronRight size={16} />
                       </button>
                     </div> */}
-                    <div className="w-8"></div>
-                    {directions && (
-                      <span dangerouslySetInnerHTML={{ __html: directions.routes[0].legs[0].steps[currentStepIndex].instructions }} />
-                    )}
-                    {directions && (
-                      <div className="text-sm text-gray-600">
-                        <p>Distance: {directions.routes[0].legs[0].steps[currentStepIndex].distance?.text ?? ''}</p>
-                        <p>Duration: {directions.routes[0].legs[0].steps[currentStepIndex].duration?.text ?? ''}</p>
+                          <div className="w-8"></div>
+                          {directions && (
+                              <span
+                                  dangerouslySetInnerHTML={{__html: directions.routes[0].legs[0].steps[currentStepIndex].instructions}}/>
+                          )}
+                          {directions && (
+                              <div className="text-sm text-gray-600">
+                                <p>Distance: {directions.routes[0].legs[0].steps[currentStepIndex].distance?.text ?? ''}</p>
+                                <p>Duration: {directions.routes[0].legs[0].steps[currentStepIndex].duration?.text ?? ''}</p>
+                              </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </div>
-                </div>
-              )
-            ) : (
-              <p className="text-sm text-gray-500">No directions available.</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                  )
+              ) : (
+                  <p className="text-sm text-gray-500">No directions available.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
   );
 }
