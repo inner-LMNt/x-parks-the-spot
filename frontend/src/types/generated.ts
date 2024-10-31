@@ -1857,7 +1857,7 @@ export interface components {
         };
         CarInfo: {
             /** Format: uuid */
-            id?: string;
+            id: string;
             make: string;
             model: string;
             year?: number;
