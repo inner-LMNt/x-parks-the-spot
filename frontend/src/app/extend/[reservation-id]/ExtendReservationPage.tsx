@@ -12,12 +12,13 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, Calendar, Clock, ArrowLeft } from "lucide-react";
 import { format, parseISO, isValid } from "date-fns";
 import { motion } from "framer-motion";
+import {fetchParkingSpace} from "@/features/parking-space/parkingSpaceSlice";
 
 const ExtendReservationPage = () => {
     const dispatch = useAppDispatch();
@@ -31,7 +32,7 @@ const ExtendReservationPage = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     const normalizedReservationId = reservationId.toLowerCase();
-
+    const current_spot = useAppSelector((state) => state.parkingSpace.parkingSpace);
     const reservation = useAppSelector((state) => {
         const foundReservation = state.reservations.reservations.find(
             (r) => r.id.toLowerCase() === normalizedReservationId
@@ -56,7 +57,7 @@ const ExtendReservationPage = () => {
                 setIsLoading(true);
                 const resultAction = await dispatch(fetchReservationById(reservationId));
                 if (fetchReservationById.fulfilled.match(resultAction)) {
-                    // Fetch successful
+                    dispatch(fetchParkingSpace(reservation.parking_space_id));
                 } else if (fetchReservationById.rejected.match(resultAction)) {
                     toast({
                         title: "Error",
@@ -106,7 +107,7 @@ const ExtendReservationPage = () => {
             updateReservation({
                 id: reservationId,
                 updateData: {
-                    end_time: newEndDateTime.toISOString(),
+                    end_time: new Date(newEndTime).toISOString() as string,
                 },
             })
         );
@@ -172,11 +173,17 @@ const ExtendReservationPage = () => {
                     >
                         <ArrowLeft className="w-4 h-4" />
                     </Button>
-                    <div className="flex flex-col space-y-1.5">
+                    <div className="flex flex-col space-y-2">
                         <CardTitle className="text-2xl">Extend Reservation</CardTitle>
-                        <p className="text-sm text-muted-foreground flex items-center">
-                            <MapPin className="w-4 h-4 mr-1" /> Parking Space Address
-                        </p>
+                        <CardDescription>
+                            Extend the end date and time of the reservation.
+                        </CardDescription>
+                        <div className="flex items-center">
+                            <MapPin className="w-5 h-5 text-blue-500 mr-1" />
+                            <span className="text-sm">
+                                {current_spot.location.address}, {current_spot.name}
+                            </span>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -184,13 +191,7 @@ const ExtendReservationPage = () => {
                         <div className="flex items-center">
                             <Clock className="w-5 h-5 text-blue-500 mr-1" />
                             <span className="text-sm">
-                Current End Time:{" "}
-                                {reservation.end_time &&
-                                isValid(parseISO(reservation.end_time)) ? (
-                                    format(parseISO(reservation.end_time), "PPP p")
-                                ) : (
-                                    "N/A"
-                                )}
+                            Current End Time: {reservation.end_time ? format(new Date(reservation.end_time), 'PPP p') : 'Loading...'}
               </span>
                         </div>
                         <div className="flex items-center">
