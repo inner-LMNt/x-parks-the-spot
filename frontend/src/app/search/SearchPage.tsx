@@ -8,7 +8,6 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from '@/components/ui/slider';
-import { updateSpot } from '@/features/user/userSlice';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { MapPin, Navigation, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, ArrowDown, ArrowUp, DollarSign } from 'lucide-react';
 import {
@@ -20,10 +19,12 @@ import {
   InfoWindow,
 } from '@react-google-maps/api';
 import {ParkingSpace} from '@/types/type';
+import { markSpotTaken } from '@/features/parking-space/parkingSpaceSlice';
 import { searchSpots } from '@/features/search/searchSlice';
 import { usePathname, useRouter } from 'next/navigation';
 import axios from 'axios';
 import Webcam from "react-webcam";
+import { useToast } from '@/components/ui/use-toast';
 
 
 const default_center = {
@@ -33,6 +34,7 @@ const default_center = {
 };
 
 export default function SearchPage() {
+  const { toast } = useToast();
   const router = useRouter();
   const dispatch = useAppDispatch();
 
@@ -76,7 +78,7 @@ export default function SearchPage() {
   // New States for Filter Selection
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [paidStatus, setPaidStatus] = useState<string[]>([]); // Array to hold 'paid' and/or 'unpaid'
-
+  const [isCameraActive, setIsCameraActive] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const currentUrl = usePathname();
@@ -126,21 +128,34 @@ export default function SearchPage() {
 
     // Prepare form data for API submission
     const formData = new FormData();
-    formData.append('spotId', currentSpotId);
     formData.append('latitude', userLocation.lat.toString());
     formData.append('longitude', userLocation.lng.toString());
     if (photo) formData.append('photo', photo);
 
+    // Wrap formData and currentSpotId in an object that matches markSpotTaken's expected parameter type
+    const submissionData = {
+      parkingSpaceId: currentSpotId,
+      formData: formData,
+    };
+
     try {
-      await dispatch(updateSpot(formData)).unwrap();
+      await dispatch(markSpotTaken(submissionData)).unwrap();
       console.log("Spot status updated successfully.");
-      closeUpdateStatusDialog();
+      toast({
+        title: 'Spot Update Successful',
+        description: 'The parking spot status was updated successfully.',
+        variant: 'success', // Assuming 'success' variant exists in your toast setup
+      });
+      //closeUpdateStatusDialog();
     } catch (error) {
       console.error("Failed to update spot status:", error);
+      toast({
+        title: 'Spot Update Failed',
+        description: 'Failed to update the parking spot status. Please try again.',
+        variant: 'destructive', // Assuming 'destructive' variant exists for error messages
+      });
     }
-  };
-
-  const [isCameraActive, setIsCameraActive] = useState(true);
+  }
 
   const handleCameraCapture = useCallback(() => {
     const imageSrc = webcamRef.current?.getScreenshot();

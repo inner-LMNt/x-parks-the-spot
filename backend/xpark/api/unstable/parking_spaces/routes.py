@@ -2,12 +2,13 @@ from . import bp
 from xpark.logic.parkingspace import (
     create_free_parking_space,
     create_paid_parking_space,
-    update_paid_parking_space,
     delete_free_parking_space,
     get_parking_space,
     is_paid_spot,
     get_owned_paid_parking_spaces,
     handle_submit_verification,
+    update_parking_space,
+    update_taken,
 )
 from flask import request
 from result import Ok, Err
@@ -105,7 +106,7 @@ def update_parking_space_route(
         case Err(_):
             return {"err": "spot not found"}, 404
     if is_paid:
-        match update_paid_parking_space(
+        match  update_parking_space(
             user_id=user_id,
             parking_space_id=parking_space_uuid,
             longitude=request.json.get("location", {}).get("longitude"),
@@ -160,3 +161,19 @@ def verify_spot_route(
             return {}, 200
         case Err(_):
             return {}, 404
+
+@bp.post("<parking_space_id>/taken")
+@require_logged_in_user
+def update_parking_space_taken(parking_space_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    # Retrieve the image file from form data
+    image_file = request.files.get("photo")
+    parking_space_uuid = uuid.UUID(parking_space_id)
+
+    # Call helper function to perform the update
+    result = update_taken(user_id=user_id, parking_space_id=parking_space_uuid, image_file=image_file)
+
+    # Return response based on the result
+    if isinstance(result, Ok):
+        return {"updated_space": result.value}, 200
+    else:
+        return {"err": result.value}, 400
