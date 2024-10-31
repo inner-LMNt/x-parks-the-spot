@@ -1,4 +1,4 @@
-// src/features/addSlice.ts
+// src/features/add/addSlice.ts
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "@/api/axiosInstance";
@@ -16,6 +16,7 @@ const initialState: AddState = {
     success: false,
 };
 
+// Async thunk for adding a parking spot
 export const addParkingSpot = createAsyncThunk<
     ParkingSpace,
     FormData,
@@ -57,7 +58,7 @@ const addSlice = createSlice({
                 state.error = null;
                 state.success = true;
             })
-            .addCase(addParkingSpot.rejected, (state: AddState, action) => {
+            .addCase(addParkingSpot.rejected, (state: AddState, action: any) => {
                 state.loading = false;
                 state.error = action.payload || "Failed to add parking spot";
                 state.success = false;

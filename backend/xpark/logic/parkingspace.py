@@ -1,5 +1,6 @@
 import os
 import json
+from datetime import datetime
 from typing import Dict, Any, Optional, List
 
 from werkzeug.datastructures import FileStorage
@@ -65,7 +66,6 @@ def create_paid_parking_space(
         photos = [image_uri]
     else:
         photos = []
-
     # Insert into database
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -80,7 +80,8 @@ def create_paid_parking_space(
                     verification_status,
                     name,
                     availability_schedule,
-                    price
+                    price,
+                    photo_timestamp
                 )
                 VALUES (
                     %(user_id)s,
@@ -91,7 +92,8 @@ def create_paid_parking_space(
 					'unverified',
 					%(name)s,
                     %(sched)s,
-					%(price)s
+					%(price)s,
+					NOW()
                 )
                 RETURNING id, created_at, updated_at
                 """,
@@ -132,6 +134,12 @@ def create_free_parking_space(
     else:
         photos = []
 
+    # Provide default values
+    default_name = f'Spot Logged at {datetime.now().strftime("%I:%M %p, %B %d %Y")}'
+    default_verification_status = 'unverified'
+    default_availability_schedule = json.dumps([])  # or another appropriate default
+    default_price = 0
+
     # Insert into database
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -142,19 +150,33 @@ def create_free_parking_space(
                     is_paid,
                     location,
                     address,
-                    photos
+                    photos,
+                    photo_timestamp,
+                    verification_status,
+                    name,
+                    availability_schedule,
+                    price
                 )
-                VALUES (%s, FALSE, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s, %s)
+                VALUES (%s, FALSE, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s, %s, NOW(), %s, %s, %s, %s)
                 RETURNING id, created_at, updated_at
                 """,
-                (user_id, longitude, latitude, address, photos),
+                (
+                    user_id,
+                    longitude,
+                    latitude,
+                    address,
+                    photos,
+                    default_verification_status,
+                    default_name,
+                    default_availability_schedule,
+                    default_price,
+                ),
             )
             parking_space = cur.fetchone()
             if not parking_space:
                 return Err("Error creating parking space")
 
             return Ok(parking_space)
-
 
 # TODO: Review
 def save_image(image_file: FileStorage) -> str:
@@ -337,10 +359,11 @@ def handle_submit_verification(
                 """,
                 ("pending", image_uri, parking_space_id, user_id),
             )
-            result = cur.fetchone()
-            if not result:
+            # Check if any rows were updated
+            if cur.rowcount == 0:
                 return Err(
                     "Failed to update verification status or parking space not found"
                 )
 
             return Ok(None)
+

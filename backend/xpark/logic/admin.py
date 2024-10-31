@@ -22,7 +22,10 @@ def get_all_pending_parking_spaces() -> Result[Dict[str, List[Dict[str, Any]]], 
                     ST_X(location::geometry) AS longitude,
                     address,
                     availability_schedule,
-                    pricing_info,
+                    json_build_object(
+                         'base_price', price,
+                          'dynamic_pricing', FALSE
+                    ) as pricing_info,
                     photos,
                     verification_photos,  -- Include verification photos
                     created_at,

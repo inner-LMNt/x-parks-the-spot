@@ -1,0 +1,88 @@
+type: object
+required:
+  - id
+  - reservation_id
+  - type
+  - description
+  - status
+  - created_at
+  - updated_at
+  - admin_response
+  - owner_name
+  - parking_space_name
+  - parking_space_address
+  - start_time
+  - end_time
+  - parking_space_id
+properties:
+  id:
+    type: string
+    format: uuid
+    description: Unique identifier for the report.
+
+  reservation_id:
+    type: string
+    format: uuid
+    description: Unique identifier of the reservation associated with this report.
+
+  parking_space_id:
+    type: string
+    format: uuid
+    description: Unique identifier of the parking space involved in the reservation.
+
+  parking_space_address:
+    type: string
+    description: Address of parking space.
+
+  start_time:
+    type: string
+    format: date-time
+    description: Start time of the reservation.
+
+  end_time:
+    type: string
+    format: date-time
+    description: End time of the reservation.
+
+  type:
+    type: string
+    enum:
+      - Billing
+      - Technical
+      - Other
+    description: Type of the report.
+
+  description:
+    type: string
+    description: Detailed description of the issue.
+
+  status:
+    type: string
+    enum:
+      - open
+      - in_progress
+      - resolved
+    description: Current status of the report.
+
+  admin_response:
+    type: string
+    nullable: true
+    description: Response from the admin regarding the report.
+
+  created_at:
+    type: string
+    format: date-time
+    description: Timestamp when the report was created.
+
+  updated_at:
+    type: string
+    format: date-time
+    description: Timestamp when the report was last updated.
+
+  owner_name:
+    type: string
+    description: Name of the owner of the parking space.
+
+  parking_space_name:
+    type: string
+    description: Name of the parking space.

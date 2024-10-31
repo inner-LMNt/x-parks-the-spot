@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, X, Camera } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { submitVerification } from '@/features/owner/ownerSlice';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import Webcam from 'react-webcam';
 
 interface VerificationModalProps {
