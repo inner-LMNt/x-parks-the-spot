@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta, timezone
+from typing import Optional
+
 from flask.testing import FlaskClient
 
 from xpark.test.utils.utils import create_test_user, create_test_parking_space, create_test_car
@@ -8,9 +10,9 @@ def create_test_reservation_at_time(
         client: FlaskClient,
         token: str,
         space_id: str,
-        start_time: datetime = None,
-        end_time: datetime = None,
-        car_id: str = None,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+        car_id: Optional[str] = None,
 ) -> str:
     """Helper to create a test reservation with specific times"""
     if start_time is None:

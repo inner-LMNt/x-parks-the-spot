@@ -1,5 +1,4 @@
 import uuid
-import zoneinfo
 from typing import Optional, Dict, Any, List
 from psycopg.rows import dict_row
 from xpark.utils.db import DB
@@ -179,7 +178,7 @@ def update_reservation(
     start_time: Optional[datetime.datetime] = None,
     end_time: Optional[datetime.datetime] = None,
     car_info_id: Optional[uuid.UUID] = None,
-) -> Result[Dict[str, Any], str]:
+) -> Result[Dict[str, Any] | None, str]:
 
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:

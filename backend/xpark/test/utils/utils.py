@@ -1,5 +1,5 @@
 from flask.testing import FlaskClient
-from typing import Dict, Any, List, Union
+from typing import Dict, Any, List, Union, Optional
 from datetime import datetime, timedelta, timezone
 import json
 import io
@@ -131,9 +131,9 @@ def create_test_reservation_at_time(
     client: FlaskClient,
     token: str,
     space_id: str,
-    start_time: datetime = None,
-    end_time: datetime = None,
-    car_id: str = None,
+    start_time: Optional[datetime] = None,
+    end_time: Optional[datetime] = None,
+    car_id: Optional[str] = None,
 ) -> str:
     """Helper to create a test reservation with specific times"""
     if start_time is None:
