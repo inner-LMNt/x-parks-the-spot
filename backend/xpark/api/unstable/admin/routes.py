@@ -6,7 +6,7 @@ from xpark.logic.admin import (
 from flask import request
 from result import Ok, Err
 from typing import Any
-from xpark.middleware.token_auth_middleware import require_logged_in_user
+from xpark.middleware.token_auth_middleware import require_logged_in_user, require_logged_in_admin
 from typing import Tuple
 import uuid
 
@@ -22,7 +22,7 @@ def get_pending_parking_spaces_route() -> Tuple[Any, int]:
             return {"error": str(e)}, 403
 
 @bp.post("verify-parking-space")
-@require_logged_in_user
+@require_logged_in_admin
 def verify_parking_space(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     # Parse the request JSON body for the spot ID and verification decision
     data = request.get_json()

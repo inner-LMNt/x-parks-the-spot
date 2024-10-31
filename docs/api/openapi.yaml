@@ -21,6 +21,8 @@ tags:
     description: User notifications
   - name: Admin
     description: Administrative actions
+  - name: Reports
+    description: Reporting issues related to reservations and parking spaces
 paths:
   /auth/register:
     post:
@@ -811,8 +813,122 @@ paths:
           description: Unauthorized
         '403':
           description: Forbidden
+  /reports:
+    get:
+      tags:
+        - Reports
+      summary: Get all reports for the authenticated user
+      security:
+        - bearerAuth: [ ]
+      responses:
+        '200':
+          description: List of user reports
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/ReportListResponse.yaml'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+    post:
+      tags:
+        - Reports
+      summary: Create a new report
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/ReportCreateRequest.yaml'
+      responses:
+        '201':
+          description: Report created successfully
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/Report.yaml'
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /reports/{id}:
+    get:
+      tags:
+        - Reports
+      summary: Get a specific report by ID
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Report details
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/Report.yaml'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Report not found
+
+    put:
+      tags:
+        - Reports
+      summary: Update a report's admin response
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - admin_response
+              properties:
+                admin_response:
+                  type: string
+      responses:
+        '200':
+          description: Report updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/Report.yaml'
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Report not found
+
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
+

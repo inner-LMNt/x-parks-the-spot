@@ -33,29 +33,7 @@ def get_all_pending_parking_spaces() -> Result[Dict[str, List[Dict[str, Any]]], 
             cur.execute(query)
             rows = cur.fetchall()
 
-            pendingSpaces = []
-            for row in rows:
-                parking_space = {
-                    "id": str(row["id"]),
-                    "name": row["name"] or "Unnamed Spot",
-                    "is_paid": row["is_paid"],
-                    "status": row["verification_status"] or "Pending",
-                    "created_at": row["created_at"].isoformat(),
-                    "updated_at": row["updated_at"].isoformat(),
-                    "location": {
-                        "latitude": float(row["latitude"]),
-                        "longitude": float(row["longitude"]),
-                        "address": row["address"] or "",
-                    },
-                    "availability_schedule": row["availability_schedule"] or [],
-                    "pricing_info": row["pricing_info"] or {},
-                    "photos": row["photos"] or [],
-                    "verification_photos": row["verification_photos"] or [],
-                }
-
-                pendingSpaces.append(parking_space)
-
-            return Ok({"pendingSpaces": pendingSpaces})
+            return Ok({"pendingSpaces": rows})
 
 def handle_verify_parking(parking_space_id: uuid.UUID, is_verified: bool) -> Result[Dict[str, Any], str]:
     # Step 1: Fetch the owner (user ID) of the parking space
@@ -92,7 +70,7 @@ def handle_verify_parking(parking_space_id: uuid.UUID, is_verified: bool) -> Res
                 return Err(f"Failed to update the verification status of parking space with ID {parking_space_id}.")
 
             updated_space = {
-                "id": str(result["id"]),
+                "id": result["id"],
                 "verification_status": result["verification_status"],
                 "updated_at": result["updated_at"].isoformat(),
             }

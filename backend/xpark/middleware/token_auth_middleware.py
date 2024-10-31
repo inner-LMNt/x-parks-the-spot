@@ -39,3 +39,53 @@ def require_logged_in_user(
                 return {"err": e}, 401
 
     return wrapper
+
+# Will change this this later when have better idea what admin is
+def require_logged_in_admin(
+    next_fn: Callable[..., Tuple[Any, int]]
+) -> Callable[..., Tuple[Any, int]]:
+    @wraps(next_fn)
+    def wrapper(*args: Any, **kwargs: Any) -> Tuple[Any, int]:
+        # Extract the bearer auth
+        token_to_check = request.headers.get("Authorization")
+        if token_to_check is None:
+            return {"err": "No authentication provided"}, 403
+        token_to_check = token_to_check.strip()
+        # This token is prefixed with "Bearer", so we have to trim that
+        if not token_to_check.startswith("Bearer "):
+            return {"err": "Bad authentication"}, 400
+        token = token_to_check[7:]
+        match validate_token_and_refresh(token):
+            case Ok(user_id):
+                kwargs["user_id"] = user_id
+                kwargs["token"] = token
+                return next_fn(*args, **kwargs)
+            case Err(e):
+                return {"err": e}, 401
+
+    return wrapper
+
+# Will change this this later when have better idea what admin is
+def require_logged_in_admin(
+    next_fn: Callable[..., Tuple[Any, int]]
+) -> Callable[..., Tuple[Any, int]]:
+    @wraps(next_fn)
+    def wrapper(*args: Any, **kwargs: Any) -> Tuple[Any, int]:
+        # Extract the bearer auth
+        token_to_check = request.headers.get("Authorization")
+        if token_to_check is None:
+            return {"err": "No authentication provided"}, 403
+        token_to_check = token_to_check.strip()
+        # This token is prefixed with "Bearer", so we have to trim that
+        if not token_to_check.startswith("Bearer "):
+            return {"err": "Bad authentication"}, 400
+        token = token_to_check[7:]
+        match validate_token_and_refresh(token):
+            case Ok(user_id):
+                kwargs["user_id"] = user_id
+                kwargs["token"] = token
+                return next_fn(*args, **kwargs)
+            case Err(e):
+                return {"err": e}, 401
+
+    return wrapper

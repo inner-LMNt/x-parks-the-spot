@@ -22,7 +22,7 @@ interface PendingSpot {
     };
 }
 
-const VerificationPage: React.FC = () => {
+export const VerificationPage = () => {
     const dispatch = useAppDispatch();
     const { pendingSpots, loading, error } = useAppSelector(state => state.admin);
 

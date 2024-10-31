@@ -1,26 +1,35 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Slider } from '@/components/ui/slider';
-import { MapPin, Navigation, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, ArrowDown, ArrowUp, DollarSign } from 'lucide-react';
+import React, {useEffect, useRef, useState} from 'react';
+import {motion} from 'framer-motion';
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Button} from "@/components/ui/button";
+import {useAppDispatch, useAppSelector} from '@/store/hooks';
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Slider} from '@/components/ui/slider';
+import {Dialog, DialogContent} from "@/components/ui/dialog";
 import {
-  Autocomplete,
-  GoogleMap,
-  LoadScriptNext,
-  Marker,
-  DirectionsRenderer,
-  InfoWindow,
-} from '@react-google-maps/api';
-import {ParkingSpace} from '@/types/type';
-import { searchSpots } from '@/features/search/searchSlice';
-import { usePathname, useRouter } from 'next/navigation';
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  ChevronUp,
+  DollarSign,
+  MapPin,
+  Navigation,
+  ParkingSquare,
+  ShieldCheck,
+  ShieldEllipsis,
+  ShieldX
+} from 'lucide-react';
+import {Autocomplete, DirectionsRenderer, GoogleMap, InfoWindow, LoadScriptNext, Marker,} from '@react-google-maps/api';
+import {DaysOfWeek, ParkingSpace, TimeSlot} from '@/types/type';
+import {searchSpots} from '@/features/search/searchSlice';
+import {usePathname, useRouter} from 'next/navigation';
 import axios from 'axios';
+import ImageWrapper from "@/components/custom/ImageWrapper";
+import {Badge} from "@/components/ui/badge";
+import {components} from "@/types/generated";
 
 const default_center = {
   // Purdue University coords
@@ -51,6 +60,7 @@ export default function SearchPage() {
   const [reachedDestination, setReachedDestination] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [iconScale, setIconScale] = useState<google.maps.Size | null>(null);
+  const [showImageModal, setShowImageModal] = useState(false);
   const navigationCardRef = useRef<HTMLDivElement>(null);
   const onLoadAutocomplete = (autocompleteInstance: google.maps.places.Autocomplete) => {
     setAutocomplete(autocompleteInstance);
@@ -309,30 +319,6 @@ export default function SearchPage() {
     setIsListExpanded(!isListExpanded);
   };
 
-  useEffect(() => {
-    const handleListScroll = () => {
-      if (listRef.current) {
-        const scrollTop = listRef.current.scrollTop;
-        if (scrollTop > 0) {
-          setIsListExpanded(true);
-        } else {
-          setIsListExpanded(false);
-        }
-      }
-    };
-
-    const listElement = listRef.current;
-    if (listElement) {
-      listElement.addEventListener('scroll', handleListScroll);
-    }
-
-    return () => {
-      if (listElement) {
-        listElement.removeEventListener('scroll', handleListScroll);
-      }
-    };
-  }, []);
-
   // Watch user location and check if within 50 feet of destination
   useEffect(() => {
     let watchId: number;
@@ -484,6 +470,9 @@ export default function SearchPage() {
 
   // Handle restricted actions and show modal if not logged in
   const reserveSpot = (parkingSpaceId: string | undefined) => {
+    if (!parkingSpaceId) {
+      return;
+    }
     if (!isLoggedIn) {
       setShowLoginModal(true); // Show login modal if not logged in
       return;
@@ -531,6 +520,65 @@ export default function SearchPage() {
     setEndTime(undefined);
     //setSelectedFeatures([]);
     setPaidStatus([]);
+  };
+
+  const getAvailableDays = (availabilitySchedule: components["schemas"]["TimeSlot"][] | undefined) => {
+    if (!availabilitySchedule || availabilitySchedule.length === 0) {
+      return [];
+    }
+    const daysOfWeekOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const days = availabilitySchedule.map(({ day_of_week }) => day_of_week);
+    return days.sort(
+        (a, b) => daysOfWeekOrder.indexOf(a) - daysOfWeekOrder.indexOf(b)
+    );
+  };
+
+// Helper function to determine the time range
+  const getTimeRange = (availabilitySchedule: any) => {
+    if (!availabilitySchedule || availabilitySchedule.length === 0) {
+      return '';
+    }
+
+    // Get all unique time ranges
+    const timeRanges = new Set(
+        // @ts-ignore
+        availabilitySchedule.map(({ start_time, end_time }) => `${start_time} - ${end_time}`)
+    );
+
+    // If only one time range exists
+    if (timeRanges.size === 1) {
+      const timeRange = timeRanges.values().next().value;
+      // Check if time range is 00:00 - 23:59
+      if (timeRange === '00:00 - 23:59') {
+        return '24 hours';
+      } else {
+        return `${timeRange}`;
+      }
+    } else {
+      // Multiple time ranges
+      return 'Various times';
+    }
+  };
+
+// Helper function to check if the spot is available 24/7
+  const isAvailable247 = (availabilitySchedule: any) => {
+    if (!availabilitySchedule || availabilitySchedule.length === 0) {
+      return false;
+    }
+    //@ts-ignore
+    const days = availabilitySchedule.map(({ day_of_week }) => day_of_week);
+    const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+    // Check if all days are included
+    const hasAllDays = daysOfWeek.every((day : any) => days.includes(day));
+
+    // Check if time is 00:00 - 23:59 for all entries
+    const isAllTime247 = availabilitySchedule.every(
+        //@ts-ignore
+        ({ start_time, end_time }) => start_time === '00:00' && end_time === '23:59'
+    );
+
+    return hasAllDays && isAllTime247;
   };
 
   // Function to close the modal
@@ -921,33 +969,95 @@ export default function SearchPage() {
                   />
               )}
               {selectedSpot && selectedSpot.location && (
-                  <InfoWindow
-                      position={{
-                        lat: selectedSpot.location.latitude,
-                        lng: selectedSpot.location.longitude,
-                      }}
-                      onCloseClick={() => setSelectedSpot(null)}
-                  >
-                    <div className="text-sm">
-                      <h2 className="font-semibold">{selectedSpot.name || 'Unnamed Parking Space'}</h2>
-                      <p>Address: {selectedSpot.location.address || 'Not specified'}</p>
-                      <p>Latitude: {selectedSpot.location.latitude.toFixed(4)}</p>
-                      <p>Longitude: {selectedSpot.location.longitude.toFixed(4)}</p>
-                      {/*{selectedSpot.features && selectedSpot.features.length > 0 && (*/}
-                      {/*    <p>Features: {selectedSpot.features.join(', ')}</p>*/}
-                      {/*)}*/}
-                      <div className="flex items-center space-x-2">
-                        <Button onClick={getDirections} className="mt-2 text-xs px-3 py-1">
-                          <Navigation className="mr-1 h-4 w-4" />
-                          Directions
-                        </Button>
-                        <Button onClick={() => { reserveSpot(selectedSpot.id) }} className="mt-2 text-xs px-3 py-1">
-                          <DollarSign className="mr-1 h-4 w-4" />
-                          Reserve
-                        </Button>
+                  <>
+                    <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
+                      <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black/90">
+                        <div className="relative w-96 h-[80vh]">
+                          <ImageWrapper
+                              // @ts-ignore
+                              src={selectedSpot.photos[0]}
+                              alt={selectedSpot.name || 'Parking Spot'}
+                              layout="fill"
+                              objectFit="contain"
+                              className="object-contain"
+                          />
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    <InfoWindow
+                        position={{
+                          lat: selectedSpot.location.latitude,
+                          lng: selectedSpot.location.longitude,
+                        }}
+                        onCloseClick={() => setSelectedSpot(null)}
+                    >
+                      <div className="w-56 p-1 text-xs">
+                        <div className="flex items-center gap-1 mb-1">
+                          <h2 className="font-bold text-sm truncate">
+                            {selectedSpot.name || 'Unnamed Parking Space'}
+                          </h2>
+                          {selectedSpot.verification_status === 'verified' && (
+                              <ShieldCheck className="w-4 h-4 text-green-500" />
+                          )}
+                          {selectedSpot.verification_status === 'pending' && (
+                              <ShieldEllipsis className="w-4 h-4 text-yellow-500" />
+                          )}
+                          {(!selectedSpot.verification_status || selectedSpot.verification_status === 'rejected') && (
+                              <ShieldX className="w-4 h-4 text-red-500" />
+                          )}
+                        </div>
+
+                        {selectedSpot.photos?.[0] && (
+                            <div
+                                onClick={() => setShowImageModal(true)}
+                                className="relative w-full h-20 mb-1 overflow-hidden rounded cursor-pointer group"
+                            >
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors z-10" />
+                              <ImageWrapper
+                                  // @ts-ignore
+                                  src={selectedSpot.photos[0]}
+                                  alt={selectedSpot.name || 'Parking Spot'}
+                                  layout="fill"
+                                  objectFit="cover"
+                                  className="object-cover"
+                              />
+                            </div>
+                        )}
+
+                        <p className="truncate text-gray-600 text-[10px] mb-1">📍 {selectedSpot.location.address || 'No Address Found'}</p>
+                        <p className="text-gray-500 text-[10px] mb-1">{selectedSpot.location.latitude.toFixed(4)}, {selectedSpot.location.longitude.toFixed(4)}</p>
+
+                        <div className="flex gap-1">
+                          <Button
+                              onClick={getDirections}
+                              className="flex-1 h-6 text-[10px]"
+                              variant="outline"
+                          >
+                            <Navigation className="mr-1 h-3 w-3" />
+                            Navigate
+                          </Button>
+                          {selectedSpot.is_paid ? (
+                              <Button
+                                  onClick={() => reserveSpot(selectedSpot?.id)}
+                                  className="flex-1 h-6 text-[10px]"
+                                  variant="default"
+                              >
+                                <DollarSign className="mr-1 h-3 w-3" />
+                                Reserve
+                              </Button>
+                          ) : (
+                              <Button
+                                  className="flex-1 h-6 text-[10px]"
+                                  variant="default"
+                              >
+                                Update Status
+                              </Button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </InfoWindow>
+                    </InfoWindow>
+                  </>
               )}
               {directions && <DirectionsRenderer directions={directions} />}
             </GoogleMap>
@@ -988,26 +1098,57 @@ export default function SearchPage() {
                   { (parkingSpots).map((spot: ParkingSpace) => (
                       <Card key={spot.id} className="shadow-sm">
                         <CardHeader>
-                          <CardTitle className="text-base">{spot.name || 'Unnamed Parking Space'}</CardTitle>
+                          <CardTitle className="text-base flex items-center justify-between">
+                            {spot.name || 'Unnamed Parking Space'}
+                            {spot.is_paid ? (
+                                <span className="ml-2 text-green-600 flex items-center">
+          <DollarSign className="h-4 w-4 mr-1" />
+          Paid
+        </span>
+                            ) : (
+                                <span className="ml-2 text-blue-600 flex items-center">
+          <ParkingSquare className="h-4 w-4 mr-1" />
+          Free
+        </span>
+                            )}
+                          </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          {spot.location && (
+                          {spot.is_paid && (
                               <>
-                                <p className="text-sm">Address: {spot.location.address || 'Not specified'}</p>
-                                <p className="text-sm">Latitude: {spot.location.latitude.toFixed(4)}</p>
-                                <p className="text-sm">Longitude: {spot.location.longitude.toFixed(4)}</p>
+                                <p className="text-md">
+                                  Price: ${spot?.pricing_info?.base_price || 'N/A'}
+                                </p>
+                                {isAvailable247(spot.availability_schedule) ? (
+                                    <p className="text-md mt-2">Available 24/7</p>
+                                ) : (
+                                    <div className="flex items-center flex-wrap mt-2">
+                                      <p className="text-md mr-2">Available:</p>
+                                      {getAvailableDays(spot.availability_schedule).map((day) => (
+                                          <Badge key={day} className="mr-1 mb-1" variant="secondary">
+                                            {day.slice(0, 3)}
+                                          </Badge>
+                                      ))}
+                                      <div className="flex">
+                                        Hours:
+                                        <p className="text-md ml-2">{getTimeRange(spot.availability_schedule)}</p>
+                                      </div>
+
+                                    </div>
+                                )}
+                                <p className="text-md">Address: {spot.location.address || 'Not specified'}</p>
+                                <p className="text-md">Average Rating: {'No ratings'}</p>
                               </>
                           )}
-                          <p className="text-sm">Average Rating: {'No ratings'}</p>
-                          <p className="text-sm">Availability: {'Available'}</p>
-                          {/*{spot.features && spot.features.length > 0 && (*/}
-                          {/*    <p className="text-sm">Features: {spot.features.join(', ')}</p>*/}
-                          {/*)}*/}
+
+                          {!spot.is_paid && spot.location && (
+                              <p className="text-md">Location: {spot.location.longitude}, {spot.location.longitude}</p>
+                          )}
                           <Button
                               onClick={() => handleSpotSelect(spot)}
-                              className="mt-2 w-full text-sm px-3 py-2"
+                              className="mt-2 w-full text-sm px-3 py-2 flex items-center justify-center"
                           >
-                            <MapPin className="mr-2 h-4 w-4"/>
+                            <MapPin className="mr-2 h-4 w-4" />
                             Select
                           </Button>
                         </CardContent>
