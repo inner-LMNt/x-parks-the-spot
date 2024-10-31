@@ -670,7 +670,7 @@ export default function SearchPage() {
     {key: 'endTime', label: 'End Time'},
     // { key: 'features', label: 'Features' },
     {key: 'paidStatus', label: 'Paid Status'}, // New Paid Status Filter
-    {key: 'allowTaken', label: 'Include Taken Spots'},
+    //{key: 'allowTaken', label: 'Include Taken Spots'},
   ];
 
   // Handle Deselect All
@@ -979,21 +979,8 @@ export default function SearchPage() {
                             />
                           </div>
                       )}
-                      {selectedFilters.includes('allowTaken') && (
-                          <div className="flex flex-col mb-4">
-                            <Label className="text-sm mb-1">Include Taken Spots:</Label>
-                            <div className="flex items-center">
-                              <input
-                                  type="checkbox"
-                                  id="include_taken"
-                                  checked={includeTakenSpots}
-                                  onChange={(e) => setIncludeTakenSpots(e.target.checked)}
-                                  className="mr-2"
-                              />
-                            </div>
-                          </div>
 
-                      )}
+
 
                       {/*{selectedFilters.includes('features') && (*/}
                       {/*    <div className="flex flex-col mb-4">*/}
@@ -1081,6 +1068,19 @@ export default function SearchPage() {
                             </Autocomplete>
                           </div>
                       )}
+                      {/* Add Include Taken Spots as a standalone option */}
+                      <div className="flex flex-col mb-4">
+                        <div className="flex items-center">
+                          <input
+                              type="checkbox"
+                              id="include_taken"
+                              checked={includeTakenSpots}
+                              onChange={(e) => setIncludeTakenSpots(e.target.checked)}
+                              className="mr-2"
+                          />
+                          <Label htmlFor="include_taken" className="text-sm">Include Taken Spots</Label>
+                        </div>
+                      </div>
 
                       <Button onClick={onSearch} className="w-auto text-sm px-4 py-2">
                         Search
