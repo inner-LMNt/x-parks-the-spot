@@ -387,7 +387,7 @@ def cancel_reservation_logic(
                 start_time = start_time.replace(tzinfo=datetime.timezone.utc)
 
             # Get the current time in UTC
-            current_time = datetime.now(datetime.timezone.utc)
+            current_time = datetime.datetime.now(datetime.timezone.utc)
 
             # Check if the current time is at least 2 hours before the reservation start time
             if start_time - current_time < datetime.timedelta(hours=2):
