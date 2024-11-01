@@ -158,4 +158,4 @@ def verify_spot_route(
         case Ok():
             return {}, 200
         case Err(_):
-            return {}, 404
+            return {}, 400

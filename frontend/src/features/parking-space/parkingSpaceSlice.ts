@@ -30,6 +30,20 @@ const initialState: ParkingSpaceState = {
  * **Async Thunks**
  */
 
+export const getAllPendingSpots = createAsyncThunk<
+    { pendingSpaces: ParkingSpace[] },
+    void,
+    { rejectValue: string }
+>("owner/getAllPendingSpots", async (_, { rejectWithValue }) => {
+    try {
+        const response = await axios.get("/parking-spaces/get-pending");
+        return response.data;
+    } catch (error: any) {
+        return rejectWithValue(error.response?.data?.error || "Failed to get pending parking spots");
+    }
+});
+
+
 /**
  * Fetch Parking Space Details
  * GET /parking-spaces/{id}

@@ -354,15 +354,16 @@ def handle_submit_verification(
             cur.execute(
                 """
                 UPDATE parking_spaces
-                SET verification_status = %s, photos = array_append(photos, %s), updated_at = NOW()
+                SET verification_status = %s, verification_photos = ARRAY[%s], updated_at = NOW()
                 WHERE id = %s AND owner = %s AND is_paid = true
                 """,
                 ("pending", image_uri, parking_space_id, user_id),
             )
-            result = cur.fetchone()
-            if not result:
+            # Check if any rows were updated
+            if cur.rowcount == 0:
                 return Err(
                     "Failed to update verification status or parking space not found"
                 )
 
             return Ok(None)
+

@@ -1,18 +1,18 @@
-'use client'
+'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {MapPin, Edit, Trash2, Plus, FileCheck2, ShieldEllipsis, ShieldCheck, ShieldX} from 'lucide-react';
+import { MapPin, Edit, Trash2, Plus, FileCheck2, ShieldEllipsis, ShieldCheck, ShieldX } from 'lucide-react';
 import { ParkingSpace } from '@/types/type';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getOwnerSpots, deleteParkingSpot, verifyParkingSpot} from '@/features/owner/ownerSlice';
+import { getOwnerSpots, deleteParkingSpot } from '@/features/owner/ownerSlice';
 import ImageWrapper from "@/components/custom/ImageWrapper";
 import VerificationModal from '@/components/custom/VerificationModal'; // Import the verification modal
-import EditSpotModal from '@/components/custom/EditSpotModal'
+import EditSpotModal from '@/components/custom/EditSpotModal';
 
 export default function MySpotsPage() {
     const isLoggedIn = useAppSelector(state => state.user.isLoggedIn);
@@ -41,7 +41,6 @@ export default function MySpotsPage() {
         }
     };
 
-
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null);
@@ -55,7 +54,6 @@ export default function MySpotsPage() {
         setSelectedSpot(null);
         setIsModalOpen(false);
     }
-
     const emptySpots = (
         <motion.div
             initial={{ opacity: 0 }}
@@ -72,7 +70,8 @@ export default function MySpotsPage() {
                 </Button>
             </Link>
         </motion.div>
-    )
+    );
+
 
     const openVerificationModal = (spotId: string) => {
         setCurrentSpotId(spotId);
@@ -94,9 +93,7 @@ export default function MySpotsPage() {
             // @ts-ignore
             return <ShieldEllipsis className="w-6 h-6 text-yellow-500" title="Pending Verification" />;
         }
-        // @ts-ignore
-        return <ShieldX className="w-6 h-6 text-red-500" title="Not Verified" />;
-
+        return <ShieldX className="w-6 h-6 text-red-500" aria-label="Not Verified" />;
     };
 
     const renderSpots = (spots: ParkingSpace[]) => (
@@ -111,7 +108,7 @@ export default function MySpotsPage() {
                         {spot.photos && (
                             <div className="relative w-full h-40">
                                 <ImageWrapper
-                                    src={spot.photos[0]} // Can be relative; ImageWrapper handles absolute URL
+                                    src={spot.photos[0]}
                                     alt={spot.name || 'Parking Spot Image'}
                                     layout="fill"
                                     objectFit="cover"
@@ -129,7 +126,6 @@ export default function MySpotsPage() {
                             </div>
 
                             <CardDescription>
-                                {/* Display Address if Exists, else Latitude and Longitude */}
                                 {spot.location?.address ? (
                                     <span className="text-sm text-gray-600">{spot.location.address}</span>
                                 ) : (
@@ -154,44 +150,6 @@ export default function MySpotsPage() {
                                 </div>
                             )}
 
-                            {/* Verification Buttons for Pending Spots */}
-                            {spot.verification_status === 'pending' && (
-                                <div className="flex justify-between">
-                                    <Button
-                                        variant="default"
-                                        size="sm"
-                                        className="flex-1 mr-2"
-                                        onClick={async () => {
-                                            // @ts-ignore
-                                            await dispatch(verifyParkingSpot({
-                                                spotId: spot.id ?? '',
-                                                is_verified: true
-                                            }));
-                                            // @ts-ignore
-
-                                            dispatch(getOwnerSpots()); // Re-fetch after verifying
-                                        }}
-                                    >
-                                        Verify
-                                    </Button>
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        className="flex-1"
-                                        onClick={async () => {
-                                            // @ts-ignore
-                                            await dispatch(verifyParkingSpot({
-                                                spotId: spot.id ?? '',
-                                                is_verified: false
-                                            }));
-                                            // @ts-ignore
-                                            dispatch(getOwnerSpots()); // Re-fetch after rejecting
-                                        }}
-                                    >
-                                        Reject
-                                    </Button>
-                                </div>
-                            )}
 
                             {/* Submit Verification Button for Unverified Spots */}
                             {(spot.verification_status !== 'pending' && spot.verification_status !== 'verified' && spot.is_paid) && (
@@ -225,7 +183,6 @@ export default function MySpotsPage() {
             ))}
         </div>
     );
-
 
     return (
         <div className="min-h-screen bg-gray-100 py-8">
@@ -306,8 +263,6 @@ export default function MySpotsPage() {
                     spot={selectedSpot}
                 />
             )}
-            <div className="flex h-16">
-            </div>
         </div>
     );
 }
