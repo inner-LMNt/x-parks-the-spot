@@ -1863,6 +1863,7 @@ export interface components {
             year?: number;
             color?: string;
             license_plate: string;
+            license_plate_state: string;
             state?: string;
             default?: boolean;
         };
