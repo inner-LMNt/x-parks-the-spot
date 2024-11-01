@@ -4,6 +4,7 @@ from xpark.logic.cars import (
     update_car,
     delete_car,
     get_car_info,
+    verify_state,
 )
 from . import bp
 from flask import request
@@ -37,11 +38,14 @@ def get_car(car_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 @require_logged_in_user
 def create(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     assert request.json
+    if not verify_state(request.json["license_plate_state"]):
+        return {"err", "Invalid state"}, 400
     match add_car_info(
         user_id,
         make=request.json["make"],
         model=request.json["model"],
         license_plate=request.json["license_plate"],
+        license_plate_state=request.json["license_plate_state"],
     ):
         case Ok(car_info):
             return car_info, 201
@@ -57,6 +61,11 @@ def patch(car_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     # For typing, we already know it exists
     assert request.json
 
+    if request.json.get("license_plate_state") and not verify_state(
+        request.json["license_plate_state"]
+    ):
+        return {"err", "Invalid state"}, 400
+
     # We're using .get here because we actually don't care if the value is null
     match update_car(
         user_id,
@@ -64,6 +73,7 @@ def patch(car_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         make=request.json.get("make"),
         model=request.json.get("model"),
         license_plate=request.json.get("license_plate"),
+        license_plate_state=request.json.get("license_plate_state"),
     ):
         case Ok(car_info):
             return car_info, 200

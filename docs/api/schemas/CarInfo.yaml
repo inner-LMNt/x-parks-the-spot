@@ -4,6 +4,7 @@ required:
   - make
   - model
   - license_plate
+  - license_plate_state
 properties:
   id:
     type: string
@@ -18,7 +19,7 @@ properties:
     type: string
   license_plate:
     type: string
-  state:
+  license_plate_state:
     type: string
   default:
     type: boolean
