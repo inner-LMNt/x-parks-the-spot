@@ -124,7 +124,7 @@ function ReservationCard({
                 </div>
 
                 <div className="space-y-4">
-                    {isPast && (
+                    {isPast && reservation.status != 'canceled' && (
                         <RatingSelector parkingSpaceId={reservation.parking_space_id as string} />
                     )}
 
@@ -244,6 +244,10 @@ export default function BookingsPage() {
         (reservation: Reservation) => new Date(reservation.end_time ?? now) < now
     );
 
+    const pastOrCancelledReservations = reservations.filter(
+        (reservation: Reservation) => new Date(reservation.end_time ?? now) < now || reservation.status === 'canceled'
+    );
+
     const cancelledReservations = reservations.filter(
         (reservation: Reservation) => reservation.status === 'canceled'
     );
@@ -351,7 +355,7 @@ export default function BookingsPage() {
                     )}
 
                 {/* Past Reservations */}
-                {!isLoading && pastReservations.length > 0 && (
+                {!isLoading && pastOrCancelledReservations.length > 0 && (
                     <section className="mb-8">
                         <SectionHeader title="Past Reservations"/>
                         {/* filters */}
@@ -374,7 +378,7 @@ export default function BookingsPage() {
                             </Toggle>
                         </div>
                         <div className="grid gap-6">
-                            {pastReservations
+                            {pastOrCancelledReservations
                                 .sort((a: Reservation, b: Reservation) => a.start_time.localeCompare(b.start_time))
                                 .sort((a: Reservation, b: Reservation) => sortByPrice ? a.price - b.price : 0)
                                 .filter((r: Reservation) => showCancelledSpots || (r.status != 'canceled'))
@@ -384,18 +388,6 @@ export default function BookingsPage() {
                         </div>
                     </section>
                 )}
-
-                    {/* Cancelled Reservations */}
-                    {!isLoading && cancelledReservations.length > 0 && (
-                        <section className="mb-8">
-                            <SectionHeader title="Cancelled Reservations" />
-                            <div className="grid gap-6">
-                                {cancelledReservations.map((reservation: Reservation) => (
-                                    <ReservationCard key={reservation.id} reservation={reservation} carMap={carMap} onCancel={handleCancel} />
-                                ))}
-                            </div>
-                        </section>
-                    )}
 
                     {/* No Reservations */}
                     {!isLoading && reservations.length === 0 && (

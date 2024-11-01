@@ -20,7 +20,7 @@ const NotificationBanner = () => {
     const [visible, setVisible] = useState(true);
     const [fadeOut, setFadeOut] = useState(false);
     const [extendable, setExtendable] = useState(false);
-    const isLoggedIn = useAppSelector((state: any) => state.user.isLoggedIn);
+    const isLoggedIn = useAppSelector((state: any) => state.isLoggedIn);
 
     useEffect(() => {
         if (isLoggedIn) {
