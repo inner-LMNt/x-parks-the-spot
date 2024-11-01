@@ -12,6 +12,7 @@ required:
   - created_at
   - updated_at
   - price
+  - location
 properties:
   id:
     type: string
@@ -52,3 +53,5 @@ properties:
     format: date-time
   price:
     type: number
+  location:
+    $ref: './Location.yaml'

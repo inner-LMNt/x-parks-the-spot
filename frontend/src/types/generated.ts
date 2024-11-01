@@ -2011,6 +2011,7 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
             price: number;
+            location: components["schemas"]["Location"];
         };
         ReservationCreateRequest: {
             /** Format: uuid */

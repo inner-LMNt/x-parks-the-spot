@@ -77,6 +77,11 @@ def get_user_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], st
                     car_info_id, 
                     renter_id,
                     status,
+                    json_build_object(
+                        'address',   parking_spaces.address,
+                        'latitude',  ST_Y(location::geometry),
+                        'longitude', ST_X(location::geometry)
+                    ) as location,
                     reservations.price,
                     reservations.created_at,
                     reservations.updated_at
@@ -178,17 +183,24 @@ def get_reservation(
             cur.execute(
                 """
                 SELECT 
-                    id,
+                    reservations.id, 
+                    parking_spaces.name,
                     parking_space_id, 
                     lower(time) as start_time,
                     upper(time) as end_time,
                     car_info_id, 
                     renter_id,
                     status,
-                    price,
-                    created_at,
-                    updated_at
-                FROM reservations
+                    json_build_object(
+                        'address',   parking_spaces.address,
+                        'latitude',  ST_Y(location::geometry),
+                        'longitude', ST_X(location::geometry)
+                    ) as location,
+                    reservations.price,
+                    reservations.created_at,
+                    reservations.updated_at
+                FROM reservations JOIN parking_spaces ON 
+                    reservations.parking_space_id = parking_spaces.id
                 WHERE id = %s AND renter_id = %s
                 """,
                 (reservation_id, user_id),
