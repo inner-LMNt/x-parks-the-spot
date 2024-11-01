@@ -1857,12 +1857,13 @@ export interface components {
         };
         CarInfo: {
             /** Format: uuid */
-            id?: string;
+            id: string;
             make: string;
             model: string;
             year?: number;
             color?: string;
             license_plate: string;
+            license_plate_state: string;
             state?: string;
             default?: boolean;
         };

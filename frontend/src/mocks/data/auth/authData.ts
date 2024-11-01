@@ -23,6 +23,7 @@ export const mockUsers: User[] = [
                     make: "Toyota",
                     model: "Corolla",
                     license_plate: "ABC-1234",
+                    license_plate_state: "CA",
                     default: true
                 }
             ],

@@ -9,7 +9,7 @@ const NavBarWrapper = () => {
     const pathname = usePathname();
 
     // Define the routes where the BottomNavBar should appear
-    const navBarPaths = ['/profile', '/myspots', '/search', '/add', '/bookings'];
+    const navBarPaths = ['/profile', '/myspots', '/search', '/add', '/bookings', '/cars'];
 
     // Determine if the current path is in the list
     const shouldShowNavBar = pathname !== null && navBarPaths.includes(pathname);
