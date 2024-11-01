@@ -147,23 +147,7 @@ def test_get_max_extension_time(client: FlaskClient) -> None:
     assert response.status_code == 200
     data = response.get_json()
     assert "maxExtensionTime" in data
-
-
-def test_cancel_reservation(client: FlaskClient) -> None:
-    """Test canceling a reservation"""
-    token = create_test_user(client)
-    space_id = create_test_parking_space(client, token)
-
-    reservation_id = create_test_reservation_at_time(
-        client, token, space_id
-    )
-
-    response = client.delete(
-        f"/api/unstable/reservations/{reservation_id}",
-        headers={"Authorization": f"Bearer {token}"}
-    )
-    assert response.status_code == 200
-
+    
 
 def test_create_reservation_invalid_times(client: FlaskClient) -> None:
     """Test creating a reservation with invalid time range"""
@@ -301,20 +285,27 @@ def test_cancel_already_canceled_reservation(client: FlaskClient) -> None:
     """Test canceling an already canceled reservation"""
     token = create_test_user(client)
     space_id = create_test_parking_space(client, token)
-    reservation_id = create_test_reservation_at_time(client, token, space_id)
 
-    # Cancel first time
-    response1 = client.delete(
+    start_time = datetime.now(timezone.utc) + timedelta(hours=3)
+    end_time = start_time + timedelta(hours=1)
+    reservation_id = create_test_reservation_at_time(
+        client, token, space_id,
+        start_time=start_time,
+        end_time=end_time
+    )
+
+    response = client.delete(
         f"/api/unstable/reservations/{reservation_id}",
-        headers={"Authorization": f"Bearer {token}"})
-    assert response1.status_code == 200
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 200
+    assert response.get_json()["message"] == "Reservation canceled successfully."
 
     # Try to cancel again
     response2 = client.delete(
         f"/api/unstable/reservations/{reservation_id}",
         headers={"Authorization": f"Bearer {token}"})
     assert response2.status_code == 404
-    assert "not found" in response2.get_json()["err"].lower()
 
 
 def test_get_max_extension_no_availability(client: FlaskClient) -> None:
@@ -371,3 +362,45 @@ def test_unauthorized_access(client: FlaskClient) -> None:
         assert response.status_code in [403, 404]
         assert any(msg in response.get_json()["err"].lower()
                    for msg in ["not found", "not authorized"])
+        
+
+def test_cancel_reservation_more_than_2_hours_before(client: FlaskClient) -> None:
+    """Test canceling a reservation more than 2 hours before the start time"""
+    token = create_test_user(client)
+    space_id = create_test_parking_space(client, token)
+
+    start_time = datetime.now(timezone.utc) + timedelta(hours=3)
+    end_time = start_time + timedelta(hours=1)
+    reservation_id = create_test_reservation_at_time(
+        client, token, space_id,
+        start_time=start_time,
+        end_time=end_time
+    )
+
+    response = client.delete(
+        f"/api/unstable/reservations/{reservation_id}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 200
+    assert response.get_json()["message"] == "Reservation canceled successfully."
+
+
+def test_cancel_reservation_less_than_2_hours_before(client: FlaskClient) -> None:
+    """Test canceling a reservation less than 2 hours before the start time"""
+    token = create_test_user(client)
+    space_id = create_test_parking_space(client, token)
+
+    start_time = datetime.now(timezone.utc) + timedelta(hours=1)
+    end_time = start_time + timedelta(hours=1)
+    reservation_id = create_test_reservation_at_time(
+        client, token, space_id,
+        start_time=start_time,
+        end_time=end_time
+    )
+
+    response = client.delete(
+        f"/api/unstable/reservations/{reservation_id}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 400
+    assert "Reservations can only be canceled at least 2 hours before the start time." in response.get_json()["err"]

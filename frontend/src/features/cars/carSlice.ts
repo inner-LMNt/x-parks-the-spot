@@ -8,18 +8,18 @@ import { CarInfo } from "@/types/type";
  * **Cars State Interface**
  */
 interface CarsState {
-    loading: boolean;
-    error: string | null;
-    cars: CarInfo[];
+  loading: boolean;
+  error: string | null;
+  cars: CarInfo[];
 }
 
 /**
  * **Initial State**
  */
 const initialState: CarsState = {
-    loading: false,
-    error: null,
-    cars: [],
+  loading: false,
+  error: null,
+  cars: [],
 };
 
 /**
@@ -31,22 +31,24 @@ const initialState: CarsState = {
  * GET /cars
  */
 export const fetchUserCars = createAsyncThunk<
-    CarInfo[],
-    void,
-    { rejectValue: string }
+  CarInfo[],
+  void,
+  { rejectValue: string }
 >("cars/fetchUserCars", async (_, { rejectWithValue }) => {
-    try {
-        const response = await axios.get<CarInfo[]>("/cars");
-        return response.data;
-    } catch (error: any) {
-        if (error.response?.status === 401) {
-            return rejectWithValue("Unauthorized");
-        }
-        if (error.response?.status === 403) {
-            return rejectWithValue("Forbidden");
-        }
-        return rejectWithValue(error.response?.data?.error || "Failed to fetch cars");
+  try {
+    const response = await axios.get<CarInfo[]>("/cars");
+    return response.data;
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      return rejectWithValue("Unauthorized");
     }
+    if (error.response?.status === 403) {
+      return rejectWithValue("Forbidden");
+    }
+    return rejectWithValue(
+      error.response?.data?.error || "Failed to fetch cars"
+    );
+  }
 });
 
 /**
@@ -54,25 +56,25 @@ export const fetchUserCars = createAsyncThunk<
  * POST /cars
  */
 export const addCar = createAsyncThunk<
-    CarInfo,
-    Partial<CarInfo>,
-    { rejectValue: string }
+  CarInfo,
+  Partial<CarInfo>,
+  { rejectValue: string }
 >("cars/addCar", async (carData, { rejectWithValue }) => {
-    try {
-        const response = await axios.post<CarInfo>("/cars", carData);
-        return response.data;
-    } catch (error: any) {
-        if (error.response?.status === 400) {
-            return rejectWithValue(error.response?.data?.error || "Invalid input");
-        }
-        if (error.response?.status === 401) {
-            return rejectWithValue("Unauthorized");
-        }
-        if (error.response?.status === 403) {
-            return rejectWithValue("Forbidden");
-        }
-        return rejectWithValue(error.response?.data?.error || "Failed to add car");
+  try {
+    const response = await axios.post<CarInfo>("/cars", carData);
+    return response.data;
+  } catch (error: any) {
+    if (error.response?.status === 400) {
+      return rejectWithValue(error.response?.data?.error || "Invalid input");
     }
+    if (error.response?.status === 401) {
+      return rejectWithValue("Unauthorized");
+    }
+    if (error.response?.status === 403) {
+      return rejectWithValue("Forbidden");
+    }
+    return rejectWithValue(error.response?.data?.error || "Failed to add car");
+  }
 });
 
 /**
@@ -131,33 +133,33 @@ export const deleteCar = createAsyncThunk<
  * **Cars Slice**
  */
 const carSlice = createSlice({
-    name: "cars",
-    initialState,
-    reducers: {
-        /**
-         * Reset error state
-         */
-        resetCarError(state) {
-            state.error = null;
-        },
+  name: "cars",
+  initialState,
+  reducers: {
+    /**
+     * Reset error state
+     */
+    resetCarError(state) {
+      state.error = null;
     },
-    extraReducers: (builder) => {
-        /**
-         * Handle fetchUserCars actions
-         */
-        builder
-            .addCase(fetchUserCars.pending, (state: CarsState) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(fetchUserCars.fulfilled, (state: CarsState, action) => {
-                state.loading = false;
-                state.cars = action.payload;
-            })
-            .addCase(fetchUserCars.rejected, (state: CarsState, action) => {
-                state.loading = false;
-                state.error = action.payload || "Failed to fetch cars";
-            });
+  },
+  extraReducers: (builder) => {
+    /**
+     * Handle fetchUserCars actions
+     */
+    builder
+      .addCase(fetchUserCars.pending, (state: CarsState) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserCars.fulfilled, (state: CarsState, action) => {
+        state.loading = false;
+        state.cars = action.payload;
+      })
+      .addCase(fetchUserCars.rejected, (state: CarsState, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch cars";
+      });
 
         /**
          * Handle addCar actions

@@ -14,6 +14,7 @@ import {
   AuthResponse,
   User,
   PasswordResetRequest,
+  UserUpdateRequest,
 } from "@/types/type";
 
 /**
@@ -29,18 +30,20 @@ interface UserState {
   };
   loading: boolean;
   error: string | null;
+  notificationTime: string | null;
 }
 
 const initialState: UserState = {
   isLoggedIn: false, // Maybe redundant, just check if access_token is null
   access_token: null,
-    name: null,
+  name: null,
   location: {
     latitude: null,
     longitude: null,
   },
   loading: false,
   error: null,
+  notificationTime: null,
 };
 
 /**
@@ -63,56 +66,54 @@ export const login = createAsyncThunk<
 });
 
 export const deleteAccount = createAsyncThunk<
-    void, // Return type of the payload creator
-    string, // Token passed in the URL
-    { rejectValue: string } // Types for ThunkAPI
->(
-    'user/deleteAccount',
-    async (token: string, { rejectWithValue }) => {
-        try {
-            // Send request to delete account, no body needed, just the token
-            const response = await axios.get(`/auth/confirm-delete/${token}`);
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue('Deletion Token Invalid');
-        }
-    }
-);
+  void, // Return type of the payload creator
+  string, // Token passed in the URL
+  { rejectValue: string } // Types for ThunkAPI
+>("user/deleteAccount", async (token: string, { rejectWithValue }) => {
+  try {
+    // Send request to delete account, no body needed, just the token
+    const response = await axios.get(`/auth/confirm-delete/${token}`);
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue("Deletion Token Invalid");
+  }
+});
 
 // Thunk for updating spot status
 export const updateSpot = createAsyncThunk(
-    'user/updateSpot',
-    async (formData: FormData, { rejectWithValue }) => {
-        try {
-            const response = await axios.post('/api/spot/update', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Failed to update spot status');
-        }
+  "user/updateSpot",
+  async (formData: FormData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post("/api/spot/update", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update spot status"
+      );
     }
+  }
 );
+
 export const request_delete_account = createAsyncThunk<
-    void, // Return type of the payload creator
-    { password: string }, // First argument to the payload creator
-    { rejectValue: string } // Types for ThunkAPI
->(
-    'user/request_delete_account',
-    async ({ password },
-                        { rejectWithValue }) => {
-        try {
-            // Implement logout logic if needed (e.g., API call to invalidate token)
-            const response = await axios.post('auth/request_delete_account', {password});
-            return response.data
-        } catch (error: any) {
-            if (error.response?.status === 401) {
-                return rejectWithValue('Invalid password');
-            }
-            return rejectWithValue('Account deletion request failed');
-        }
+  void, // Return type of the payload creator
+  { password: string }, // First argument to the payload creator
+  { rejectValue: string } // Types for ThunkAPI
+>("user/request_delete_account", async ({ password }, { rejectWithValue }) => {
+  try {
+    // Implement logout logic if needed (e.g., API call to invalidate token)
+    const response = await axios.post("auth/request_delete_account", {
+      password,
+    });
+    return response.data;
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      return rejectWithValue("Invalid password");
     }
-);
+    return rejectWithValue("Account deletion request failed");
+  }
+});
 
 /**
  * Define the register thunk
@@ -150,22 +151,25 @@ export const logout = createAsyncThunk<
   }
 });
 
-export const reset_password = createAsyncThunk<void, { token: string; newPassword: string }, { rejectValue: string }>(
-    "user/reset_password",
-    async ({ token, newPassword }, { rejectWithValue }) => {
-        try {
-
-            const response = await axios.post(`auth/reset-password/${token}`, {
-                new_password: newPassword, // Match the backend's expected field name
-            });
-            return response.data;
-        } catch (error: any) {
-            if (error.response?.status === 400) {
-                return rejectWithValue("Invalid token or password");
-            }
-            return rejectWithValue("Password reset failed");
-        }
+export const reset_password = createAsyncThunk<
+  void,
+  { token: string; newPassword: string },
+  { rejectValue: string }
+>(
+  "user/reset_password",
+  async ({ token, newPassword }, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(`auth/reset-password/${token}`, {
+        new_password: newPassword, // Match the backend's expected field name
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        return rejectWithValue("Invalid token or password");
+      }
+      return rejectWithValue("Password reset failed");
     }
+  }
 );
 
 export const reset_request = createAsyncThunk<
@@ -186,6 +190,37 @@ export const reset_request = createAsyncThunk<
   }
 });
 
+export const update_notification_time = createAsyncThunk<
+  User,
+  { notificationTime: string },
+  { rejectValue: string }
+>(
+  "user/update_notification_time",
+  async ({ notificationTime }, { rejectWithValue }) => {
+    try {
+      const response = await axios.post("auth/notification-time", {
+        time: notificationTime,
+      });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue("Failed to update notification time");
+    }
+  }
+);
+
+export const get_notification_time = createAsyncThunk<
+  string | null,
+  void,
+  { rejectValue: string }
+>("user/get_notification_time", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("auth/notification-time");
+    return response.data.time;
+  } catch (error: any) {
+    return rejectWithValue("Failed to get notification time");
+  }
+});
+
 // @ts-ignore
 const userSlice = createSlice<UserState, {}, "user">({
   name: "user",
@@ -195,7 +230,6 @@ const userSlice = createSlice<UserState, {}, "user">({
   },
   extraReducers: (builder) => {
     builder
-
       .addMatcher(
         (
           action: UnknownAction
@@ -204,6 +238,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof register_acc.pending
           | typeof logout.pending
           | typeof reset_password.pending
+          | typeof update_notification_time.pending
         > => action.type.endsWith("/pending"),
         (state) => {
           state.loading = true;
@@ -220,6 +255,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof register_acc.rejected
           | typeof logout.rejected
           | typeof reset_password.rejected
+          // | typeof update_notification_time.rejected
         > => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false;
@@ -247,11 +283,14 @@ const userSlice = createSlice<UserState, {}, "user">({
       )
 
       // Handle fulfilled actions for logout and reset
-      .addMatcher(isAnyOf(logout.fulfilled, reset_password.fulfilled), (state) => {
-        state.loading = false;
-        state.isLoggedIn = false;
-        state.access_token = null;
-      })
+      .addMatcher(
+        isAnyOf(logout.fulfilled, reset_password.fulfilled),
+        (state) => {
+          state.loading = false;
+          state.isLoggedIn = false;
+          state.access_token = null;
+        }
+      )
 
       .addMatcher(
         (action: { type: string }): action is { type: "user/errorReset" } =>
@@ -259,6 +298,22 @@ const userSlice = createSlice<UserState, {}, "user">({
         (state) => {
           state.error = null;
           state.loading = false;
+        }
+      )
+
+      .addMatcher(
+        isAnyOf(update_notification_time.fulfilled),
+        (state, action) => {
+          state.loading = false;
+          state.notificationTime = action.meta.arg.notificationTime;
+        }
+      )
+
+      .addMatcher(
+        isAnyOf(get_notification_time.fulfilled),
+        (state, action) => {
+          state.loading = false;
+          state.notificationTime = action.payload;
         }
       );
   },

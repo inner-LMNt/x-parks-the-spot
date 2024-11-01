@@ -1,0 +1,11 @@
+required:
+  - userId
+  - notificationTime
+properties:
+  userId:
+    type: string
+  notificationTime:
+    type: string
+  updatedAt:
+    type: string
+    format: date-time

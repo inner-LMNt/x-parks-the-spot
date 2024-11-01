@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -22,15 +22,16 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogFooter,
     DialogDescription,
     DialogOverlay,
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import {RegisterRequest} from "@/types/type";
-import {useAppDispatch, useAppSelector} from '@/store/hooks'; // Use typed hooks
-import {request_delete_account} from "@/features/user/userSlice";
-import {ArrowLeft} from "lucide-react";
+import { useAppDispatch, useAppSelector } from '@/store/hooks'; // Use typed hooks
+import { request_delete_account, get_notification_time, update_notification_time } from "@/features/user/userSlice";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useToast } from '@/components/ui/use-toast';
 
 interface FormData {
     password: string;
@@ -42,6 +43,19 @@ export default function SettingsPage() {
     const router = useRouter();
     const [accountDeleted, setAccountDeleted] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [notificationTime, setNotificationTime] = useState('');
+    const [isNotificationDialogOpen, setIsNotificationDialogOpen] = useState(false);
+    const { toast } = useToast();
+    const userNotificationTime = useAppSelector((state) => state.user.notificationTime);
+    const [domLoaded, setDomLoaded] = useState(false);
+
+    useEffect(() => {
+        setDomLoaded(true);
+    }, []);
+
+    useEffect(() => {
+        dispatch(get_notification_time());
+    }, [dispatch]);
 
     // Initialize React Hook Form
     const {
@@ -50,12 +64,13 @@ export default function SettingsPage() {
         handleSubmit,
         formState: { errors },
     } = useForm<FormData>();
+
     // Handle delete account
     const handleDeleteAccount = async (data: { password: string, confirmPassword: string }) => {
         try {
             // Dispatch the deleteAccount thunk with the password from the form
             //@ts-ignore
-            const resultAction = await dispatch(request_delete_account({password: data.password})); // Use `data.password`
+            const resultAction = await dispatch(request_delete_account({ password: data.password })); // Use `data.password`
 
             if (request_delete_account.fulfilled.match(resultAction)) {
                 // Account successfully deleted
@@ -70,11 +85,35 @@ export default function SettingsPage() {
         }
     };
 
-    return (
+    // Handle save notification time
+    const handleSaveNotificationTime = (event: React.FormEvent) => {
+        event.preventDefault();
+        dispatch(update_notification_time({ notificationTime }))
+            .then((resultAction: any) => {
+                if (update_notification_time.fulfilled.match(resultAction)) {
+                    toast({
+                        title: 'Notification time updated!',
+                        description: 'Your new notification time has been saved.',
+                    });
+                } else if (update_notification_time.rejected.match(resultAction)) {
+                    toast({
+                        title: 'Failed to update notification time',
+                        description: resultAction.payload as string,
+                    });
+                }
+            })
+            .catch((err: any) => {
+                console.error("Reset failed:", err);
+
+            })
+            .finally(() => setIsNotificationDialogOpen(false));
+    };
+
+    return (domLoaded &&
         <div className="min-h-screen flex flex-col items-center justify-start bg-gray-50 p-4 md:p-8 text-gray-900">
             <Link href="/profile" passHref>
                 <Button variant="link" className="absolute top-2 left-0">
-                    <ArrowLeft className="w-5 h-5 text-gray-400"/>
+                    <ArrowLeft className="w-5 h-5 text-gray-400" />
                 </Button>
             </Link>
 
@@ -96,6 +135,16 @@ export default function SettingsPage() {
                         <Label htmlFor="pushNotifications" className="text-sm">
                             Push Notifications
                         </Label>
+                    </div>
+                    <div className="mt-4">
+                        <p className="text-sm text-gray-700">Current Notification Time: {userNotificationTime} minutes</p>
+                        <Button
+                            variant="secondary"
+                            className="mt-4 bg-gray-800 hover:bg-gray-700 text-white"
+                            onClick={() => setIsNotificationDialogOpen(true)}
+                        >
+                            Set Custom Notification Time
+                        </Button>
                     </div>
                 </div>
 
@@ -210,6 +259,54 @@ export default function SettingsPage() {
                     >
                         Go to Login
                     </Button>
+                </DialogContent>
+            </Dialog>
+
+            {/* Custom Notification Time Dialog */}
+            <Dialog
+                open={isNotificationDialogOpen}
+                onOpenChange={setIsNotificationDialogOpen}
+            >
+                {/* Semi-transparent overlay */}
+                <DialogOverlay className="bg-black bg-opacity-50 fixed inset-0" />
+                <DialogContent className="bg-white rounded-md p-6">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-semibold text-gray-900">
+                            Set Custom Notification Time
+                        </DialogTitle>
+                        <DialogDescription className="text-base text-gray-700 mt-2">
+                            Select a custom notification time from the dropdown below.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form className="mt-6">
+                        <div className="mb-4">
+                            <Label htmlFor="notificationTime" className="text-sm font-medium text-gray-800">
+                                Notification Time
+                            </Label>
+                            <select
+                                id="notificationTime"
+                                value={notificationTime}
+                                onChange={(e) => setNotificationTime(e.target.value)}
+                                className="mt-1 block w-full text-gray-800"
+                            >
+                                <option value="">Select time</option>
+                                <option value="5">5 minutes</option>
+                                <option value="10">10 minutes</option>
+                                <option value="15">15 minutes</option>
+                                <option value="20">20 minutes</option>
+                                <option value="30">30 minutes</option>
+                                <option value="60">1 hour</option>
+                            </select>
+                        </div>
+                        <DialogFooter className="mt-6">
+                            <Button variant="secondary" onClick={() => setIsNotificationDialogOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button variant="default" onClick={handleSaveNotificationTime}>
+                                Save
+                            </Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
         </div>

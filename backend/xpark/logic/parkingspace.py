@@ -376,9 +376,22 @@ def delete_free_parking_space(
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "DELETE FROM parking_spaces WHERE id = %s AND owner = %s AND is_paid = FALSE",
+                "DELETE FROM parking_spaces WHERE id = %s AND owner = %s AND is_paid = FALSE RETURNING photos",
                 (parking_space_id, user_id),
             )
+
+            result = cur.fetchone()
+            if not result:
+                return Err("Parking space not found")
+            (photos,) = result
+
+            # Delete the image files
+            if photos:
+                for photo in photos:
+                    image_path = os.path.join(Config.BASE_FOLDER, photo.lstrip("/"))
+                    if os.path.exists(image_path):
+                        os.remove(image_path)
+
             return Ok(None)
 
 

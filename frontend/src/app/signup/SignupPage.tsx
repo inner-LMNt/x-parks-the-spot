@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useEffect} from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { useDispatch } from 'react-redux';
@@ -12,10 +12,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { register_acc } from '@/features/user/userSlice';
-import {Logo} from '@/components/custom/TopLeftLogo'
-import {RegisterRequest} from "@/types/type";
-import {useAppSelector} from "@/store/hooks";
-import {zxcvbn} from "@zxcvbn-ts/core";
+import { Logo } from '@/components/custom/TopLeftLogo'
+import { RegisterRequest } from "@/types/type";
+import { useAppSelector } from "@/store/hooks";
+import { zxcvbn } from "@zxcvbn-ts/core";
 type SignUpFormInputs = {
     name: string;
     email: string;
@@ -63,12 +63,12 @@ export default function SignUpPage() {
 
     // Reset the error state when the component mounts
     useEffect(() => {
-        dispatch({type: 'user/errorReset'})
-    },[])
+        dispatch({ type: 'user/errorReset' })
+    }, [])
     const onSubmit = async (data: SignUpFormInputs) => {
         try {
             console.log(data)
-            const final_data : RegisterRequest = {email: data.email, password: data.password, full_name: data.name}
+            const final_data: RegisterRequest = { email: data.email, password: data.password, full_name: data.name }
             // @ts-ignore
             const resultAction = await dispatch(register_acc(final_data));
 
@@ -86,24 +86,23 @@ export default function SignUpPage() {
     };
 
     return (
-        <div className = "min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-4">
             <Logo />
             <motion.div
                 variants={formVariants}
                 initial="hidden"
                 animate="visible"
             >
-                <Card className="w-80 shadow-2xl backdrop-blur-sm bg-white/90">
-                    <CardHeader className="space-y-1">
-                        <motion.div variants={itemVariants}>
-                            <CardTitle className="text-2xl text-center font-bold">Create an Account</CardTitle>
-                        </motion.div>
-                        <motion.div variants={itemVariants}>
-                            <CardDescription className="text-center">
-                                Sign up for a new Parking Pass account
-                            </CardDescription>
-                        </motion.div>
-                    </CardHeader>
+                <Card className="w-[90vw] shadow-2xl backdrop-blur-sm bg-white/90">                    <CardHeader className="space-y-1">
+                    <motion.div variants={itemVariants}>
+                        <CardTitle className="text-2xl text-center font-bold">Create an Account</CardTitle>
+                    </motion.div>
+                    <motion.div variants={itemVariants}>
+                        <CardDescription className="text-center">
+                            Sign up for a new Parking Pass account
+                        </CardDescription>
+                    </motion.div>
+                </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                             <motion.div variants={itemVariants} className="space-y-2">
@@ -160,7 +159,7 @@ export default function SignUpPage() {
                                             message: "Password must be at least 8 characters"
                                         },
                                         validate: (val: string) => {
-                                            if(zxcvbn(val).score <3) {
+                                            if (zxcvbn(val).score < 3) {
                                                 return "Password is too weak"
                                             }
                                         }

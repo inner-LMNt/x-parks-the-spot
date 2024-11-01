@@ -137,7 +137,6 @@ def cancel_reservation_route(
     Cancel a reservation.
     """
     reservation_uuid = uuid.UUID(reservation_id)
-
     match cancel_reservation_logic(user_id, reservation_uuid):
         case Ok(_):
             return {"message": "Reservation canceled successfully."}, 200
