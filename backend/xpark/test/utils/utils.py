@@ -96,7 +96,8 @@ def create_test_car(client: FlaskClient, token: str, license_plate: Optional[str
         json={
             "make": "Toyota",
             "model": "Camry",
-            "license_plate": license_plate
+            "license_plate": license_plate,
+            "license_plate_state": "CA"
         }
     )
     if response.status_code != 201:

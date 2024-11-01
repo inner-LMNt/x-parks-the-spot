@@ -11,33 +11,28 @@ def search_query(
     lat: float,
     long: float,
     radius_meters: float,
-    paid_status: str,
-    min_price: float,
-    max_price: float,
-    start_time: str,
-    end_time: str,
-    is_taken: Optional[bool] = False
+    is_paid: Optional[bool],
+    min_price: Optional[float],
+    max_price: Optional[float],
+    start_time: Optional[datetime],
+    end_time: Optional[datetime],
+    is_taken: Optional[bool] = None
 ) -> list[dict[str, Any]]:
-    paid = None
-    if paid_status == "PAID":
-        paid = True
-    elif paid_status == "UNPAID":
-        paid = False
-    if is_taken:
-        is_taken = None
-
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
                 """
                 SELECT
-                    id,
+                    parking_spaces.id,
                     is_paid,
                     verification_status,
                     is_taken,
                     name,
-                    ST_Y(location::geometry) AS latitude,
-                    ST_X(location::geometry) AS longitude,
+                    json_build_object(
+                        'address',   parking_spaces.address,
+                        'latitude',  ST_Y(location::geometry),
+                        'longitude', ST_X(location::geometry)
+                    ) as location,
                     address,
                     photos,
                     created_at,
@@ -52,22 +47,28 @@ def search_query(
                     CASE WHEN is_paid THEN COALESCE(avg_total_rating, 0) ELSE NULL END AS avg_total_rating,
                     CASE WHEN is_paid THEN COALESCE(ratings_count_availability, 0) ELSE NULL END AS ratings_count_availability,
                     CASE WHEN is_paid THEN COALESCE(ratings_count_cleanliness, 0) ELSE NULL END AS ratings_count_cleanliness
-                FROM parking_spaces
+                FROM parking_spaces FULL JOIN timetable_coalesce ON parking_spaces.id = timetable_coalesce.parking_space_id
                 WHERE ST_DWithin(location, ST_MakePoint(%(long)s, %(lat)s), %(radius_meters)s)
-                AND is_paid = COALESCE(%(paid)s,is_paid)
+                AND is_paid = COALESCE(%(is_paid)s, is_paid)
                 AND price >= COALESCE(%(min_price)s, price)
                 AND price <= COALESCE(%(max_price)s, price)
                 AND is_taken = COALESCE(%(is_taken)s, is_taken)
+                AND (is_paid = FALSE) or (TSTZRANGE(
+                    LEAST(COALESCE(%(start_time)s, lower(time)), %(end_time)s),
+                    GREATEST(COALESCE(%(end_time)s, upper(time)), %(start_time)s),
+                '()') <@ time)
                 LIMIT 30
                 """,
                 {
                     "long": long,
                     "lat": lat,
                     "radius_meters": radius_meters,
-                    "paid": paid,
+                    "is_paid": is_paid,
                     "min_price": min_price,
                     "max_price": max_price,
-                    "is_taken": is_taken
+                    "is_taken": is_taken,
+                    "start_time": start_time,
+                    "end_time": end_time,
                 },
             )
             parking_spaces = cur.fetchall()
@@ -84,7 +85,6 @@ def search_query(
                 del parking_space["latitude"]
                 del parking_space["longitude"]
                 del parking_space["address"]
-
                 # Update name for taken spots
                 if parking_space["is_taken"]:
                     updated_at = parking_space["updated_at"]

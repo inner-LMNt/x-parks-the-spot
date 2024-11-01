@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useDispatch, useSelector } from 'react-redux';
-import { Settings, ArrowUpCircle, ArrowDownCircle, LogOut, FileWarning } from 'lucide-react'; // Imported FileWarning
+import { Settings, ArrowUpCircle, ArrowDownCircle, LogOut, FileWarning, Car } from 'lucide-react'; // Imported FileWarning
 import { logout } from '@/features/user/userSlice';
 import { Button } from "@/components/ui/button";
 import {
@@ -197,6 +197,14 @@ export default function ProfilePage() {
                     <Link href="/reports" passHref>
                         <Button variant="outline">
                             <FileWarning className="mr-2" /> View Your Reports
+                        </Button>
+                    </Link>
+                </div>
+                <div className="text-left mb-6">
+                    <h2 className="text-lg font-semibold mb-4">Cars</h2>
+                    <Link href="/cars" passHref>
+                        <Button variant="outline">
+                            <Car className="mr-2" /> View Your Cars
                         </Button>
                     </Link>
                 </div>
