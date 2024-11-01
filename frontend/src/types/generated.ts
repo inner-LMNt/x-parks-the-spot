@@ -1939,6 +1939,7 @@ export interface components {
         NotificationPreferences: {
             email_notifications?: boolean;
             push_notifications?: boolean;
+            time?: string;
         };
         User: {
             /** Format: uuid */
@@ -1962,6 +1963,7 @@ export interface components {
             email?: string;
             full_name?: string;
             notification_preferences?: components["schemas"]["NotificationPreferences"];
+            notification_time?: string;
         };
         UserDeletionConfirm: {
             token: string;
@@ -2000,27 +2002,29 @@ export interface components {
         };
         Reservation: {
             /** Format: uuid */
-            id?: string;
+            id: string;
             /** Format: uuid */
-            parking_space_id?: string;
+            parking_space_id: string;
             /** Format: uuid */
-            name?: string;
+            name: string;
             /** Format: uuid */
-            renter_id?: string;
+            renter_id: string;
             /** Format: uuid */
-            owner_id?: string;
+            owner_id: string;
             /** Format: date-time */
-            start_time?: string;
+            start_time: string;
             /** Format: date-time */
-            end_time?: string;
+            end_time: string;
             /** @enum {string} */
-            status?: "booked" | "active" | "completed" | "canceled";
+            status: "booked" | "active" | "completed" | "canceled";
             /** Format: uuid */
-            car_info_id?: string;
+            car_info_id: string;
             /** Format: date-time */
-            created_at?: string;
+            created_at: string;
             /** Format: date-time */
-            updated_at?: string;
+            updated_at: string;
+            price: number;
+            location: components["schemas"]["Location"];
         };
         ReservationCreateRequest: {
             /** Format: uuid */

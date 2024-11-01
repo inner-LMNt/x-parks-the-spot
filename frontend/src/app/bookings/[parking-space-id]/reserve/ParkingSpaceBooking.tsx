@@ -468,15 +468,14 @@ export default function ParkingSpaceBooking() {
                                     Start Date & Time
                                 </Label>
                                 <div className="relative">
-                                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    {/* <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /> */}
                                     <Input
                                         id="start_time"
                                         name="start_time"
                                         type="datetime-local"
                                         value={booking.start_time}
                                         onChange={handleChange}
-                                        className="pl-10"
-                                        min={new Date().toISOString().slice(0,16)}
+                                        className=""
                                         required
                                     />
                                 </div>
@@ -486,14 +485,14 @@ export default function ParkingSpaceBooking() {
                                     End Date & Time
                                 </Label>
                                 <div className="relative">
-                                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    {/* <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /> */}
                                     <Input
                                         id="end_time"
                                         name="end_time"
                                         type="datetime-local"
                                         value={booking.end_time}
                                         onChange={handleChange}
-                                        className="pl-10"
+                                        className=""
                                         min={booking.start_time || new Date().toISOString().slice(0,16)}
                                         required
                                     />

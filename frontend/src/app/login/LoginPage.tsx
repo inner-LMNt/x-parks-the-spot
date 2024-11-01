@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, {useEffect} from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { useAppDispatch, useAppSelector } from '@/store/hooks'; // Use typed hooks
@@ -12,10 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import {ArrowRight, Loader2} from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { login } from '@/features/user/userSlice';
 import { Logo } from '@/components/custom/TopLeftLogo';
-import {LoginRequest} from "@/types/type";
+import { LoginRequest } from "@/types/type";
 
 type LoginFormInputs = {
     email: string;
@@ -61,8 +61,14 @@ export default function LoginPage() {
 
     // Reset the error state when the component mounts
     useEffect(() => {
-        dispatch({type: 'user/errorReset'})
-    },[])
+        dispatch({ type: 'user/errorReset' })
+    }, [])
+
+    const [domLoaded, setDomLoaded] = React.useState(false);
+    useEffect(() => {
+        setDomLoaded(true);
+    }, []);
+
     const onSubmit = async (data: LoginRequest) => {
         try {
             // @ts-ignore
@@ -83,7 +89,7 @@ export default function LoginPage() {
     };
 
 
-    return (
+    return (domLoaded &&
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-4 overflow-hidden">
             <Logo />
             <motion.div
@@ -198,7 +204,7 @@ export default function LoginPage() {
                         <motion.div variants={itemVariants} className="w-full flex justify-center align-baseline">
                             <Link href="/search" passHref className="flex justify-center hover:text-gray-800">
                                 <Button variant="link" className="text-sm text-gray-600 flex">
-                                    Continue without logging in <ArrowRight className="w-4 h-4 ml-2 text-sm text-gray-600"/>
+                                    Continue without logging in <ArrowRight className="w-4 h-4 ml-2 text-sm text-gray-600" />
                                 </Button>
 
                             </Link>

@@ -14,6 +14,13 @@ export const reservations: Reservation[] = [
         car_info_id: 'car1',
         created_at: '2024-10-01T12:00:00Z',
         updated_at: '2024-10-01T12:00:00Z',
+		price: 10.00,
+		name: "aa",
+		location: {
+			address: "add",
+			latitude: 0,
+			longitude: 0,
+		}
     },
     // Add more reservations as needed
 ];
