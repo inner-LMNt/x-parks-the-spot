@@ -110,6 +110,7 @@ def reset_password(token: str) -> Tuple[Any, int]:
 @bp.post("notification-time")
 @require_logged_in_user
 def set_notification_time(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    assert request.json
     time = request.json["time"]
     match handle_set_notification_time(user_id, time):
         case Ok(_):
