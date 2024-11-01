@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Star } from 'lucide-react';
 import { useDispatch } from 'react-redux';
-import { submitRating, fetchParkingSpace } from '@/features/parking-space/parkingSpaceSlice';
-import { toast } from '@/components/ui/use-toast';
+import {submitRating, fetchParkingSpace, fetchUserRating} from '@/features/parking-space/parkingSpaceSlice';
+import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import {useAppSelector} from "@/store/hooks";
 
 const StarRatingInput = ({
                              value,
@@ -52,59 +53,64 @@ const StarRatingInput = ({
     );
 };
 
-const RatingSection = ({
-                           parkingSpaceId
-                       }: {
+const RatingSelector = ({
+                            parkingSpaceId
+                        }: {
     parkingSpaceId: string;
 }) => {
     const dispatch = useDispatch();
+    const userRating = useAppSelector((state) => state.parkingSpace.userRating);
     const [availabilityRating, setAvailabilityRating] = useState(0);
     const [cleanlinessRating, setCleanlinessRating] = useState(0);
-    const [originalAvailabilityRating, setOriginalAvailabilityRating] = useState(0);
-    const [originalCleanlinessRating, setOriginalCleanlinessRating] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [hasChanges, setHasChanges] = useState(false);
 
     useEffect(() => {
-        const fetchRatings = async () => {
-            try {
-                const result = await dispatch(fetchParkingSpace(parkingSpaceId));
-                if (fetchParkingSpace.fulfilled.match(result)) {
-                    const parkingSpace = result.payload;
-                    // Only set ratings if they exist and are numbers
-                    const availRating = typeof parkingSpace.avg_availability_rating === 'number'
-                        ? parkingSpace.avg_availability_rating : 0;
-                    const cleanRating = typeof parkingSpace.avg_cleanliness_rating === 'number'
-                        ? parkingSpace.avg_cleanliness_rating : 0;
+        const fetchData = async () => {
+            const result = await dispatch(fetchParkingSpace(parkingSpaceId));
 
-                    setAvailabilityRating(availRating);
-                    setCleanlinessRating(cleanRating);
-                    setOriginalAvailabilityRating(availRating);
-                    setOriginalCleanlinessRating(cleanRating);
-                }
-            } catch (error) {
-                console.error('Failed to fetch parking space ratings:', error);
+            if (fetchParkingSpace.rejected.match(result)) {
                 toast({
                     title: 'Error',
-                    description: 'Failed to load existing ratings.',
+                    description: 'Failed to load parking space.',
                     variant: 'destructive',
                 });
-            } finally {
                 setIsLoading(false);
+                return;
             }
+
+            const result2 = await dispatch(fetchUserRating(parkingSpaceId));
+            if (fetchUserRating.rejected.match(result2)) {
+                toast({
+                    title: 'Error',
+                    description: 'Failed to load user rating.',
+                    variant: 'destructive',
+                });
+                setIsLoading(false);
+                return;
+            }
+            setIsLoading(false);
         };
 
-        fetchRatings();
+        fetchData();
     }, [dispatch, parkingSpaceId]);
+
+    // Update local state when userRating changes
+    useEffect(() => {
+        if (userRating) {
+            setAvailabilityRating(userRating.availabilityRating ?? 0);
+            setCleanlinessRating(userRating.cleanlinessRating ?? 0);
+        }
+    }, [userRating]);
 
     // Check for changes whenever ratings are updated
     useEffect(() => {
         const hasRatingChanges =
-            availabilityRating !== originalAvailabilityRating ||
-            cleanlinessRating !== originalCleanlinessRating;
+            availabilityRating !== (userRating?.availabilityRating ?? 0) ||
+            cleanlinessRating !== (userRating?.cleanlinessRating ?? 0);
         setHasChanges(hasRatingChanges);
-    }, [availabilityRating, cleanlinessRating, originalAvailabilityRating, originalCleanlinessRating]);
+    }, [availabilityRating, cleanlinessRating, userRating]);
 
     const handleSubmit = async () => {
         setIsSubmitting(true);
@@ -120,11 +126,7 @@ const RatingSection = ({
                 description: 'Thank you for your feedback!',
                 variant: 'success',
             });
-            // Update original ratings to match current
-            setOriginalAvailabilityRating(availabilityRating);
-            setOriginalCleanlinessRating(cleanlinessRating);
-            setHasChanges(false);
-            // Refresh parking space data to get updated ratings
+            // Refresh parking space data to get updated average ratings
             dispatch(fetchParkingSpace(parkingSpaceId));
         } else {
             toast({
@@ -137,8 +139,8 @@ const RatingSection = ({
     };
 
     const handleReset = () => {
-        setAvailabilityRating(originalAvailabilityRating);
-        setCleanlinessRating(originalCleanlinessRating);
+        setAvailabilityRating(userRating?.availabilityRating ?? 0);
+        setCleanlinessRating(userRating?.cleanlinessRating ?? 0);
     };
 
     if (isLoading) {
@@ -156,7 +158,7 @@ const RatingSection = ({
                         value={availabilityRating}
                         onChange={setAvailabilityRating}
                         disabled={isSubmitting}
-                        originalValue={originalAvailabilityRating}
+                        originalValue={userRating?.availabilityRating ?? 0}
                     />
                 </div>
 
@@ -166,7 +168,7 @@ const RatingSection = ({
                         value={cleanlinessRating}
                         onChange={setCleanlinessRating}
                         disabled={isSubmitting}
-                        originalValue={originalCleanlinessRating}
+                        originalValue={userRating?.cleanlinessRating ?? 0}
                     />
                 </div>
             </div>
@@ -195,4 +197,4 @@ const RatingSection = ({
     );
 };
 
-export default RatingSection;
+export default RatingSelector;

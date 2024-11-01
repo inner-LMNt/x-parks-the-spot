@@ -41,6 +41,7 @@ import {useToast} from '@/hooks/use-toast';
 import ImageWrapper from "@/components/custom/ImageWrapper";
 import {Badge} from "@/components/ui/badge";
 import {components} from "@/types/generated";
+import {RatingDisplay} from "@/components/custom/RatingDisplay";
 
 const default_center = {
   // Purdue University coords
@@ -1399,7 +1400,10 @@ export default function SearchPage() {
                                     </div>
                                 )}
                                 <p className="text-md">Address: {spot.location.address || 'Not specified'}</p>
-                                <p className="text-md">Average Rating: {'No ratings'}</p>
+                                <div className="flex items-center mt-2">
+                                  <span className="text-md mr-2">Rating:</span>
+                                  <RatingDisplay parkingSpace={spot}/>
+                                </div>
                               </>
                           )}
                           {!spot.is_paid && spot.location && (

@@ -15,7 +15,8 @@ import { Avatar } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { fetchUserCars, resetCarError } from '@/features/cars/carSlice';
 import { Button } from '@/components/ui/button';
-import RatingSection from "@/components/custom/StarRating";
+import RatingSelector from "@/components/custom/RatingSelector";
+import parkingSpaceSlice from "@/features/parking-space/parkingSpaceSlice";
 
 // SectionHeader Component
 function SectionHeader({ title }: { title: string }) {
@@ -47,10 +48,7 @@ function ReservationCard({
     carMap: { [key: string]: CarInfo };
 }) {
     const router = useRouter();
-
-    const handleClick = () => {
-        router.push(`/bookings/${reservation.parking_space_id}`);
-    };
+    const dispatch = useAppDispatch();
 
     // Retrieve the car information using car_id
     const car = carMap[reservation.car_info_id as string];
@@ -93,12 +91,14 @@ function ReservationCard({
 
                 <div className="space-y-4">
                     {isPast && (
-                        <RatingSection parkingSpaceId={reservation.parking_space_id as string} />
+                        <RatingSelector parkingSpaceId={reservation.parking_space_id as string} />
                     )}
 
                     <div className="space-y-2">
                         <Button
-                            onClick={() => router.push(`/bookings/${reservation.parking_space_id}/reserve`)}
+                            onClick={() => {
+                                router.push(`/bookings/${reservation.parking_space_id}/reserve`)}
+                             }
                             className="w-full"
                         >
                             Book Again

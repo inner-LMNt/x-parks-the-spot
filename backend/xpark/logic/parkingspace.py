@@ -539,3 +539,31 @@ def submit_rating(
                 (user_id, parking_space_id, availability_rating, cleanliness_rating)
             )
             return Ok(None)
+
+def get_user_rating(
+    user_id: uuid.UUID, parking_space_id: uuid.UUID
+) -> Result[Dict[str, Optional[int]], str]:
+    """
+    Fetches the availability and cleanliness ratings given by the user for a specific parking space.
+
+    Args:
+        user_id (uuid.UUID): The ID of the user.
+        parking_space_id (uuid.UUID): The ID of the parking space.
+
+    Returns:
+        Result[Dict[str, Optional[int]], str]: A dictionary with 'availability_rating' and 'cleanliness_rating',
+                                              or an error message.
+    """
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Single SQL query to fetch the ratings
+            cur.execute(
+                """
+                SELECT availability_rating, cleanliness_rating
+                FROM ratings
+                WHERE parking_space_id = %s AND user_id = %s
+                """,
+                (str(parking_space_id), str(user_id))
+            )
+            rating = cur.fetchone()
+        return Ok(rating)
