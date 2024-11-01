@@ -7,6 +7,8 @@ from result import Result, Ok, Err
 import datetime
 from enum import Enum
 import psycopg
+from psycopg import Cursor
+from psycopg.rows import DictRow, TupleRow
 
 from xpark.utils.mailer import send_email
 
@@ -95,23 +97,19 @@ def get_user_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], st
 
 
 def calculate_booking_price(
+    cur: Cursor[DictRow],
     parking_space_id: uuid.UUID,
     start_time: datetime.datetime,
     end_time: datetime.datetime,
 ) -> float:
-    with DB.pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT price FROM parking_spaces WHERE id = %s", (parking_space_id,)
-            )
-            res = cur.fetchone()
-            assert res
-            (price,) = res
-            assert type(price) is float
-            print("start_time type", type(start_time))
-            delta = end_time - start_time
-            hours = delta.days * 24 + delta.seconds / 3600
-            return hours * price
+    cur.execute("SELECT price FROM parking_spaces WHERE id = %s", (parking_space_id,))
+    res = cur.fetchone()
+    assert res
+    price = res["price"]
+    assert type(price) is float
+    delta = end_time - start_time
+    hours = delta.days * 24 + delta.seconds / 3600
+    return hours * price
 
 
 def create_reservation(
@@ -163,7 +161,7 @@ def create_reservation(
                     "car_id": car_info_id,
                     "user_id": user_id,
                     "price": calculate_booking_price(
-                        parking_space_id, start_time, end_time
+                        cur, parking_space_id, start_time, end_time
                     ),
                 },
             )
@@ -201,7 +199,7 @@ def get_reservation(
                     reservations.updated_at
                 FROM reservations JOIN parking_spaces ON 
                     reservations.parking_space_id = parking_spaces.id
-                WHERE id = %s AND renter_id = %s
+                WHERE reservations.id = %s AND renter_id = %s
                 """,
                 (reservation_id, user_id),
             )
@@ -273,7 +271,9 @@ def update_reservation(
                     start_time,
                     end_time,
                     (
-                        calculate_booking_price(reservation_id, start_time, end_time)
+                        calculate_booking_price(
+                            cur, reservation["parking_space_id"], start_time, end_time
+                        )
                         if start_time and end_time
                         else None
                     ),
