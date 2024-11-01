@@ -21,7 +21,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, X, Upload, ArrowLeft, MapPin } from 'lucide-react';
+import {Camera, X, Upload, ArrowLeft, MapPin, CameraOff, MapPinOff} from 'lucide-react';
 import Webcam from 'react-webcam';
 import { DaysOfWeek } from '@/types/type'; // Ensure DaysOfWeek enum is imported
 import {
@@ -37,6 +37,23 @@ const formatTime = (time: string): string => {
   return time; // Keeping time as "HH:mm" since backend expects time-only strings
 };
 
+// Utility function to check permission status
+const checkPermissionStatus = async (permissionName: PermissionName): Promise<PermissionState> => {
+  if (!navigator.permissions) {
+    return 'prompt'; // Fallback if Permissions API is not supported
+  }
+  try {
+    const result = await navigator.permissions.query({ name: permissionName });
+    return result.state;
+  } catch (error) {
+    console.error(`Error checking ${permissionName} permission:`, error);
+    return 'prompt';
+  }
+};
+
+// Define types for permissions
+type PermissionName = 'camera' | 'geolocation';
+
 export default function AddPage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
@@ -48,7 +65,7 @@ export default function AddPage() {
   const [image, setImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [photoTimestamp, setPhotoTimestamp] = useState<Date | null>(null); // **State for Timestamp**
-  const [locationTimestamp, setLocationTimestamp] = useState<Date | null> (null);
+  const [locationTimestamp, setLocationTimestamp] = useState<Date | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const webcamRef = useRef<Webcam>(null);
   const [photoTaken, setPhotoTaken] = useState<boolean>(false);
@@ -72,6 +89,42 @@ export default function AddPage() {
   // States for Modals
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showReRequestModal, setShowReRequestModal] = useState<{ camera: boolean; location: boolean }>({
+    camera: false,
+    location: false,
+  });
+
+  // **New States for Permission Denial**
+  const [cameraDenied, setCameraDenied] = useState(false);
+  const [locationDenied, setLocationDenied] = useState(false);
+
+  // Initialize permission states
+  const [cameraPermission, setCameraPermission] = useState<PermissionState>('prompt');
+  const [locationPermission, setLocationPermission] = useState<PermissionState>('prompt');
+
+  // Track if errors have been handled to prevent repetitive actions
+  const [hasLocationError, setHasLocationError] = useState<boolean>(false);
+  const [hasCameraError, setHasCameraError] = useState<boolean>(false); // If handling camera errors similarly
+
+  // Check permissions on component mount
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      const camStatus = await checkPermissionStatus('camera');
+      const locStatus = await checkPermissionStatus('geolocation');
+      setCameraPermission(camStatus);
+      setLocationPermission(locStatus);
+      // If permissions are denied initially
+      if (camStatus === 'denied') {
+        setCameraDenied(true);
+        setHasCameraError(true); // Prevent repetitive handling
+      }
+      if (locStatus === 'denied') {
+        setLocationDenied(true);
+        setHasLocationError(true); // Prevent repetitive handling
+      }
+    };
+    fetchPermissions();
+  }, []);
 
   /**
    * **Handle Image Selection**
@@ -117,6 +170,9 @@ export default function AddPage() {
     }
   };
 
+  /**
+   * **Handle Camera Capture**
+   */
   const handleCameraCapture = useCallback(() => {
     const imageSrc = webcamRef.current?.getScreenshot();
     if (imageSrc) {
@@ -145,10 +201,9 @@ export default function AddPage() {
   }, [spotType, setImage, setPreviewUrl, setPhotoTimestamp, setPhotoTaken, setShowCamera, toast]);
 
 
-
-
   const captureLocation = useCallback(() => {
     setLocationLoading(true);
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -162,23 +217,33 @@ export default function AddPage() {
             setLocationTimestamp(new Date()); // Store location timestamp
             setGeoEnabled(true);
             setLocationLoading(false);
+            setLocationDenied(false); // Reset denial state on success
+            setHasLocationError(false); // Reset error state on successful capture
           },
           (error) => {
             console.error('Error: The Geolocation service failed.', error);
             setGeoEnabled(false);
             setLocationLoading(false);
-            toast({
-              title: 'Location Access Denied',
-              description: 'Please allow location access to proceed.',
-              variant: 'destructive',
-            });
-            if (spotType === 'free') {
-              handleRemoveImage();
+            setLocationDenied(true); // Set denial state
+
+            // Only handle the error once
+            if (!hasLocationError) {
               toast({
-                title: 'Image Removed',
-                description: 'Image was removed because location access was denied.',
+                title: 'Location Access Denied',
+                description: 'Please allow location access to proceed.',
                 variant: 'destructive',
               });
+
+              if (spotType === 'free') {
+                handleRemoveImage();
+                toast({
+                  title: 'Image Removed',
+                  description: 'Image was removed because location access was denied.',
+                  variant: 'destructive',
+                });
+              }
+
+              setHasLocationError(true); // Mark that the error has been handled
             }
           }
       );
@@ -186,18 +251,26 @@ export default function AddPage() {
       console.error("Error: Your browser doesn't support geolocation.");
       setGeoEnabled(false);
       setLocationLoading(false);
-      toast({
-        title: 'Geolocation Not Supported',
-        description: "Your browser doesn't support geolocation.",
-        variant: 'destructive',
-      });
-      if (spotType === 'free') {
-        handleRemoveImage();
+      setLocationDenied(true); // Set denial state
+
+      // Only handle the error once
+      if (!hasLocationError) {
         toast({
-          title: 'Image Removed',
-          description: 'Image was removed because geolocation is not supported.',
+          title: 'Geolocation Not Supported',
+          description: "Your browser doesn't support geolocation.",
           variant: 'destructive',
         });
+
+        if (spotType === 'free') {
+          handleRemoveImage();
+          toast({
+            title: 'Image Removed',
+            description: 'Image was removed because geolocation is not supported.',
+            variant: 'destructive',
+          });
+        }
+
+        setHasLocationError(true); // Mark that the error has been handled
       }
     }
   }, [
@@ -208,8 +281,8 @@ export default function AddPage() {
     setLocationTimestamp,
     toast,
     handleRemoveImage,
+    hasLocationError,
   ]);
-
 
   /**
    * **Handle 24/7 Toggle**
@@ -285,7 +358,7 @@ export default function AddPage() {
     let errorMsg = '';
 
     if (is24Seven) {
-      // For 24/7, ensure start_time and end_time are '00:00'
+      // For 24/7, ensure start_time and end_time are '00:00' and '23:59'
       if (timeSlot.start_time !== '00:00' || timeSlot.end_time !== '23:59') {
         isValid = false;
         errorMsg = '24/7 slots must start at 00:00 and end at 23:59.';
@@ -334,9 +407,6 @@ export default function AddPage() {
   /**
    * **Confirm Submission After Modal**
    */
-  /**
-   * **Confirm Submission After Modal**
-   */
   const confirmSubmission = async () => {
     console.log('Confirm submission clicked.');
     setShowConfirmationModal(false);
@@ -359,6 +429,17 @@ export default function AddPage() {
 
       // Ensure image and location are present for free spots
       if (spotType === 'free') {
+        if (cameraPermission === 'denied' || cameraDenied) {
+          console.log('Camera access denied for free spot.');
+          toast({
+            title: 'Camera Access Required',
+            description: 'Please allow camera access to upload a photo.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
         if (!image || !userLocation || !photoTimestamp) {
           console.log('Missing required fields for free spot.');
           toast({
@@ -375,7 +456,7 @@ export default function AddPage() {
           console.log('Timestamp is beyond the allowed time frame:', timeDiffSeconds, 'seconds.');
           toast({
             title: 'Timestamp Error',
-            description: 'The your photo and location must be captured less than 30 seconds apart. Please try again.',
+            description: 'Your photo and location must be captured less than 30 seconds apart. Please try again.',
             variant: 'destructive',
           });
           handleRemoveImage(); // Remove image if timestamp is invalid
@@ -541,6 +622,58 @@ export default function AddPage() {
     setDomLoaded(true);
   }, []);
 
+  /**
+   * **Re-request Camera Access**
+   */
+  const reRequestCameraAccess = () => {
+    setShowReRequestModal((prev) => ({ ...prev, camera: true }));
+  };
+
+  /**
+   * **Re-request Location Access**
+   */
+  const reRequestLocationAccess = () => {
+    setShowReRequestModal((prev) => ({ ...prev, location: true }));
+  };
+
+  /**
+   * **Handle Re-request Confirmation**
+   */
+  const handleReRequestConfirm = () => {
+    if (showReRequestModal.camera) {
+      // Attempt to access the camera again
+      setCameraDenied(false);
+      setHasCameraError(false); // Reset error state
+      setShowCamera(true); // This will trigger Webcam to attempt access
+    }
+    if (showReRequestModal.location) {
+      // Attempt to capture location again
+      setLocationDenied(false);
+      setHasLocationError(false); // Reset error state
+      captureLocation();
+    }
+    setShowReRequestModal({ camera: false, location: false });
+  };
+
+  /**
+   * **Handle Re-request Cancellation**
+   */
+  const handleReRequestCancel = () => {
+    setShowReRequestModal({ camera: false, location: false });
+  };
+
+  /**
+   * **Open Browser Settings Instructions**
+   */
+  const openBrowserSettings = () => {
+    toast({
+      title: 'Permission Required',
+      description: 'Please enable camera or location access in your browser settings.',
+      variant: 'destructive',
+    });
+    // Optionally, provide more detailed instructions or links based on the browser
+  };
+
   return (
       domLoaded && (
           <div className="flex flex-col min-h-screen bg-gray-100">
@@ -566,6 +699,29 @@ export default function AddPage() {
                           Fill in the details to list your parking spot
                         </CardDescription>
                       </div>
+                      {/* **Permission Denial Buttons with Guidance** */}
+                      <div className="absolute right-4 top-4 flex space-x-2">
+                        {cameraPermission === 'denied' && (
+                            <Button
+                                variant="ghost"
+                                onClick={reRequestCameraAccess}
+                                aria-label="Enable Camera Access"
+                                className="p-0"
+                            >
+                              <CameraOff className="w-5 h-5 text-red-500" />
+                            </Button>
+                        )}
+                        {locationPermission === 'denied' && (
+                            <Button
+                                variant="ghost"
+                                onClick={reRequestLocationAccess}
+                                aria-label="Enable Location Access"
+                                className="p-0"
+                            >
+                              <MapPinOff className="w-5 h-5 text-red-500" />
+                            </Button>
+                        )}
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
@@ -577,7 +733,7 @@ export default function AddPage() {
                               onValueChange={(value) => {
                                 console.log('Spot type changed to:', value);
                                 setSpotType(value as 'free' | 'rental');
-                                setShowCamera(value == 'free')
+                                setShowCamera(value === 'free');
                                 setUserLocation(null);
                                 setImage(null); // Reset image when spot type changes
                                 setPreviewUrl(null); // Reset preview
@@ -592,6 +748,9 @@ export default function AddPage() {
                                   });
                                   setIs24Seven(false);
                                 }
+                                // Reset error handling states
+                                setHasLocationError(false);
+                                setHasCameraError(false);
                               }}
                               className="flex space-x-4"
                           >
@@ -779,11 +938,22 @@ export default function AddPage() {
                                     ref={webcamRef}
                                     screenshotFormat="image/jpeg"
                                     className="w-full rounded-lg"
+                                    onUserMediaError={() => {
+                                      console.error('Camera access denied.');
+                                      setCameraDenied(true);
+                                      setHasCameraError(true); // Prevent repetitive handling
+                                      toast({
+                                        title: 'Camera Access Denied',
+                                        description: 'Please allow camera access to capture photos.',
+                                        variant: 'destructive',
+                                      });
+                                    }}
                                 />
                                 <Button
                                     type="button"
                                     onClick={handleCameraCapture}
                                     className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
+                                    disabled={cameraDenied}
                                 >
                                   <Camera className="w-4 h-4 mr-2" />
                                   Capture Photo
@@ -892,7 +1062,7 @@ export default function AddPage() {
                             disabled={
                                 isSubmitting ||
                                 loading ||
-                                (spotType === 'free' && (!image || !userLocation)) ||
+                                (spotType === 'free' && (!image || !userLocation || cameraDenied)) ||
                                 (spotType === 'rental' && !image)
                             }
                         >
@@ -943,6 +1113,54 @@ export default function AddPage() {
                               setShowSuccessModal(false);
                               router.push('/myspots');
                             }}>Close</Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+
+                      {/* Re-request Permission Modal with Instructions */}
+                      <Dialog open={showReRequestModal.camera || showReRequestModal.location} onOpenChange={() => {}}>
+                        <DialogContent className="w-96">
+                          <DialogHeader>
+                            <DialogTitle>Enable Permissions</DialogTitle>
+                            <DialogDescription>
+                              {showReRequestModal.camera && (
+                                  <div>
+                                    <p>
+                                      To capture photos, please allow camera access:
+                                    </p>
+                                    <ol className="list-decimal list-inside mt-2">
+                                      <li>Go to your browser's settings.</li>
+                                      <li>Navigate to the 'Privacy and Security' section.</li>
+                                      <li>Find 'Site Settings' and locate your site's permissions.</li>
+                                      <li>Enable camera access for this site.</li>
+                                    </ol>
+                                  </div>
+                              )}
+                              {showReRequestModal.location && (
+                                  <div>
+                                    <p>
+                                      To capture your location, please allow location access:
+                                    </p>
+                                    <ol className="list-decimal list-inside mt-2">
+                                      <li>Go to your browser's settings.</li>
+                                      <li>Navigate to the 'Privacy and Security' section.</li>
+                                      <li>Find 'Site Settings' and locate your site's permissions.</li>
+                                      <li>Enable location access for this site.</li>
+                                    </ol>
+                                  </div>
+                              )}
+                            </DialogDescription>
+                          </DialogHeader>
+                          <DialogFooter>
+                            <Button variant="outline" onClick={handleReRequestCancel}>
+                              Cancel
+                            </Button>
+                            <Button
+                                variant="default"
+                                onClick={handleReRequestConfirm}
+                            >
+                              Proceed
+                            </Button>
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>

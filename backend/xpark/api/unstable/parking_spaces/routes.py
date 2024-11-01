@@ -6,7 +6,7 @@ from xpark.logic.parkingspace import (
     delete_free_parking_space,
     get_parking_space,
     is_paid_spot,
-    get_owned_paid_parking_spaces,
+    get_all_user_parking_spaces,
     handle_submit_verification,
 )
 from flask import request
@@ -20,8 +20,8 @@ from typing import cast, Dict
 
 @bp.get("")
 @require_logged_in_user
-def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    match get_owned_paid_parking_spaces(user_id):
+def get_all_user_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match get_all_user_parking_spaces(user_id):
         case Ok(data):
             return {"spaces": data}, 200
         case Err(e):
@@ -158,4 +158,4 @@ def verify_spot_route(
         case Ok():
             return {}, 200
         case Err(_):
-            return {}, 404
+            return {}, 400

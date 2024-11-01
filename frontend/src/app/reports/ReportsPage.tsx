@@ -125,7 +125,7 @@ const BookingsReport: React.FC<{ reports: Report[]; isLoading?: boolean }> = ({
                                 <div className= "items-center gap-1 text-sm text-slate-600">
                                     <div className="flex items-center gap-3">
                                         <Calendar className="w-4 h-4" />
-                                        <span>Reported: {safeFormatDate(report.created_at, 'MMM dd, yyyy')}</span>
+                                        <span>Reported: {safeFormatDate(report.created_at, 'MMM dd, yyyy, hh:mm a')}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <Tag className="w-4 h-4" />
