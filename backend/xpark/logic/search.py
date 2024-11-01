@@ -76,15 +76,6 @@ def search_query(
             # Calculate elapsed time for each taken spot and update name
             now = datetime.now(timezone.utc)  # Set now to UTC to match the timezone of updated_at
             for parking_space in parking_spaces:
-                # Process location data
-                parking_space["location"] = {
-                    "latitude": parking_space["latitude"],
-                    "longitude": parking_space["longitude"],
-                    "address": parking_space["address"],
-                }
-                del parking_space["latitude"]
-                del parking_space["longitude"]
-                del parking_space["address"]
                 # Update name for taken spots
                 if parking_space["is_taken"]:
                     updated_at = parking_space["updated_at"]
