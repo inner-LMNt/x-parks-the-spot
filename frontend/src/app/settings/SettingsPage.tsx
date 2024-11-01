@@ -47,6 +47,11 @@ export default function SettingsPage() {
     const [isNotificationDialogOpen, setIsNotificationDialogOpen] = useState(false);
     const { toast } = useToast();
     const userNotificationTime = useAppSelector((state) => state.user.notificationTime);
+    const [domLoaded, setDomLoaded] = useState(false);
+
+    useEffect(() => {
+        setDomLoaded(true);
+    }, []);
 
     useEffect(() => {
         dispatch(get_notification_time());
@@ -104,7 +109,7 @@ export default function SettingsPage() {
             .finally(() => setIsNotificationDialogOpen(false));
     };
 
-    return (
+    return (domLoaded &&
         <div className="min-h-screen flex flex-col items-center justify-start bg-gray-50 p-4 md:p-8 text-gray-900">
             <Link href="/profile" passHref>
                 <Button variant="link" className="absolute top-2 left-0">

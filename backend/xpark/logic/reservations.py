@@ -380,10 +380,10 @@ def cancel_reservation_logic(
             if not ret:
                 return Err("Reservation not found")
 
-            (start_time,) = ret
+            (status, start_time) = ret
 
             # Check if the current time is at least 2 hours before the reservation start time
-            current_time = datetime.datetime.today()
+            current_time = datetime.datetime.today().replace(tzinfo=datetime.timezone.utc) # convert to UTC
             if start_time - current_time < datetime.timedelta(hours=2):
                 return Err(
                     "Reservations can only be canceled at least 2 hours before the start time."

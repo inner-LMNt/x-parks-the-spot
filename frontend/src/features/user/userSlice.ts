@@ -209,7 +209,7 @@ export const update_notification_time = createAsyncThunk<
 );
 
 export const get_notification_time = createAsyncThunk<
-  User,
+  string | null,
   void,
   { rejectValue: string }
 >("user/get_notification_time", async (_, { rejectWithValue }) => {
@@ -306,6 +306,14 @@ const userSlice = createSlice<UserState, {}, "user">({
         (state, action) => {
           state.loading = false;
           state.notificationTime = action.meta.arg.notificationTime;
+        }
+      )
+
+      .addMatcher(
+        isAnyOf(get_notification_time.fulfilled),
+        (state, action) => {
+          state.loading = false;
+          state.notificationTime = action.payload;
         }
       );
   },

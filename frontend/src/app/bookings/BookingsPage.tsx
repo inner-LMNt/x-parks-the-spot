@@ -115,7 +115,7 @@ function ReservationCard({
                             Book Again
                         </Button>
                     </div>
-                    {!isPast && (
+                    {!isPast && reservation.status !== 'canceled' && (
                         <div className="flex justify-end mt-4">
                             <Button onClick={() => router.push(`/extend/${reservation.id}`)}>
                                 Extend Reservation
@@ -274,7 +274,7 @@ export default function BookingsPage() {
                                 ))
                             ) : (
                                 <div>
-                                    <p>No cars available. Please add a car.</p>
+                                    <p className='text-gray-600'> No cars available. Please add a car.</p>
                                     <Button onClick={() => router.push('/profile/add-car')} className="mt-2">
                                         Add a Car
                                     </Button>
