@@ -53,7 +53,7 @@ export default function MySpotsPage() {
     const handleConfirmDelete = async () => {
         if (spotToDelete) {
             // @ts-ignore
-            await dispatch(deleteParkingSpot(spotToDelete));
+            await dispatch(deleteParkingSpot(spotToDelete)); // Will reroute to login because of line 42 in axiosInstance.ts
             // @ts-ignore
             dispatch(getOwnerSpots()); // Re-fetch the updated spots list
             closeDeleteModal();
