@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Edit, Trash2, Plus, FileCheck2, ShieldEllipsis, ShieldCheck, ShieldX, RefreshCw } from 'lucide-react';
+import { MapPin, Edit, Trash2, Plus, FileCheck2, ShieldEllipsis, ShieldCheck, ShieldX } from 'lucide-react';
 import { ParkingSpace } from '@/types/type';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useRouter } from 'next/navigation';
@@ -218,14 +218,6 @@ export default function MySpotsPage() {
                                 <h1 className="text-3xl font-bold mb-2 text-black">My Parking Spots</h1>
                                 <p className="text-gray-600">Manage and track your parking locations</p>
                             </div>
-                            <Button
-                                variant="default"
-                                onClick={() => dispatch(getOwnerSpots())}
-                                className="flex items-center"
-                            >
-                                <RefreshCw className="w-4 h-4 mr-2" />
-                                Refresh
-                            </Button>
                         </div>
 
                         {loading ? (

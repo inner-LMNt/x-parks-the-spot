@@ -1,5 +1,6 @@
 import axios from "axios";
-import { AppStore } from "@/store"; // Adjust this import based on your store setup
+import { AppStore } from "@/store";
+import {reset_logged_in} from "@/features/user/userSlice"; // Adjust this import based on your store setup
 
 let store: AppStore;
 
@@ -40,6 +41,7 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     if (error.status === 401 || error.status === 403) {
+      store.dispatch({type: 'user/resetLoggedIn'});
       window.location.href = `${window.location.protocol}//${window.location.host}/login`
     }
     return Promise.reject(error)

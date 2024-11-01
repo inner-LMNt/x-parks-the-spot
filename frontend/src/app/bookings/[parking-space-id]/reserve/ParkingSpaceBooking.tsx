@@ -436,17 +436,15 @@ export default function ParkingSpaceBooking() {
                         <h3 className="font-semibold mb-2 text-lg">Your Previous Reservations:</h3>
                         <div className="space-y-2">
                             {userReservations.map((reservation: Reservation) => (
-                                <div key={reservation.id} className="text-sm border p-2 rounded-md">
+                                <div key={reservation.id} className="text-sm border p-2 rounded-md text-wrap">
                                     <p>
-                                        <strong>Date:</strong>{' '}
-                                        {isValidDate(reservation.start_time) ? format(new Date(reservation.start_time as string), 'PPP') : 'N/A'}
+                                        <strong>Start Time:</strong>{' '}
+                                        {isValidDate(reservation.start_time) ? format(new Date(reservation.start_time as string), 'PPp') : 'N/A'}
                                     </p>
                                     <p>
-                                        <strong>Time:</strong>{' '}
+                                        <strong>End Time:</strong>{' '}
                                         {isValidDate(reservation.start_time) && isValidDate(reservation.end_time)
-                                            ? (is24Hours(reservation.start_time, reservation.end_time)
-                                                ? '24 hours'
-                                                : `${format(new Date(reservation.start_time as string), 'p')} - ${format(new Date(reservation.end_time as string), 'p')}`)
+                                            ? format(new Date(reservation.end_time as string), 'PPp')
                                             : 'N/A'}
                                     </p>
                                     <p>
