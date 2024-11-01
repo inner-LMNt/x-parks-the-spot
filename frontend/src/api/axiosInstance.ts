@@ -40,7 +40,7 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     if (error.status === 401 || error.status === 403) {
-      window.location = window.location.protocol + "//" + window.location.host + "/login"
+      window.location.href = `${window.location.protocol}//${window.location.host}/login`
     }
     return Promise.reject(error)
   }
