@@ -111,10 +111,13 @@ function ReservationCard({
                     <p className="text-sm text-gray-700">
                         <strong>License Plate:</strong> {car.license_plate}
                     </p>
+                    <p className="text-sm text-gray-700">
+                        <strong>State:</strong> {car.license_plate_state}
+                    </p>
                 </div>
                 <div className="flex items-center mb-2">
                     <p className="text-sm text-gray-700">
-                        <strong>Price:</strong> ${reservation.price ? reservation.price.toFixed(2) : "0.00"}
+                    <strong>Price:</strong> ${reservation.price ? reservation.price.toFixed(2) : "0.00"}
                     </p>
                 </div>
                 <div className="flex items-center mb-2">
@@ -297,7 +300,8 @@ export default function BookingsPage() {
                                 cars.map((car: CarInfo) => (
                                     <Card key={car.id} className="p-4">
                                         <CardContent>
-                                            <p className="text-lg font-semibold">{car.make} {car.model}</p>
+
+                                            <p className="text-lg font-semibold">{car.color ? `${car.color} ` : ''}{car.make} {car.model}</p>
                                             <p className="text-sm text-gray-600">License Plate: {car.license_plate}</p>
                                             {/* Add more car details if needed */}
                                         </CardContent>
