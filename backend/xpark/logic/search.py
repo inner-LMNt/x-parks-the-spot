@@ -14,8 +14,8 @@ def search_query(
     paid_status: str,
     min_price: float,
     max_price: float,
-    start_time: str,
-    end_time: str,
+    start_time: datetime,
+    end_time: datetime,
     is_taken: Optional[bool] = False
 ) -> list[dict[str, Any]]:
     paid = None
@@ -31,7 +31,7 @@ def search_query(
             cur.execute(
                 """
                 SELECT
-                    id,
+                    parking_spaces.id,
                     is_paid,
                     verification_status,
                     is_taken,
@@ -47,12 +47,13 @@ def search_query(
                         'dynamic_pricing', FALSE
                     ) as pricing_info,
                     availability_schedule
-                FROM parking_spaces
+                FROM parking_spaces JOIN timetable_coalesce ON parking_spaces.id = timetable_coalesce.parking_space_id
                 WHERE ST_DWithin(location, ST_MakePoint(%(long)s, %(lat)s), %(radius_meters)s)
                 AND is_paid = COALESCE(%(paid)s,is_paid)
                 AND price >= COALESCE(%(min_price)s, price)
                 AND price <= COALESCE(%(max_price)s, price)
                 AND is_taken = COALESCE(%(is_taken)s, is_taken)
+                AND TSTZRANGE(COALESCE(%(start_time)s, lower(time)), COALESCE(%(end_time)s, upper(time)), '()') <@ time
                 LIMIT 30
                 """,
                 {
@@ -62,7 +63,9 @@ def search_query(
                     "paid": paid,
                     "min_price": min_price,
                     "max_price": max_price,
-                    "is_taken": is_taken
+                    "is_taken": is_taken,
+                    "start_time": start_time,
+                    "end_time": end_time,
                 },
             )
             parking_spaces = cur.fetchall()
