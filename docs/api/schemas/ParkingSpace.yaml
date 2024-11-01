@@ -8,6 +8,8 @@ properties:
     format: uuid
   is_paid:
     type: boolean
+  is_taken:
+    type: boolean
   owner_id:
     type: string
     format: uuid

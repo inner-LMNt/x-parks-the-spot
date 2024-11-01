@@ -8,6 +8,7 @@ from xpark.logic.parkingspace import (
     is_paid_spot,
     get_all_user_parking_spaces,
     handle_submit_verification,
+    update_taken,
     submit_rating
 )
 from flask import request
@@ -160,6 +161,21 @@ def verify_spot_route(
             return {}, 200
         case Err(_):
             return {}, 400
+
+@bp.post("<parking_space_id>/taken")
+@require_logged_in_user
+def update_parking_space_taken(parking_space_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    # Retrieve the image file from form data
+    image_file = request.files.get("photo")
+    parking_space_uuid = uuid.UUID(parking_space_id)
+
+    # Call helper function to perform the update
+    match update_taken(user_id=user_id, parking_space_id=parking_space_uuid, image_file=image_file):
+        case Ok(_):
+            return {}, 200
+        case Err(e):
+            return {"err": e}, 400
+
 @bp.post("<parking_space_id>/rate")
 @require_logged_in_user
 def rate_parking_space_route(

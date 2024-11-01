@@ -61,6 +61,7 @@ def test_coalesce() -> None:
         )  # 7 days times 52 weeks = 364 days
 
         # Check the values of tt
+
         assert tt[1:] == (
             parking_space_id.ok_value["id"],
             Range(

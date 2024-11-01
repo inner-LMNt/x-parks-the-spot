@@ -68,12 +68,6 @@ export default function ParkingSpaceDetails() {
         }
     }, [lockStatus, error, toast]);
 
-    const handleReserveAndLock = async () => {
-        const confirmLock = window.confirm("Are you sure you want to reserve and lock this parking space?");
-        if (confirmLock) {
-            router.push(`/bookings/${parkingSpaceId}/reserve?car_id=${selectedCarId}&previousUrl=${encodeURIComponent(currentUrl ?? '/bookings')}`);
-        }
-    };
 
     const handleBack = () => {
         router.push('/bookings');
@@ -177,9 +171,6 @@ export default function ParkingSpaceDetails() {
                                 </>
                             )}
                         </div>
-                        <Badge variant={lockStatus !== 'idle' ? 'destructive' : 'default'}>
-                            {lockStatus !== 'idle' ? 'Locked' : 'Available'}
-                        </Badge>
                     </div>
                     <Separator className="my-4" />
                     <div className="space-y-4">
@@ -211,12 +202,11 @@ export default function ParkingSpaceDetails() {
                 <Separator className="my-2" />
                 <CardContent>
                     <Button
-                        onClick={handleReserveAndLock}
+                        onClick={() =>router.push(`/bookings/${parkingSpaceId}/reserve`)}
                         className="w-full"
                         size="lg"
-                        disabled={lockStatus === 'locking' || lockStatus === 'locked'}
                     >
-                        {lockStatus === 'locking' ? 'Locking...' : 'Reserve & Lock'}
+                        Reserve
                     </Button>
                 </CardContent>
             </Card>

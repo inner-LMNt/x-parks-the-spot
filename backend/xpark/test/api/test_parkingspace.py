@@ -413,3 +413,110 @@ def test_api_submit_rating_stress(client: FlaskClient) -> None:
         assert Decimal(str(parking_space["avg_total_rating"])) == expected_avg_total
         assert parking_space["ratings_count_availability"] == count_avail
         assert parking_space["ratings_count_cleanliness"] == count_clean
+def test_update_free_parking_spot_is_taken(client: FlaskClient) -> None:
+    # Register a user and obtain the token
+    response = client.post(
+        "/api/unstable/auth/register",
+        json={
+            "email": "testuser@example.com",
+            "full_name": "Test User",
+            "password": "SecurePass123",
+        },
+    )
+    assert response.status_code == 201
+    token = cast(Dict[str, str], response.json)["access_token"]
+
+    # Create a free parking spot
+    response = client.post(
+        "/api/unstable/parking-spaces",
+        headers={"Authorization": f"Bearer {token}"},
+        data={
+            "data": json.dumps({
+                "location": {
+                    "latitude": 40.4237,
+                    "longitude": -86.9249,
+                    "address": "Test Address",
+                },
+                "is_paid": False,
+            })
+        },
+    )
+    assert response.status_code == 201
+    assert response.json
+    spot_id = response.json["id"]
+
+    # Mark the parking spot as taken
+    response = client.post(
+        f"/api/unstable/parking-spaces/{spot_id}/taken",
+        headers={"Authorization": f"Bearer {token}"},
+        data={"is_taken": True}
+    )
+    assert response.status_code == 200, "Failed to mark parking spot as taken"
+
+    # Verify the updated status of the parking spot
+    response = client.get(f"/api/unstable/parking-spaces/{spot_id}")
+    assert response.status_code == 200
+
+    # Clean up by deleting the parking spot
+    response = client.delete(
+        f"/api/unstable/parking-spaces/{spot_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200, "Failed to delete the parking spot"
+
+def test_create_and_update_free_parking_spot(client: FlaskClient) -> None:
+    # Register a user and retrieve the token
+    response = client.post(
+        "/api/unstable/auth/register",
+        json={
+            "email": "testuser2@example.com",
+            "full_name": "Free Spot Tester",
+            "password": "AnotherPass123",
+        },
+    )
+    assert response.status_code == 201
+    token = cast(Dict[str, str], response.json)["access_token"]
+
+    # Create a free parking spot
+    response = client.post(
+        "/api/unstable/parking-spaces",
+        headers={"Authorization": f"Bearer {token}"},
+        data={
+            "data": json.dumps({
+                "location": {
+                    "latitude": 40.4297,
+                    "longitude": -86.9289,
+                    "address": "Free Spot Address",
+                },
+                "is_paid": False,
+            })
+        },
+    )
+    assert response.status_code == 201, f"Failed to create free parking spot: {response.json}"
+    assert response.json
+    spot_id = response.json["id"]
+
+    # Confirm the parking spot is not paid
+    response = client.get(f"/api/unstable/parking-spaces/{spot_id}")
+    assert response.json
+    assert response.status_code == 200, f"Failed to retrieve created spot: {response.json}"
+    assert response.json["is_paid"] is False, "Spot should be free but is marked as paid"
+
+    # Mark the spot as taken using the dedicated `/taken` endpoint
+    response = client.post(
+        f"/api/unstable/parking-spaces/{spot_id}/taken",
+        headers={"Authorization": f"Bearer {token}"},
+        data={"is_taken": True}
+    )
+    assert response.status_code == 200, f"Failed to mark spot as taken: {response.json}"
+
+    # Verify the update in a follow-up GET request
+    response = client.get(f"/api/unstable/parking-spaces/{spot_id}")
+    assert response.status_code == 200, "Failed to retrieve spot after updates"
+
+    # Clean up by deleting the parking spot
+    response = client.delete(
+        f"/api/unstable/parking-spaces/{spot_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200, "Failed to delete the parking spot"
