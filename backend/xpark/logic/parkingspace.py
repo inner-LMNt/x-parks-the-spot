@@ -542,7 +542,7 @@ def submit_rating(
 
 def get_user_rating(
     user_id: uuid.UUID, parking_space_id: uuid.UUID
-) -> Result[Dict[str, Optional[int]], str]:
+) -> Result[Dict[str, Any] | None, str]:
     """
     Fetches the availability and cleanliness ratings given by the user for a specific parking space.
 

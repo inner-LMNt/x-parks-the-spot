@@ -454,6 +454,7 @@ def test_user_specific_ratings(client: FlaskClient) -> None:
     )
     assert response.status_code == 200, "Failed to fetch User 1's rating"
     user1_rating = response.json
+    assert user1_rating
     assert user1_rating["availability_rating"] == 4
     assert user1_rating["cleanliness_rating"] == 5
 
@@ -464,6 +465,7 @@ def test_user_specific_ratings(client: FlaskClient) -> None:
     )
     assert response.status_code == 200, "Failed to fetch User 2's rating"
     user2_rating = response.json
+    assert user2_rating
     assert user2_rating["availability_rating"] == 3
     assert user2_rating["cleanliness_rating"] == 2
 
@@ -486,6 +488,7 @@ def test_user_specific_ratings(client: FlaskClient) -> None:
     )
     assert response.status_code == 200, "Failed to fetch updated rating for User 1"
     updated_user1_rating = response.json
+    assert updated_user1_rating
     assert updated_user1_rating["availability_rating"] == 5
     assert updated_user1_rating["cleanliness_rating"] == 4
 
@@ -496,6 +499,7 @@ def test_user_specific_ratings(client: FlaskClient) -> None:
     )
     assert response.status_code == 200, "Failed to fetch User 2's rating after User 1's update"
     unchanged_user2_rating = response.json
+    assert unchanged_user2_rating
     assert unchanged_user2_rating["availability_rating"] == 3
     assert unchanged_user2_rating["cleanliness_rating"] == 2
 
