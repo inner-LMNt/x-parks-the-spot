@@ -8,6 +8,7 @@ import { fetchUserReservations } from '@/features/reservations/reservationsSlice
 import {CarInfo, Reservation} from '@/types/type';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Toggle } from '@/components/ui/toggle';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import {MapPin, Clock, Calendar, ArrowRightCircle, Loader2, FileWarning} from 'lucide-react';
@@ -86,7 +87,17 @@ function ReservationCard({
                 </div>
                 <div className="flex items-center mb-2">
                     <p className="text-sm text-gray-700">
-                        <strong>License Plate:</strong> {car?.license_plate}
+                        <strong>License Plate:</strong> {car.license_plate}
+                    </p>
+                </div>
+                <div className="flex items-center mb-2">
+                    <p className="text-sm text-gray-700">
+                        <strong>Price:</strong> ${reservation.price ? reservation.price.toFixed(2) : "0.00"}
+                    </p>
+                </div>
+                <div className="flex items-center mb-2">
+                    <p className="text-sm text-gray-700">
+                        <strong>Location:</strong> { reservation.location.address }
                     </p>
                 </div>
                 <div className="flex justify-center gap-4">
@@ -128,6 +139,9 @@ export default function BookingsPage() {
     const carsLoading = useAppSelector((state) => state.cars.loading);
     const carsError = useAppSelector((state) => state.cars.error);
     const userName = useAppSelector((state) => state.user.name);
+    const [showCancelledSpots, setShowCancelledSpots] = useState<boolean>(false);
+    const [sortByPrice, setSortByPrice] = useState<boolean>(false);
+
 
     // Create a carMap for efficient lookup
     const carMap = useMemo(() => {
@@ -260,8 +274,31 @@ export default function BookingsPage() {
                 {!isLoading && pastReservations.length > 0 && (
                     <section className="mb-8">
                         <SectionHeader title="Past Reservations"/>
+                        {/* filters */}
+                        <div className="items-top flex space-x-2">
+                          <Toggle id="showCancelled"
+                            // pressed={showCancelledSpots}
+                            onPressedChange={(pressed: boolean) => {
+                              setShowCancelledSpots(pressed);
+                            }}
+                            >
+                                <span>Show cancelled reservations</span>
+                            </Toggle>
+                          <Toggle id="sortByPrice"
+                            // pressed={showCancelledSpots}
+                            onPressedChange={(pressed: boolean) => {
+                              setSortByPrice(pressed);
+                            }}
+                            >
+                                <span>Sort by price</span>
+                            </Toggle>
+                        </div>
                         <div className="grid gap-6">
-                            {pastReservations.map((reservation: Reservation) => (
+                            {pastReservations
+                                .sort((a: Reservation, b: Reservation) => a.start_time.localeCompare(b.start_time))
+                                .sort((a: Reservation, b: Reservation) => sortByPrice ? a.price - b.price : 0)
+                                .filter((r: Reservation) => showCancelledSpots || (r.status != 'canceled'))
+                                .map((reservation: Reservation) => (
                                 <ReservationCard key={reservation.id} reservation={reservation} isPast carMap={carMap}/>
                             ))}
                         </div>

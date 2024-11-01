@@ -6,7 +6,8 @@ from xpark.logic.reservations import (
     get_reservation,
     create_reservation,
     get_user_reservations,
-    cancel_reservation_logic, get_max_extension_time_logic,
+    cancel_reservation_logic,
+    get_max_extension_time_logic,
 )
 from . import bp
 from flask import request
@@ -32,8 +33,8 @@ def create_reservation_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     match create_reservation(
         user_id,
         parking_space_id=request.json["parking_space_id"],  # type: ignore
-        start_time=request.json["start_time"],  # type: ignore
-        end_time=request.json["end_time"],  # type: ignore
+        start_time=datetime.fromisoformat(request.json["start_time"]),  # type: ignore
+        end_time=datetime.fromisoformat(request.json["end_time"]),  # type: ignore
         car_info_id=request.json["car_info_id"],  # type: ignore
     ):
         case Ok(reservation):
@@ -70,7 +71,7 @@ def get_reservation_route(
 @bp.route("/<reservation_id>", methods=["PUT"])
 @require_logged_in_user
 def update_reservation_route(
-        reservation_id: str, token: str, user_id: uuid.UUID
+    reservation_id: str, token: str, user_id: uuid.UUID
 ) -> Tuple[Any, int]:
     """
     Update an existing reservation.
@@ -81,13 +82,19 @@ def update_reservation_route(
     end_time = data.get("end_time")
     car_info_uuid = data.get("car_info_uuid")
     if end_time is not None:
-        end_time = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
+        end_time = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%S.%fZ").replace(
+            tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC")
+        )
     if start_time is not None:
-        start_time = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC"))
+        start_time = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S.%fZ").replace(
+            tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC")
+        )
     reservation_uuid = uuid.UUID(reservation_id)
 
     # Call update_reservation with individual parameters
-    match update_reservation(user_id, reservation_uuid, start_time, end_time, car_info_uuid):
+    match update_reservation(
+        user_id, reservation_uuid, start_time, end_time, car_info_uuid
+    ):
         case Ok(reservation):
             return reservation, 200
         case Err(e):
@@ -119,6 +126,7 @@ def get_max_extension_time_route(
                 return {"err": e}, 404
             else:
                 return {"err": e}, 400
+
 
 @bp.delete("<reservation_id>")
 @require_logged_in_user
