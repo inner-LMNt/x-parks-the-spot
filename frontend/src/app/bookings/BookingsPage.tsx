@@ -86,7 +86,12 @@ function ReservationCard({
                 </div>
                 <div className="flex items-center mb-2">
                     <p className="text-sm text-gray-700">
-                        <strong>License Plate:</strong> {car?.license_plate}
+                        <strong>License Plate:</strong> {car.license_plate}
+                    </p>
+                </div>
+                <div className="flex items-center mb-2">
+                    <p className="text-sm text-gray-700">
+                        <strong>Price:</strong> ${reservation.price ? reservation.price.toFixed(2) : "0.00"}
                     </p>
                 </div>
                 <div className="flex justify-center gap-4">

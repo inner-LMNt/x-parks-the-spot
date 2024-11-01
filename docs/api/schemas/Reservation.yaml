@@ -1,4 +1,17 @@
 type: object
+required:
+  - id
+  - parking_space_id
+  - name
+  - renter_id
+  - owner_id
+  - start_time
+  - end_time
+  - status
+  - car_info_id
+  - created_at
+  - updated_at
+  - price
 properties:
   id:
     type: string
@@ -37,3 +50,5 @@ properties:
   updated_at:
     type: string
     format: date-time
+  price:
+    type: number
