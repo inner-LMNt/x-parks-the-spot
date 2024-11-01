@@ -10,7 +10,7 @@ export const injectStore = (_store: AppStore) => {
 const axiosInstance = axios.create({
   baseURL:
     process.env.NEXT_PUBLIC_API_BASE_URL ||
-    "http://localhost:5001/api/unstable",
+    "http://localhost:5000/api/unstable",
 });
 
 // Add a request interceptor
@@ -35,15 +35,17 @@ axiosInstance.interceptors.request.use(
 );
 
 axiosInstance.interceptors.response.use(
-  (resp) => {
-    return resp
-  },
-  (error) => {
-    if (error.status === 401 || error.status === 403) {
-      window.location.href = `${window.location.protocol}//${window.location.host}/login`
+    (resp) => {
+        return resp;
+    },
+    (error) => {
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            store.dispatch({type:'user/resetLoggedIn'});
+            window.location.href = `${window.location.protocol}//${window.location.host}/login`;
+        }
+        return Promise.reject(error);
     }
-    return Promise.reject(error)
-  }
-)
+);
+
 
 export default axiosInstance;
