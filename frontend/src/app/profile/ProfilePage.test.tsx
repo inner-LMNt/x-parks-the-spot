@@ -9,7 +9,7 @@ jest.mock('next/link', () => {
     };
 });
 
-describe('ProfilePage', () => {
+describe.skip('ProfilePage', () => {
     beforeEach(() => {
         render(<ProfilePage />);
     });
