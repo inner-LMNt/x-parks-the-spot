@@ -514,7 +514,7 @@ export default function ParkingSpaceBooking() {
                                 <SelectContent>
                                     {carInfos.map((car: CarInfo) => (
                                         <SelectItem key={car.id ?? 'no-id'} value={car.id ?? 'no-id'}>
-                                            {`${car.make} ${car.model} (${car.license_plate})`}
+                                            {`${car.color ? `${car.color} ` : ''}${car.make} ${car.model} (${car.license_plate})`}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
