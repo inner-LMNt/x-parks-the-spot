@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,8 @@ import { ParkingSpace } from '@/types/type';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getOwnerSpots, deleteParkingSpot, verifyParkingSpot } from '@/features/owner/ownerSlice';
+import { getOwnerSpots, deleteParkingSpot } from '@/features/owner/ownerSlice';
+import verifyParkingSpot from '@/features/owner/ownerSlice';
 import ImageWrapper from "@/components/custom/ImageWrapper";
 import VerificationModal from '@/components/custom/VerificationModal'; // Import the verification modal
 import EditSpotModal from '@/components/custom/EditSpotModal'
@@ -203,7 +203,7 @@ export default function MySpotsPage() {
                                         Edit
                                     </Button>
                                     <Button variant="destructive" size="sm" className="flex-1"
-                                            onClick={() => handleDelete(spot.id as string)}>
+                                            onClick={() => openDeleteModal(spot.id as string)}>
                                         <Trash2 className="w-4 h-4 mr-2"/>
                                         Delete
                                     </Button>

@@ -16,8 +16,6 @@ import {
   PasswordResetRequest,
   UserUpdateRequest,
 } from "@/types/type";
-import { noSSR } from "next/dynamic";
-import { notDeepEqual } from "assert";
 
 /**
  * Interface for the user slice state
@@ -83,33 +81,21 @@ export const deleteAccount = createAsyncThunk<
 
 // Thunk for updating spot status
 export const updateSpot = createAsyncThunk(
-    'user/updateSpot',
-    async (formData: FormData, { rejectWithValue }) => {
-        try {
-            const response = await axios.post('/api/spot/update', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Failed to update spot status');
-        }
+  "user/updateSpot",
+  async (formData: FormData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post("/api/spot/update", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update spot status"
+      );
     }
+  }
 );
 
-// Thunk for updating spot status
-export const updateSpot = createAsyncThunk(
-    'user/updateSpot',
-    async (formData: FormData, { rejectWithValue }) => {
-        try {
-            const response = await axios.post('/api/spot/update', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Failed to update spot status');
-        }
-    }
-);
 export const request_delete_account = createAsyncThunk<
   void, // Return type of the payload creator
   { password: string }, // First argument to the payload creator
