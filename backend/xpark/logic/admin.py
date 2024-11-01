@@ -100,35 +100,41 @@ def update_conflict_response(conflict_id: uuid.UUID, response_text: str) -> Resu
 
 def get_all_pending_parking_spaces() -> Result[Dict[str, List[Dict[str, Any]]], str]:
     """
-    Fetch all parking spaces that have a 'pending' verification status from the database.
+    Fetch all parking spaces that have a 'pending' verification status from the database,
+    along with owner information.
     """
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:  # Use dict_row here
             query = """
                 SELECT
-                    id,
-                    name,
-                    is_paid,
-                    verification_status,
-                    ST_Y(location::geometry) AS latitude,
-                    ST_X(location::geometry) AS longitude,
-                    address,
-                    availability_schedule,
+                    ps.id,
+                    ps.name,
+                    ps.is_paid,
+                    ps.verification_status,
+                    ST_Y(ps.location::geometry) AS latitude,
+                    ST_X(ps.location::geometry) AS longitude,
+                    ps.address,
+                    ps.availability_schedule,
                     json_build_object(
-                         'base_price', price,
-                          'dynamic_pricing', FALSE
+                         'base_price', ps.price,
+                         'dynamic_pricing', FALSE
                     ) as pricing_info,
-                    photos,
-                    verification_photos,  -- Include verification photos
-                    created_at,
-                    updated_at
-                FROM parking_spaces
-                WHERE verification_status = 'pending'
+                    ps.photos,
+                    ps.verification_photos,
+                    ps.created_at,
+                    ps.owner,
+                    ps.updated_at,
+                    u.name AS owner_name,
+                    u.email AS owner_email
+                FROM parking_spaces ps
+                JOIN users u ON ps.owner = u.id
+                WHERE ps.verification_status = 'pending'
             """
             cur.execute(query)
             rows = cur.fetchall()
 
             return Ok({"pendingSpaces": rows})
+
 
 def handle_verify_parking(parking_space_id: uuid.UUID, is_verified: bool) -> Result[Dict[str, Any], str]:
     # Step 1: Fetch the owner (user ID) of the parking space

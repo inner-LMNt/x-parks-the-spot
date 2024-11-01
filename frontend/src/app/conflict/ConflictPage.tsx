@@ -10,6 +10,7 @@ import { getAllConflicts, updateConflictResponse } from '@/features/admin/adminS
 import { fetchParkingSpace } from '@/features/parking-space/parkingSpaceSlice';
 import { toast } from '@/hooks/use-toast';
 import ImageWrapper from "@/components/custom/ImageWrapper";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Conflict {
     id: string;
@@ -31,7 +32,7 @@ const ConflictPage = () => {
     const [expandedConflictId, setExpandedConflictId] = useState<string | null>(null);
     const [responseText, setResponseText] = useState<{ [key: string]: string }>({});
     const [parkingSpaceData, setParkingSpaceData] = useState<{ [key: string]: any }>({});
-    const [selectedImage, setSelectedImage] = useState<string | null>(null); // State to manage modal visibility
+    const [selectedImage, setSelectedImage] = useState<string | null>(null); // State to manage expanded image
 
     useEffect(() => {
         dispatch(getAllConflicts());
@@ -140,13 +141,13 @@ const ConflictPage = () => {
                                                         <div className="bg-gray-100 p-4 rounded-lg shadow-sm">
                                                             <h3 className="text-lg font-bold mb-2">Parking Space Details</h3>
                                                             {parkingSpaceData[conflict.parking_space_id]?.photos?.[0] && (
-                                                                <div className="relative w-full h-40">
+                                                                <div className="relative w-full h-40" onClick={() => handleImageClick(parkingSpaceData[conflict.parking_space_id].photos[0])}>
                                                                     <ImageWrapper
                                                                         src={parkingSpaceData[conflict.parking_space_id].photos[0]}
                                                                         alt="Parking Space Image"
                                                                         layout="fill"
                                                                         objectFit="cover"
-                                                                        className="w-full h-40 object-cover rounded-md mb-4"
+                                                                        className="w-full h-40 object-cover rounded-md mb-4 cursor-pointer"
                                                                     />
                                                                 </div>
                                                             )}
@@ -156,8 +157,8 @@ const ConflictPage = () => {
                                                                 {getVerificationStatusIcon(parkingSpaceData[conflict.parking_space_id].verification_status)}
                                                                 <span>Verification Status</span>
                                                             </div>
-                                                            <p><strong>Latitude:</strong> {parkingSpaceData[conflict.parking_space_id].location.latitude}</p>
-                                                            <p><strong>Longitude:</strong> {parkingSpaceData[conflict.parking_space_id].location.longitude}</p>
+                                                            <p><strong>Latitude:</strong> {parkingSpaceData[conflict.parking_space_id].latitude}</p>
+                                                            <p><strong>Longitude:</strong> {parkingSpaceData[conflict.parking_space_id].longitude}</p>
                                                         </div>
                                                     )}
                                                 </div>
@@ -184,13 +185,26 @@ const ConflictPage = () => {
                 )}
             </div>
 
-            {/* Image Modal */}
+            {/* Image Modal for Expanded Image */}
             {selectedImage && (
-                <ImageModal
-                    imageSrc={selectedImage}
-                    isOpen={!!selectedImage}
-                    onClose={() => setSelectedImage(null)}
-                />
+                <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Expanded Image</DialogTitle>
+                        </DialogHeader>
+                        <div className="relative w-full h-96">
+                            <ImageWrapper
+                                src={selectedImage}
+                                alt="Expanded Parking Space Image"
+                                layout="fill"
+                                objectFit="contain"
+                            />
+                        </div>
+                        <Button variant="secondary" className="mt-4" onClick={() => setSelectedImage(null)}>
+                            Close
+                        </Button>
+                    </DialogContent>
+                </Dialog>
             )}
         </div>
     );
