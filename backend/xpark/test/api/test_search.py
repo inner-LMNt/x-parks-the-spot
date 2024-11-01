@@ -27,8 +27,8 @@ def test_search_parking_spaces(client: FlaskClient) -> None:
         "paid_status": "UNPAID",
         "min_price": 0,
         "max_price": 5,
-        "start_time": "08:00",
-        "end_time": "20:00",
+        "start_time": "2000-01-23T01:22:45.678+09:00",
+        "end_time": "2000-01-23T01:23:45.678+09:00",
         "is_taken": False,
     }
 
@@ -101,12 +101,17 @@ def test_search_parking_spaces_with_elapsed_time(client: FlaskClient) -> None:
                 "UPDATE parking_spaces SET updated_at = %s, is_taken = TRUE WHERE id = %s",
                 (past_time, spot_id),
             )
-            conn.commit()
 
     # Retrieve the spot directly from the database to verify the update
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute("SELECT id, is_taken, updated_at FROM parking_spaces WHERE id = %s", (spot_id,))
+            cur.execute("""SELECT id, is_taken, updated_at,
+                        json_build_object(
+                            'address',   parking_spaces.address,
+                            'latitude',  ST_Y(location::geometry),
+                            'longitude', ST_X(location::geometry)
+                        ) as location
+                        FROM parking_spaces WHERE id = %s""", (spot_id,))
             db_spot = cur.fetchone()
             assert db_spot is not None, "Parking spot not found in database"
             assert db_spot["is_taken"] is True, f"Expected is_taken=True, got {db_spot['is_taken']}"
