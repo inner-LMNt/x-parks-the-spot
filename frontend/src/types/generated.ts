@@ -1909,13 +1909,23 @@ export interface components {
             cancellation_policy?: string;
             locked?: boolean;
             /** Format: uuid */
-            locked_by?: string;
+            locked_by?: string | null;
             /** Format: date-time */
-            locked_until?: string;
+            locked_until?: string | null;
             /** Format: date-time */
             created_at?: string;
             /** Format: date-time */
             updated_at?: string;
+            /** @description Average availability rating (1-5). Null if not rated or not a paid spot. */
+            avg_availability_rating?: number | null;
+            /** @description Average cleanliness rating (1-5). Null if not rated or not a paid spot. */
+            avg_cleanliness_rating?: number | null;
+            /** @description Average total rating or 'unrated' if no ratings exist. */
+            avg_total_rating?: (number | "unrated") | null;
+            /** @description Number of users who rated availability. Null if not a paid spot. */
+            ratings_count_availability?: number | null;
+            /** @description Number of users who rated cleanliness. Null if not a paid spot. */
+            ratings_count_cleanliness?: number | null;
         };
         OwnerProfile: {
             parking_spaces?: components["schemas"]["ParkingSpace"][];

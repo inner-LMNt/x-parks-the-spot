@@ -41,7 +41,12 @@ def search_query(
                         'base_price', price,
                         'dynamic_pricing', FALSE
                     ) as pricing_info,
-                    availability_schedule
+                    availability_schedule,
+                    CASE WHEN is_paid THEN COALESCE(avg_availability_rating, 0) ELSE NULL END AS avg_availability_rating,
+                    CASE WHEN is_paid THEN COALESCE(avg_cleanliness_rating, 0) ELSE NULL END AS avg_cleanliness_rating,
+                    CASE WHEN is_paid THEN COALESCE(avg_total_rating, 0) ELSE NULL END AS avg_total_rating,
+                    CASE WHEN is_paid THEN COALESCE(ratings_count_availability, 0) ELSE NULL END AS ratings_count_availability,
+                    CASE WHEN is_paid THEN COALESCE(ratings_count_cleanliness, 0) ELSE NULL END AS ratings_count_cleanliness
                 FROM parking_spaces FULL JOIN timetable_coalesce ON parking_spaces.id = timetable_coalesce.parking_space_id
                 WHERE ST_DWithin(location, ST_MakePoint(%(long)s, %(lat)s), %(radius_meters)s)
                 AND is_paid = COALESCE(%(is_paid)s, is_paid)
@@ -86,5 +91,17 @@ def search_query(
                         parking_space["name"] = f"Updated {int(minutes)} minutes ago"
                     else:
                         parking_space["name"] = "Updated just now"
+
+                # Process ratings
+                if parking_space['is_paid']:
+                    if (parking_space['ratings_count_availability'] == 0 or
+                        parking_space['ratings_count_availability'] is None) and \
+                       (parking_space['ratings_count_cleanliness'] == 0 or
+                        parking_space['ratings_count_cleanliness'] is None):
+                        parking_space['avg_total_rating'] = "unrated"
+                    else:
+                        parking_space['avg_total_rating'] = float(parking_space['avg_total_rating']) if parking_space['avg_total_rating'] != 0 else "unrated"
+                        parking_space['avg_availability_rating'] = float(parking_space['avg_availability_rating']) if parking_space['avg_availability_rating'] != 0 else None
+                        parking_space['avg_cleanliness_rating'] = float(parking_space['avg_cleanliness_rating']) if parking_space['avg_cleanliness_rating'] != 0 else None
 
             return parking_spaces

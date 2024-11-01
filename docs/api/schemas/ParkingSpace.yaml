@@ -47,12 +47,49 @@ properties:
   locked_by:
     type: string
     format: uuid
+    nullable: true
   locked_until:
     type: string
     format: date-time
+    nullable: true
   created_at:
     type: string
     format: date-time
   updated_at:
     type: string
     format: date-time
+  # New Rating Fields (only for paid spots)
+  avg_availability_rating:
+    type: number
+    minimum: 1
+    maximum: 5
+    nullable: true
+    description: "Average availability rating (1-5). Null if not rated or not a paid spot."
+  avg_cleanliness_rating:
+    type: number
+    minimum: 1
+    maximum: 5
+    nullable: true
+    description: "Average cleanliness rating (1-5). Null if not rated or not a paid spot."
+  avg_total_rating:
+    oneOf:
+      - type: number
+        minimum: 1
+        maximum: 5
+        description: "Average total rating based on available categories (1-5)."
+      - type: string
+        enum:
+          - "unrated"
+        description: "Indicates that the parking space has not been rated."
+    nullable: true
+    description: "Average total rating or 'unrated' if no ratings exist."
+  ratings_count_availability:
+    type: integer
+    minimum: 0
+    nullable: true
+    description: "Number of users who rated availability. Null if not a paid spot."
+  ratings_count_cleanliness:
+    type: integer
+    minimum: 0
+    nullable: true
+    description: "Number of users who rated cleanliness. Null if not a paid spot."

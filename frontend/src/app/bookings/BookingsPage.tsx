@@ -17,6 +17,8 @@ import Link from 'next/link';
 import { fetchUserCars, resetCarError } from '@/features/cars/carSlice';
 import { Button } from '@/components/ui/button';
 import DeleteReservationModal from '@/components/custom/DeleteReservationModal';
+import RatingSelector from "@/components/custom/RatingSelector";
+import parkingSpaceSlice from "@/features/parking-space/parkingSpaceSlice";
 
 // SectionHeader Component
 function SectionHeader({ title }: { title: string }) {
@@ -105,7 +107,7 @@ function ReservationCard({
                         {format(new Date(reservation.end_time ?? new Date()), 'p')}
                     </p>
                 </div>
-                <div className="flex items-center mb-2">
+                <div className="flex items-center mb-4">
                     <p className="text-sm text-gray-700">
                         <strong>License Plate:</strong> {car.license_plate}
                     </p>
@@ -120,15 +122,26 @@ function ReservationCard({
                         <strong>Location:</strong> { reservation.location.address ? reservation.location.address : "N/A" }
                     </p>
                 </div>
-                <div className="flex justify-center gap-4">
-                    <div className="flex justify-end mt-4">
-                        <Button onClick={() => router.push(`/bookings/${reservation.parking_space_id}/reserve`)}>
+
+                <div className="space-y-4">
+                    {isPast && reservation.status != 'canceled' && (
+                        <RatingSelector parkingSpaceId={reservation.parking_space_id as string} />
+                    )}
+
+                    <div className="space-y-2">
+                        <Button
+                            onClick={() => {
+                                router.push(`/bookings/${reservation.parking_space_id}/reserve`)}
+                             }
+                            className="w-full"
+                        >
                             Book Again
                         </Button>
                     </div>
                     {!isPast && reservation.status !== 'canceled' && (
                         <div className="flex justify-end mt-4">
-                            <Button onClick={() => router.push(`/extend/${reservation.id}`)}>
+                            <Button onClick={() => router.push(`/extend/${reservation.id}`)}
+                                    className="w-full">
                                 Extend Reservation
                             </Button>
                         </div>
@@ -231,6 +244,10 @@ export default function BookingsPage() {
         (reservation: Reservation) => new Date(reservation.end_time ?? now) < now
     );
 
+    const pastOrCancelledReservations = reservations.filter(
+        (reservation: Reservation) => new Date(reservation.end_time ?? now) < now || reservation.status === 'canceled'
+    );
+
     const cancelledReservations = reservations.filter(
         (reservation: Reservation) => reservation.status === 'canceled'
     );
@@ -254,7 +271,7 @@ export default function BookingsPage() {
     return (
         domLoaded && (
             <div className="min-h-screen flex flex-col bg-gray-50">
-                <div className="flex-grow container mx-auto p-4 max-w-5xl">
+                <div className="flex-grow container mx-auto p-4 max-w-5xl mt-2">
                     {/* Header Section */}
                     <header className="flex flex-col items-center mb-8">
                         <Avatar className="w-24 h-24 mb-4" />
@@ -304,7 +321,6 @@ export default function BookingsPage() {
                         <span className="ml-2 text-gray-500">Loading your reservations...</span>
                     </div>
                 )}
-
                 <SectionHeader title="Reports"/>
                 <div className="text-left mb-4 text-slate-950">
                     <Link href="/reports" passHref>
@@ -339,7 +355,7 @@ export default function BookingsPage() {
                     )}
 
                 {/* Past Reservations */}
-                {!isLoading && pastReservations.length > 0 && (
+                {!isLoading && pastOrCancelledReservations.length > 0 && (
                     <section className="mb-8">
                         <SectionHeader title="Past Reservations"/>
                         {/* filters */}
@@ -362,7 +378,7 @@ export default function BookingsPage() {
                             </Toggle>
                         </div>
                         <div className="grid gap-6">
-                            {pastReservations
+                            {pastOrCancelledReservations
                                 .sort((a: Reservation, b: Reservation) => a.start_time.localeCompare(b.start_time))
                                 .sort((a: Reservation, b: Reservation) => sortByPrice ? a.price - b.price : 0)
                                 .filter((r: Reservation) => showCancelledSpots || (r.status != 'canceled'))
@@ -372,18 +388,6 @@ export default function BookingsPage() {
                         </div>
                     </section>
                 )}
-
-                    {/* Cancelled Reservations */}
-                    {!isLoading && cancelledReservations.length > 0 && (
-                        <section className="mb-8">
-                            <SectionHeader title="Cancelled Reservations" />
-                            <div className="grid gap-6">
-                                {cancelledReservations.map((reservation: Reservation) => (
-                                    <ReservationCard key={reservation.id} reservation={reservation} carMap={carMap} onCancel={handleCancel} />
-                                ))}
-                            </div>
-                        </section>
-                    )}
 
                     {/* No Reservations */}
                     {!isLoading && reservations.length === 0 && (

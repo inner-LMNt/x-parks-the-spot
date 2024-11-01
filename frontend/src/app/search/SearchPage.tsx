@@ -41,6 +41,7 @@ import { useToast } from '@/hooks/use-toast';
 import ImageWrapper from "@/components/custom/ImageWrapper";
 import { Badge } from "@/components/ui/badge";
 import { components } from "@/types/generated";
+import {RatingDisplay} from "@/components/custom/RatingDisplay";
 
 const default_center = {
   // Purdue University coords
@@ -240,8 +241,6 @@ export default function SearchPage() {
       console.error("Error: Your browser doesn't support geolocation.");
       setGeoEnabled(false);
     }
-
-    console.log(parkingSpots);
   }, []);
 
   useEffect(() => {
@@ -1412,40 +1411,43 @@ export default function SearchPage() {
                               <p className="text-md ml-2">{getTimeRange(spot.availability_schedule)}</p>
                             </div>
 
-                          </div>
-                        )}
-                        <p className="text-md">Address: {spot.location.address || 'Not specified'}</p>
-                        <p className="text-md">Average Rating: {'No ratings'}</p>
-                      </>
-                    )}
-                    {!spot.is_paid && spot.location && (
-                      <p className="text-md">Location: {spot.location.longitude}, {spot.location.longitude}</p>
-                    )}
-                    <Button
-                      onClick={() => handleSpotSelect(spot)}
-                      className="mt-2 w-full text-sm px-3 py-2 flex items-center justify-center"
-                    >
-                      <MapPin className="mr-2 h-4 w-4" />
-                      Select
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                                    </div>
+                                )}
+                                <p className="text-md">Address: {spot.location.address || 'Not specified'}</p>
+                                <div className="flex items-center mt-2">
+                                  <span className="text-md mr-2">Rating:</span>
+                                  <RatingDisplay parkingSpace={spot}/>
+                                </div>
+                              </>
+                          )}
+                          {!spot.is_paid && spot.location && (
+                              <p className="text-md">Location: {spot.location.longitude}, {spot.location.longitude}</p>
+                          )}
+                          <Button
+                              onClick={() => handleSpotSelect(spot)}
+                              className="mt-2 w-full text-sm px-3 py-2 flex items-center justify-center"
+                          >
+                            <MapPin className="mr-2 h-4 w-4"/>
+                            Select
+                          </Button>
+                        </CardContent>
+                      </Card>
+                  ))}
+                </div>
+            )}
+          </div>
+          <div className="flex h-16">
+          </div>
         </div>
-        <div className="flex h-16">
-        </div>
-      </div>
-      {/* navigation stuff */}
-      <div
-        ref={navigationCardRef}
-        className={`fixed bottom-0 left-0 w-full bg-gray-100 p-4 transition-transform duration-300 transform ${navigationMode ? 'translate-y-0' : 'translate-y-full'
-          }`}
-        style={{ bottom: isLoggedIn ? '64px' : '0', height: 'auto' }}
-      >
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row justify-between items-center w-full">
+        {/* navigation stuff */}
+        <div
+            ref={navigationCardRef}
+            className={`fixed bottom-0 left-0 w-full bg-gray-100 p-4 transition-transform duration-300 transform ${navigationMode ? 'translate-y-0' : 'translate-y-full'
+            }`}
+            style={{ bottom: isLoggedIn ? '64px' : '0', height: 'auto' }}
+        >
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row justify-between items-center w-full">
 
             <CardTitle className="text-lg">Directions</CardTitle>
             {navigationMode && (

@@ -226,7 +226,6 @@ const userSlice = createSlice<UserState, {}, "user">({
   name: "user",
   initialState,
   reducers: {
-    // Add synchronous reducers here if needed
   },
   extraReducers: (builder) => {
     builder
@@ -311,6 +310,18 @@ const userSlice = createSlice<UserState, {}, "user">({
               state.name = null;
             }
         )
+
+      .addMatcher(
+          (action: { type: string }): action is { type: "user/resetLoggedIn" } =>
+              action.type === "user/resetLoggedIn",
+          (state) => {
+            state.error = null;
+            state.loading = false;
+            state.access_token = null;
+            state.isLoggedIn = false;
+            state.name = null;
+          }
+      )
 
       .addMatcher(
         isAnyOf(update_notification_time.fulfilled),
