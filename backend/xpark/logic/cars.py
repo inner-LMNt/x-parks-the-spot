@@ -71,7 +71,7 @@ def get_user_cars(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
-                "SELECT id, make, model, license_plate, license_plate_state, created_at, updated_at FROM cars WHERE user_id = %s",
+                "SELECT id, make, model, license_plate, license_plate_state, created_at, updated_at, color FROM cars WHERE user_id = %s",
                 (user_id,),
             )
             return Ok(cur.fetchall())

@@ -29,7 +29,7 @@ const EditCarModal: React.FC<EditCarModalProps> = ({
 	const [make, setMake] = useState<string>(car.make)
 	const [model, setModel] = useState<string>(car.model)
 	const [licensePlate, setLicensePlate] = useState(car.license_plate)
-	const [licensePlateState, setLicensePlateState] = useState(car.state)
+	const [licensePlateState, setLicensePlateState] = useState(car.license_plate_state)
 	const [color, setColor] = useState(car.color)
 
 	useEffect(() => {
