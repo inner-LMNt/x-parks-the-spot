@@ -413,6 +413,92 @@ def test_api_submit_rating_stress(client: FlaskClient) -> None:
         assert Decimal(str(parking_space["avg_total_rating"])) == expected_avg_total
         assert parking_space["ratings_count_availability"] == count_avail
         assert parking_space["ratings_count_cleanliness"] == count_clean
+
+def test_user_specific_ratings(client: FlaskClient) -> None:
+    """Test that each user has their own unique ratings on the same parking space"""
+    # Create two users
+    token_user1 = create_test_user(client, email="user1@example.com")
+    token_user2 = create_test_user(client, email="user2@example.com")
+
+    # Create a paid parking space by user 1
+    spot_id = create_test_parking_space(client, token_user1, is_paid=True)
+
+    # User 1 submits an initial rating
+    rating_payload_user1 = {
+        "availability_rating": 4,
+        "cleanliness_rating": 5
+    }
+    response = client.post(
+        f"/api/unstable/parking-spaces/{spot_id}/rate",
+        headers={"Authorization": f"Bearer {token_user1}"},
+        json=rating_payload_user1
+    )
+    assert response.status_code == 200, "User 1 initial rating submission failed"
+
+    # User 2 submits a different initial rating
+    rating_payload_user2 = {
+        "availability_rating": 3,
+        "cleanliness_rating": 2
+    }
+    response = client.post(
+        f"/api/unstable/parking-spaces/{spot_id}/rate",
+        headers={"Authorization": f"Bearer {token_user2}"},
+        json=rating_payload_user2
+    )
+    assert response.status_code == 200, "User 2 initial rating submission failed"
+
+    # Fetch and verify User 1's rating
+    response = client.get(
+        f"/api/unstable/parking-spaces/{spot_id}/user-rating",
+        headers={"Authorization": f"Bearer {token_user1}"}
+    )
+    assert response.status_code == 200, "Failed to fetch User 1's rating"
+    user1_rating = response.json
+    assert user1_rating["availability_rating"] == 4
+    assert user1_rating["cleanliness_rating"] == 5
+
+    # Fetch and verify User 2's rating
+    response = client.get(
+        f"/api/unstable/parking-spaces/{spot_id}/user-rating",
+        headers={"Authorization": f"Bearer {token_user2}"}
+    )
+    assert response.status_code == 200, "Failed to fetch User 2's rating"
+    user2_rating = response.json
+    assert user2_rating["availability_rating"] == 3
+    assert user2_rating["cleanliness_rating"] == 2
+
+    # User 1 updates their rating
+    updated_rating_payload_user1 = {
+        "availability_rating": 5,
+        "cleanliness_rating": 4
+    }
+    response = client.post(
+        f"/api/unstable/parking-spaces/{spot_id}/rate",
+        headers={"Authorization": f"Bearer {token_user1}"},
+        json=updated_rating_payload_user1
+    )
+    assert response.status_code == 200, "User 1 rating update failed"
+
+    # Fetch and verify the updated rating for User 1
+    response = client.get(
+        f"/api/unstable/parking-spaces/{spot_id}/user-rating",
+        headers={"Authorization": f"Bearer {token_user1}"}
+    )
+    assert response.status_code == 200, "Failed to fetch updated rating for User 1"
+    updated_user1_rating = response.json
+    assert updated_user1_rating["availability_rating"] == 5
+    assert updated_user1_rating["cleanliness_rating"] == 4
+
+    # Verify User 2's rating remains unchanged
+    response = client.get(
+        f"/api/unstable/parking-spaces/{spot_id}/user-rating",
+        headers={"Authorization": f"Bearer {token_user2}"}
+    )
+    assert response.status_code == 200, "Failed to fetch User 2's rating after User 1's update"
+    unchanged_user2_rating = response.json
+    assert unchanged_user2_rating["availability_rating"] == 3
+    assert unchanged_user2_rating["cleanliness_rating"] == 2
+
 def test_update_free_parking_spot_is_taken(client: FlaskClient) -> None:
     # Register a user and obtain the token
     response = client.post(
