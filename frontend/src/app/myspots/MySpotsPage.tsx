@@ -182,19 +182,6 @@ export default function MySpotsPage() {
                                 </Button>
                             )}
 
-                            <div className="flex justify-between mt-4">
-                                <Button variant="outline" size="sm" className="flex-1 mr-2"
-                                    onClick={() => openModal(spot)}>
-                                    <Edit className="w-4 h-4 mr-2" />
-                                    Edit
-                                </Button>
-                                <Button variant="destructive" size="sm" className="flex-1"
-                                    onClick={() => openDeleteModal(spot.id as string)}>
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Delete
-                                </Button>
-                            </div>
-
                             {(spot.is_paid) && (
                                 <div className="flex justify-between mt-4">
                                     <Button variant="outline" size="sm" className="flex-1 mr-2"

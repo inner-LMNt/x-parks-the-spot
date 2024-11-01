@@ -17,6 +17,7 @@ interface DeleteReservationModalProps {
 const DeleteReservationModal: React.FC<DeleteReservationModalProps> = ({ isOpen, onClose, reservation, onConfirm }) => {
     const dispatch = useAppDispatch();
     const { loading, error } = useAppSelector((state) => state.reservations);
+    const [domLoaded, setDomLoaded] = React.useState(false);
 
     useEffect(() => {
         if (error) {
@@ -28,6 +29,10 @@ const DeleteReservationModal: React.FC<DeleteReservationModalProps> = ({ isOpen,
             // dispatch(resetReservationError()); // Uncomment if reset action
         }
     }, [error, dispatch]);
+
+    useEffect(() => {
+        setDomLoaded(true);
+    }, []);
 
     const handleDelete = async () => {
         try {
@@ -50,7 +55,7 @@ const DeleteReservationModal: React.FC<DeleteReservationModalProps> = ({ isOpen,
 
     if (!isOpen) return null;
 
-    return (
+    return (domLoaded &&
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <Card className="w-full max-w-md p-4">
                 <CardHeader>
