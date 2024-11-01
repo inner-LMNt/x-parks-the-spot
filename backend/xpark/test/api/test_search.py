@@ -39,9 +39,11 @@ def test_search_parking_spaces(client: FlaskClient) -> None:
         json=search_params,
     )
     assert response.status_code == 200, f"Failed to search parking spaces: {response.json}"
+    assert response.json is not None
     search_results = response.json
 
     # Check the returned parking spaces meet the criteria
+
     for parking_space in search_results:
         # Check that each returned space meets the 'UNPAID' criteria
         assert not parking_space["is_paid"], f"Expected unpaid spaces, but found a paid space: {parking_space}"
@@ -88,6 +90,7 @@ def test_search_parking_spaces_with_elapsed_time(client: FlaskClient) -> None:
         },
     )
     assert response.status_code == 201, f"Failed to create parking spot: {response.json}"
+    assert response.json
     spot_id = response.json["id"]
 
     # Set the `updated_at` timestamp directly in the database for testing purposes
@@ -122,6 +125,7 @@ def test_search_parking_spaces_with_elapsed_time(client: FlaskClient) -> None:
         json=search_params,
     )
     assert response.status_code == 200, f"Failed to search parking spaces: {response.json}"
+    assert response.json is not None
     search_results = response.json
 
     # Filter the results to ensure we find only the spot with is_taken = True

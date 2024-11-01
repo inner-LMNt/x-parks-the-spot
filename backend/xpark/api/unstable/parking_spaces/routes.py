@@ -170,7 +170,7 @@ def update_parking_space_taken(parking_space_id: str, token: str, user_id: uuid.
 
     # Call helper function to perform the update
     match update_taken(user_id=user_id, parking_space_id=parking_space_uuid, image_file=image_file):
-        case Ok(reservation):
+        case Ok(_):
             return {}, 200
         case Err(e):
             return {"err": e}, 400

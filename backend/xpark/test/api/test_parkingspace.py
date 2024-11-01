@@ -216,6 +216,7 @@ def test_update_free_parking_spot_is_taken(client: FlaskClient) -> None:
         },
     )
     assert response.status_code == 201
+    assert response.json
     spot_id = response.json["id"]
 
     # Mark the parking spot as taken
@@ -266,10 +267,12 @@ def test_create_and_update_free_parking_spot(client: FlaskClient) -> None:
         },
     )
     assert response.status_code == 201, f"Failed to create free parking spot: {response.json}"
+    assert response.json
     spot_id = response.json["id"]
 
     # Confirm the parking spot is not paid
     response = client.get(f"/api/unstable/parking-spaces/{spot_id}")
+    assert response.json
     assert response.status_code == 200, f"Failed to retrieve created spot: {response.json}"
     assert response.json["is_paid"] is False, "Spot should be free but is marked as paid"
 

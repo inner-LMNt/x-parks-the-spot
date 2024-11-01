@@ -1,14 +1,11 @@
-from typing import Any
+from typing import Any, Optional
 
 from psycopg.rows import dict_row
 
 from xpark.utils.db import DB
 
 
-from typing import Any
 from datetime import datetime, timezone
-from psycopg.rows import dict_row
-from xpark.utils.db import DB
 
 def search_query(
     lat: float,
@@ -19,7 +16,7 @@ def search_query(
     max_price: float,
     start_time: str,
     end_time: str,
-    is_taken: bool = False
+    is_taken: Optional[bool] = False
 ) -> list[dict[str, Any]]:
     paid = None
     if paid_status == "PAID":
