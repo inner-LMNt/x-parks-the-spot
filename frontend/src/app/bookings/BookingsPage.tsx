@@ -15,6 +15,7 @@ import { Avatar } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { fetchUserCars, resetCarError } from '@/features/cars/carSlice';
 import { Button } from '@/components/ui/button';
+import RatingSection from "@/components/custom/StarRating";
 
 // SectionHeader Component
 function SectionHeader({ title }: { title: string }) {
@@ -84,24 +85,34 @@ function ReservationCard({
                         {format(new Date(reservation.end_time ?? new Date()), 'p')}
                     </p>
                 </div>
-                <div className="flex items-center mb-2">
+                <div className="flex items-center mb-4">
                     <p className="text-sm text-gray-700">
                         <strong>License Plate:</strong> {car?.license_plate}
                     </p>
                 </div>
-                <div className="flex justify-center gap-4">
-                    <div className="flex justify-end mt-4">
-                        <Button onClick={() => router.push(`/bookings/${reservation.parking_space_id}/reserve`)}>
+
+                <div className="space-y-4">
+                    {isPast && (
+                        <RatingSection parkingSpaceId={reservation.parking_space_id as string} />
+                    )}
+
+                    <div className="space-y-2">
+                        <Button
+                            onClick={() => router.push(`/bookings/${reservation.parking_space_id}/reserve`)}
+                            className="w-full"
+                        >
                             Book Again
                         </Button>
-                    </div>
-                    {!isPast && (
-                        <div className="flex justify-end mt-4">
-                            <Button onClick={() => router.push(`/extend/${reservation.id}`)}>
+
+                        {!isPast && (
+                            <Button
+                                onClick={() => router.push(`/extend/${reservation.id}`)}
+                                className="w-full"
+                            >
                                 Extend Reservation
                             </Button>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </CardContent>
         </Card>

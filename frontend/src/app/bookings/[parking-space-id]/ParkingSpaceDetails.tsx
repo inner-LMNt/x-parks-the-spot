@@ -15,7 +15,14 @@ import { format } from 'date-fns';
 import { fetchParkingSpace, resetError, lockParkingSpace } from '@/features/parking-space/parkingSpaceSlice';
 import { fetchUserCars, resetCarError } from '@/features/cars/carSlice';
 import { toast } from '@/hooks/use-toast'; // Assuming you have a toast hook
-import Image from 'next/image'; // Import Image for rendering images
+import Image from 'next/image';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {cn} from "@/lib/utils";
 
 export default function ParkingSpaceDetails() {
     const params = useParams();
@@ -124,6 +131,139 @@ export default function ParkingSpaceDetails() {
         );
     }
 
+    const RatingStars = ({ rating }: { rating: number }) => (
+        <div className="flex">
+            {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                    key={star}
+                    className={cn(
+                        "w-5 h-5 transition-all",
+                        star <= rating
+                            ? "text-yellow-400 fill-yellow-400"
+                            : "text-gray-200"
+                    )}
+                />
+            ))}
+        </div>
+    );
+
+    const RatingModal = ({
+                             isOpen,
+                             onClose,
+                             ratings
+                         }: {
+        isOpen: boolean;
+        onClose: () => void;
+        ratings: {
+            avg_total_rating: number | "unrated";
+            avg_availability_rating: number | null;
+            avg_cleanliness_rating: number | null;
+            ratings_count_availability: number;
+            ratings_count_cleanliness: number;
+        };
+    }) => (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="text-center">Rating Breakdown</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-6 py-4">
+                    {/* Total Rating */}
+                    <div className="flex flex-col items-center space-y-2">
+                        <span className="text-lg font-semibold">Overall Rating</span>
+                        {ratings.avg_total_rating === "unrated" ? (
+                            <span className="text-gray-500">Not yet rated</span>
+                        ) : (
+                            <>
+                                <RatingStars rating={ratings.avg_total_rating as number} />
+                                <span className="text-sm text-gray-500">
+                Based on {Math.max(ratings.ratings_count_availability, ratings.ratings_count_cleanliness)} ratings
+              </span>
+                            </>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                        {/* Availability Rating */}
+                        <div className="flex flex-col items-center space-y-2">
+                            <span className="text-sm font-medium">Availability</span>
+                            {ratings.avg_availability_rating ? (
+                                <>
+                                    <RatingStars rating={ratings.avg_availability_rating} />
+                                    <span className="text-xs text-gray-500">
+                  {ratings.ratings_count_availability} ratings
+                </span>
+                                </>
+                            ) : (
+                                <span className="text-sm text-gray-500">Not rated</span>
+                            )}
+                        </div>
+
+                        {/* Cleanliness Rating */}
+                        <div className="flex flex-col items-center space-y-2">
+                            <span className="text-sm font-medium">Cleanliness</span>
+                            {ratings.avg_cleanliness_rating ? (
+                                <>
+                                    <RatingStars rating={ratings.avg_cleanliness_rating} />
+                                    <span className="text-xs text-gray-500">
+                  {ratings.ratings_count_cleanliness} ratings
+                </span>
+                                </>
+                            ) : (
+                                <span className="text-sm text-gray-500">Not rated</span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+
+
+    // Update the rating section in ParkingSpaceDetails
+    const RatingDisplay = ({ parkingSpace }: { parkingSpace: any }) => {
+        const [isModalOpen, setIsModalOpen] = useState(false);
+
+        // If no ratings or unrated
+        if (parkingSpace.avg_total_rating === "unrated") {
+            return (
+                <div className="flex items-center text-gray-500">
+                    <Star className="w-5 h-5 mr-1" />
+                    <span>Not yet rated</span>
+                </div>
+            );
+        }
+
+        const totalRatings = Math.max(
+            parkingSpace.ratings_count_availability || 0,
+            parkingSpace.ratings_count_cleanliness || 0
+        );
+
+        return (
+            <>
+                <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+                >
+                    <div className="flex">
+                        <RatingStars rating={parkingSpace.avg_total_rating} />
+                    </div>
+                    <span className="text-sm text-gray-600">
+          ({totalRatings})
+        </span>
+                </button>
+
+                <RatingModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    ratings={parkingSpace}
+                />
+            </>
+        );
+    };
+
+
+
     return (
         <div className="container mx-auto p-4 max-w-md">
             <Card className="shadow-lg">
@@ -161,18 +301,12 @@ export default function ParkingSpaceDetails() {
                     )}
 
                     <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center">
-                            {parkingSpace.rating === null || parkingSpace.rating < 1 ? (
-                                <span className="text-muted-foreground">Not rated</span>
-                            ) : (
-                                <>
-                                    {Array.from({ length: Math.floor(parkingSpace.rating) }, (_, i) => <Star key={i} className="w-5 h-5 text-yellow-400 mr-1" />)}
-                                    <span className="font-semibold">{parkingSpace.verification_status}</span>
-                                </>
-                            )}
+                        <div className="flex items-center justify-between mb-4">
+                            <RatingDisplay parkingSpace={parkingSpace}/>
+                            <Badge variant="outline">{parkingSpace.verification_status}</Badge>
                         </div>
                     </div>
-                    <Separator className="my-4" />
+                    <Separator className="my-4"/>
                     <div className="space-y-4">
                         <div className="flex justify-between items-center">
                             <div className="flex items-center">

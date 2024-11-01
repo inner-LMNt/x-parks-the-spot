@@ -26,7 +26,11 @@ const initialState: ParkingSpaceState = {
     lockExpiresAt: null,
 };
 
-
+interface RatingPayload {
+    parkingSpaceId: string;
+    availabilityRating?: number;
+    cleanlinessRating?: number;
+}
 
 export const getAllPendingSpots = createAsyncThunk<
     { pendingSpaces: ParkingSpace[] },
@@ -166,6 +170,22 @@ export const markSpotTaken = createAsyncThunk<
     }
 });
 
+export const submitRating = createAsyncThunk<
+    void,
+    RatingPayload,
+    { rejectValue: string }
+>("parkingSpace/submitRating", async ({ parkingSpaceId, availabilityRating, cleanlinessRating }, { rejectWithValue }) => {
+    try {
+        await axios.post(`/parking-spaces/${parkingSpaceId}/rate`, {
+            availability_rating: availabilityRating,
+            cleanliness_rating: cleanlinessRating,
+        });
+    } catch (error: any) {
+        return rejectWithValue(
+            error.response?.data?.error || "Failed to submit rating"
+        );
+    }
+});
 
 /**
  * **Parking Space Slice**
@@ -255,6 +275,21 @@ const parkingSpaceSlice = createSlice({
                 state.error = action.payload || "Failed to unlock parking space";
             });
 
+        /**
+         * Handle submitRating actions
+         */
+        builder
+            .addCase(submitRating.pending, (state: ParkingSpaceState) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(submitRating.fulfilled, (state: ParkingSpaceState) => {
+                state.loading = false;
+            })
+            .addCase(submitRating.rejected, (state: ParkingSpaceState, action) => {
+                state.loading = false;
+                state.error = action.payload || "Failed to submit rating";
+            });
 
     },
 });
