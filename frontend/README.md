@@ -406,4 +406,4 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=key
 ```
 
 ### Testing Instructions
-- Run tests using `npm test` or `npm test:coverage`.
+- Run tests using `npm run test` or `npm run test:coverage`.
