@@ -297,37 +297,6 @@ export default function BookingsPage() {
                         </div>
                     </section>
 
-                {/* Your Cars Section */}
-                <section className="mb-8">
-                    <SectionHeader title="Your Cars"/>
-                    <div className="grid gap-6">
-                        {isLoading ? (
-                            <div className="flex items-center justify-center">
-                                <Loader2 className="animate-spin text-gray-500 w-8 h-8"/>
-                                <span className="ml-2 text-gray-500">Loading your data...</span>
-                            </div>
-                        ) : carsError ? (
-                            <p className="text-red-500">Error loading cars: {carsError}</p>
-                        ) : cars.length > 0 ? (
-                            cars.map((car: CarInfo) => (
-                                <Card key={car.id} className="p-4">
-                                    <CardContent>
-                                        <p className="text-lg font-semibold">{car.color ? `${car.color} ` : ""}{car.make} {car.model}</p>
-                                        <p className="text-sm text-gray-600">License Plate: {car.license_plate} {car.license_plate_state}</p>
-                                    </CardContent>
-                                </Card>
-                            ))
-                        ) : (
-                            <div>
-                                <p>No cars available. Please add a car.</p>
-                                <Button onClick={() => router.push('/profile/add-car')} className="mt-2">
-                                    Add a Car
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-                </section>
-
                 {/* Global Loading Indicator */}
                 {isLoading && (
                     <div className="flex items-center justify-center my-4">

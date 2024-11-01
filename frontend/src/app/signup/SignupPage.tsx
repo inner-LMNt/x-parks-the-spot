@@ -93,16 +93,17 @@ export default function SignUpPage() {
                 initial="hidden"
                 animate="visible"
             >
-                <Card className="w-[90vw] shadow-2xl backdrop-blur-sm bg-white/90">                    <CardHeader className="space-y-1">
-                    <motion.div variants={itemVariants}>
-                        <CardTitle className="text-2xl text-center font-bold">Create an Account</CardTitle>
-                    </motion.div>
-                    <motion.div variants={itemVariants}>
-                        <CardDescription className="text-center">
-                            Sign up for a new Parking Pass account
-                        </CardDescription>
-                    </motion.div>
-                </CardHeader>
+                <Card className="w-[90vw] shadow-2xl backdrop-blur-sm bg-white/90">
+                    <CardHeader className="space-y-1">
+                        <motion.div variants={itemVariants}>
+                            <CardTitle className="text-2xl text-center font-bold">Create an Account</CardTitle>
+                        </motion.div>
+                        <motion.div variants={itemVariants}>
+                            <CardDescription className="text-center">
+                                Sign up for a new Parking Pass account
+                            </CardDescription>
+                        </motion.div>
+                    </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                             <motion.div variants={itemVariants} className="space-y-2">
