@@ -63,6 +63,8 @@ const DeleteReservationModal: React.FC<DeleteReservationModalProps> = ({ isOpen,
                 </CardHeader>
                 <CardContent>
                     <p>Are you sure you want to cancel the following reservation?</p>
+                    <br />
+                    <p>You will not be refunded the full amount paid.</p>
                     <ul className="my-4 space-y-2">
                         <li><strong>Parking Space ID:</strong> {reservation.parking_space_id}</li>
                         <li><strong>Start Time:</strong> {reservation.start_time ? new Date(reservation.start_time).toLocaleString() : 'N/A'}</li>
