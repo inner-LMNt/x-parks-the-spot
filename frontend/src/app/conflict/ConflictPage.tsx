@@ -44,12 +44,13 @@ const ConflictPage = () => {
         if (!parkingSpaceData[parkingSpaceId]) {
             dispatch(fetchParkingSpace(parkingSpaceId))
                 .unwrap()
+                // @ts-ignore
                 .then((data) => setParkingSpaceData((prev) => ({ ...prev, [parkingSpaceId]: data })))
                 .catch(() => {
                     toast({
                         title: "Error",
                         description: "Failed to fetch parking space details.",
-                        variant: "error",
+                        variant: "destructive",
                     });
                 });
         }
@@ -73,20 +74,20 @@ const ConflictPage = () => {
                     dispatch(getAllConflicts());
                     setResponseText((prev) => ({ ...prev, [id]: "" }));
                 })
-                .catch((error) => {
+                .catch((error: Error) => {
                     toast({
                         title: "Error",
-                        description: error,
-                        variant: "error",
+                        description: error.message,
+                        variant: "destructive",
                     });
                 });
         }
     };
 
     const getVerificationStatusIcon = (status: string) => {
-        if (status === 'verified') return <ShieldCheck className="w-6 h-6 text-green-500" title="Verified" />;
-        if (status === 'pending') return <ShieldEllipsis className="w-6 h-6 text-yellow-500" title="Pending Verification" />;
-        return <ShieldX className="w-6 h-6 text-red-500" title="Not Verified" />;
+        if (status === 'verified') return <ShieldCheck className="w-6 h-6 text-green-500" aria-label="Verified" />;
+        if (status === 'pending') return <ShieldEllipsis className="w-6 h-6 text-yellow-500" aria-label="Pending Verification" />;
+        return <ShieldX className="w-6 h-6 text-red-500" aria-label="Not Verified" />;
     };
 
     if (loading) return <p className="text-center text-lg">Loading...</p>;
@@ -100,7 +101,8 @@ const ConflictPage = () => {
                     <p className="text-center text-gray-800">No conflicts available.</p>
                 ) : (
                     <div className="space-y-4">
-                        {conflicts.slice(0, 10).map((conflict) => (
+
+                        {conflicts.slice(0, 10).map((conflict: any) => (
                             <Card key={conflict.id} className="shadow-lg">
                                 <CardHeader
                                     className="cursor-pointer hover:bg-slate-50 transition-colors"
