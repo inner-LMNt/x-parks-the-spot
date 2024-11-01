@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useDispatch, useSelector } from 'react-redux';
-import { Settings, ArrowUpCircle, ArrowDownCircle, LogOut } from 'lucide-react';
+import { Settings, ArrowUpCircle, ArrowDownCircle, LogOut, FileWarning } from 'lucide-react'; // Imported FileWarning
 import { logout } from '@/features/user/userSlice';
 import { Button } from "@/components/ui/button";
 import {
@@ -143,12 +143,21 @@ export default function ProfilePage() {
                         </AlertDialogContent>
                     </AlertDialog>
 
+                {/* Settings and Reports Icons */}
+                <div className="absolute top-4 right-4 flex">
+                    {/* Reports Icon */}
+                    <Link href="/reports" passHref>
+                        <Button variant="ghost" size="icon" className="p-2">
+                            <FileWarning className="w-6 h-6 text-gray-400 hover:text-gray-600" aria-label="Reports"/>
+                        </Button>
+                    </Link>
                     {/* Settings Icon */}
                     <Link href="/settings" passHref>
-                        <div className="absolute top-4 right-4" aria-label="Settings">
-                            <Settings className="w-6 h-6 text-gray-400 cursor-pointer hover:text-gray-600" />
-                        </div>
+                        <Button variant="ghost" size="icon" className="p-2">
+                            <Settings className="w-6 h-6 text-gray-400 cursor-pointer hover:text-gray-600" aria-label="Settings"/>
+                        </Button>
                     </Link>
+                </div>
 
                     {/* Profile Section */}
                     <div className="flex flex-col items-center mb-4">
@@ -191,7 +200,15 @@ export default function ProfilePage() {
                             ))}
                         </div>
                     </div>
+                    <div className="text-left mb-6">
+                    <h2 className="text-lg font-semibold mb-4">Reports</h2>
+                    <Link href="/reports" passHref>
+                        <Button variant="outline">
+                            <FileWarning className="mr-2" /> View Your Reports
+                        </Button>
+                    </Link>
                 </div>
+            </div>
                 <div className="flex h-16">
                 </div>
             </div>

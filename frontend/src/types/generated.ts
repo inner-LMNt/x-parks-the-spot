@@ -1615,6 +1615,216 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get all reports for the authenticated user */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of user reports */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReportListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        /** Create a new report */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReportCreateRequest"];
+                };
+            };
+            responses: {
+                /** @description Report created successfully */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Report"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a specific report by ID */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Report details */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Report"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Report not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        /** Update a report's admin response */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        admin_response: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Report updated successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Report"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Report not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1683,6 +1893,7 @@ export interface components {
             /** Format: uuid */
             id?: string;
             is_paid: boolean;
+            is_taken?: boolean;
             /** Format: uuid */
             owner_id?: string;
             name?: string;
@@ -1853,6 +2064,83 @@ export interface components {
             /** Format: uuid */
             id?: string;
             full_name?: string;
+        };
+        Report: {
+            /**
+             * Format: uuid
+             * @description Unique identifier for the report.
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @description Unique identifier of the reservation associated with this report.
+             */
+            reservation_id: string;
+            /**
+             * Format: uuid
+             * @description Unique identifier of the parking space involved in the reservation.
+             */
+            parking_space_id: string;
+            /** @description Address of parking space. */
+            parking_space_address: string;
+            /**
+             * Format: date-time
+             * @description Start time of the reservation.
+             */
+            start_time: string;
+            /**
+             * Format: date-time
+             * @description End time of the reservation.
+             */
+            end_time: string;
+            /**
+             * @description Type of the report.
+             * @enum {string}
+             */
+            type: "Billing" | "Technical" | "Other";
+            /** @description Detailed description of the issue. */
+            description: string;
+            /**
+             * @description Current status of the report.
+             * @enum {string}
+             */
+            status: "open" | "in_progress" | "resolved";
+            /** @description Response from the admin regarding the report. */
+            admin_response: string | null;
+            /**
+             * Format: date-time
+             * @description Timestamp when the report was created.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when the report was last updated.
+             */
+            updated_at: string;
+            /** @description Name of the owner of the parking space. */
+            owner_name: string;
+            /** @description Name of the parking space. */
+            parking_space_name: string;
+        };
+        ReportListResponse: components["schemas"]["Report"][];
+        ReportCreateRequest: {
+            /**
+             * @description Type of the report.
+             * @enum {string}
+             */
+            type: "Billing" | "Technical" | "Other";
+            /** @description Detailed description of the issue. */
+            description: string;
+            /**
+             * Format: date
+             * @description Date when the issue occurred.
+             */
+            date: string;
+            /**
+             * Format: time
+             * @description Time when the issue occurred.
+             */
+            time: string;
         };
     };
     responses: never;

@@ -81,6 +81,35 @@ export const deleteAccount = createAsyncThunk<
   }
 });
 
+// Thunk for updating spot status
+export const updateSpot = createAsyncThunk(
+    'user/updateSpot',
+    async (formData: FormData, { rejectWithValue }) => {
+        try {
+            const response = await axios.post('/api/spot/update', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to update spot status');
+        }
+    }
+);
+
+// Thunk for updating spot status
+export const updateSpot = createAsyncThunk(
+    'user/updateSpot',
+    async (formData: FormData, { rejectWithValue }) => {
+        try {
+            const response = await axios.post('/api/spot/update', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to update spot status');
+        }
+    }
+);
 export const request_delete_account = createAsyncThunk<
   void, // Return type of the payload creator
   { password: string }, // First argument to the payload creator
@@ -145,8 +174,7 @@ export const reset_password = createAsyncThunk<
   async ({ token, newPassword }, { rejectWithValue }) => {
     try {
       const response = await axios.post(`auth/reset-password/${token}`, {
-        token,
-        new_password: newPassword,
+        new_password: newPassword, // Match the backend's expected field name
       });
       return response.data;
     } catch (error: any) {

@@ -1,5 +1,6 @@
 import os
 import json
+from datetime import datetime
 from typing import Dict, Any, Optional, List
 
 from werkzeug.datastructures import FileStorage
@@ -12,201 +13,6 @@ from xpark.utils.db import DB
 from result import Result, Ok, Err
 import uuid
 from .timeslots import days_of_week_to_slots, recalculate_coalesce
-
-
-def get_owned_paid_parking_spaces(
-    user_id: uuid.UUID,
-) -> Result[list[Dict[Any, Any]], str]:
-    with DB.pool.connection() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                """
-                SELECT 
-                    id,
-                    is_paid, 
-                    name,
-                    json_build_object(
-                        'address', parking_spaces.address,
-                        'latitude', ST_Y(parking_spaces.location::geometry),
-                        'longitude', ST_X(parking_spaces.location::geometry)
-                    ) as location,
-                    json_build_object(
-                        'base_price', price,
-                        'dynamic_pricing', FALSE
-                    ) as pricing_info,
-                    availability_schedule,
-                    verification_status, 
-                    photos,
-                    created_at, 
-                    updated_at
-                FROM parking_spaces
-                WHERE owner = %s AND is_paid = TRUE
-            """,
-                (user_id,),
-            )
-            rows = cur.fetchall()
-
-            return Ok(rows)
-
-
-def create_paid_parking_space(
-    user_id: uuid.UUID,
-    image_file: Optional[FileStorage],
-    longitude: float,
-    latitude: float,
-    address: str,
-    name: str,
-    price: float,  # FIXME: do not pass around money as floats!!!
-    availability_schedule: List[Dict[str, str]],
-) -> Result[Dict[str, Any], str]:
-    # Save image
-    if image_file:
-        image_uri = save_image(image_file)
-        photos = [image_uri]
-    else:
-        photos = []
-
-    # Insert into database
-    with DB.pool.connection() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                """
-                INSERT INTO parking_spaces (
-                    owner,
-                    is_paid,
-                    location,
-                    address,
-                    photos,
-                    verification_status,
-                    name,
-                    availability_schedule,
-                    price
-                )
-                VALUES (
-                    %(user_id)s,
-                    TRUE,
-                    ST_SetSRID(ST_MakePoint(%(long)s, %(lat)s),	4326),
-					%(addr)s,
-					%(photos)s,
-					'unverified',
-					%(name)s,
-                    %(sched)s,
-					%(price)s
-                )
-                RETURNING id, created_at, updated_at
-                """,
-                {
-                    "user_id": user_id,
-                    "long": longitude,
-                    "lat": latitude,
-                    "addr": address,
-                    "photos": photos,
-                    "name": name,
-                    "price": price,
-                    "sched": json.dumps(availability_schedule),
-                },
-            )
-            parking_space = cur.fetchone()
-            if not parking_space:
-                return Err("Error creating parking space")
-
-            # Regenerate availability schedule
-            days_of_week_to_slots(cur, parking_space["id"], availability_schedule)
-            # Recoalesce
-            recalculate_coalesce(cur, parking_space["id"])
-
-            return Ok(parking_space)
-
-
-def create_free_parking_space(
-    user_id: uuid.UUID,
-    image_file: Optional[FileStorage],
-    longitude: float,
-    latitude: float,
-    address: str,
-) -> Result[Dict[str, Any], str]:
-    # Save image
-    if image_file:
-        image_uri = save_image(image_file)
-        photos = [image_uri]
-    else:
-        photos = []
-
-    # Insert into database
-    with DB.pool.connection() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                """
-                INSERT INTO parking_spaces (
-                    owner,
-                    is_paid,
-                    location,
-                    address,
-                    photos
-                )
-                VALUES (%s, FALSE, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s, %s)
-                RETURNING id, created_at, updated_at
-                """,
-                (user_id, longitude, latitude, address, photos),
-            )
-            parking_space = cur.fetchone()
-            if not parking_space:
-                return Err("Error creating parking space")
-
-            return Ok(parking_space)
-
-
-# TODO: Review
-def save_image(image_file: FileStorage) -> str:
-    allowed_extensions = {"png", "jpg", "jpeg", "gif"}
-    filename = secure_filename(image_file.filename or "")
-    extension = filename.rsplit(".", 1)[1].lower()
-    if "." in filename and extension in allowed_extensions:
-        images_dir = os.path.join(Config.STATIC_FOLDER, "images")
-        os.makedirs(images_dir, exist_ok=True)
-        unique_filename = f"{uuid.uuid4()}.{extension}"
-        filepath = os.path.join(images_dir, unique_filename)
-        image_file.save(filepath)
-        image_uri = f"/static/images/{unique_filename}"
-        return image_uri
-    else:
-        raise ValueError("Invalid image file type")
-
-
-def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str]:
-    with DB.pool.connection() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                """
-                SELECT
-                    owner,
-                    is_paid,
-                    name,
-                    json_build_object(
-                        'address', address,
-                        'latitude', ST_Y(location::geometry),
-                        'longitude', ST_X(location::geometry)
-                    ) as location,
-                    json_build_object(
-                        'base_price', price,
-                        'dynamic_pricing', FALSE
-                    ) as pricing_info,
-                    photos,
-                    availability_schedule,
-                    verification_status,
-                    created_at,
-                    updated_at
-                FROM parking_spaces
-                WHERE id = %s
-                """,
-                (parking_space_id,),
-            )
-            parking_space = cur.fetchone()
-            if not parking_space:
-                return Err("Error getting parking space")
-
-            return Ok(parking_space)
-
 
 def update_paid_parking_space(
     user_id: uuid.UUID,
@@ -247,9 +53,9 @@ def update_paid_parking_space(
                 WHERE id =   %(spot_id)s
                 RETURNING
                     id,
-                    is_paid, 
+                    is_paid,
                     name,
-                    verification_status, 
+                    verification_status,
                     json_build_object(
                         'address',   parking_spaces.address,
                         'latitude',  ST_Y(location::geometry),
@@ -261,7 +67,7 @@ def update_paid_parking_space(
                     ) as pricing_info,
                     availability_schedule,
                     photos,
-                    created_at, 
+                    created_at,
                     updated_at
                 """,
                 {
@@ -289,6 +95,279 @@ def update_paid_parking_space(
                 recalculate_coalesce(cur, parking_space["id"])
 
             return Ok(parking_space)
+
+
+def get_all_user_parking_spaces(
+    user_id: uuid.UUID,
+) -> Result[list[Dict[Any, Any]], str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT 
+                    id,
+                    is_paid, 
+                    name,
+                    json_build_object(
+                        'address', parking_spaces.address,
+                        'latitude', ST_Y(parking_spaces.location::geometry),
+                        'longitude', ST_X(parking_spaces.location::geometry)
+                    ) as location,
+                    json_build_object(
+                        'base_price', price,
+                        'dynamic_pricing', FALSE
+                    ) as pricing_info,
+                    availability_schedule,
+                    verification_status, 
+                    photos,
+                    created_at, 
+                    updated_at
+                FROM parking_spaces
+                WHERE owner = %s
+            """,
+                (user_id,),
+            )
+            rows = cur.fetchall()
+
+            return Ok(rows)
+
+
+def create_paid_parking_space(
+    user_id: uuid.UUID,
+    image_file: Optional[FileStorage],
+    longitude: float,
+    latitude: float,
+    address: str,
+    name: str,
+    price: float,  # FIXME: do not pass around money as floats!!!
+    availability_schedule: List[Dict[str, str]],
+) -> Result[Dict[str, Any], str]:
+    # Save image
+    if image_file:
+        image_uri = save_image(image_file)
+        photos = [image_uri]
+    else:
+        photos = []
+    # Insert into database
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                INSERT INTO parking_spaces (
+                    owner,
+                    is_paid,
+                    location,
+                    address,
+                    photos,
+                    verification_status,
+                    name,
+                    availability_schedule,
+                    price,
+                    photo_timestamp
+                )
+                VALUES (
+                    %(user_id)s,
+                    TRUE,
+                    ST_SetSRID(ST_MakePoint(%(long)s, %(lat)s),	4326),
+					%(addr)s,
+					%(photos)s,
+					'unverified',
+					%(name)s,
+                    %(sched)s,
+					%(price)s,
+					NOW()
+                )
+                RETURNING id, created_at, updated_at
+                """,
+                {
+                    "user_id": user_id,
+                    "long": longitude,
+                    "lat": latitude,
+                    "addr": address,
+                    "photos": photos,
+                    "name": name,
+                    "price": price,
+                    "sched": json.dumps(availability_schedule),
+                },
+            )
+            parking_space = cur.fetchone()
+            if not parking_space:
+                return Err("Error creating parking space")
+
+            # Regenerate availability schedule
+            days_of_week_to_slots(cur, parking_space["id"], availability_schedule)
+            # Recoalesce
+            recalculate_coalesce(cur, parking_space["id"])
+
+            return Ok(parking_space)
+
+
+def create_free_parking_space(
+    user_id: uuid.UUID,
+    image_file: Optional[FileStorage],
+    longitude: float,
+    latitude: float,
+    address: str,
+) -> Result[Dict[str, Any], str]:
+    # Save image
+    if image_file:
+        image_uri = save_image(image_file)
+        photos = [image_uri]
+    else:
+        photos = []
+
+    # Provide default values
+    default_name = f'Spot Logged at {datetime.now().strftime("%I:%M %p, %B %d %Y")}'
+    default_verification_status = 'unverified'
+    default_availability_schedule = json.dumps([])  # or another appropriate default
+    default_price = 0
+
+    # Insert into database
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                INSERT INTO parking_spaces (
+                    owner,
+                    is_paid,
+                    location,
+                    address,
+                    photos,
+                    photo_timestamp,
+                    verification_status,
+                    name,
+                    availability_schedule,
+                    price
+                )
+                VALUES (%s, FALSE, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s, %s, NOW(), %s, %s, %s, %s)
+                RETURNING id, created_at, updated_at
+                """,
+                (
+                    user_id,
+                    longitude,
+                    latitude,
+                    address,
+                    photos,
+                    default_verification_status,
+                    default_name,
+                    default_availability_schedule,
+                    default_price,
+                ),
+            )
+            parking_space = cur.fetchone()
+            if not parking_space:
+                return Err("Error creating parking space")
+
+            return Ok(parking_space)
+
+# TODO: Review
+def save_image(image_file: FileStorage) -> str:
+    allowed_extensions = {"png", "jpg", "jpeg", "gif"}
+    filename = secure_filename(image_file.filename or "")
+    extension = filename.rsplit(".", 1)[1].lower()
+    if "." in filename and extension in allowed_extensions:
+        images_dir = os.path.join(Config.STATIC_FOLDER, "images")
+        os.makedirs(images_dir, exist_ok=True)
+        unique_filename = f"{uuid.uuid4()}.{extension}"
+        filepath = os.path.join(images_dir, unique_filename)
+        image_file.save(filepath)
+        image_uri = f"/static/images/{unique_filename}"
+        return image_uri
+    else:
+        raise ValueError("Invalid image file type")
+
+
+def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT
+                    owner,
+                    is_paid,
+                    name,
+                    json_build_object(
+                        'address', address,
+                        'latitude', ST_Y(location::geometry),
+                        'longitude', ST_X(location::geometry)
+                    ) as location,
+                    json_build_object(
+                        'base_price', price,
+                        'dynamic_pricing', FALSE
+                    ) as pricing_info,
+                    photos,
+                    is_taken,
+                    availability_schedule,
+                    verification_status,
+                    created_at,
+                    updated_at
+                FROM parking_spaces
+                WHERE id = %s
+                """,
+                (parking_space_id,),
+            )
+            parking_space = cur.fetchone()
+            if not parking_space:
+                return Err("Error getting parking space")
+
+            return Ok(parking_space)
+
+
+def update_taken(
+    user_id: uuid.UUID,
+    parking_space_id: uuid.UUID,
+    image_file: Optional[FileStorage] = None
+) -> Result[Dict[str, Any], str]:
+    """
+    Sets 'is_taken' to TRUE and prepends any new photo to the parking space.
+    """
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Verify that the user owns the parking space
+            cur.execute(
+                "SELECT 1 FROM parking_spaces WHERE id = %s AND owner = %s",
+                (parking_space_id, user_id),
+            )
+            if not cur.fetchone():
+                return Err("Parking space not found or user not authorized to update")
+
+            updated_name = f'Updated at {datetime.now().strftime("%I:%M %p, %B %d %Y")}'
+
+            # Handle photo processing if an image is provided
+            new_photo_url = []
+            if image_file:
+                try:
+                    photo_url = save_image(image_file)
+                    new_photo_url = [photo_url]
+                except ValueError as e:
+                    return Err(f"Image upload failed: {str(e)}")
+
+            # Update 'is_taken' status and prepend the new photo if provided
+            cur.execute(
+                """
+                UPDATE parking_spaces
+                SET
+                    name = %(updated_name)s,
+                    is_taken = TRUE,
+                    updated_at = NOW(),
+                    photos = %(new_photo_url)s || photos  -- Prepend new photo to the existing photos
+                WHERE id = %(parking_space_id)s
+                RETURNING id, photos, is_taken, updated_at
+                """,
+                {
+                    "updated_name": updated_name,
+                    "new_photo_url": new_photo_url,
+                    "parking_space_id": parking_space_id,
+                },
+            )
+            updated_space = cur.fetchone()
+
+            if not updated_space:
+                return Err("Failed to update parking space")
+
+            return Ok(updated_space)
+
+
 
 
 def delete_free_parking_space(
@@ -345,15 +424,16 @@ def handle_submit_verification(
             cur.execute(
                 """
                 UPDATE parking_spaces
-                SET verification_status = %s, photos = array_append(photos, %s), updated_at = NOW()
+                SET verification_status = %s, verification_photos = ARRAY[%s], updated_at = NOW()
                 WHERE id = %s AND owner = %s AND is_paid = true
                 """,
                 ("pending", image_uri, parking_space_id, user_id),
             )
-            result = cur.fetchone()
-            if not result:
+            # Check if any rows were updated
+            if cur.rowcount == 0:
                 return Err(
                     "Failed to update verification status or parking space not found"
                 )
 
             return Ok(None)
+

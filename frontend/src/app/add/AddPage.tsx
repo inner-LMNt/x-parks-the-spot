@@ -1,5 +1,8 @@
+// src/pages/add.tsx
+
 'use client';
 
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -18,17 +21,41 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/components/ui/use-toast';
-import { Camera, X, Upload, ArrowLeft, MapPin } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Camera, X, Upload, ArrowLeft, MapPin, CameraOff, MapPinOff } from 'lucide-react';
 import Webcam from 'react-webcam';
 import { DaysOfWeek } from '@/types/type'; // Ensure DaysOfWeek enum is imported
 import { LoadScriptNext, Autocomplete } from '@react-google-maps/api';
-
-// Define days of the week enum
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'; // ShadCN Dialog components
 
 const formatTime = (time: string): string => {
   return time; // Keeping time as "HH:mm" since backend expects time-only strings
 };
+
+// Utility function to check permission status
+const checkPermissionStatus = async (permissionName: PermissionName): Promise<PermissionState> => {
+  if (!navigator.permissions) {
+    return 'prompt'; // Fallback if Permissions API is not supported
+  }
+  try {
+    //@ts-ignore
+    const result = await navigator.permissions.query({ name: permissionName });
+    return result.state;
+  } catch (error) {
+    console.error(`Error checking ${permissionName} permission:`, error);
+    return 'prompt';
+  }
+};
+
+// Define types for permissions
+type PermissionName = 'camera' | 'geolocation';
 
 export default function AddPage() {
   const router = useRouter();
@@ -40,9 +67,12 @@ export default function AddPage() {
   const [domLoaded, setDomLoaded] = useState(false);
   const [image, setImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [photoTimestamp, setPhotoTimestamp] = useState<Date | null>(null); // **State for Timestamp**
+  const [locationTimestamp, setLocationTimestamp] = useState<Date | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const webcamRef = useRef<Webcam>(null);
-  const [showCamera, setShowCamera] = useState(false);
+  const [photoTaken, setPhotoTaken] = useState<boolean>(false);
+  const [showCamera, setShowCamera] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autoComplete, setAutoComplete] = useState<google.maps.places.Autocomplete | null>(null);
   const onLoadAutocomplete = (autocompleteInstance: google.maps.places.Autocomplete) => {
@@ -64,6 +94,46 @@ export default function AddPage() {
   const [availabilityError, setAvailabilityError] = useState<string>('');
   const [cameraLoaded, setCameraLoaded] = useState(false);
 
+  // States for Modals
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showReRequestModal, setShowReRequestModal] = useState<{ camera: boolean; location: boolean }>({
+    camera: false,
+    location: false,
+  });
+
+  // **New States for Permission Denial**
+  const [cameraDenied, setCameraDenied] = useState(false);
+  const [locationDenied, setLocationDenied] = useState(false);
+
+  // Initialize permission states
+  const [cameraPermission, setCameraPermission] = useState<PermissionState>('prompt');
+  const [locationPermission, setLocationPermission] = useState<PermissionState>('prompt');
+
+  // Track if errors have been handled to prevent repetitive actions
+  const [hasLocationError, setHasLocationError] = useState<boolean>(false);
+  const [hasCameraError, setHasCameraError] = useState<boolean>(false); // If handling camera errors similarly
+
+  // Check permissions on component mount
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      const camStatus = await checkPermissionStatus('camera');
+      const locStatus = await checkPermissionStatus('geolocation');
+      setCameraPermission(camStatus);
+      setLocationPermission(locStatus);
+      // If permissions are denied initially
+      if (camStatus === 'denied') {
+        setCameraDenied(true);
+        setHasCameraError(true); // Prevent repetitive handling
+      }
+      if (locStatus === 'denied') {
+        setLocationDenied(true);
+        setHasLocationError(true); // Prevent repetitive handling
+      }
+    };
+    fetchPermissions();
+  }, []);
+
   /**
    * **Handle Image Selection**
    */
@@ -74,6 +144,11 @@ export default function AddPage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewUrl(reader.result as string);
+        setPhotoTimestamp(new Date());
+        setPhotoTaken(true);
+        if (spotType === 'free') {
+          captureLocation();
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -83,6 +158,7 @@ export default function AddPage() {
    * **Trigger File Input Click**
    */
   const handleImageClick = () => {
+    console.log('Image upload area clicked.');
     fileInputRef.current?.click();
   };
 
@@ -92,27 +168,129 @@ export default function AddPage() {
   const handleRemoveImage = () => {
     setImage(null);
     setPreviewUrl(null);
+    setPhotoTimestamp(null);
+    setPhotoTaken(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+    if (spotType === 'free') {
+      setUserLocation(null);
     }
   };
 
   /**
-   * **Capture Image from Camera**
+   * **Handle Camera Capture**
    */
   const handleCameraCapture = useCallback(() => {
     const imageSrc = webcamRef.current?.getScreenshot();
     if (imageSrc) {
       setPreviewUrl(imageSrc);
+      setPhotoTimestamp(new Date());
+      setPhotoTaken(true);
       fetch(imageSrc)
         .then((res) => res.blob())
         .then((blob) => {
           const file = new File([blob], 'camera_capture.jpg', { type: 'image/jpeg' });
           setImage(file);
+          if (spotType === 'free') {
+            captureLocation();
+          }
+        })
+        .catch((err) => {
+          console.error('Error processing captured image:', err);
+          toast({
+            title: 'Image Capture Error',
+            description: 'There was an error processing your captured image. Please try again.',
+            variant: 'destructive',
+          });
         });
       setShowCamera(false);
     }
-  }, []);
+  }, [spotType, setImage, setPreviewUrl, setPhotoTimestamp, setPhotoTaken, setShowCamera, toast]);
+
+
+  const captureLocation = useCallback(() => {
+    setLocationLoading(true);
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          console.log('Location captured:', location);
+
+          setUserLocation(location);
+          setLocationTimestamp(new Date()); // Store location timestamp
+          setGeoEnabled(true);
+          setLocationLoading(false);
+          setLocationDenied(false); // Reset denial state on success
+          setHasLocationError(false); // Reset error state on successful capture
+        },
+        (error) => {
+          console.error('Error: The Geolocation service failed.', error);
+          setGeoEnabled(false);
+          setLocationLoading(false);
+          setLocationDenied(true); // Set denial state
+
+          // Only handle the error once
+          if (!hasLocationError) {
+            toast({
+              title: 'Location Access Denied',
+              description: 'Please allow location access to proceed.',
+              variant: 'destructive',
+            });
+
+            if (spotType === 'free') {
+              handleRemoveImage();
+              toast({
+                title: 'Image Removed',
+                description: 'Image was removed because location access was denied.',
+                variant: 'destructive',
+              });
+            }
+
+            setHasLocationError(true); // Mark that the error has been handled
+          }
+        }
+      );
+    } else {
+      console.error("Error: Your browser doesn't support geolocation.");
+      setGeoEnabled(false);
+      setLocationLoading(false);
+      setLocationDenied(true); // Set denial state
+
+      // Only handle the error once
+      if (!hasLocationError) {
+        toast({
+          title: 'Geolocation Not Supported',
+          description: "Your browser doesn't support geolocation.",
+          variant: 'destructive',
+        });
+
+        if (spotType === 'free') {
+          handleRemoveImage();
+          toast({
+            title: 'Image Removed',
+            description: 'Image was removed because geolocation is not supported.',
+            variant: 'destructive',
+          });
+        }
+
+        setHasLocationError(true); // Mark that the error has been handled
+      }
+    }
+  }, [
+    spotType,
+    setLocationLoading,
+    setUserLocation,
+    setGeoEnabled,
+    setLocationTimestamp,
+    toast,
+    handleRemoveImage,
+    hasLocationError,
+  ]);
 
   /**
    * **Handle 24/7 Toggle**
@@ -123,7 +301,7 @@ export default function AddPage() {
       setTimeSlot({
         day_of_week: [],
         start_time: '00:00',
-        end_time: '23:59', // If we have this set to 00:00, then it is unknown whether the timeslot is zero length or for the whole day
+        end_time: '23:59',
       });
     } else {
       setTimeSlot({
@@ -152,8 +330,37 @@ export default function AddPage() {
   };
 
   /**
-   * **Get User's Current Location**
+   * **Calculate Time Difference in Seconds**
+   * Returns the difference between current time and photoTimestamp in seconds.
    */
+  const calculateTimeDifferenceSeconds = (): number => {
+    if (!photoTimestamp) return Infinity;
+    if (!locationTimestamp) return Infinity;
+
+    return Math.abs(locationTimestamp.getTime() - photoTimestamp.getTime()) / 1000;
+  };
+
+  /**
+   * **Calculate Time Difference in Minutes**
+   * Returns the difference between end and start times in minutes.
+   */
+  const calculateTimeDifference = (start: string, end: string): number => {
+    const [startHour, startMinute] = start.split(':').map(Number);
+    const [endHour, endMinute] = end.split(':').map(Number);
+
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const endTotalMinutes = endHour * 60 + endMinute;
+
+    let diff = endTotalMinutes - startTotalMinutes;
+    if (diff < 0) {
+      diff += 24 * 60; // Wrap around to next day
+    }
+    return diff;
+  };
+
+  /**
+ * **Get User's Current Location**
+ */
   const getUserLocation = () => {
     setLocationLoading(true);
     if (navigator.geolocation) {
@@ -181,39 +388,17 @@ export default function AddPage() {
   };
 
   /**
-   * **Calculate Time Difference in Minutes**
-   * Returns the difference between end and start times in minutes.
-   */
-  const calculateTimeDifference = (start: string, end: string): number => {
-    const [startHour, startMinute] = start.split(':').map(Number);
-    const [endHour, endMinute] = end.split(':').map(Number);
-
-    const startTotalMinutes = startHour * 60 + startMinute;
-    const endTotalMinutes = endHour * 60 + endMinute;
-
-    let diff = endTotalMinutes - startTotalMinutes;
-    if (diff < 0) {
-      diff += 24 * 60; // Wrap around to next day
-    }
-    return diff;
-  };
-
-  /**
    * **Validate Availability Slot**
    */
   const validateAvailability = () => {
-    if (spotType === 'free') {
-      return true;
-    }
-
     let isValid = true;
     let errorMsg = '';
 
     if (is24Seven) {
-      // For 24/7, ensure start_time and end_time are '00:00'
+      // For 24/7, ensure start_time and end_time are '00:00' and '23:59'
       if (timeSlot.start_time !== '00:00' || timeSlot.end_time !== '23:59') {
         isValid = false;
-        errorMsg = '24/7 slots must have start time set to 00:00 and end time set to 23:59.';
+        errorMsg = '24/7 slots must start at 00:00 and end at 23:59.';
       }
     } else {
       // Check if at least one day is selected
@@ -251,141 +436,218 @@ export default function AddPage() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     console.log(image)
     event.preventDefault();
+
+    console.log('Form submitted. Showing confirmation modal.');
+    // Show confirmation modal before submission
+    setShowConfirmationModal(true);
+  };
+
+  /**
+   * **Confirm Submission After Modal**
+   */
+  const confirmSubmission = async () => {
+    console.log('Confirm submission clicked.');
+    setShowConfirmationModal(false);
     setIsSubmitting(true);
 
-    // Validate availability before proceeding
-    if (!validateAvailability()) {
-      toast({
-        title: 'Validation Error',
-        description: availabilityError || 'Please fix the errors in your availability schedule.',
-        variant: 'destructive',
-      });
-      setIsSubmitting(false);
-      return;
-    }
-
-    const formData = new FormData(event.currentTarget);
-    let name = '';
-    let latitude: number | undefined;
-    let longitude: number | undefined;
-    let price: number | null = null;
-
-    let address = '';
-
-    if (spotType === 'rental') {
-      name = formData.get('name') as string;
-      address = formData.get('address') as string;
-
-      if (!userLocation) {
-        toast({
-          title: 'Error',
-          description: 'Please use your location.',
-          variant: 'destructive',
-        });
-        setIsSubmitting(false);
-        return;
-      }
-      latitude = userLocation.lat;
-      longitude = userLocation.lng;
-
-      const priceValue = formData.get('price');
-      if (priceValue) {
-        price = parseFloat(priceValue as string);
-        if (isNaN(price) || price < 0) {
+    try {
+      // Validate availability only for rental spots
+      if (spotType === 'rental') {
+        if (!validateAvailability()) {
+          console.log('Availability validation failed:', availabilityError);
           toast({
-            title: 'Invalid Price',
-            description: 'Please enter a valid price.',
+            title: 'Validation Error',
+            description: availabilityError || 'Please fix the errors in your availability schedule.',
             variant: 'destructive',
           });
           setIsSubmitting(false);
           return;
         }
       }
-    } else {
-      if (!userLocation) {
+
+      // Ensure image and location are present for free spots
+      if (spotType === 'free') {
+        if (cameraPermission === 'denied' || cameraDenied) {
+          console.log('Camera access denied for free spot.');
+          toast({
+            title: 'Camera Access Required',
+            description: 'Please allow camera access to upload a photo.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
+        if (!image || !userLocation || !photoTimestamp) {
+          console.log('Missing required fields for free spot.');
+          toast({
+            title: 'Missing Information',
+            description: 'Please ensure you have uploaded a photo, captured your location, and the timestamp.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+        const timeDiffSeconds = calculateTimeDifferenceSeconds();
+        console.log('Time difference (seconds):', timeDiffSeconds);
+        if (timeDiffSeconds > 30) { // **Increased from 15 to 30**
+          console.log('Timestamp is beyond the allowed time frame:', timeDiffSeconds, 'seconds.');
+          toast({
+            title: 'Timestamp Error',
+            description: 'Your photo and location must be captured less than 30 seconds apart. Please try again.',
+            variant: 'destructive',
+          });
+          handleRemoveImage(); // Remove image if timestamp is invalid
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Ensure image and location are present for rental spots
+      if (spotType === 'rental') {
+        if (!image) {
+          console.log('Image not uploaded for rental spot.');
+          toast({
+            title: 'Image Required',
+            description: 'Please capture or upload an image of the rental parking spot.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
+        if (!userLocation) {
+          console.log('Location not captured for rental spot.');
+          toast({
+            title: 'Location Required',
+            description: 'Please capture your location.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
+        if (!photoTimestamp) {
+          console.log('Timestamp missing for rental spot.');
+          toast({
+            title: 'Timestamp Missing',
+            description: 'Please ensure the photo timestamp is captured.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Prepare FormData
+      const formData = new FormData();
+
+      let name = spotType === 'free' ? 'Free Spot' : (document.getElementById('name') as HTMLInputElement)?.value || '';
+      let latitude: number | undefined;
+      let longitude: number | undefined;
+      let price: number | null = null;
+      let address = '';
+
+      if (spotType === 'rental') {
+        name = (document.getElementById('name') as HTMLInputElement).value;
+        address = (document.getElementById('address') as HTMLInputElement).value;
+
+        latitude = userLocation?.lat;
+        longitude = userLocation?.lng;
+
+        const priceValue = (document.getElementById('price') as HTMLInputElement).value;
+        if (priceValue) {
+          price = parseFloat(priceValue);
+          if (isNaN(price) || price < 0) {
+            console.log('Invalid price entered:', priceValue);
+            toast({
+              title: 'Invalid Price',
+              description: 'Please enter a valid price.',
+              variant: 'destructive',
+            });
+            setIsSubmitting(false);
+            return;
+          }
+        }
+      } else {
+        latitude = userLocation?.lat;
+        longitude = userLocation?.lng;
+      }
+
+      // Build the availability_schedule array based on the single slot
+      let availability_schedule: any[] = [];
+      if (spotType === 'rental') {
+        if (is24Seven) {
+          availability_schedule = Object.values(DaysOfWeek).map((day) => ({
+            day_of_week: day,
+            start_time: formatTime('00:00'),
+            end_time: formatTime('23:59'),
+          }));
+        } else {
+          availability_schedule = timeSlot.day_of_week.map((day: DaysOfWeek) => ({
+            day_of_week: day,
+            start_time: formatTime(timeSlot.start_time),
+            end_time: formatTime(timeSlot.end_time),
+          }));
+        }
+      }
+
+      const data: any = {
+        is_paid: spotType === 'rental',
+        location: {
+          latitude,
+          longitude,
+          address: spotType === 'rental' ? address : undefined,
+        },
+        features: [], // Assuming features are handled elsewhere
+        photos: [], // Will be handled via 'image' upload
+        photo_timestamp: photoTimestamp ? photoTimestamp.toISOString() : null, // **Attach Timestamp**
+      };
+
+      if (spotType === 'rental') {
+        data.name = name;
+        data.availability_schedule = availability_schedule;
+        data.pricing_info = {
+          base_price: price,
+          dynamic_pricing: false, // Modify if dynamic pricing is needed
+        };
+      }
+
+      formData.append('data', JSON.stringify(data));
+
+      if (image) {
+        formData.append('image', image);
+      }
+
+      console.log('Dispatching addParkingSpot with FormData:', data);
+
+      const result = await dispatch(addParkingSpot(formData));
+      if (addParkingSpot.fulfilled.match(result)) {
+        console.log('Parking spot added successfully.');
+        toast({
+          title: 'Spot Added Successfully!',
+          description: 'Your parking spot has been added.',
+          variant: 'success',
+        });
+        dispatch(resetState());
+        setShowSuccessModal(true);
+      }
+      else {
+        console.error('Error adding parking spot:', error);
         toast({
           title: 'Error',
-          description: 'Location is not available. Please enable location services.',
+          description: error?.message || 'Failed to add parking spot.',
           variant: 'destructive',
         });
-        setIsSubmitting(false);
-        return;
       }
-      latitude = userLocation.lat;
-      longitude = userLocation.lng;
-    }
-
-    // Build the availability_schedule array based on the single slot
-    let availability_schedule: any[] = [];
-    if (spotType === 'rental') {
-      if (is24Seven) {
-        availability_schedule = Object.values(DaysOfWeek).map((day) => ({
-          day_of_week: day,
-          start_time: formatTime('00:00'),
-          end_time: formatTime('23:59'),
-        }));
-      } else {
-        availability_schedule = timeSlot.day_of_week.map((day: DaysOfWeek) => ({
-          day_of_week: day,
-          start_time: formatTime(timeSlot.start_time),
-          end_time: formatTime(timeSlot.end_time),
-        }));
-      }
-    }
-
-    const data: any = {
-      is_paid: spotType === 'rental',
-      location: {
-        latitude,
-        longitude,
-        address,
-      },
-      features: [], // Assuming features are handled elsewhere
-      photos: [], // Assuming photos are handled via 'image' upload
-    };
-
-    if (spotType === 'rental') {
-      data.name = name;
-      data.availability_schedule = availability_schedule;
-      data.pricing_info = {
-        base_price: price,
-        dynamic_pricing: false, // Modify if dynamic pricing is needed
-      };
-    }
-
-    const formSubmitData = new FormData();
-    formSubmitData.append('data', JSON.stringify(data));
-
-    if (image) {
-      formSubmitData.append('image', image);
-    } else {
-      // If spot type is 'free' and image is not provided, show an error
-      if (spotType === 'free') {
-        toast({
-          title: 'Image Required',
-          description: 'Please capture an image of the free parking spot.',
-          variant: 'destructive',
-        });
-        setIsSubmitting(false);
-        return;
-      }
-    }
-
-    try {
-      await dispatch(addParkingSpot(formSubmitData)).unwrap();
+      setIsSubmitting(false);
+    } catch (outerError) {
+      console.error('Unexpected error during submission:', outerError);
       toast({
-        title: 'Spot Added Successfully!',
-        description: 'Your new parking spot has been added.',
-      });
-      dispatch(resetState());
-      router.push('/myspots');
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error?.message || 'Failed to add parking spot.',
+        title: 'Unexpected Error',
+        description: 'An unexpected error occurred. Please try again later.',
         variant: 'destructive',
       });
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -404,8 +666,64 @@ export default function AddPage() {
   };
 
   useEffect(() => {
+    dispatch({ type: "add/errorReset" });
+  }, [spotType, dispatch]);
+
+  useEffect(() => {
     setDomLoaded(true);
   }, []);
+
+  /**
+   * **Re-request Camera Access**
+   */
+  const reRequestCameraAccess = () => {
+    setShowReRequestModal((prev) => ({ ...prev, camera: true }));
+  };
+
+  /**
+   * **Re-request Location Access**
+   */
+  const reRequestLocationAccess = () => {
+    setShowReRequestModal((prev) => ({ ...prev, location: true }));
+  };
+
+  /**
+   * **Handle Re-request Confirmation**
+   */
+  const handleReRequestConfirm = () => {
+    if (showReRequestModal.camera) {
+      // Attempt to access the camera again
+      setCameraDenied(false);
+      setHasCameraError(false); // Reset error state
+      setShowCamera(true); // This will trigger Webcam to attempt access
+    }
+    if (showReRequestModal.location) {
+      // Attempt to capture location again
+      setLocationDenied(false);
+      setHasLocationError(false); // Reset error state
+      captureLocation();
+    }
+    setShowReRequestModal({ camera: false, location: false });
+  };
+
+  /**
+   * **Handle Re-request Cancellation**
+   */
+  const handleReRequestCancel = () => {
+    setShowReRequestModal({ camera: false, location: false });
+  };
+
+  /**
+   * **Open Browser Settings Instructions**
+   */
+  const openBrowserSettings = () => {
+    toast({
+      title: 'Permission Required',
+      description: 'Please enable camera or location access in your browser settings.',
+      variant: 'destructive',
+    });
+    // Optionally, provide more detailed instructions or links based on the browser
+  };
 
   return (
     domLoaded && (
@@ -486,16 +804,12 @@ export default function AddPage() {
                     {spotType === 'rental' && (
                       <div className="space-y-2">
                         <Label htmlFor="address">Address</Label>
-                        <LoadScriptNext googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string} libraries={['places']}>
-                          <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={onPlaceChanged}>
-                            <Input
-                              id="address"
-                              name="address"
-                              required
-                              placeholder="Full street address"
-                            />
-                          </Autocomplete>
-                        </LoadScriptNext>
+                        <Input
+                          id="address"
+                          name="address"
+                          required
+                          placeholder="Full street address"
+                        />
                       </div>
                     )}
 
@@ -639,18 +953,15 @@ export default function AddPage() {
                             ref={webcamRef}
                             screenshotFormat="image/jpeg"
                             className="w-full rounded-lg"
-                            onUserMedia={() => setCameraLoaded(true)}
                           />
-                          {cameraLoaded && (
-                            <Button
-                              type="button"
-                              onClick={handleCameraCapture}
-                              className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
-                            >
-                              <Camera className="w-4 h-4 mr-2" />
-                              Capture Photo
-                            </Button>
-                          )}
+                          <Button
+                            type="button"
+                            onClick={handleCameraCapture}
+                            className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
+                          >
+                            <Camera className="w-4 h-4 mr-2" />
+                            Capture Photo
+                          </Button>
                         </div>
                       ) : (
                         <div
@@ -728,7 +1039,7 @@ export default function AddPage() {
                     <Button
                       type="submit"
                       className="w-full"
-                      disabled={isSubmitting || loading || !userLocation || !image}
+                      disabled={isSubmitting || loading || (spotType === 'free' && !image)}
                     >
                       {isSubmitting || loading ? 'Adding Spot...' : 'Add Parking Spot'}
                     </Button>

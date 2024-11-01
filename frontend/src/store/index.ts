@@ -6,6 +6,8 @@ import parkingSpaceReducer from "@/features/parking-space/parkingSpaceSlice";
 import ownerReducer from "@/features/owner/ownerSlice";
 import carReducer from "@/features/cars/carSlice";
 import addReducer from "@/features/add/addSlice";
+import adminReducer from "@/features/admin/adminSlice"; // Import admin slice
+import reportReducer from "@/features/reports/reportSlice";
 import { customMiddleware } from "./middleware"; // Import your custom middleware
 import throttle from "lodash.throttle";
 import { saveState, loadState } from "./localStorage";
@@ -24,6 +26,8 @@ export const createStore = (preloadedState?: Partial<RootState>) => {
       parkingSpace: parkingSpaceReducer,
       owner: ownerReducer,
       cars: carReducer,
+      admin: adminReducer,
+      reports: reportReducer,
     },
     // @ts-ignore
     middleware: (getDefaultMiddleware) =>

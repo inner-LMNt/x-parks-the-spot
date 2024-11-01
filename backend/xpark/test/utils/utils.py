@@ -1,5 +1,7 @@
+import uuid
+
 from flask.testing import FlaskClient
-from typing import Dict, Any, List, Union
+from typing import Dict, Any, List, Union, Optional
 from datetime import datetime, timedelta, timezone
 import json
 import io
@@ -82,17 +84,56 @@ def create_test_parking_space(client: FlaskClient, token: str, is_paid: bool = T
     return str(data["id"])
 
 
-def create_test_car(client: FlaskClient, token: str) -> str:
+def create_test_car(client: FlaskClient, token: str, license_plate: Optional[str] = None) -> str:
     """Helper to create a test car and return its ID"""
+    if license_plate is None:
+        # Generate a unique license plate
+        license_plate = f"TEST-{uuid.uuid4().hex[:8]}"
+
     response = client.post(
         "/api/unstable/cars",
         headers={"Authorization": f"Bearer {token}"},
         json={
             "make": "Toyota",
             "model": "Camry",
-            "year": 2020,
-            "color": "Blue",
-            "license_plate": "TEST123"
+            "license_plate": license_plate
+        }
+    )
+    if response.status_code != 201:
+        print(f"Car creation failed with status {response.status_code}")
+        print(f"Response: {response.get_json()}")
+
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data is not None
+    return str(data["id"])
+
+
+def create_test_reservation_at_time(
+        client: FlaskClient,
+        token: str,
+        space_id: str,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+        car_id: Optional[str] = None,
+) -> str:
+    """Helper to create a test reservation with specific times"""
+    if start_time is None:
+        start_time = datetime.now(timezone.utc) + timedelta(hours=1)
+    if end_time is None:
+        end_time = start_time + timedelta(hours=1)
+    if car_id is None:
+        # Create car with unique license plate
+        car_id = create_test_car(client, token)
+
+    response = client.post(
+        "/api/unstable/reservations",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "parking_space_id": space_id,
+            "start_time": start_time.isoformat(),
+            "end_time": end_time.isoformat(),
+            "car_info_id": car_id
         }
     )
     assert response.status_code == 201
@@ -123,3 +164,48 @@ def create_test_reservation(client: FlaskClient, token: str, space_id: str) -> s
     data = response.get_json()
     assert data is not None
     return str(data["id"])
+
+def create_sequential_reservations(
+        client: FlaskClient,
+        token: str,
+        space_id: str,
+        num_reservations: int,
+        hours_between: int = 1
+) -> list[str]:
+    """Create multiple sequential reservations with gaps between them"""
+    reservation_ids = []
+    start_time = datetime.now(timezone.utc) + timedelta(hours=1)
+
+    for i in range(num_reservations):
+        end_time = start_time + timedelta(hours=1)
+        reservation_id = create_test_reservation_at_time(
+            client, token, space_id,
+            start_time=start_time,
+            end_time=end_time
+        )
+        reservation_ids.append(reservation_id)
+        start_time = end_time + timedelta(hours=hours_between)
+
+    return reservation_ids
+  
+def submit_parking_verification(client: FlaskClient, token: str, space_id: str) -> None:
+    """Helper to submit a verification request for a parking space with an image."""
+    # Create a dummy image file for verification
+    image_data = io.BytesIO(b"dummy image content")
+    image_file = FileStorage(
+        stream=image_data,
+        filename="verification.jpg",
+        content_type="image/jpeg"
+    )
+
+    response = client.post(
+        f"/api/unstable/parking-spaces/{space_id}/verify",
+        headers={"Authorization": f"Bearer {token}"},
+        data={"image": image_file},
+        content_type="multipart/form-data"
+    )
+
+    assert response.status_code == 200, f"Verification submission failed: {response.get_json()}"
+    data = response.get_json()
+    assert data is not None
+    print("Verification submitted successfully")

@@ -6,8 +6,9 @@ from xpark.logic.parkingspace import (
     delete_free_parking_space,
     get_parking_space,
     is_paid_spot,
-    get_owned_paid_parking_spaces,
+    get_all_user_parking_spaces,
     handle_submit_verification,
+    update_taken,
 )
 from flask import request
 from result import Ok, Err
@@ -20,8 +21,8 @@ from typing import cast, Dict
 
 @bp.get("")
 @require_logged_in_user
-def get_owned_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    match get_owned_paid_parking_spaces(user_id):
+def get_all_user_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match get_all_user_parking_spaces(user_id):
         case Ok(data):
             return {"spaces": data}, 200
         case Err(e):
@@ -46,7 +47,6 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
 
     longitude = float(data["location"]["longitude"])
     latitude = float(data["location"]["latitude"])
-    address = data["location"]["address"]
 
     # TODO: get address from coordinates if not set
     if data["is_paid"]:
@@ -56,7 +56,7 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
             image_file=image_file,
             longitude=longitude,
             latitude=latitude,
-            address=address,
+            address=data["location"]["address"],
             price=float(data["pricing_info"]["base_price"]),
             availability_schedule=data["availability_schedule"],
         )
@@ -66,7 +66,7 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
             image_file=image_file,
             longitude=longitude,
             latitude=latitude,
-            address=address,
+            address="",
         )
 
     if result.is_ok():
@@ -159,4 +159,18 @@ def verify_spot_route(
         case Ok():
             return {}, 200
         case Err(_):
-            return {}, 404
+            return {}, 400
+
+@bp.post("<parking_space_id>/taken")
+@require_logged_in_user
+def update_parking_space_taken(parking_space_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    # Retrieve the image file from form data
+    image_file = request.files.get("photo")
+    parking_space_uuid = uuid.UUID(parking_space_id)
+
+    # Call helper function to perform the update
+    match update_taken(user_id=user_id, parking_space_id=parking_space_uuid, image_file=image_file):
+        case Ok(_):
+            return {}, 200
+        case Err(e):
+            return {"err": e}, 400
