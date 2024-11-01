@@ -8,6 +8,8 @@ from xpark.logic.user import (
     handle_confirm_delete,
     handle_password_reset_request,
     handle_password_reset_confirmation,
+    handle_set_notification_time,
+    handle_get_notification_time,
 )
 
 from flask import request
@@ -102,6 +104,29 @@ def reset_password(token: str) -> Tuple[Any, int]:
             return {"err": e}, 403
         case Ok(_):
             return {"message": "Password reset successfully"}, 200
+        
+
+
+@bp.post("notification-time")
+@require_logged_in_user
+def set_notification_time(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    assert request.json
+    time = request.json["time"]
+    match handle_set_notification_time(user_id, time):
+        case Ok(_):
+            return {"message": "Notification time set successfully"}, 200
+        case Err(e):
+            return {"err": e}, 403
+        
+
+@bp.get("notification-time")
+@require_logged_in_user
+def get_notification_time(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match handle_get_notification_time(user_id):
+        case Ok(time):
+            return {"time": time}, 200
+        case Err(e):
+            return {"err": e}, 403
 
 
 # @bp.get("id")

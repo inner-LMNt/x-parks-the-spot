@@ -4,3 +4,5 @@ properties:
     type: boolean
   push_notifications:
     type: boolean
+  time:
+    type: string

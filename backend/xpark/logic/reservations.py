@@ -421,14 +421,29 @@ def cancel_reservation_logic(
                 UPDATE reservations
                 SET status = 'canceled', updated_at = NOW()
                 WHERE id = %s AND renter_id = %s AND status = 'booked'
-                RETURNING status
+                RETURNING status, lower(time) as start_time
                 """,
                 (reservation_id, user_id),
             )
 
-            reservation = cur.fetchone()
-            if not reservation:
+            ret = cur.fetchone()
+            if not ret:
                 return Err("Reservation not found")
+
+            status, start_time = ret
+
+            # Ensure start_time is timezone-aware
+            if start_time.tzinfo is None:
+                start_time = start_time.replace(tzinfo=datetime.timezone.utc)
+
+            # Get the current time in UTC
+            current_time = datetime.datetime.now(datetime.timezone.utc)
+
+            # Check if the current time is at least 2 hours before the reservation start time
+            if start_time - current_time < datetime.timedelta(hours=2):
+                return Err(
+                    "Reservations can only be canceled at least 2 hours before the start time."
+                )
 
             return Ok(None)
 
