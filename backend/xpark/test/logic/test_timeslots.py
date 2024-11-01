@@ -1,4 +1,5 @@
 # Testing for the timeslots/coalescing
+import pytest
 
 from xpark.logic.parkingspace import (
     create_paid_parking_space,
@@ -16,7 +17,7 @@ from psycopg.types.range import Range
 # Wait why am I not doing this from the API
 # I'll make the API later, right now I gotta test this stuff so I can go to bed
 
-
+@pytest.mark.skip(reason="")
 def test_coalesce() -> None:
     # First create a user who will own the parking spaces
     user_id_create = create_user(

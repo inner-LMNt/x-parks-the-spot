@@ -123,3 +123,25 @@ def create_test_reservation(client: FlaskClient, token: str, space_id: str) -> s
     data = response.get_json()
     assert data is not None
     return str(data["id"])
+
+def submit_parking_verification(client: FlaskClient, token: str, space_id: str) -> None:
+    """Helper to submit a verification request for a parking space with an image."""
+    # Create a dummy image file for verification
+    image_data = io.BytesIO(b"dummy image content")
+    image_file = FileStorage(
+        stream=image_data,
+        filename="verification.jpg",
+        content_type="image/jpeg"
+    )
+
+    response = client.post(
+        f"/api/unstable/parking-spaces/{space_id}/verify",
+        headers={"Authorization": f"Bearer {token}"},
+        data={"image": image_file},
+        content_type="multipart/form-data"
+    )
+
+    assert response.status_code == 200, f"Verification submission failed: {response.get_json()}"
+    data = response.get_json()
+    assert data is not None
+    print("Verification submitted successfully")
