@@ -60,10 +60,7 @@ function ReservationCard({
     }, [reservation, car]);
 
     return (
-        <Card
-            className="cursor-pointer transition-transform transform hover:scale-105"
-            onClick={handleClick}
-        >
+        <Card>
             <CardHeader className="flex justify-between items-center">
                 <CardTitle className="flex items-center text-lg font-medium text-gray-900">
                     <MapPin className="w-5 h-5 mr-2 text-blue-500" />
@@ -75,13 +72,13 @@ function ReservationCard({
             </CardHeader>
             <CardContent>
                 <div className="flex items-center mb-2">
-                    <Calendar className="w-4 h-4 mr-2 text-gray-500" />
+                    <Calendar className="w-4 h-4 mr-2 text-gray-500"/>
                     <p className="text-sm text-gray-700">
                         {format(new Date(reservation.start_time ?? new Date()), 'PPP')}
                     </p>
                 </div>
                 <div className="flex items-center mb-2">
-                    <Clock className="w-4 h-4 mr-2 text-gray-500" />
+                    <Clock className="w-4 h-4 mr-2 text-gray-500"/>
                     <p className="text-sm text-gray-700">
                         {format(new Date(reservation.start_time ?? new Date()), 'p')} -{' '}
                         {format(new Date(reservation.end_time ?? new Date()), 'p')}
@@ -92,11 +89,20 @@ function ReservationCard({
                         <strong>License Plate:</strong> {car?.license_plate}
                     </p>
                 </div>
-                {isPast && (
+                <div className="flex justify-center gap-4">
                     <div className="flex justify-end mt-4">
-                        <ArrowRightCircle className="w-5 h-5 text-blue-500" />
+                        <Button onClick={() => router.push(`/bookings/${reservation.parking_space_id}/reserve`)}>
+                            Book Again
+                        </Button>
                     </div>
-                )}
+                    {!isPast && (
+                        <div className="flex justify-end mt-4">
+                            <Button onClick={() => router.push(`/extend/${reservation.id}`)}>
+                                Extend Reservation
+                            </Button>
+                        </div>
+                    )}
+                </div>
             </CardContent>
         </Card>
     );
@@ -194,9 +200,8 @@ export default function BookingsPage() {
                             cars.map((car: CarInfo) => (
                                 <Card key={car.id} className="p-4">
                                     <CardContent>
-                                        <p className="text-lg font-semibold">{car.make} {car.model}</p>
-                                        <p className="text-sm text-gray-600">License Plate: {car.license_plate}</p>
-                                        {/* Add more car details if needed */}
+                                        <p className="text-lg font-semibold">{car.color ? `${car.color} ` : ""}{car.make} {car.model}</p>
+                                        <p className="text-sm text-gray-600">License Plate: {car.license_plate} {car.license_plate_state}</p>
                                     </CardContent>
                                 </Card>
                             ))

@@ -10,6 +10,7 @@ export const carInfos: CarInfo[] = [
     year: 2020,
     color: "Blue",
     license_plate: "ABC123",
+    license_plate_state: "CA",
   },
   {
     id: "car2",
@@ -18,6 +19,7 @@ export const carInfos: CarInfo[] = [
     year: 2018,
     color: "Red",
     license_plate: "XYZ789",
+    license_plate_state: "NY",
   },
   // Add more car infos as needed
 ];
