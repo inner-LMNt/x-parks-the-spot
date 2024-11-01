@@ -255,7 +255,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof register_acc.rejected
           | typeof logout.rejected
           | typeof reset_password.rejected
-          | typeof update_notification_time.rejected
+          // | typeof update_notification_time.rejected
         > => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false;

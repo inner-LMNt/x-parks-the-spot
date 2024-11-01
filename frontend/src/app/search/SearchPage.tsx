@@ -1138,7 +1138,6 @@ export default function SearchPage() {
                 position={mapCenter}
                 icon={{
                   url: encodedSVG,
-                  scaledSize: new window.google.maps.Size(30, 30),
                 }}
               />
             )}
@@ -1347,23 +1346,6 @@ export default function SearchPage() {
           </button>
         </div>
       </div>
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-        <button onClick={handleArrowClick} className="focus:outline-none">
-          {isListExpanded ? (
-            <motion.div animate={{ y: [0, 10, 0] }} transition={{ repeat: Infinity, duration: 1 }}>
-              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center drop-shadow-md">
-                <ArrowDown size={24} className="text-gray-500" />
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div animate={{ y: [0, 10, 0] }} transition={{ repeat: Infinity, duration: 1 }}>
-              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center drop-shadow-md">
-                <ArrowUp size={24} className="text-gray-500" />
-              </div>
-            </motion.div>
-          )}
-        </button>
-      </div>
 
       <div className="flex-grow overflow-y-auto" ref={listRef}>
         <div className="mx-auto max-w-xl p-4">
@@ -1450,7 +1432,7 @@ export default function SearchPage() {
         ref={navigationCardRef}
         className={`fixed bottom-0 left-0 w-full bg-gray-100 p-4 transition-transform duration-300 transform ${navigationMode ? 'translate-y-0' : 'translate-y-full'
           }`}
-        style={{ bottom: '64px', height: 'auto' }}
+        style={{ bottom: '0px', height: 'auto' }}
       >
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row justify-between items-center w-full">
