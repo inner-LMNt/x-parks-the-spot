@@ -88,7 +88,7 @@ const ConflictCard = ({ conflict, expandedConflictId, toggleConflict, handleResp
                         <div className="space-y-2">
                             <textarea
                                 value={responseText[conflict.id] || ""}
-                                onChange={(e) => setResponseText((prev) => ({ ...prev, [conflict.id]: e.target.value }))}
+                                onChange={(e) => setResponseText((prev: any) => ({ ...prev, [conflict.id]: e.target.value }))}
                                 placeholder="Enter your response..."
                                 className="w-full p-2 border border-gray-300 rounded-md text-black"
                             />
@@ -142,13 +142,14 @@ const ConflictPage = () => {
         dispatch(getCancelled());
     }, [dispatch]);
 
-    const toggleConflict = (id, parkingSpaceId) => {
+    const toggleConflict = (id: any, parkingSpaceId: any) => {
         setExpandedConflictId(expandedConflictId === id ? null : id);
 
         if (!parkingSpaceData[parkingSpaceId]) {
             dispatch(fetchParkingSpace(parkingSpaceId))
                 .unwrap()
-                .then(data => setParkingSpaceData(prev => ({ ...prev, [parkingSpaceId]: data })))
+				// @ts-ignore
+                .then(data => setParkingSpaceData(prev => ({ ...prev, [parkingSpaceId]: data }))) 
                 .catch(() => {
                     toast({
                         title: "Error",
@@ -159,11 +160,11 @@ const ConflictPage = () => {
         }
     };
 
-    const handleImageClick = (imageSrc) => {
+    const handleImageClick = (imageSrc: any) => {
         setSelectedImage(imageSrc);
     };
 
-    const handleResponseSubmit = async (id) => {
+    const handleResponseSubmit = async (id: any) => {
         const response = responseText[id];
         if (response && response.trim()) {
             await dispatch(updateConflictResponse({ id, response }))
@@ -177,6 +178,7 @@ const ConflictPage = () => {
                     dispatch(getAllConflicts());
                     setResponseText(prev => ({ ...prev, [id]: "" }));
                 })
+				// @ts-ignore
                 .catch(error => {
                     toast({
                         title: "Error",
@@ -187,6 +189,7 @@ const ConflictPage = () => {
         }
     };
 
+	// @ts-ignore
     const handleAcknowledgeCancellation = async (id) => {
         await dispatch(acknowledgeCancelled(id))
             .unwrap()
@@ -198,6 +201,7 @@ const ConflictPage = () => {
                 });
                 dispatch(getCancelled());
             })
+			// @ts-ignore
             .catch(error => {
                 toast({
                     title: "Error",
@@ -223,7 +227,9 @@ const ConflictPage = () => {
                     <p className="text-center text-gray-800">No conflicts or cancellations available.</p>
                 ) : (
                     <div className="space-y-4">
-                        {visibleConflicts.map(conflict => (
+                        {
+								// @ts-ignore
+								visibleConflicts.map(conflict => (
                             <ConflictCard
                                 key={conflict.id}
                                 conflict={conflict}
@@ -236,7 +242,9 @@ const ConflictPage = () => {
                                 parkingSpaceData={parkingSpaceData}
                             />
                         ))}
-                        {visibleCancellations.map(cancellation => (
+                        {
+								// @ts-ignore
+								visibleCancellations.map(cancellation => (
                             <CancellationCard
                                 key={cancellation.id}
                                 cancellation={cancellation}
