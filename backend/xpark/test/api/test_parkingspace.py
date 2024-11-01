@@ -1,4 +1,3 @@
-import math
 import uuid
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -219,6 +218,7 @@ def test_api_submit_rating_success(client: FlaskClient) -> None:
     )
     assert response.status_code == 200
     parking_space = response.json
+    assert parking_space is not None
     assert parking_space["avg_availability_rating"] == 4.0
     assert parking_space["ratings_count_availability"] == 1
     assert parking_space["avg_cleanliness_rating"] == 5.0
@@ -248,11 +248,12 @@ def test_api_submit_partial_rating(client: FlaskClient) -> None:
     )
     assert response.status_code == 200
     parking_space = response.json
+    assert parking_space is not None
     assert parking_space["avg_availability_rating"] == 3.0
     assert parking_space["ratings_count_availability"] == 1
     assert parking_space["avg_cleanliness_rating"] is None
     assert parking_space["ratings_count_cleanliness"] == 0
-    assert parking_space["avg_total_rating"] == 3.0  # Single rating becomes total rating
+    assert parking_space["avg_total_rating"] == 3.0
 
 
 def test_api_submit_rating_free_spot(client: FlaskClient) -> None:
@@ -270,6 +271,7 @@ def test_api_submit_rating_free_spot(client: FlaskClient) -> None:
         json=rating_payload
     )
     assert response.status_code == 400
+    assert response.json is not None
     assert "Cannot rate a free parking space" in response.json["err"]
 
 
@@ -288,6 +290,7 @@ def test_api_submit_rating_invalid_parking_space(client: FlaskClient) -> None:
         json=rating_payload
     )
     assert response.status_code == 400
+    assert response.json is not None
     assert "Parking space does not exist" in response.json["err"]
 
 def test_api_submit_rating_stress(client: FlaskClient) -> None:
@@ -328,8 +331,8 @@ def test_api_submit_rating_stress(client: FlaskClient) -> None:
         assert response.json == {}
 
         # Update tracking structures
-        user_ratings[token]["availability"] = availability_rating
-        user_ratings[token]["cleanliness"] = cleanliness_rating
+        user_ratings[token]["availability"] = availability_rating  # type: ignore
+        user_ratings[token]["cleanliness"] = cleanliness_rating  # type: ignore
 
         # Calculate this user's total rating using Decimal
         total_sum += (Decimal(str(availability_rating)) + Decimal(str(cleanliness_rating))) / Decimal('2.0')
@@ -385,8 +388,8 @@ def test_api_submit_rating_stress(client: FlaskClient) -> None:
         total_sum = total_sum - old_total + new_total
 
         # Update ratings
-        user_ratings[token]["availability"] = new_availability_rating
-        user_ratings[token]["cleanliness"] = new_cleanliness_rating
+        user_ratings[token]["availability"] = new_availability_rating  # type: ignore
+        user_ratings[token]["cleanliness"] = new_cleanliness_rating  # type: ignore
 
         response = client.get(
             f"/api/unstable/parking-spaces/{spot_id}",
