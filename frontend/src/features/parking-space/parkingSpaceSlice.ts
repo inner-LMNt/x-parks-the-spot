@@ -26,9 +26,7 @@ const initialState: ParkingSpaceState = {
     lockExpiresAt: null,
 };
 
-/**
- * **Async Thunks**
- */
+
 
 export const getAllPendingSpots = createAsyncThunk<
     { pendingSpaces: ParkingSpace[] },
@@ -147,6 +145,29 @@ export const unlockParkingSpace = createAsyncThunk<
 );
 
 /**
+ * Update the status of a parking spot
+ * PUT /parking-spaces/update
+ */
+export const markSpotTaken = createAsyncThunk<
+    void,
+    { parkingSpaceId: string; formData: FormData },
+    { rejectValue: string }
+>("parkingSpace/markSpotTaken", async ({ parkingSpaceId, formData }, { rejectWithValue }) => {
+    try {
+        await axios.post(`/parking-spaces/${parkingSpaceId}/taken`, formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
+    } catch (error: any) {
+        return rejectWithValue(
+            error.response?.data?.error || "Failed to update spot status"
+        );
+    }
+});
+
+
+/**
  * **Parking Space Slice**
  */
 const parkingSpaceSlice = createSlice({
@@ -171,6 +192,18 @@ const parkingSpaceSlice = createSlice({
         },
     },
     extraReducers: (builder) => {
+        builder
+            .addCase(markSpotTaken.pending, (state: ParkingSpaceState) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(markSpotTaken.fulfilled, (state: ParkingSpaceState) => {
+                state.loading = false;
+            })
+            .addCase(markSpotTaken.rejected, (state: ParkingSpaceState, action) => {
+                state.loading = false;
+                state.error = action.payload || "Failed to update spot status";
+            });
         /**
          * Handle fetchParkingSpace actions
          */
@@ -221,6 +254,8 @@ const parkingSpaceSlice = createSlice({
                 state.lockStatus = "failed";
                 state.error = action.payload || "Failed to unlock parking space";
             });
+
+
     },
 });
 

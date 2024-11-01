@@ -1893,6 +1893,7 @@ export interface components {
             /** Format: uuid */
             id?: string;
             is_paid: boolean;
+            is_taken?: boolean;
             /** Format: uuid */
             owner_id?: string;
             name?: string;

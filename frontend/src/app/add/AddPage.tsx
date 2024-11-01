@@ -43,7 +43,8 @@ const checkPermissionStatus = async (permissionName: PermissionName): Promise<Pe
     return 'prompt'; // Fallback if Permissions API is not supported
   }
   try {
-    const result = await navigator.permissions.query({ name: permissionName });
+    //@ts-ignore
+    const result = await navigator.permissions.query({ name: permissionName});
     return result.state;
   } catch (error) {
     console.error(`Error checking ${permissionName} permission:`, error);

@@ -14,6 +14,88 @@ from result import Result, Ok, Err
 import uuid
 from .timeslots import days_of_week_to_slots, recalculate_coalesce
 
+def update_paid_parking_space(
+    user_id: uuid.UUID,
+    parking_space_id: uuid.UUID,
+    address: Optional[str],
+    latitude: Optional[float],
+    longitude: Optional[float],
+    name: Optional[str],
+    price: Optional[float],
+    availability_schedule: Optional[List[Dict[str, str]]],
+) -> Result[Dict[str, Any], str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Check if parking space exists and if the user is the owner
+            cur.execute(
+                "SELECT count(id) FROM parking_spaces WHERE id = %s AND owner = %s",
+                (parking_space_id, user_id),
+            )
+            result = cur.fetchone()
+            if not result:
+                return Err("Parking space not found")
+
+            # TODO: add more modification fields
+            # photos,
+            # verification_status,
+            cur.execute(
+                """
+                UPDATE parking_spaces SET
+                address =    COALESCE(%(addr)s, address),
+                location =   ST_MakePoint(
+                    COALESCE(%(long)s, ST_X(location::geometry)),
+                    COALESCE(%(lat)s,  ST_Y(location::geometry))
+                ),
+                name =       COALESCE(%(name)s, name),
+                price =      COALESCE(%(price)s, price),
+                availability_schedule = COALESCE(%(sched)s, availability_schedule),
+                updated_at = NOW()
+                WHERE id =   %(spot_id)s
+                RETURNING
+                    id,
+                    is_paid,
+                    name,
+                    verification_status,
+                    json_build_object(
+                        'address',   parking_spaces.address,
+                        'latitude',  ST_Y(location::geometry),
+                        'longitude', ST_X(location::geometry)
+                    ) as location,
+                    json_build_object(
+                        'base_price', price,
+                        'dynamic_pricing', FALSE
+                    ) as pricing_info,
+                    availability_schedule,
+                    photos,
+                    created_at,
+                    updated_at
+                """,
+                {
+                    "addr": address,
+                    "lat": latitude,
+                    "long": longitude,
+                    "name": name,
+                    "price": price,
+                    "spot_id": parking_space_id,
+                    "sched": (
+                        json.dumps(availability_schedule)
+                        if availability_schedule
+                        else availability_schedule
+                    ),
+                },
+            )
+            parking_space = cur.fetchone()
+            if not parking_space:
+                return Err("Failed to update parking space")
+
+            if availability_schedule is not None:
+                # Regenerate availability schedule
+                days_of_week_to_slots(cur, parking_space["id"], availability_schedule)
+                # Recoalesce
+                recalculate_coalesce(cur, parking_space["id"])
+
+            return Ok(parking_space)
+
 
 def get_all_user_parking_spaces(
     user_id: uuid.UUID,
@@ -214,6 +296,7 @@ def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str
                         'dynamic_pricing', FALSE
                     ) as pricing_info,
                     photos,
+                    is_taken,
                     availability_schedule,
                     verification_status,
                     created_at,
@@ -230,87 +313,61 @@ def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str
             return Ok(parking_space)
 
 
-def update_paid_parking_space(
+def update_taken(
     user_id: uuid.UUID,
     parking_space_id: uuid.UUID,
-    address: Optional[str],
-    latitude: Optional[float],
-    longitude: Optional[float],
-    name: Optional[str],
-    price: Optional[float],
-    availability_schedule: Optional[List[Dict[str, str]]],
+    image_file: Optional[FileStorage] = None
 ) -> Result[Dict[str, Any], str]:
+    """
+    Sets 'is_taken' to TRUE and prepends any new photo to the parking space.
+    """
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            # Check if parking space exists and if the user is the owner
+            # Verify that the user owns the parking space
             cur.execute(
-                "SELECT count(id) FROM parking_spaces WHERE id = %s AND owner = %s",
+                "SELECT 1 FROM parking_spaces WHERE id = %s AND owner = %s",
                 (parking_space_id, user_id),
             )
-            result = cur.fetchone()
-            if not result:
-                return Err("Parking space not found")
+            if not cur.fetchone():
+                return Err("Parking space not found or user not authorized to update")
 
-            # TODO: add more modification fields
-            # photos,
-            # verification_status,
+            updated_name = f'Updated at {datetime.now().strftime("%I:%M %p, %B %d %Y")}'
+
+            # Handle photo processing if an image is provided
+            new_photo_url = []
+            if image_file:
+                try:
+                    photo_url = save_image(image_file)
+                    new_photo_url = [photo_url]
+                except ValueError as e:
+                    return Err(f"Image upload failed: {str(e)}")
+
+            # Update 'is_taken' status and prepend the new photo if provided
             cur.execute(
                 """
-                UPDATE parking_spaces SET
-                address =    COALESCE(%(addr)s, address),
-                location =   ST_MakePoint(
-                    COALESCE(%(long)s, ST_X(location::geometry)),
-                    COALESCE(%(lat)s,  ST_Y(location::geometry))
-                ),
-                name =       COALESCE(%(name)s, name),
-                price =      COALESCE(%(price)s, price),
-                availability_schedule = COALESCE(%(sched)s, availability_schedule),
-                updated_at = NOW()
-                WHERE id =   %(spot_id)s
-                RETURNING
-                    id,
-                    is_paid, 
-                    name,
-                    verification_status, 
-                    json_build_object(
-                        'address',   parking_spaces.address,
-                        'latitude',  ST_Y(location::geometry),
-                        'longitude', ST_X(location::geometry)
-                    ) as location,
-                    json_build_object(
-                        'base_price', price,
-                        'dynamic_pricing', FALSE
-                    ) as pricing_info,
-                    availability_schedule,
-                    photos,
-                    created_at, 
-                    updated_at
+                UPDATE parking_spaces
+                SET
+                    name = %(updated_name)s,
+                    is_taken = TRUE,
+                    updated_at = NOW(),
+                    photos = %(new_photo_url)s || photos  -- Prepend new photo to the existing photos
+                WHERE id = %(parking_space_id)s
+                RETURNING id, photos, is_taken, updated_at
                 """,
                 {
-                    "addr": address,
-                    "lat": latitude,
-                    "long": longitude,
-                    "name": name,
-                    "price": price,
-                    "spot_id": parking_space_id,
-                    "sched": (
-                        json.dumps(availability_schedule)
-                        if availability_schedule
-                        else availability_schedule
-                    ),
+                    "updated_name": updated_name,
+                    "new_photo_url": new_photo_url,
+                    "parking_space_id": parking_space_id,
                 },
             )
-            parking_space = cur.fetchone()
-            if not parking_space:
+            updated_space = cur.fetchone()
+
+            if not updated_space:
                 return Err("Failed to update parking space")
 
-            if availability_schedule is not None:
-                # Regenerate availability schedule
-                days_of_week_to_slots(cur, parking_space["id"], availability_schedule)
-                # Recoalesce
-                recalculate_coalesce(cur, parking_space["id"])
+            return Ok(updated_space)
 
-            return Ok(parking_space)
+
 
 
 def delete_free_parking_space(
