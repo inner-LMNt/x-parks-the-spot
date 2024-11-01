@@ -176,7 +176,7 @@ export default function SearchPage() {
         description: 'The parking spot status was updated successfully.',
         variant: 'success',
       });
-      closeUpdateStatusDialog();
+      setTimeout(closeUpdateStatusDialog, 500);
     } catch (error) {
       console.error("Failed to update spot status:", error);
       toast({
@@ -205,7 +205,7 @@ export default function SearchPage() {
             }
           });
     }
-  }, [address]);
+  }, [userLocation]);
 
 
   const handleRetake = () => {
