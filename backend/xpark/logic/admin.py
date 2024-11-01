@@ -7,11 +7,6 @@ from result import Result, Ok, Err
 import uuid
 
 
-from typing import Dict, Any, List
-from psycopg.rows import dict_row
-from xpark.utils.db import DB
-from result import Result, Ok, Err
-import uuid
 
 def get_all_cancellations() -> Result[List[Dict[str, Any]], str]:
     """
