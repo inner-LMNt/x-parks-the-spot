@@ -3,7 +3,6 @@
 'use client';
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
@@ -25,7 +24,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Camera, X, Upload, ArrowLeft, MapPin, CameraOff, MapPinOff } from 'lucide-react';
 import Webcam from 'react-webcam';
 import { DaysOfWeek } from '@/types/type'; // Ensure DaysOfWeek enum is imported
-import { LoadScriptNext, Autocomplete } from '@react-google-maps/api';
 import {
   Dialog,
   DialogContent,
@@ -34,6 +32,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'; // ShadCN Dialog components
+import { LoadScriptNext, Autocomplete } from '@react-google-maps/api';
 
 const formatTime = (time: string): string => {
   return time; // Keeping time as "HH:mm" since backend expects time-only strings
@@ -74,10 +73,11 @@ export default function AddPage() {
   const [photoTaken, setPhotoTaken] = useState<boolean>(false);
   const [showCamera, setShowCamera] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [autoComplete, setAutoComplete] = useState<google.maps.places.Autocomplete | null>(null);
   const onLoadAutocomplete = (autocompleteInstance: google.maps.places.Autocomplete) => {
     setAutoComplete(autocompleteInstance);
-  };
+  }
 
   // Separate TimeSlot and is24Seven
   const [timeSlot, setTimeSlot] = useState<any>({
@@ -92,7 +92,6 @@ export default function AddPage() {
   const [geoEnabled, setGeoEnabled] = useState(true);
   const [locationLoading, setLocationLoading] = useState(false);
   const [availabilityError, setAvailabilityError] = useState<string>('');
-  const [cameraLoaded, setCameraLoaded] = useState(false);
 
   // States for Modals
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
@@ -105,6 +104,7 @@ export default function AddPage() {
   // **New States for Permission Denial**
   const [cameraDenied, setCameraDenied] = useState(false);
   const [locationDenied, setLocationDenied] = useState(false);
+  const [cameraLoaded, setCameraLoaded] = useState(false);
 
   // Initialize permission states
   const [cameraPermission, setCameraPermission] = useState<PermissionState>('prompt');
@@ -359,38 +359,9 @@ export default function AddPage() {
   };
 
   /**
- * **Get User's Current Location**
- */
-  const getUserLocation = () => {
-    setLocationLoading(true);
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const location = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          setUserLocation(location);
-          setGeoEnabled(true);
-          setLocationLoading(false);
-        },
-        () => {
-          console.error("Error: The Geolocation service failed.");
-          setGeoEnabled(false);
-          setLocationLoading(false);
-        }
-      );
-    } else {
-      console.error("Error: Your browser doesn't support geolocation.");
-      setGeoEnabled(false);
-      setLocationLoading(false);
-    }
-  };
-
-  /**
    * **Validate Availability Slot**
    */
-  const validateAvailability = () => {
+  const validateAvailability = (): boolean => {
     let isValid = true;
     let errorMsg = '';
 
@@ -434,7 +405,6 @@ export default function AddPage() {
    * **Handle Form Submission**
    */
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    console.log(image)
     event.preventDefault();
 
     console.log('Form submitted. Showing confirmation modal.');
@@ -677,6 +647,7 @@ export default function AddPage() {
    * **Re-request Camera Access**
    */
   const reRequestCameraAccess = () => {
+    setCameraLoaded(false);
     setShowReRequestModal((prev) => ({ ...prev, camera: true }));
   };
 
@@ -693,6 +664,7 @@ export default function AddPage() {
   const handleReRequestConfirm = () => {
     if (showReRequestModal.camera) {
       // Attempt to access the camera again
+      setCameraLoaded(false);
       setCameraDenied(false);
       setHasCameraError(false); // Reset error state
       setShowCamera(true); // This will trigger Webcam to attempt access
@@ -750,20 +722,46 @@ export default function AddPage() {
                       Fill in the details to list your parking spot
                     </CardDescription>
                   </div>
+                  {/* **Permission Denial Buttons with Guidance** */}
+                  <div className="absolute right-4 top-4 flex space-x-2">
+                    {cameraPermission === 'denied' && (
+                      <Button
+                        variant="ghost"
+                        onClick={reRequestCameraAccess}
+                        aria-label="Enable Camera Access"
+                        className="p-0"
+                      >
+                        <CameraOff className="w-5 h-5 text-red-500" />
+                      </Button>
+                    )}
+                    {locationPermission === 'denied' && (
+                      <Button
+                        variant="ghost"
+                        onClick={reRequestLocationAccess}
+                        aria-label="Enable Location Access"
+                        className="p-0"
+                      >
+                        <MapPinOff className="w-5 h-5 text-red-500" />
+                      </Button>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-6">
+                  <form onSubmit={handleSubmit} className="space-y-6" noValidate>
                     {/* Spot Type Selection */}
                     <div className="space-y-2">
                       <Label>Spot Type</Label>
                       <RadioGroup
                         defaultValue="free"
                         onValueChange={(value) => {
+                          console.log('Spot type changed to:', value);
                           setSpotType(value as 'free' | 'rental');
+                          setShowCamera(value === 'free');
                           setUserLocation(null);
                           setImage(null); // Reset image when spot type changes
                           setPreviewUrl(null); // Reset preview
                           setAvailabilityError(''); // Reset local availability error
+                          setPhotoTimestamp(null); // Reset timestamp
                           dispatch(resetState()); // Reset Redux error state
                           if (value !== 'rental') {
                             setTimeSlot({
@@ -773,6 +771,9 @@ export default function AddPage() {
                             });
                             setIs24Seven(false);
                           }
+                          // Reset error handling states
+                          setHasLocationError(false);
+                          setHasCameraError(false);
                         }}
                         className="flex space-x-4"
                       >
@@ -804,41 +805,52 @@ export default function AddPage() {
                     {spotType === 'rental' && (
                       <div className="space-y-2">
                         <Label htmlFor="address">Address</Label>
-                        <Input
-                          id="address"
-                          name="address"
-                          required
-                          placeholder="Full street address"
-                        />
+                        <LoadScriptNext googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string} libraries={['places']}>
+                          <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={onPlaceChanged}>
+                            <Input
+                              id="address"
+                              name="address"
+                              required
+                              placeholder="Full street address"
+                            />
+                          </Autocomplete>
+                        </LoadScriptNext>
                       </div>
                     )}
 
-                    {/* Location Section */}
-                    <div className="space-y-2">
-                      <Label>Location</Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={getUserLocation}
-                        disabled={locationLoading}
-                        className="flex items-center space-x-2"
-                      >
-                        <MapPin className="w-4 h-4" />
-                        <span>{locationLoading ? 'Locating...' : 'Use My Location'}</span>
-                      </Button>
-                      {geoEnabled ? (
-                        userLocation ? (
-                          <div>
-                            <p>Latitude: {userLocation.lat}</p>
-                            <p>Longitude: {userLocation.lng}</p>
-                          </div>
-                        ) : (
-                          <p>Your current location will be used for the spot.</p>
-                        )
-                      ) : (
-                        <p>Geolocation is not enabled. Please enable location services.</p>
-                      )}
-                    </div>
+                    {/* Location Section (Only for Rental) */}
+                    {spotType === 'rental' && photoTimestamp && (
+                      <div className="space-y-2">
+                        <Label>Location</Label>
+                        {!userLocation && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={captureLocation}
+                            disabled={locationLoading}
+                            className="flex items-center space-x-2"
+                          >
+                            <MapPin className="w-4 h-4" />
+                            <span>{locationLoading ? 'Locating...' : 'Use My Location'}</span>
+                          </Button>
+                        )}
+                        {locationLoading && <p>Capturing location...</p>}
+                        {!locationLoading && (
+                          <>
+                            {userLocation ? (
+                              <div className="mt-2">
+                                <p><strong>Latitude:</strong> {userLocation.lat}</p>
+                                <p><strong>Longitude:</strong> {userLocation.lng}</p>
+                              </div>
+                            ) : geoEnabled ? (
+                              <p>Click 'Use My Location' to capture your current location for the spot.</p>
+                            ) : (
+                              <p>Geolocation is not enabled. Please enable location services.</p>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
 
                     {/* Availability Schedule (Only for Rental) */}
                     {spotType === 'rental' && (
@@ -953,23 +965,64 @@ export default function AddPage() {
                             ref={webcamRef}
                             screenshotFormat="image/jpeg"
                             className="w-full rounded-lg"
+                            onUserMedia={() => setCameraLoaded(true)}
+                            onUserMediaError={() => {
+                              console.error('Camera access denied.');
+                              setCameraDenied(true);
+                              setHasCameraError(true); // Prevent repetitive handling
+                              toast({
+                                title: 'Camera Access Denied',
+                                description: 'Please allow camera access to capture photos.',
+                                variant: 'destructive',
+                              });
+                            }}
                           />
-                          <Button
+                          {cameraLoaded && <Button
                             type="button"
                             onClick={handleCameraCapture}
                             className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
+                            disabled={cameraDenied}
                           >
                             <Camera className="w-4 h-4 mr-2" />
                             Capture Photo
-                          </Button>
+                          </Button>}
                         </div>
                       ) : (
-                        <div
-                          className={`border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-gray-400 transition-colors ${spotType === 'free' ? 'opacity-50 cursor-not-allowed' : ''
-                            }`}
-                          onClick={spotType === 'free' ? undefined : handleImageClick}
-                        >
-                          {previewUrl ? (
+                        <>
+                          {spotType === 'rental' && (
+                            <div
+                              className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-gray-400 transition-colors"
+                              onClick={handleImageClick}
+                            >
+                              {previewUrl ? (
+                                <div className="relative">
+                                  <img
+                                    src={previewUrl}
+                                    alt="Preview"
+                                    className="max-w-full h-auto mx-auto rounded-lg"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveImage();
+                                    }}
+                                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                  >
+                                    <X size={16} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col items-center py-8">
+                                  <Upload size={48} className="text-gray-400 mb-2" />
+                                  <p className="text-sm text-gray-500">
+                                    Click to upload an image or use camera
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {spotType === 'free' && previewUrl && (
                             <div className="relative">
                               <img
                                 src={previewUrl}
@@ -978,38 +1031,24 @@ export default function AddPage() {
                               />
                               <button
                                 type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRemoveImage();
-                                }}
+                                onClick={handleRemoveImage}
                                 className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                               >
                                 <X size={16} />
                               </button>
                             </div>
-                          ) : (
-                            <div className="flex flex-col items-center py-8">
-                              <Upload size={48} className={`text-gray-400 mb-2 ${spotType === 'free' ? 'opacity-50' : ''}`} />
-                              <p className="text-sm text-gray-500">
-                                {spotType === 'free'
-                                  ? 'Image upload is disabled for free spots.'
-                                  : 'Click to upload an image or use camera'}
-                              </p>
-                            </div>
                           )}
-                        </div>
+                        </>
                       )}
-                      {/* Disable the file input if spotType is 'free' */}
-                      {spotType !== 'free' && (
+                      {/* File Input */}
+                      {spotType === 'rental' && (
                         <input
                           type="file"
-                          name="image" // Ensure the name matches what's expected on the backend
+                          name="image"
                           accept="image/*"
                           onChange={handleImageChange}
                           ref={fileInputRef}
                           className="hidden"
-                        // Remove the 'required' attribute
-                        // required
                         />
                       )}
                       <div className="flex justify-center mt-2">
@@ -1017,14 +1056,8 @@ export default function AddPage() {
                           type="button"
                           variant="outline"
                           onClick={() => {
-                            if (spotType === 'free') {
-                              toast({
-                                title: 'Image Upload Disabled',
-                                description: 'Image uploading is disabled for free spots. Please capture an image using the camera.',
-                                variant: 'destructive',
-                              });
-                            }
                             setShowCamera(!showCamera);
+                            setCameraLoaded(false);
                           }}
                           disabled={false} // Allow toggling camera for both types
                         >
@@ -1032,14 +1065,35 @@ export default function AddPage() {
                           {showCamera ? 'Hide Camera' : 'Use Camera'}
                         </Button>
                       </div>
-                    </div>
 
+                      {/* Display Location and Timestamp for Free Spots */}
+                      {spotType === 'free' && photoTaken && photoTimestamp && (
+                        <div className="mt-4 p-4 border rounded-md bg-white">
+                          {userLocation ? (
+                            <>
+                              <p><strong>Latitude:</strong> {userLocation.lat}</p>
+                              <p><strong>Longitude:</strong> {userLocation.lng}</p>
+                            </>
+                          ) : (
+                            <p>Capturing location...</p>
+                          )}
+                          {photoTimestamp && (
+                            <p><strong>Timestamp:</strong> {photoTimestamp.toLocaleString()}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
                     {/* Submit Button */}
                     <Button
                       type="submit"
                       className="w-full"
-                      disabled={isSubmitting || loading || (spotType === 'free' && !image)}
+                      disabled={
+                        isSubmitting ||
+                        loading ||
+                        (spotType === 'free' && (!image || !userLocation || cameraDenied)) ||
+                        (spotType === 'rental' && !image)
+                      }
                     >
                       {isSubmitting || loading ? 'Adding Spot...' : 'Add Parking Spot'}
                     </Button>
@@ -1049,11 +1103,102 @@ export default function AddPage() {
                       <p className="text-red-500 text-center mt-2">{error}</p>
                     )}
                   </form>
+
+                  {/* Confirmation Modal */}
+                  <Dialog open={showConfirmationModal} onOpenChange={setShowConfirmationModal}>
+                    <DialogContent className="w-96"> {/* Added w-96 class here */}
+                      <DialogHeader>
+                        <DialogTitle>Confirm Submission</DialogTitle>
+                        <DialogDescription>
+                          Are you sure you want to submit this parking spot?
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowConfirmationModal(false)}>
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="default"
+                          className="border border-white"
+                          onClick={confirmSubmission}
+                        >
+                          Confirm
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Success Modal */}
+                  <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+                    <DialogContent className="w-96"> {/* Added w-96 class here */}
+                      <DialogHeader>
+                        <DialogTitle>Success!</DialogTitle>
+                        <DialogDescription>
+                          Your parking spot has been successfully added.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button onClick={() => {
+                          setShowSuccessModal(false);
+                          router.push('/myspots');
+                        }}>Close</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Re-request Permission Modal with Instructions */}
+                  <Dialog open={showReRequestModal.camera || showReRequestModal.location} onOpenChange={() => { }}>
+                    <DialogContent className="w-96">
+                      <DialogHeader>
+                        <DialogTitle>Enable Permissions</DialogTitle>
+                        <DialogDescription>
+                          {showReRequestModal.camera && (
+                            <div>
+                              <p>
+                                To capture photos, please allow camera access:
+                              </p>
+                              <ol className="list-decimal list-inside mt-2">
+                                <li>Go to your browser's settings.</li>
+                                <li>Navigate to the 'Privacy and Security' section.</li>
+                                <li>Find 'Site Settings' and locate your site's permissions.</li>
+                                <li>Enable camera access for this site.</li>
+                              </ol>
+                            </div>
+                          )}
+                          {showReRequestModal.location && (
+                            <div>
+                              <p>
+                                To capture your location, please allow location access:
+                              </p>
+                              <ol className="list-decimal list-inside mt-2">
+                                <li>Go to your browser's settings.</li>
+                                <li>Navigate to the 'Privacy and Security' section.</li>
+                                <li>Find 'Site Settings' and locate your site's permissions.</li>
+                                <li>Enable location access for this site.</li>
+                              </ol>
+                            </div>
+                          )}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={handleReRequestCancel}>
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="default"
+                          onClick={handleReRequestConfirm}
+                        >
+                          Proceed
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </CardContent>
               </Card>
             </motion.div>
           </div>
         </div>
       </div>
-    ));
-}
+    )
+  );
+};
