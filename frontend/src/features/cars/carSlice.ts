@@ -78,32 +78,55 @@ export const addCar = createAsyncThunk<
 });
 
 /**
+ * Update a Car
+ * PATCH /cars/id
+ */
+export const updateCar = createAsyncThunk<
+    CarInfo,
+    { id: string; updateData: Partial<CarInfo> },
+    { rejectValue: string }
+>("cars/updateCar", async ({id, updateData}, { rejectWithValue }) => {
+    try {
+        const response = await axios.patch<CarInfo>(`/cars/${id}`, updateData);
+        return response.data;
+    } catch (error: any) {
+        if (error.response?.status === 400) {
+            return rejectWithValue(error.response?.data?.error || "Invalid input");
+        }
+        if (error.response?.status === 401) {
+            return rejectWithValue("Unauthorized");
+        }
+        if (error.response?.status === 403) {
+            return rejectWithValue("Forbidden");
+        }
+        return rejectWithValue(error.response?.data?.error || "Failed to update car");
+    }
+});
+
+/**
  * Delete a Car
- * DELETE /cars/:id
+ * DELETE /cars/id
  */
 export const deleteCar = createAsyncThunk<
-  string,
-  string,
-  { rejectValue: string }
->("cars/deleteCar", async (carId, { rejectWithValue }) => {
-  try {
-    const response = await axios.delete(`/cars/${carId}`);
-    if (response.status === 204) {
-      return carId;
-    } else {
-      return rejectWithValue("Failed to delete car");
+    CarInfo,
+	string,
+    { rejectValue: string }
+>("cars/deleteCar", async (id, { rejectWithValue }) => {
+    try {
+        const response = await axios.delete<CarInfo>(`/cars/${id}`);
+        return response.data;
+    } catch (error: any) {
+        if (error.response?.status === 400) {
+            return rejectWithValue(error.response?.data?.error || "Invalid input");
+        }
+        if (error.response?.status === 401) {
+            return rejectWithValue("Unauthorized");
+        }
+        if (error.response?.status === 403) {
+            return rejectWithValue("Forbidden");
+        }
+        return rejectWithValue(error.response?.data?.error || "Failed to update car");
     }
-  } catch (error: any) {
-    if (error.response?.status === 401) {
-      return rejectWithValue("Unauthorized");
-    }
-    if (error.response?.status === 403) {
-      return rejectWithValue("Forbidden");
-    }
-    return rejectWithValue(
-      error.response?.data?.error || "Failed to delete car"
-    );
-  }
 });
 
 /**
@@ -138,40 +161,61 @@ const carSlice = createSlice({
         state.error = action.payload || "Failed to fetch cars";
       });
 
-    /**
-     * Handle addCar actions
-     */
-    builder
-      .addCase(addCar.pending, (state: CarsState) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(addCar.fulfilled, (state: CarsState, action) => {
-        state.loading = false;
-        state.cars.push(action.payload);
-      })
-      .addCase(addCar.rejected, (state: CarsState, action) => {
-        state.loading = false;
-        state.error = action.payload || "Failed to add car";
-      });
+        /**
+         * Handle addCar actions
+         */
+        builder
+            .addCase(addCar.pending, (state: CarsState) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(addCar.fulfilled, (state: CarsState, action) => {
+                state.loading = false;
+                state.cars.push(action.payload);
+            })
+            .addCase(addCar.rejected, (state: CarsState, action) => {
+                state.loading = false;
+                state.error = action.payload || "Failed to add car";
+            });
 
-    /**
-     * Handle deleteCar actions
-     */
-    builder
-      .addCase(deleteCar.pending, (state: CarsState) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(deleteCar.fulfilled, (state: CarsState, action) => {
-        state.loading = false;
-        state.cars = state.cars.filter((car) => car.id !== action.payload);
-      })
-      .addCase(deleteCar.rejected, (state: CarsState, action) => {
-        state.loading = false;
-        state.error = action.payload || "Failed to delete car";
-      });
-  },
+        /**
+         * Handle updateCar actions
+         */
+        builder
+            .addCase(updateCar.pending, (state: CarsState) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(updateCar.fulfilled, (state: CarsState, action) => {
+                state.loading = false;
+				// Replace the updated car in the list
+				var i = state.cars.findIndex(x => x.id == action.payload.id)
+                state.cars[i] = action.payload;
+            })
+            .addCase(updateCar.rejected, (state: CarsState, action) => {
+                state.loading = false;
+                state.error = action.payload || "Failed to update car";
+            });
+
+        /**
+         * Handle deleteCar actions
+         */
+        builder
+            .addCase(deleteCar.pending, (state: CarsState) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(deleteCar.fulfilled, (state: CarsState, action) => {
+                state.loading = false;
+				// Delete the updated car in the list
+				var i = state.cars.findIndex(x => x.id == action.payload.id)
+                state.cars.splice(i, 1)
+            })
+            .addCase(deleteCar.rejected, (state: CarsState, action) => {
+                state.loading = false;
+                state.error = action.payload || "Failed to delete car";
+            });
+    },
 });
 
 /**

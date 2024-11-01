@@ -22,6 +22,7 @@ const AddCarModal: React.FC<AddCarModalProps> = ({ isOpen, onClose }) => {
     const [make, setMake] = useState('');
     const [model, setModel] = useState('');
     const [licensePlate, setLicensePlate] = useState('');
+    const [licensePlateState, setLicensePlateState] = useState('');
     const [color, setColor] = useState('');
 
     useEffect(() => {
@@ -39,7 +40,7 @@ const AddCarModal: React.FC<AddCarModalProps> = ({ isOpen, onClose }) => {
         e.preventDefault();
 
         // Basic validation
-        if (!make || !model || !licensePlate) {
+        if (!make || !model || !licensePlate || !licensePlateState) {
             toast({
                 title: 'Missing Information',
                 description: 'Please fill out all required fields.',
@@ -52,6 +53,7 @@ const AddCarModal: React.FC<AddCarModalProps> = ({ isOpen, onClose }) => {
             make,
             model,
             license_plate: licensePlate,
+            license_plate_state: licensePlateState,
             color, // Optional
         };
 
@@ -107,6 +109,16 @@ const AddCarModal: React.FC<AddCarModalProps> = ({ isOpen, onClose }) => {
                                 onChange={(e) => setLicensePlate(e.target.value)}
                                 required
                                 placeholder="e.g., ABC-1234"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="licensePlateState">License Plate State</Label>
+                            <Input
+                                id="licensePlateState"
+                                value={licensePlateState}
+                                onChange={(e) => setLicensePlateState(e.target.value)}
+                                required
+                                placeholder="e.g., PA"
                             />
                         </div>
                         <div className="space-y-2">

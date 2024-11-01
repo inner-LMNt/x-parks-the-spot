@@ -8,6 +8,7 @@ import { fetchUserReservations, cancelReservation } from '@/features/reservation
 import { CarInfo, Reservation } from '@/types/type';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Toggle } from '@/components/ui/toggle';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import {MapPin, Clock, Calendar, ArrowRightCircle, Loader2, FileWarning} from 'lucide-react';
@@ -106,7 +107,17 @@ function ReservationCard({
                 </div>
                 <div className="flex items-center mb-2">
                     <p className="text-sm text-gray-700">
-                        <strong>License Plate:</strong> {car?.license_plate}
+                        <strong>License Plate:</strong> {car.license_plate}
+                    </p>
+                </div>
+                <div className="flex items-center mb-2">
+                    <p className="text-sm text-gray-700">
+                        <strong>Price:</strong> ${reservation.price ? reservation.price.toFixed(2) : "0.00"}
+                    </p>
+                </div>
+                <div className="flex items-center mb-2">
+                    <p className="text-sm text-gray-700">
+                        <strong>Location:</strong> { reservation.location.address ? reservation.location.address : "N/A" }
                     </p>
                 </div>
                 <div className="flex justify-center gap-4">
@@ -176,6 +187,9 @@ export default function BookingsPage() {
     const carsLoading = useAppSelector((state) => state.cars.loading);
     const carsError = useAppSelector((state) => state.cars.error);
     const userName = useAppSelector((state) => state.user.name);
+    const [showCancelledSpots, setShowCancelledSpots] = useState<boolean>(false);
+    const [sortByPrice, setSortByPrice] = useState<boolean>(false);
+
 
     // Create a carMap for efficient lookup
     const carMap = useMemo(() => {
@@ -283,13 +297,45 @@ export default function BookingsPage() {
                         </div>
                     </section>
 
-                    {/* Global Loading Indicator */}
-                    {isLoading && (
-                        <div className="flex items-center justify-center my-4">
-                            <Loader2 className="animate-spin text-gray-500 w-8 h-8"/>
-                            <span className="ml-2 text-gray-500">Loading your reservations...</span>
-                        </div>
-                    )}
+                {/* Your Cars Section */}
+                <section className="mb-8">
+                    <SectionHeader title="Your Cars"/>
+                    <div className="grid gap-6">
+                        {isLoading ? (
+                            <div className="flex items-center justify-center">
+                                <Loader2 className="animate-spin text-gray-500 w-8 h-8"/>
+                                <span className="ml-2 text-gray-500">Loading your data...</span>
+                            </div>
+                        ) : carsError ? (
+                            <p className="text-red-500">Error loading cars: {carsError}</p>
+                        ) : cars.length > 0 ? (
+                            cars.map((car: CarInfo) => (
+                                <Card key={car.id} className="p-4">
+                                    <CardContent>
+                                        <p className="text-lg font-semibold">{car.color ? `${car.color} ` : ""}{car.make} {car.model}</p>
+                                        <p className="text-sm text-gray-600">License Plate: {car.license_plate} {car.license_plate_state}</p>
+                                    </CardContent>
+                                </Card>
+                            ))
+                        ) : (
+                            <div>
+                                <p>No cars available. Please add a car.</p>
+                                <Button onClick={() => router.push('/profile/add-car')} className="mt-2">
+                                    Add a Car
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                </section>
+
+                {/* Global Loading Indicator */}
+                {isLoading && (
+                    <div className="flex items-center justify-center my-4">
+                        <Loader2 className="animate-spin text-gray-500 w-8 h-8"/>
+                        <span className="ml-2 text-gray-500">Loading your reservations...</span>
+                    </div>
+                )}
+
                 <SectionHeader title="Reports"/>
                 <div className="text-left mb-4 text-slate-950">
                     <Link href="/reports" passHref>
@@ -323,17 +369,40 @@ export default function BookingsPage() {
                         </section>
                     )}
 
-                    {/* Past Reservations */}
-                    {!isLoading && pastReservations.length > 0 && (
-                        <section className="mb-8">
-                            <SectionHeader title="Past Reservations" />
-                            <div className="grid gap-6">
-                                {pastReservations.map((reservation: Reservation) => (
-                                    <ReservationCard key={reservation.id} reservation={reservation} isPast carMap={carMap} onCancel={handleCancel} />
-                                ))}
-                            </div>
-                        </section>
-                    )}
+                {/* Past Reservations */}
+                {!isLoading && pastReservations.length > 0 && (
+                    <section className="mb-8">
+                        <SectionHeader title="Past Reservations"/>
+                        {/* filters */}
+                        <div className="items-top flex space-x-2">
+                          <Toggle id="showCancelled"
+                            // pressed={showCancelledSpots}
+                            onPressedChange={(pressed: boolean) => {
+                              setShowCancelledSpots(pressed);
+                            }}
+                            >
+                                <span>Show cancelled reservations</span>
+                            </Toggle>
+                          <Toggle id="sortByPrice"
+                            // pressed={showCancelledSpots}
+                            onPressedChange={(pressed: boolean) => {
+                              setSortByPrice(pressed);
+                            }}
+                            >
+                                <span>Sort by price</span>
+                            </Toggle>
+                        </div>
+                        <div className="grid gap-6">
+                            {pastReservations
+                                .sort((a: Reservation, b: Reservation) => a.start_time.localeCompare(b.start_time))
+                                .sort((a: Reservation, b: Reservation) => sortByPrice ? a.price - b.price : 0)
+                                .filter((r: Reservation) => showCancelledSpots || (r.status != 'canceled'))
+                                .map((reservation: Reservation) => (
+                                <ReservationCard key={reservation.id} reservation={reservation} isPast carMap={carMap} onCancel={handleCancel}/>
+                            ))}
+                        </div>
+                    </section>
+                )}
 
                     {/* Cancelled Reservations */}
                     {!isLoading && cancelledReservations.length > 0 && (
