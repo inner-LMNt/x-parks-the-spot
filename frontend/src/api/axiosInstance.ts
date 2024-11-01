@@ -34,4 +34,24 @@ axiosInstance.interceptors.request.use(
   }
 );
 
+axiosInstance.interceptors.response.use(
+  (resp) => {
+    return resp
+  },
+  (error) => {
+    if (error.status === 401) {
+      if (store) {
+        const state = store.getState();
+        state.user.isLoggedIn = false;
+      }
+    } else if (error.status === 403) {
+      if (store) {
+        const state = store.getState();
+        state.user.isLoggedIn = false;
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
 export default axiosInstance;
