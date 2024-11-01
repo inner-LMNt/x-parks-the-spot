@@ -8,7 +8,7 @@ import datetime
 from enum import Enum
 import psycopg
 from psycopg import Cursor
-from psycopg.rows import DictRow, TupleRow
+from psycopg.rows import DictRow
 
 from xpark.utils.mailer import send_email
 
