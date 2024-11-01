@@ -63,7 +63,7 @@ export default function SearchPage() {
   const [searchRadius, setSearchRadius] = useState<number>(5);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [mapCenter, setMapCenter] = useState<google.maps.LatLngLiteral>(default_center);
-  const [isListExpanded, setIsListExpanded] = useState(true);
+  const [isListCollapsed, setIsListCollapsed] = useState(true);
   const [geoEnabled, setGeoEnabled] = useState(false);
   const [address, setAddress] = useState<string>('');
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
@@ -433,7 +433,7 @@ export default function SearchPage() {
           if (status === window.google.maps.DirectionsStatus.OK) {
             setDirections(result);
             setNavigationMode(true);
-            setIsListExpanded(false);
+            setIsListCollapsed(true);
           } else {
             console.error(`error fetching directions ${result}`);
           }
@@ -447,7 +447,7 @@ export default function SearchPage() {
   };
 
   const handleArrowClick = () => {
-    setIsListExpanded(!isListExpanded);
+    setIsListCollapsed(!isListCollapsed);
   };
 
   // Watch user location and check if within 50 feet of destination
@@ -498,6 +498,11 @@ export default function SearchPage() {
       }
     };
   }, [navigationMode, selectedSpot]);
+
+  // Prevent list expansion with navigation mode
+  useEffect(() => {
+    setIsListCollapsed(true);
+  }, [navigationMode]);
 
   useEffect(() => {
     let watchId: number;
@@ -1101,7 +1106,7 @@ export default function SearchPage() {
         ref={mapRef}
         className="transition-all duration-300"
         style={{
-          height: isLoggedIn ? (isListExpanded ? `calc(100vh - 64px)` : '50vh') : (isListExpanded ? '100vh' : '50vh'),
+          height: isLoggedIn ? (isListCollapsed ? `calc(100vh - 64px)` : '50vh') : (isListCollapsed ? '100vh' : '50vh'),
           flexShrink: 0,
           position: 'relative',
         }}
@@ -1118,24 +1123,27 @@ export default function SearchPage() {
               mapTypeControl: false,
               fullscreenControl: false,
               gestureHandling: 'greedy',
+              streetViewControl: false,
             }}
           >
-            {(parkingSpots || []).map((spot: ParkingSpace) => (
-              spot.location && (
-                <Marker
-                  key={spot.id}
-                  position={{
-                    lat: spot.location.latitude,
-                    lng: spot.location.longitude,
-                  }}
-                  onClick={() => handleSpotSelect(spot)}
-                />
-              )
-            ))}
+            {!navigationMode &&
+              (parkingSpots || []).map((spot: ParkingSpace) => (
+                spot.location && (
+                  <Marker
+                    key={spot.id}
+                    position={{
+                      lat: spot.location.latitude,
+                      lng: spot.location.longitude,
+                    }}
+                    onClick={() => handleSpotSelect(spot)}
+                  />
+                )
+              ))
+            }
 
-            {mapCenter && (
+            {userLocation && (
               <Marker
-                position={mapCenter}
+                position={userLocation}
                 icon={{
                   url: encodedSVG,
                 }}
@@ -1206,12 +1214,12 @@ export default function SearchPage() {
                     </p>
 
                     <div className="flex gap-1">
-                      <Button onClick={getDirections} className="flex-1 h-6 text-[10px]" variant="outline">
+                      <Button onClick={getDirections} className="flex-1 h-8 text-[12px]" variant="outline">
                         <Navigation className="mr-1 h-3 w-3" />
                         Navigate
                       </Button>
                       {selectedSpot.is_paid ? (
-                        <Button onClick={() => reserveSpot(selectedSpot.id)} className="flex-1 h-6 text-[10px]"
+                        <Button onClick={() => reserveSpot(selectedSpot.id)} className="flex-1 h-8 text-[12px]"
                           variant="default">
                           <DollarSign className="mr-1 h-3 w-3" />
                           Reserve
@@ -1228,9 +1236,11 @@ export default function SearchPage() {
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                       <DialogTrigger asChild>
                         {!selectedSpot.is_paid && !selectedSpot.is_taken && (
-                          <Button onClick={() => selectedSpot.id && openUpdateStatusDialog(selectedSpot.id)}>
-                            Update Spot Status
-                          </Button>
+                          <div className="flex gap-1 mt-2 justify-center">
+                            <Button onClick={() => selectedSpot.id && openUpdateStatusDialog(selectedSpot.id)}>
+                              Update Spot Status
+                            </Button>
+                          </div>
                         )}
                       </DialogTrigger>
 
@@ -1324,7 +1334,7 @@ export default function SearchPage() {
 
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
           <button onClick={handleArrowClick} className="focus:outline-none">
-            {isListExpanded ? (
+            {isListCollapsed ? (
               <motion.div
                 animate={{ y: [0, 10, 0] }}
                 transition={{ repeat: Infinity, duration: 1 }}
@@ -1432,7 +1442,7 @@ export default function SearchPage() {
         ref={navigationCardRef}
         className={`fixed bottom-0 left-0 w-full bg-gray-100 p-4 transition-transform duration-300 transform ${navigationMode ? 'translate-y-0' : 'translate-y-full'
           }`}
-        style={{ bottom: '0px', height: 'auto' }}
+        style={{ bottom: isLoggedIn ? '64px' : '0', height: 'auto' }}
       >
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row justify-between items-center w-full">
@@ -1494,6 +1504,30 @@ export default function SearchPage() {
                         <p>Duration: {directions.routes[0].legs[0].steps[currentStepIndex].duration?.text ?? ''}</p>
                       </div>
                     )}
+                    <div className="flex justify-between mt-4">
+                      <button
+                        onClick={() => setCurrentStepIndex((prev) => Math.max(prev - 1, 0))}
+                        className="px-3 py-2 bg-blue-500 text-white text-sm font-semibold rounded hover:bg-blue-700 focus:outline-none"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (directions) {
+                            setCurrentStepIndex((prev) => Math.min(prev + 1, directions.routes[0].legs[0].steps.length - 1));
+                          }
+                        }}
+                        className="px-3 py-2 bg-blue-500 text-white text-sm font-semibold rounded hover:bg-blue-700 focus:outline-none"
+                      >
+                        Next
+                      </button>
+                      <button
+                        onClick={() => setCurrentStepIndex(0)}
+                        className="px-3 py-2 bg-green-500 text-white text-sm font-semibold rounded hover:bg-green-700 focus:outline-none"
+                      >
+                        Current
+                      </button>
+                    </div>
                   </div>
                 </div>
               )
