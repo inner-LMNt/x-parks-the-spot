@@ -34,7 +34,6 @@ def require_logged_in_user(
             case Ok(user_id):
                 kwargs["user_id"] = user_id
                 kwargs["token"] = token
-                print(kwargs)
                 return next_fn(*args, **kwargs)
             case Err(e):
                 return {"err": e}, 401

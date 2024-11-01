@@ -336,3 +336,33 @@ def handle_password_reset_confirmation(
     expire_all_tokens_for_user(user_id)
 
     return Ok(None)
+
+
+def handle_set_notification_time(user_id: uuid.UUID, time: str) -> Result[None, str]:
+    query = """
+            UPDATE users
+            SET user_preferences = COALESCE(user_preferences, '{}'::jsonb) || jsonb_build_object('notification_time', %s::text)
+            WHERE id = %s
+            """
+    
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, (time, str(user_id)))
+            if cur.rowcount == 0:
+                return Err("User not found")
+
+            return Ok(None)
+
+
+def handle_get_notification_time(user_id: uuid.UUID) -> Result[str, str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT user_preferences->>'notification_time' FROM users WHERE id = %s",
+                (str(user_id),),
+            )
+            result = cur.fetchone()
+            if not result:
+                return Err("User not found")
+
+            return Ok(result[0])

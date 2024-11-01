@@ -1717,6 +1717,7 @@ export interface components {
         NotificationPreferences: {
             email_notifications?: boolean;
             push_notifications?: boolean;
+            time?: string;
         };
         User: {
             /** Format: uuid */
@@ -1740,6 +1741,7 @@ export interface components {
             email?: string;
             full_name?: string;
             notification_preferences?: components["schemas"]["NotificationPreferences"];
+            notification_time?: string;
         };
         UserDeletionConfirm: {
             token: string;

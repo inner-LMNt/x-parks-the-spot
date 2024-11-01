@@ -7,3 +7,5 @@ properties:
     type: string
   notification_preferences:
     $ref: './NotificationPreferences.yaml'
+  notification_time:
+    type: string
