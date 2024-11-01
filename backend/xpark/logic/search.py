@@ -53,7 +53,10 @@ def search_query(
                 AND price >= COALESCE(%(min_price)s, price)
                 AND price <= COALESCE(%(max_price)s, price)
                 AND is_taken = COALESCE(%(is_taken)s, is_taken)
-                AND TSTZRANGE(COALESCE(%(start_time)s, lower(time)), COALESCE(%(end_time)s, upper(time)), '()') <@ time
+                AND TSTZRANGE(
+                    LEAST(COALESCE(%(start_time)s, lower(time)), %(end_time)s),
+                    GREATEST(COALESCE(%(end_time)s, upper(time)), %(start_time)s),
+                '()') <@ time
                 LIMIT 30
                 """,
                 {
