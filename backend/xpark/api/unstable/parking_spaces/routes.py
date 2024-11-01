@@ -9,6 +9,7 @@ from xpark.logic.parkingspace import (
     get_all_user_parking_spaces,
     handle_submit_verification,
     update_taken,
+    submit_rating, get_user_rating
 )
 from flask import request
 from result import Ok, Err
@@ -172,5 +173,44 @@ def update_parking_space_taken(parking_space_id: str, token: str, user_id: uuid.
     match update_taken(user_id=user_id, parking_space_id=parking_space_uuid, image_file=image_file):
         case Ok(_):
             return {}, 200
+        case Err(e):
+            return {"err": e}, 400
+
+@bp.post("<parking_space_id>/rate")
+@require_logged_in_user
+def rate_parking_space_route(
+    parking_space_id: str, token: str, user_id: uuid.UUID
+) -> Tuple[Any, int]:
+    data = request.json or {}
+    availability_rating = data.get("availability_rating")
+    cleanliness_rating = data.get("cleanliness_rating")
+
+    result = submit_rating(
+        user_id=user_id,
+        parking_space_id=uuid.UUID(parking_space_id),
+        availability_rating=availability_rating,
+        cleanliness_rating=cleanliness_rating,
+    )
+
+    if result.is_ok():
+        return {}, 200
+    else:
+        return {"err": result.unwrap_err()}, 400
+
+@bp.get("<parking_space_id>/user-rating")
+@require_logged_in_user
+def get_user_rating_route(
+    parking_space_id: str, token: str, user_id: uuid.UUID
+) -> Tuple[Any, int]:
+    """
+    Endpoint to fetch the logged-in user's rating for a specific parking space.
+
+    URL: GET /parking-spaces/<parking_space_id>/user-rating
+    """
+
+    parking_space_uuid = uuid.UUID(parking_space_id)
+    match get_user_rating(user_id, parking_space_uuid):
+        case Ok(data):
+            return data, 200
         case Err(e):
             return {"err": e}, 400

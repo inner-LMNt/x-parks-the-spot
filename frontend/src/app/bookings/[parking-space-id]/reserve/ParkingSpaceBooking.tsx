@@ -24,14 +24,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MapPin, DollarSign, Clock, Star, Calendar, ArrowLeft } from 'lucide-react';
+import { MapPin, DollarSign, Clock, Star, Calendar, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AddCarModal from '@/components/custom/AddCarModal';
 import Link from 'next/link';
 import ImageWrapper from "@/components/custom/ImageWrapper";
-import {lock} from "next/dist/client/components/react-dev-overlay/internal/components/Overlay/body-locker";
+import {RatingDisplay} from "@/components/custom/RatingDisplay";
 
 /**
  * **Booking Page Component**
@@ -392,18 +393,15 @@ export default function ParkingSpaceBooking() {
                         </div>
                     )}
                     <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center">
-                            <Star className="w-5 h-5 text-yellow-400 mr-1" />
-                            <span className="font-semibold">{parkingSpace.verification_status}</span>
-                        </div>
-                        <Badge variant= 'default'>
+                        <RatingDisplay parkingSpace={parkingSpace}/>
+                        <Badge variant="default">
                             Available
                         </Badge>
                     </div>
-                    <Separator className="my-4" />
+                    <Separator className="my-4"/>
                     <div className="space-y-4">
                         <div className="flex justify-between items-center">
-                            <div className="flex items-center">
+                        <div className="flex items-center">
                                 <DollarSign className="w-5 h-5 text-green-600 mr-1" />
                                 <span className="font-semibold">${parkingSpace.pricing_info?.base_price ?? '???'}/hour</span>
                             </div>
@@ -438,17 +436,15 @@ export default function ParkingSpaceBooking() {
                         <h3 className="font-semibold mb-2 text-lg">Your Previous Reservations:</h3>
                         <div className="space-y-2">
                             {userReservations.map((reservation: Reservation) => (
-                                <div key={reservation.id} className="text-sm border p-2 rounded-md">
+                                <div key={reservation.id} className="text-sm border p-2 rounded-md text-wrap">
                                     <p>
-                                        <strong>Date:</strong>{' '}
-                                        {isValidDate(reservation.start_time) ? format(new Date(reservation.start_time as string), 'PPP') : 'N/A'}
+                                        <strong>Start Time:</strong>{' '}
+                                        {isValidDate(reservation.start_time) ? format(new Date(reservation.start_time as string), 'PPp') : 'N/A'}
                                     </p>
                                     <p>
-                                        <strong>Time:</strong>{' '}
+                                        <strong>End Time:</strong>{' '}
                                         {isValidDate(reservation.start_time) && isValidDate(reservation.end_time)
-                                            ? (is24Hours(reservation.start_time, reservation.end_time)
-                                                ? '24 hours'
-                                                : `${format(new Date(reservation.start_time as string), 'p')} - ${format(new Date(reservation.end_time as string), 'p')}`)
+                                            ? format(new Date(reservation.end_time as string), 'PPp')
                                             : 'N/A'}
                                     </p>
                                     <p>

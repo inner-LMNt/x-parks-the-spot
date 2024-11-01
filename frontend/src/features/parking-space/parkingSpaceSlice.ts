@@ -4,29 +4,32 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "@/api/axiosInstance";
 import { ParkingSpace } from "@/types/type";
 
-/**
- * **Parking Space State Interface**
- */
 interface ParkingSpaceState {
     loading: boolean;
     error: string | null;
     parkingSpace: ParkingSpace | null;
+    userRating: {
+        availabilityRating: number | null;
+        cleanlinessRating: number | null;
+    } | null;
     lockStatus: "idle" | "locking" | "locked" | "unlocking" | "failed";
     lockExpiresAt: number | null;
 }
 
-/**
- * **Initial State**
- */
 const initialState: ParkingSpaceState = {
     loading: false,
     error: null,
     parkingSpace: null,
+    userRating: null,
     lockStatus: "idle",
     lockExpiresAt: null,
 };
 
-
+interface RatingPayload {
+    parkingSpaceId: string;
+    availabilityRating?: number;
+    cleanlinessRating?: number;
+}
 
 export const getAllPendingSpots = createAsyncThunk<
     { pendingSpaces: ParkingSpace[] },
@@ -166,6 +169,40 @@ export const markSpotTaken = createAsyncThunk<
     }
 });
 
+export const submitRating = createAsyncThunk<
+    void,
+    RatingPayload,
+    { rejectValue: string }
+>("parkingSpace/submitRating", async ({ parkingSpaceId, availabilityRating, cleanlinessRating }, { rejectWithValue }) => {
+    try {
+        await axios.post(`/parking-spaces/${parkingSpaceId}/rate`, {
+            availability_rating: availabilityRating,
+            cleanliness_rating: cleanlinessRating,
+        });
+    } catch (error: any) {
+        return rejectWithValue(
+            error.response?.data?.error || "Failed to submit rating"
+        );
+    }
+});
+
+export const fetchUserRating = createAsyncThunk<
+    { availability_rating: number | null; cleanliness_rating: number | null },
+    string,
+    { rejectValue: string }
+>(
+    "parkingSpace/fetchUserRating",
+    async (parkingSpaceId, { rejectWithValue }) => {
+        try {
+            const response = await axios.get(
+                `/parking-spaces/${parkingSpaceId}/user-rating`
+            );
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue("Failed to fetch user rating");
+        }
+    }
+);
 
 /**
  * **Parking Space Slice**
@@ -185,6 +222,7 @@ const parkingSpaceSlice = createSlice({
          */
         resetParkingSpace(state) {
             state.parkingSpace = null;
+            state.userRating = null;
             state.lockStatus = "idle";
             state.lockExpiresAt = null;
             state.error = null;
@@ -255,6 +293,35 @@ const parkingSpaceSlice = createSlice({
                 state.error = action.payload || "Failed to unlock parking space";
             });
 
+        builder
+            .addCase(fetchUserRating.pending, (state: ParkingSpaceState) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchUserRating.fulfilled, (state: ParkingSpaceState, action: any) => {
+                state.loading = false;
+                state.userRating = {
+                    availabilityRating: action.payload.availability_rating,
+                    cleanlinessRating: action.payload.cleanliness_rating,
+                };
+            })
+            .addCase(fetchUserRating.rejected, (state: ParkingSpaceState, action: any) => {
+                state.loading = false;
+                state.error = action.payload || "Failed to fetch user rating";
+            });
+
+        builder
+            .addCase(submitRating.fulfilled, (state: ParkingSpaceState, action: any) => {
+                state.loading = false;
+                // Update the local user rating state when a new rating is submitted
+                if (state.userRating) {
+                    state.userRating = {
+                        ...state.userRating,
+                        availabilityRating: action.meta.arg.availabilityRating ?? state.userRating.availabilityRating,
+                        cleanlinessRating: action.meta.arg.cleanlinessRating ?? state.userRating.cleanlinessRating,
+                    };
+                }
+            });
 
     },
 });
