@@ -20,11 +20,14 @@ const NotificationBanner = () => {
     const [visible, setVisible] = useState(true);
     const [fadeOut, setFadeOut] = useState(false);
     const [extendable, setExtendable] = useState(false);
+    const isLoggedIn = useAppSelector((state: any) => state.user.isLoggedIn);
 
     useEffect(() => {
-        dispatch(fetchUserReservations());
-        dispatch(get_notification_time());
-    }, [dispatch]);
+        if (isLoggedIn) {
+            dispatch(fetchUserReservations());
+            dispatch(get_notification_time());
+        }
+    }, [domLoaded]);
 
     useEffect(() => {
         setDomLoaded(true);
