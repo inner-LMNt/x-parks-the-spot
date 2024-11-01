@@ -140,6 +140,7 @@ export default function BookingsPage() {
     const carsError = useAppSelector((state) => state.cars.error);
     const userName = useAppSelector((state) => state.user.name);
     const [showCancelledSpots, setShowCancelledSpots] = useState<boolean>(false);
+    const [sortByPrice, setSortByPrice] = useState<boolean>(false);
 
 
     // Create a carMap for efficient lookup
@@ -284,9 +285,19 @@ export default function BookingsPage() {
                             >
                                 <span>Show cancelled reservations</span>
                             </Toggle>
+                          <Toggle id="sortByPrice"
+                            // pressed={showCancelledSpots}
+                            onPressedChange={(pressed: boolean) => {
+                              setSortByPrice(pressed);
+                            }}
+                            >
+                                <span>Sort by price</span>
+                            </Toggle>
                         </div>
                         <div className="grid gap-6">
-                            {pastReservations.sort((a: Reservation, b: Reservation) => a.start_time.localeCompare(b.start_time))
+                            {pastReservations
+                                .sort((a: Reservation, b: Reservation) => a.start_time.localeCompare(b.start_time))
+                                .sort((a: Reservation, b: Reservation) => sortByPrice ? a.price - b.price : 0)
                                 .filter((r: Reservation) => showCancelledSpots || (r.status != 'canceled'))
                                 .map((reservation: Reservation) => (
                                 <ReservationCard key={reservation.id} reservation={reservation} isPast carMap={carMap}/>
