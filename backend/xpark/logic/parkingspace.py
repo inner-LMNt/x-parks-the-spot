@@ -15,7 +15,7 @@ import uuid
 from .timeslots import days_of_week_to_slots, recalculate_coalesce
 
 
-def get_owned_paid_parking_spaces(
+def get_all_user_parking_spaces(
     user_id: uuid.UUID,
 ) -> Result[list[Dict[Any, Any]], str]:
     with DB.pool.connection() as conn:
@@ -41,7 +41,7 @@ def get_owned_paid_parking_spaces(
                     created_at, 
                     updated_at
                 FROM parking_spaces
-                WHERE owner = %s AND is_paid = TRUE
+                WHERE owner = %s
             """,
                 (user_id,),
             )
