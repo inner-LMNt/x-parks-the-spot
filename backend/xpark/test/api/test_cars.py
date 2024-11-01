@@ -20,7 +20,8 @@ def test_cars(client: FlaskClient) -> None:
         json={
             "make": "Audi",
             "model": "A4",
-            "license_plate": "PA ABC-1234",
+            "license_plate": "ABC-1234",
+            "license_plate_state": "PA",
         },
     )
     assert response.status_code == 201
@@ -33,7 +34,8 @@ def test_cars(client: FlaskClient) -> None:
     )
     assert response.status_code == 200
     assert response.json
-    assert response.json["license_plate"] == "PA ABC-1234"
+    assert response.json["license_plate"] == "ABC-1234"
+    assert response.json["license_plate_state"] == "PA"
 
     response = client.delete(
         f"/api/unstable/cars/{car_id}",
@@ -52,7 +54,8 @@ def test_cars(client: FlaskClient) -> None:
         json={
             "make": "Audi",
             "model": "A5",
-            "license_plate": "IN XYZ-7890",
+            "license_plate": "XYZ-7890",
+            "license_plate_state": "IN",
         },
     )
     assert response.status_code == 201
