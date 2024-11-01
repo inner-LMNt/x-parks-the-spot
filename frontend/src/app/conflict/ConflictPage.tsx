@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Calendar, ChevronDown, ChevronUp, Tag, ShieldCheck, ShieldX, ShieldEllipsis } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { getAllConflicts, updateConflictResponse } from '@/features/admin/adminSlice';
+import { getAllConflicts, getCancelled, updateConflictResponse, acknowledgeCancelled } from '@/features/admin/adminSlice';
 import { fetchParkingSpace } from '@/features/parking-space/parkingSpaceSlice';
 import { toast } from '@/hooks/use-toast';
 import ImageWrapper from "@/components/custom/ImageWrapper";
@@ -26,26 +26,129 @@ interface Conflict {
     parking_space_id: string;
 }
 
+const MAX_ITEMS = 4;
+const ConflictCard = ({ conflict, expandedConflictId, toggleConflict, handleResponseSubmit, responseText, setResponseText, handleImageClick, parkingSpaceData }: any) => (
+    <Card key={conflict.id} className="shadow-lg">
+        <CardHeader
+            className="cursor-pointer hover:bg-slate-50 transition-colors"
+            onClick={() => toggleConflict(conflict.id, conflict.parking_space_id)}
+        >
+            <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                        <MapPin className="w-5 h-5 text-blue-500" />
+                        <CardTitle className="text-xl text-slate-950">{conflict.description}</CardTitle>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-slate-600">
+                        <Calendar className="w-4 h-4" />
+                        <span>{new Date(conflict.created_at).toLocaleDateString()}</span>
+                        <Tag className="w-4 h-4" />
+                        <span>{conflict.parking_space_address || "Location not available"}</span>
+                    </div>
+                </div>
+                {expandedConflictId === conflict.id ? (
+                    <ChevronUp className="w-5 h-5 text-slate-700" />
+                ) : (
+                    <ChevronDown className="w-5 h-5 text-slate-700" />
+                )}
+            </div>
+        </CardHeader>
+        <AnimatePresence>
+            {expandedConflictId === conflict.id && (
+                <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                >
+                    <CardContent className="bg-slate-50 space-y-6 py-2">
+                        <div className="space-y-4">
+                            {parkingSpaceData[conflict.parking_space_id] && (
+                                <div className="bg-gray-100 p-4 rounded-lg shadow-sm">
+                                    <h3 className="text-lg font-bold mb-2">Parking Space Details</h3>
+                                    {parkingSpaceData[conflict.parking_space_id]?.photos?.[0] && (
+                                        <div className="relative w-full h-40" onClick={() => handleImageClick(parkingSpaceData[conflict.parking_space_id].photos[0])}>
+                                            <ImageWrapper
+                                                src={parkingSpaceData[conflict.parking_space_id].photos[0]}
+                                                alt="Parking Space Image"
+                                                layout="fill"
+                                                objectFit="cover"
+                                                className="w-full h-40 object-cover rounded-md mb-4 cursor-pointer"
+                                            />
+                                        </div>
+                                    )}
+                                    <p><strong>Name:</strong> {parkingSpaceData[conflict.parking_space_id].name}</p>
+                                    <p><strong>Address:</strong> {parkingSpaceData[conflict.parking_space_id].location.address}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Response input and submit button */}
+                        <div className="space-y-2">
+                            <textarea
+                                value={responseText[conflict.id] || ""}
+                                onChange={(e) => setResponseText((prev) => ({ ...prev, [conflict.id]: e.target.value }))}
+                                placeholder="Enter your response..."
+                                className="w-full p-2 border border-gray-300 rounded-md text-black"
+                            />
+                            <Button onClick={() => handleResponseSubmit(conflict.id)}>
+                                Submit Response
+                            </Button>
+                        </div>
+                    </CardContent>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    </Card>
+);
+
+const CancellationCard = ({ cancellation, handleAcknowledgeCancellation }: any) => (
+    <Card key={cancellation.id} className="shadow-lg">
+        <CardHeader>
+            <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                        <MapPin className="w-5 h-5 text-blue-500" />
+                        <CardTitle className="text-xl text-slate-950">Cancelled Spot</CardTitle>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-slate-600">
+                        <Calendar className="w-4 h-4" />
+                        <span>{new Date(cancellation.created_at).toLocaleDateString()}</span>
+                        <Tag className="w-4 h-4" />
+                        <span>{cancellation.parking_space_address || "Location not available"}</span>
+                    </div>
+                </div>
+            </div>
+        </CardHeader>
+        <CardContent className="bg-slate-50 space-y-2 py-2">
+            <Button onClick={() => handleAcknowledgeCancellation(cancellation.id)}>
+                Acknowledge Cancellation
+            </Button>
+        </CardContent>
+    </Card>
+);
+
 const ConflictPage = () => {
     const dispatch = useAppDispatch();
-    const { conflicts = [], loading, error } = useAppSelector(state => state.admin);
+    const { conflicts = [], cancellations = [], loading, error } = useAppSelector(state => state.admin);
     const [expandedConflictId, setExpandedConflictId] = useState<string | null>(null);
     const [responseText, setResponseText] = useState<{ [key: string]: string }>({});
     const [parkingSpaceData, setParkingSpaceData] = useState<{ [key: string]: any }>({});
-    const [selectedImage, setSelectedImage] = useState<string | null>(null); // State to manage expanded image
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     useEffect(() => {
         dispatch(getAllConflicts());
+        dispatch(getCancelled());
     }, [dispatch]);
 
-    const toggleConflict = (id: string, parkingSpaceId: string) => {
+    const toggleConflict = (id, parkingSpaceId) => {
         setExpandedConflictId(expandedConflictId === id ? null : id);
 
         if (!parkingSpaceData[parkingSpaceId]) {
             dispatch(fetchParkingSpace(parkingSpaceId))
                 .unwrap()
-                // @ts-ignore
-                .then((data) => setParkingSpaceData((prev) => ({ ...prev, [parkingSpaceId]: data })))
+                .then(data => setParkingSpaceData(prev => ({ ...prev, [parkingSpaceId]: data })))
                 .catch(() => {
                     toast({
                         title: "Error",
@@ -56,11 +159,11 @@ const ConflictPage = () => {
         }
     };
 
-    const handleImageClick = (imageSrc: string) => {
+    const handleImageClick = (imageSrc) => {
         setSelectedImage(imageSrc);
     };
 
-    const handleResponseSubmit = async (id: string) => {
+    const handleResponseSubmit = async (id) => {
         const response = responseText[id];
         if (response && response.trim()) {
             await dispatch(updateConflictResponse({ id, response }))
@@ -72,9 +175,9 @@ const ConflictPage = () => {
                         variant: "success",
                     });
                     dispatch(getAllConflicts());
-                    setResponseText((prev) => ({ ...prev, [id]: "" }));
+                    setResponseText(prev => ({ ...prev, [id]: "" }));
                 })
-                .catch((error: Error) => {
+                .catch(error => {
                     toast({
                         title: "Error",
                         description: error.message,
@@ -84,11 +187,30 @@ const ConflictPage = () => {
         }
     };
 
-    const getVerificationStatusIcon = (status: string) => {
-        if (status === 'verified') return <ShieldCheck className="w-6 h-6 text-green-500" aria-label="Verified" />;
-        if (status === 'pending') return <ShieldEllipsis className="w-6 h-6 text-yellow-500" aria-label="Pending Verification" />;
-        return <ShieldX className="w-6 h-6 text-red-500" aria-label="Not Verified" />;
+    const handleAcknowledgeCancellation = async (id) => {
+        await dispatch(acknowledgeCancelled(id))
+            .unwrap()
+            .then(() => {
+                toast({
+                    title: "Cancellation Acknowledged",
+                    description: "The cancellation has been removed.",
+                    variant: "success",
+                });
+                dispatch(getCancelled());
+            })
+            .catch(error => {
+                toast({
+                    title: "Error",
+                    description: error.message,
+                    variant: "destructive",
+                });
+            });
     };
+
+    // Limit items based on MAX_ITEMS with priority for conflicts
+    const visibleConflicts = conflicts.slice(0, MAX_ITEMS);
+    const remainingItems = MAX_ITEMS - visibleConflicts.length;
+    const visibleCancellations = cancellations.slice(0, remainingItems);
 
     if (loading) return <p className="text-center text-lg">Loading...</p>;
     if (error) return <p className="text-red-500 text-center">Error: {error}</p>;
@@ -97,97 +219,35 @@ const ConflictPage = () => {
         <div className="min-h-screen bg-gray-100 py-8">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
                 <h1 className="text-3xl font-bold mb-4 text-black">Conflict Management</h1>
-                {conflicts.length === 0 ? (
-                    <p className="text-center text-gray-800">No conflicts available.</p>
+                {conflicts.length === 0 && cancellations.length === 0 ? (
+                    <p className="text-center text-gray-800">No conflicts or cancellations available.</p>
                 ) : (
                     <div className="space-y-4">
-
-                        {conflicts.slice(0, 10).map((conflict: any) => (
-                            <Card key={conflict.id} className="shadow-lg">
-                                <CardHeader
-                                    className="cursor-pointer hover:bg-slate-50 transition-colors"
-                                    onClick={() => toggleConflict(conflict.id, conflict.parking_space_id)}
-                                >
-                                    <div className="flex justify-between items-start">
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-2">
-                                                <MapPin className="w-5 h-5 text-blue-500" />
-                                                <CardTitle className="text-xl text-slate-950">{conflict.description}</CardTitle>
-                                            </div>
-                                            <div className="flex items-center gap-3 text-sm text-slate-600">
-                                                <Calendar className="w-4 h-4" />
-                                                <span>{new Date(conflict.created_at).toLocaleDateString()}</span>
-                                                <Tag className="w-4 h-4" />
-                                                <span>{conflict.parking_space_address || "Location not available"}</span>
-                                            </div>
-                                        </div>
-                                        {expandedConflictId === conflict.id ? (
-                                            <ChevronUp className="w-5 h-5 text-slate-700" />
-                                        ) : (
-                                            <ChevronDown className="w-5 h-5 text-slate-700" />
-                                        )}
-                                    </div>
-                                </CardHeader>
-                                <AnimatePresence>
-                                    {expandedConflictId === conflict.id && (
-                                        <motion.div
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: "auto" }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            transition={{ duration: 0.3 }}
-                                            className="overflow-hidden"
-                                        >
-                                            <CardContent className="bg-slate-50 space-y-6 py-2">
-                                                <div className="space-y-4">
-                                                    {parkingSpaceData[conflict.parking_space_id] && (
-                                                        <div className="bg-gray-100 p-4 rounded-lg shadow-sm">
-                                                            <h3 className="text-lg font-bold mb-2">Parking Space Details</h3>
-                                                            {parkingSpaceData[conflict.parking_space_id]?.photos?.[0] && (
-                                                                <div className="relative w-full h-40" onClick={() => handleImageClick(parkingSpaceData[conflict.parking_space_id].photos[0])}>
-                                                                    <ImageWrapper
-                                                                        src={parkingSpaceData[conflict.parking_space_id].photos[0]}
-                                                                        alt="Parking Space Image"
-                                                                        layout="fill"
-                                                                        objectFit="cover"
-                                                                        className="w-full h-40 object-cover rounded-md mb-4 cursor-pointer"
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                            <p><strong>Name:</strong> {parkingSpaceData[conflict.parking_space_id].name}</p>
-                                                            <p><strong>Address:</strong> {parkingSpaceData[conflict.parking_space_id].location.address}</p>
-                                                            <div className="flex items-center gap-2">
-                                                                {getVerificationStatusIcon(parkingSpaceData[conflict.parking_space_id].verification_status)}
-                                                                <span>Verification Status</span>
-                                                            </div>
-                                                            <p><strong>Latitude:</strong> {parkingSpaceData[conflict.parking_space_id].latitude}</p>
-                                                            <p><strong>Longitude:</strong> {parkingSpaceData[conflict.parking_space_id].longitude}</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Response input and submit button */}
-                                                <div className="space-y-2">
-                                                    <textarea
-                                                        value={responseText[conflict.id] || ""}
-                                                        onChange={(e) => setResponseText((prev) => ({ ...prev, [conflict.id]: e.target.value }))}
-                                                        placeholder="Enter your response..."
-                                                        className="w-full p-2 border border-gray-300 rounded-md text-black"
-                                                    />
-                                                    <Button onClick={() => handleResponseSubmit(conflict.id)}>
-                                                        Submit Response
-                                                    </Button>
-                                                </div>
-                                            </CardContent>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </Card>
+                        {visibleConflicts.map(conflict => (
+                            <ConflictCard
+                                key={conflict.id}
+                                conflict={conflict}
+                                expandedConflictId={expandedConflictId}
+                                toggleConflict={toggleConflict}
+                                handleResponseSubmit={handleResponseSubmit}
+                                responseText={responseText}
+                                setResponseText={setResponseText}
+                                handleImageClick={handleImageClick}
+                                parkingSpaceData={parkingSpaceData}
+                            />
+                        ))}
+                        {visibleCancellations.map(cancellation => (
+                            <CancellationCard
+                                key={cancellation.id}
+                                cancellation={cancellation}
+                                handleAcknowledgeCancellation={handleAcknowledgeCancellation}
+                            />
                         ))}
                     </div>
                 )}
             </div>
 
-            {/* Image Modal for Expanded Image */}
+            {/* Image Modal */}
             {selectedImage && (
                 <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
                     <DialogContent>

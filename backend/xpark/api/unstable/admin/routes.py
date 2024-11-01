@@ -3,7 +3,9 @@ from xpark.logic.admin import (
     get_all_pending_parking_spaces,
     handle_verify_parking,
     get_all_conflicts,
-    update_conflict_response  # Import the new logic function
+    update_conflict_response,  # Import the new logic function
+    get_all_cancellations,
+    handle_acknowledge_cancellation
 )
 from flask import request, jsonify
 from result import Ok, Err
@@ -72,5 +74,40 @@ def update_conflict_response_route(token: str, user_id: uuid.UUID) -> Tuple[Any,
     result = update_conflict_response(conflict_uuid, response_text)
     if result.is_ok():
         return jsonify(result.unwrap()), 200
+    else:
+        return jsonify({"error": result.unwrap_err()}), 400
+
+@bp.get("get-cancellations")
+@require_admin
+def get_cancellations_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    """
+    Fetch all cancellations
+    """
+    result = get_all_cancellations()
+    if result.is_ok():
+        return jsonify(result.unwrap()), 200
+    else:
+        return jsonify({"error": result.unwrap_err()}), 400
+
+@bp.post("acknowledge-cancellation")
+@require_admin
+def acknowledge_cancellation_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    """
+    Acknowledge a cancellation and remove it from the view
+    """
+    data = request.get_json()
+    cancellation_id = data.get("id")
+
+    if not cancellation_id:
+        return {"error": "Cancellation ID is required"}, 400
+
+    try:
+        cancellation_uuid = uuid.UUID(cancellation_id)
+    except ValueError:
+        return {"error": "Invalid cancellation ID format"}, 400
+
+    result = handle_acknowledge_cancellation(cancellation_uuid)
+    if result.is_ok():
+        return jsonify({"message": "Cancellation acknowledged"}), 200
     else:
         return jsonify({"error": result.unwrap_err()}), 400

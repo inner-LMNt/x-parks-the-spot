@@ -36,7 +36,7 @@ export const VerificationPage = () => {
     const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
     const [errorMessage, setErrorMessage] = useState("");
     const [expandedImage, setExpandedImage] = useState<string | null>(null); // State for expanded image
-
+    const MAX_ITEMS = 1;
     useEffect(() => {
         dispatch(getAllPendingSpots());
     }, [dispatch]);
@@ -119,7 +119,7 @@ export const VerificationPage = () => {
                     ) : (
                         isListExpanded && (
                             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                {pendingSpots.slice(0, 10).map((spot: PendingSpot) => (
+                                {pendingSpots.slice(0, MAX_ITEMS).map((spot: PendingSpot) => (
                                     <motion.div
                                         key={spot.id}
                                         initial={{ opacity: 0, scale: 0.9 }}

@@ -21,6 +21,7 @@ interface Conflict {
 interface AdminState {
     pendingSpots: ParkingSpace[];
     conflicts: Conflict[];
+    cancellations: Conflict[];
     loading: boolean;
     error: string | null;
 }
@@ -28,6 +29,7 @@ interface AdminState {
 const initialState: AdminState = {
     pendingSpots: [],
     conflicts: [],
+    cancellations: [],
     loading: false,
     error: null,
 };
@@ -39,14 +41,12 @@ export const updateConflictResponse = createAsyncThunk<
     { rejectValue: string }
 >("admin/updateConflictResponse", async ({ id, response }, { rejectWithValue }) => {
     try {
-        const res = await axios.post(`/admin/update-conflict`, { id, response }); // Ensure endpoint and payload are correct
+        const res = await axios.post(`/admin/update-conflict`, { id, response });
         return res.data;
     } catch (error: any) {
         return rejectWithValue(error.response?.data?.error || "Failed to update conflict response");
     }
 });
-
-
 
 // Async thunk to fetch all conflicts
 export const getAllConflicts = createAsyncThunk<
@@ -56,13 +56,39 @@ export const getAllConflicts = createAsyncThunk<
 >("admin/getAllConflicts", async (_, { rejectWithValue }) => {
     try {
         const response = await axios.get("/admin/get-conflicts");
-        return response.data; // Ensure response data is in the format { conflicts: Conflict[] }
+        return response.data;
     } catch (error: any) {
         return rejectWithValue(error.response?.data?.error || "Failed to get conflicts");
     }
 });
 
+// Async thunk to fetch all cancellations
+export const getCancelled = createAsyncThunk<
+    { cancellations: Conflict[] },
+    void,
+    { rejectValue: string }
+>("admin/getCancelled", async (_, { rejectWithValue }) => {
+    try {
+        const response = await axios.get("/admin/get-cancellations");
+        return response.data;
+    } catch (error: any) {
+        return rejectWithValue(error.response?.data?.error || "Failed to get cancellations");
+    }
+});
 
+// Async thunk to acknowledge a cancellation
+export const acknowledgeCancelled = createAsyncThunk<
+    string,
+    string,
+    { rejectValue: string }
+>("admin/acknowledgeCancelled", async (id, { rejectWithValue }) => {
+    try {
+        await axios.post(`/admin/acknowledge-cancellation`, { id });
+        return id;
+    } catch (error: any) {
+        return rejectWithValue(error.response?.data?.error || "Failed to acknowledge cancellation");
+    }
+});
 
 // Async thunk to fetch all pending parking spots
 export const getAllPendingSpots = createAsyncThunk<
@@ -92,14 +118,11 @@ export const verifyParkingSpot = createAsyncThunk<
     }
 });
 
-const adminSlice =
-    //@ts-ignore
-    createSlice({
+const adminSlice = createSlice({
     name: "admin",
     initialState,
     reducers: {},
     extraReducers: (builder) => {
-        // Handle getAllPendingSpots
         builder
             // Handle updateConflictResponse
             .addCase(updateConflictResponse.pending, (state: AdminState) => {
@@ -118,11 +141,12 @@ const adminSlice =
                 state.loading = false;
                 state.error = action.payload as string;
             })
+            // Handle getAllConflicts
             .addCase(getAllConflicts.pending, (state: AdminState) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(getAllConflicts.fulfilled, (state: AdminState, action:any) => {
+            .addCase(getAllConflicts.fulfilled, (state: AdminState, action: any) => {
                 state.loading = false;
                 state.conflicts = action.payload;
             })
@@ -130,6 +154,33 @@ const adminSlice =
                 state.loading = false;
                 state.error = action.payload as string;
             })
+            // Handle getCancelled
+            .addCase(getCancelled.pending, (state: AdminState) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(getCancelled.fulfilled, (state: AdminState, action: any) => {
+                state.loading = false;
+                state.cancellations = action.payload;
+            })
+            .addCase(getCancelled.rejected, (state: AdminState, action: any) => {
+                state.loading = false;
+                state.error = action.payload as string;
+            })
+            // Handle acknowledgeCancelled
+            .addCase(acknowledgeCancelled.pending, (state: AdminState) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(acknowledgeCancelled.fulfilled, (state: AdminState, action: any) => {
+                state.loading = false;
+                state.cancellations = state.cancellations.filter((cancellation) => cancellation.id !== action.payload);
+            })
+            .addCase(acknowledgeCancelled.rejected, (state: AdminState, action: any) => {
+                state.loading = false;
+                state.error = action.payload as string;
+            })
+            // Handle getAllPendingSpots
             .addCase(getAllPendingSpots.pending, (state: AdminState) => {
                 state.loading = true;
                 state.error = null;
@@ -150,8 +201,6 @@ const adminSlice =
             .addCase(verifyParkingSpot.fulfilled, (state: AdminState, action: any) => {
                 state.loading = false;
                 const updatedSpot = action.payload;
-
-                // Update the pendingSpots list with the verified/rejected spot
                 state.pendingSpots = state.pendingSpots.map((spot) =>
                     spot.id === updatedSpot.id ? updatedSpot : spot
                 );

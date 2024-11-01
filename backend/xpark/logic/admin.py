@@ -7,6 +7,126 @@ from result import Result, Ok, Err
 import uuid
 
 
+from typing import Dict, Any, List
+from psycopg.rows import dict_row
+from xpark.utils.db import DB
+from result import Result, Ok, Err
+import uuid
+
+def get_all_cancellations() -> Result[List[Dict[str, Any]], str]:
+    """
+    Fetch all cancellations from the reservations table where status is 'canceled'.
+    """
+    try:
+        with DB.pool.connection() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    """
+                    SELECT
+                        reservations.id,
+                        reservations.status,
+                        reservations.created_at,
+                        reservations.updated_at,
+                        users.name AS owner_name,
+                        parking_spaces.name AS parking_space_name,
+                        parking_spaces.address AS parking_space_address,
+                        lower(reservations.time) AS start_time,
+                        upper(reservations.time) AS end_time,
+                        reservations.parking_space_id
+                    FROM reservations
+                    JOIN users ON reservations.renter_id = users.id
+                    JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                    WHERE reservations.acknowledged = 'false'
+                    ORDER BY reservations.created_at DESC
+                    """
+                )
+                cancellations = cur.fetchall()
+
+                # If no cancellations are found, return an empty list
+                if not cancellations:
+                    return Ok([])
+
+                return Ok(cancellations)
+    except Exception as e:
+        return Err(f"Failed to fetch cancellations: {str(e)}")
+
+
+def handle_acknowledge_cancellation(cancellation_id: uuid.UUID) -> Result[None, str]:
+    """
+    Mark a specific cancellation as acknowledged by updating its status in the reservations table and
+    sending an acknowledgment email to the user.
+    """
+    try:
+        with DB.pool.connection() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                # Retrieve necessary information (renter_id, parking_space_name, address)
+                cur.execute(
+                    """
+                    UPDATE reservations
+                    SET acknowledged = 'true', updated_at = NOW()
+                    WHERE id = %s AND acknowledged = 'false'
+                    RETURNING renter_id, parking_space_id
+                    """,
+                    (str(cancellation_id),)
+                )
+                result = cur.fetchone()
+
+                # Check if the cancellation was found and updated
+                if not result:
+                    return Err("Cancellation not found or already acknowledged.")
+
+                renter_id = result["renter_id"]
+                parking_space_id = result["parking_space_id"]
+
+                # Fetch parking space details for email template
+                cur.execute(
+                    """
+                    SELECT name AS parking_space_name, address AS parking_space_address
+                    FROM parking_spaces
+                    WHERE id = %s
+                    """,
+                    (str(parking_space_id),)
+                )
+                parking_space = cur.fetchone()
+                if not parking_space:
+                    return Err("Parking space details not found for the acknowledged cancellation.")
+
+                # Fetch renter's email and name for sending the email
+                cur.execute(
+                    """
+                    SELECT name, email
+                    FROM users
+                    WHERE id = %s
+                    """,
+                    (str(renter_id),)
+                )
+                renter_info = cur.fetchone()
+                if not renter_info:
+                    return Err("User information not found for sending acknowledgment email.")
+
+                renter_name = renter_info["name"]
+                renter_email = renter_info["email"]
+
+        # Commit the acknowledgment update
+        conn.commit()
+
+        # Send acknowledgment email
+        send_email(
+            to=renter_email,
+            subject="XPark Cancellation Acknowledgment",
+            content=generate_templated_email(
+                "cancel_response",
+                name=renter_name,
+                parking_space_name=parking_space["parking_space_name"],
+                parking_space_address=parking_space["parking_space_address"]
+            ),
+        )
+        return Ok(None)
+
+    except Exception as e:
+        return Err(f"Failed to acknowledge cancellation: {str(e)}")
+
+
 def get_all_conflicts() -> Result[List[Dict[str, Any]], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
