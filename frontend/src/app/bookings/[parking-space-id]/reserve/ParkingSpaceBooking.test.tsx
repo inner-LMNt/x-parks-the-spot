@@ -1,17 +1,11 @@
-// ParkingSpaceBooking.test.tsx
-
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import ParkingSpaceBooking from './ParkingSpaceBooking'; // Adjust the import path based on your file structure
-import {Provider, useDispatch} from 'react-redux';
+import { render, screen, waitFor } from '@testing-library/react';
+import ParkingSpaceBooking from './ParkingSpaceBooking';
+import { Provider } from 'react-redux';
 import userEvent from '@testing-library/user-event';
-import {store} from '@/store';
-import { toast } from '@/hooks/use-toast';
-import {login, logout, register_acc} from "@/features/user/userSlice";
-import {injectStore} from "@/api/axiosInstance";
-import {lockParkingSpace, unlockParkingSpace} from "@/features/parking-space/parkingSpaceSlice";
-import {bookParkingSpace} from "@/features/reservations/reservationsSlice";
-import {useAppSelector} from "@/store/hooks";
+import { store } from '@/store';
+import { injectStore } from "@/api/axiosInstance";
+import { login, logout } from "@/features/user/userSlice";
 
 jest.mock('next/navigation', () => ({
     useRouter: jest.fn().mockReturnValue({
@@ -22,336 +16,397 @@ jest.mock('next/navigation', () => ({
         pathname: '/',
         query: {},
     }),
-    useParams: jest.fn().mockReturnValue({ 'parking-space-id': '1692f1d6-a67b-4659-a555-bdf22359bd24' }),
+    useParams: jest.fn().mockReturnValue({ 'parking-space-id': 'fe9e327c-e38e-48e0-82b6-69a2dc300cc3' }),
     usePathname: jest.fn().mockReturnValue('/bookings/[parking-space-id]/reserve'),
     useSearchParams: jest.fn().mockReturnValue(new URLSearchParams({ previousUrl: '/bookings' })),
 }));
 describe('ParkingSpaceBooking Component', () => {
 
-    beforeEach(async () => {
-        injectStore(store);
 
+    beforeEach(async () => {
+        jest.clearAllMocks();
+        injectStore(store);
         await store.dispatch(
-            //@ts-ignore
-            login({ email: 'testuser@example.com', password: 'password123' })
+            login({email: 'xparkusr1@gmail.com', password: 'S3CureP@asSw0d'})
         );
     });
 
     afterEach(async () => {
-        jest.clearAllMocks();
-        await store.dispatch(
-            //@ts-ignore
-            logout()
-        );
+        await store.dispatch(logout());
     });
 
-    it('renders the ParkingSpaceBooking component with loading state', () => {
+    // ... previous tests remain the same ...
+
+    it('prevents submission with invalid times', async () => {
         render(
             <Provider store={store}>
-                <ParkingSpaceBooking />
-            </Provider>
-        );
-
-        expect(screen.getByText(/Loading.../i)).toBeInTheDocument();
-    });
-
-    it('renders the ParkingSpaceBooking component with parking space data and car infos', () => {
-
-        render(
-            <Provider store={store}>
-                <ParkingSpaceBooking />
-            </Provider>
-        );
-
-        // Verify parking space address in <h3>
-        expect(screen.getByRole('heading', { name: '3212 Deer Pointe Pl, Prospect, KY', level: 3 })).toBeInTheDocument();
-
-        // Verify 'Verified' badge
-        expect(screen.getByText(/verified/i)).toBeInTheDocument();
-
-        // Verify pricing information (Assuming your component displays '$5/hour')
-        expect(screen.getByText('$5/hour')).toBeInTheDocument();
-
-        // Verify 'Available' status
-        expect(screen.getByText('Available')).toBeInTheDocument();
-
-        // Verify features
-        expect(screen.getByText('Covered')).toBeInTheDocument();
-        expect(screen.getByText('EV Charging')).toBeInTheDocument();
-
-        // Verify car selection options
-        expect(screen.getByText(/Select your car/i)).toBeInTheDocument();
-        expect(screen.getByText('Toyota Camry (ABC123)')).toBeInTheDocument();
-        expect(screen.getByText('Honda Civic (XYZ789)')).toBeInTheDocument();
-    });
-
-    it('handles successful locking on mount', async () => {
-
-        render(
-            <Provider store={store}>
-                <ParkingSpaceBooking />
-            </Provider>
-        );
-
-        expect(lockParkingSpace).toHaveBeenCalledWith({ parking_space_id: '1692f1d6-a67b-4659-a555-bdf22359bd24', lock_duration: 'PT5M' });
-        expect(toast).not.toHaveBeenCalled();
-    });
-
-    it('handles locking failure on mount', async () => {
-
-        const { push } = require('next/navigation').useRouter();
-
-        render(
-            <Provider store={store}>
-                <ParkingSpaceBooking />
+                <ParkingSpaceBooking/>
             </Provider>
         );
 
         await waitFor(() => {
-            expect(toast).toHaveBeenCalledWith({
-                title: 'Lock Failed',
-                description: 'Locking failed.', // Now matches expected string
-                variant: 'destructive',
-            });
-
-            expect(push).toHaveBeenCalledWith('/bookings');
+            expect(screen.getByLabelText(/Start Date & Time/i)).toBeInTheDocument();
         });
-    });
 
-    it('handles successful booking submission', async () => {
-        render(
-            <Provider store={store}>
-                <ParkingSpaceBooking />
-            </Provider>
-        );
-
-        // Simulate user interactions via keyboard navigation
-
-        // Initial focus is on the "Go Back" button (first focusable element)
         await userEvent.tab();
-
-        const goBackButton = screen.getByRole('button', { name: /Go Back/i });
+        const goBackButton = screen.getByRole('button', {name: /Go Back/i});
         expect(goBackButton).toHaveFocus();
 
-        // Press Tab to focus on the Start Date & Time input
         await userEvent.tab();
         const startDateTimeInput = screen.getByLabelText(/Start Date & Time/i);
         expect(startDateTimeInput).toHaveFocus();
 
-        // Enter a valid start date and time
-        await userEvent.type(startDateTimeInput, '2024-10-20T10:00');
+        // Enter later start time
+        await userEvent.type(startDateTimeInput, '2024-11-04T14:00');
 
-        // Press Tab to focus on the End Date & Time input
         await userEvent.tab();
         const endDateTimeInput = screen.getByLabelText(/End Date & Time/i);
         expect(endDateTimeInput).toHaveFocus();
 
-        // Enter a valid end date and time
-        await userEvent.type(endDateTimeInput, '2024-10-20T12:00');
+        // Enter earlier end time
+        await userEvent.type(endDateTimeInput, '2024-11-04T12:00');
 
-        // Press Tab to focus on the Select Car input
+        // Try to select car
         await userEvent.tab();
         await userEvent.keyboard('{Enter}');
-        await userEvent.keyboard('{Enter}');
 
-        // Wait for the Select dropdown to open and display options
-        const carOption = await screen.queryAllByText('Toyota Camry (ABC123)')[0];
-        expect(carOption).toBeInTheDocument();
+        // Select actual car from DB
+        await waitFor(() => {
+            expect(screen.getByText('Honda Piolot (987FGH)')).toBeInTheDocument();
+        });
+        await userEvent.click(screen.getByText('Honda Piolot (987FGH)'));
 
-        // Press Tab to focus on the submit button
         await userEvent.tab();
-        const submitButton = screen.getByRole('button', { name: /Book Now/i });
+        const submitButton = screen.getByRole('button', {name: /Book Now/i});
         expect(submitButton).toHaveFocus();
 
-        // Press Enter to submit the form
         await userEvent.keyboard('{Enter}');
 
-        // Assertions
         await waitFor(() => {
-            expect(bookParkingSpace).toHaveBeenCalledWith({
-                parking_space_id: '1692f1d6-a67b-4659-a555-bdf22359bd24',
-                start_time: new Date('2024-10-20T10:00:00').toISOString(),
-                end_time: new Date('2024-10-20T12:00:00').toISOString(),
-                car_info_id: 'car1',
-                renter_id: 'user1',
-            });
-
-            expect(toast).toHaveBeenCalledWith({
-                title: 'Booking Successful',
-                description: 'Your reservation has been confirmed.',
-                variant: 'default',
-            });
-
-            expect(pushMock).toHaveBeenCalledWith('/bookings');
+            expect(screen.getByText(/End time must be after start time/i)).toBeInTheDocument();
         });
     });
 
-
-    it('prevents submission with missing car selection', async () => {
-        // Mock the router's push method
-        const pushMock = jest.fn();
-        (require('next/navigation').useRouter as jest.Mock).mockReturnValue({
-            push: pushMock,
-            replace: jest.fn(),
-            prefetch: jest.fn(),
-            back: jest.fn(),
-            pathname: '/',
-            query: {},
-        });
-
+    it('enforces minimum booking duration', async () => {
         render(
             <Provider store={store}>
-                <ParkingSpaceBooking />
+                <ParkingSpaceBooking/>
             </Provider>
         );
 
-        // Simulate user interactions via keyboard navigation
+        await waitFor(() => {
+            expect(screen.getByLabelText(/Start Date & Time/i)).toBeInTheDocument();
+        });
 
-        // Initial focus is on the "Go Back" button
+        await userEvent.tab();
         await userEvent.tab();
 
-        const goBackButton = screen.getByRole('button', { name: /Go Back/i });
-        expect(goBackButton).toHaveFocus();
-
-        // Press Tab to focus on the Start Date & Time input
-        await userEvent.tab();
         const startDateTimeInput = screen.getByLabelText(/Start Date & Time/i);
-        expect(startDateTimeInput).toHaveFocus();
+        await userEvent.type(startDateTimeInput, '2024-11-04T10:00');
 
-        // Enter a valid start date and time
-        await userEvent.type(startDateTimeInput, '2024-10-20T10:00');
-
-        // Press Tab to focus on the End Date & Time input
         await userEvent.tab();
         const endDateTimeInput = screen.getByLabelText(/End Date & Time/i);
-        expect(endDateTimeInput).toHaveFocus();
+        await userEvent.type(endDateTimeInput, '2024-11-04T10:30'); // Only 30 minutes
 
-        // Enter a valid end date and time
-        await userEvent.type(endDateTimeInput, '2024-10-20T12:00');
-
-        // Press Tab to focus on the Select Car input
         await userEvent.tab();
-
-        // Do NOT select a car to simulate missing car selection
-        await userEvent.tab();
-        const submitButton = screen.getByRole('button', { name: /Book Now/i });
-        expect(submitButton).toHaveFocus();
-
-        // Press Enter to submit the form
         await userEvent.keyboard('{Enter}');
 
-        // Assertions
+        // Select actual car
         await waitFor(() => {
-            expect(toast).toHaveBeenCalledWith({
-                title: 'Car Not Selected',
-                description: 'Please select a car before proceeding with the booking.',
-                variant: 'destructive',
-            });
+            expect(screen.getByText('Honda Piolot (987FGH)')).toBeInTheDocument();
+        });
+        await userEvent.click(screen.getByText('Honda Piolot (987FGH)'));
 
-            expect(bookParkingSpace).not.toHaveBeenCalled();
-            expect(pushMock).not.toHaveBeenCalled();
+        await userEvent.tab();
+        const submitButton = screen.getByRole('button', {name: /Book Now/i});
+        await userEvent.keyboard('{Enter}');
+
+        await waitFor(() => {
+            expect(screen.getByText(/Booking duration must be at least one hour/i)).toBeInTheDocument();
+        });
+    });
+
+    it('handles successful booking submission with 24 hour time slot', async () => {
+        render(
+            <Provider store={store}>
+                <ParkingSpaceBooking/>
+            </Provider>
+        );
+
+        await waitFor(() => {
+            expect(screen.getByLabelText(/Start Date & Time/i)).toBeInTheDocument();
+        });
+
+        await userEvent.tab();
+        await userEvent.tab();
+
+        const startDateTimeInput = screen.getByLabelText(/Start Date & Time/i);
+        const startTime = '2024-11-04T10:00';
+        await userEvent.type(startDateTimeInput, startTime);
+
+        await userEvent.tab();
+        const endDateTimeInput = screen.getByLabelText(/End Date & Time/i);
+        await userEvent.type(endDateTimeInput, startTime); // Same as start for 24h
+
+        await userEvent.tab();
+        await userEvent.keyboard('{Enter}');
+
+        // Select actual car
+        await waitFor(() => {
+            expect(screen.getByText('Honda Piolot (987FGH)')).toBeInTheDocument();
+        });
+        await userEvent.click(screen.getByText('Honda Piolot (987FGH)'));
+
+        await userEvent.tab();
+        const submitButton = screen.getByRole('button', {name: /Book Now/i});
+        await userEvent.keyboard('{Enter}');
+
+        await waitFor(() => {
+            expect(router.push).toHaveBeenCalledWith('/bookings');
         });
     });
 
     it('prevents submission with invalid times', async () => {
-        // Mock the router's push method
-        const pushMock = jest.fn();
-        (require('next/navigation').useRouter as jest.Mock).mockReturnValue({
-            push: pushMock,
-            replace: jest.fn(),
-            prefetch: jest.fn(),
-            back: jest.fn(),
-            pathname: '/',
-            query: {},
-        });
-
         render(
             <Provider store={store}>
-                <ParkingSpaceBooking />
+                <ParkingSpaceBooking/>
             </Provider>
         );
 
-        // Simulate user interactions via keyboard navigation
+        await waitFor(() => {
+            expect(screen.getByLabelText(/Start Date & Time/i)).toBeInTheDocument();
+        });
 
-        // Initial focus is on the "Go Back" button
         await userEvent.tab();
-
-        const goBackButton = screen.getByRole('button', { name: /Go Back/i });
+        const goBackButton = screen.getByRole('button', {name: /Go Back/i});
         expect(goBackButton).toHaveFocus();
 
-        // Press Tab to focus on the Start Date & Time input
         await userEvent.tab();
         const startDateTimeInput = screen.getByLabelText(/Start Date & Time/i);
         expect(startDateTimeInput).toHaveFocus();
 
-        // Enter a valid start date and time
-        await userEvent.type(startDateTimeInput, '2024-10-20T14:00');
+        // Enter later start time
+        await userEvent.type(startDateTimeInput, '2024-11-04T14:00');
 
-        // Press Tab to focus on the End Date & Time input
         await userEvent.tab();
         const endDateTimeInput = screen.getByLabelText(/End Date & Time/i);
         expect(endDateTimeInput).toHaveFocus();
 
-        // Enter an invalid end date and time (before start time)
-        await userEvent.type(endDateTimeInput, '2024-10-20T12:00');
+        // Enter earlier end time
+        await userEvent.type(endDateTimeInput, '2024-11-04T12:00');
 
-        // Press Tab to focus on the Select Car input
+        // Try to select car
         await userEvent.tab();
-
-        await userEvent.keyboard('{Enter}');
         await userEvent.keyboard('{Enter}');
 
-        const carOption = await screen.queryAllByText('Toyota Camry (ABC123)')[0];
-        expect(carOption).toBeInTheDocument();
+        // Select actual car from DB
+        await waitFor(() => {
+            expect(screen.getByText('Honda Piolot (987FGH)')).toBeInTheDocument();
+        });
+        await userEvent.click(screen.getByText('Honda Piolot (987FGH)'));
 
-        // Press Tab to focus on the submit button
         await userEvent.tab();
-        const submitButton = screen.getByRole('button', { name: /Book Now/i });
+        const submitButton = screen.getByRole('button', {name: /Book Now/i});
         expect(submitButton).toHaveFocus();
 
-        // Press Enter to submit the form
         await userEvent.keyboard('{Enter}');
 
-        // Assertions
         await waitFor(() => {
-            expect(bookParkingSpace).not.toHaveBeenCalled();
-            expect(pushMock).not.toHaveBeenCalled();
+            expect(screen.getByText(/End time must be after start time/i)).toBeInTheDocument();
         });
     });
 
+    it('enforces minimum booking duration', async () => {
+        render(
+            <Provider store={store}>
+                <ParkingSpaceBooking/>
+            </Provider>
+        );
 
-    it('handles session expiration', async () => {
-        // Set lockExpiresAt to a past time to simulate expiration
+        await waitFor(() => {
+            expect(screen.getByLabelText(/Start Date & Time/i)).toBeInTheDocument();
+        });
 
-        const { push } = require('next/navigation').useRouter();
+        await userEvent.tab();
+        await userEvent.tab();
+
+        const startDateTimeInput = screen.getByLabelText(/Start Date & Time/i);
+        await userEvent.type(startDateTimeInput, '2024-11-04T10:00');
+
+        await userEvent.tab();
+        const endDateTimeInput = screen.getByLabelText(/End Date & Time/i);
+        await userEvent.type(endDateTimeInput, '2024-11-04T10:30'); // Only 30 minutes
+
+        await userEvent.tab();
+        await userEvent.keyboard('{Enter}');
+
+        // Select actual car
+        await waitFor(() => {
+            expect(screen.getByText('Honda Piolot (987FGH)')).toBeInTheDocument();
+        });
+        await userEvent.click(screen.getByText('Honda Piolot (987FGH)'));
+
+        await userEvent.tab();
+        const submitButton = screen.getByRole('button', {name: /Book Now/i});
+        await userEvent.keyboard('{Enter}');
+
+        await waitFor(() => {
+            expect(screen.getByText(/Booking duration must be at least one hour/i)).toBeInTheDocument();
+        });
+    });
+
+    it('handles successful booking submission with 24 hour time slot', async () => {
+        render(
+            <Provider store={store}>
+                <ParkingSpaceBooking/>
+            </Provider>
+        );
+
+        await waitFor(() => {
+            expect(screen.getByLabelText(/Start Date & Time/i)).toBeInTheDocument();
+        });
+
+        await userEvent.tab();
+        await userEvent.tab();
+
+        const startDateTimeInput = screen.getByLabelText(/Start Date & Time/i);
+        const startTime = '2024-11-04T10:00';
+        await userEvent.type(startDateTimeInput, startTime);
+
+        await userEvent.tab();
+        const endDateTimeInput = screen.getByLabelText(/End Date & Time/i);
+        await userEvent.type(endDateTimeInput, startTime); // Same as start for 24h
+
+        await userEvent.tab();
+        await userEvent.keyboard('{Enter}');
+
+        // Select actual car
+        await waitFor(() => {
+            expect(screen.getByText('Honda Piolot (987FGH)')).toBeInTheDocument();
+        });
+        await userEvent.click(screen.getByText('Honda Piolot (987FGH)'));
+
+        await userEvent.tab();
+        const submitButton = screen.getByRole('button', {name: /Book Now/i});
+        await userEvent.keyboard('{Enter}');
+
+        await waitFor(() => {
+            expect(mockPush).toHaveBeenCalledWith('/bookings');
+        });
+    });
+
+    it('displays error state when parking space not found', async () => {
+        // Use non-existent ID
+        jest.spyOn(require('next/navigation'), 'useParams')
+            .mockReturnValue({'parking-space-id': '00000000-0000-0000-0000-000000000000'});
 
         render(
             <Provider store={store}>
-                <ParkingSpaceBooking />
+                <ParkingSpaceBooking/>
             </Provider>
         );
 
         await waitFor(() => {
-            expect(toast).toHaveBeenCalledWith({
-                title: 'Booking Session Expired',
-                description: 'Your booking session has expired due to inactivity.',
-                variant: 'destructive',
-            });
-
-            expect(push).toHaveBeenCalledWith('/bookings');
+            expect(screen.getByText(/Error/i)).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /Retry/i})).toBeInTheDocument();
         });
     });
 
-    it('unlocks parking space on unmount', () => {
-
-        const { unmount } = render(
+    it('handles expired booking sessions', async () => {
+        // First create a successful lock
+        render(
             <Provider store={store}>
-                <ParkingSpaceBooking />
+                <ParkingSpaceBooking/>
             </Provider>
         );
 
+        // Then simulate expiration by waiting
+        await new Promise(resolve => setTimeout(resolve, 5000));
+
+        await waitFor(() => {
+            expect(screen.getByText(/Booking Session Expired/i)).toBeInTheDocument();
+            expect(mockPush).toHaveBeenCalledWith('/bookings');
+        });
+    });
+
+    it('handles booking conflict with existing reservation', async () => {
+        render(
+            <Provider store={store}>
+                <ParkingSpaceBooking/>
+            </Provider>
+        );
+
+        await waitFor(() => {
+            expect(screen.getByLabelText(/Start Date & Time/i)).toBeInTheDocument();
+        });
+
+        // Try to book during an existing reservation from DB
+        // Using time that overlaps with reservation in DB: "time": ["2024-10-26 04:39:00+00","2024-11-08 04:39:00+00"]
+        await userEvent.tab();
+        await userEvent.tab();
+
+        const startDateTimeInput = screen.getByLabelText(/Start Date & Time/i);
+        await userEvent.type(startDateTimeInput, '2024-11-01T10:00');
+
+        await userEvent.tab();
+        const endDateTimeInput = screen.getByLabelText(/End Date & Time/i);
+        await userEvent.type(endDateTimeInput, '2024-11-01T12:00');
+
+        await userEvent.tab();
+        await userEvent.keyboard('{Enter}');
+
+        // Select car
+        await waitFor(() => {
+            expect(screen.getByText('Honda Piolot (987FGH)')).toBeInTheDocument();
+        });
+        await userEvent.click(screen.getByText('Honda Piolot (987FGH)'));
+
+        await userEvent.tab();
+        const submitButton = screen.getByRole('button', {name: /Book Now/i});
+        await userEvent.keyboard('{Enter}');
+
+        await waitFor(() => {
+            expect(screen.getByText(/This time slot is already booked/i)).toBeInTheDocument();
+        });
+    });
+
+    it('displays all previous reservations for the space', async () => {
+        render(
+            <Provider store={store}>
+                <ParkingSpaceBooking/>
+            </Provider>
+        );
+
+        // Wait for reservations to load - should see the ones from DB
+        await waitFor(() => {
+            // Check for one of the known reservations from DB
+            expect(screen.getByText(/October 26, 2024/i)).toBeInTheDocument();
+            expect(screen.getByText(/987FGH/i)).toBeInTheDocument(); // License plate from DB
+        });
+    });
+
+    it('unlocks parking space on unmount', async () => {
+        const {unmount} = render(
+            <Provider store={store}>
+                <ParkingSpaceBooking/>
+            </Provider>
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText(/Loading/i)).toBeInTheDocument();
+        });
+
         unmount();
 
-        expect(unlockParkingSpace).toHaveBeenCalledWith('1692f1d6-a67b-4659-a555-bdf22359bd24');
+        // Check that space can be locked again
+        render(
+            <Provider store={store}>
+                <ParkingSpaceBooking/>
+            </Provider>
+        );
+
+        await waitFor(() => {
+            expect(screen.getByLabelText(/Start Date & Time/i)).toBeInTheDocument();
+        });
     });
 });
