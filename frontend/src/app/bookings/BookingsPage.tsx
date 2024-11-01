@@ -195,8 +195,7 @@ export default function BookingsPage() {
                                 <Card key={car.id} className="p-4">
                                     <CardContent>
                                         <p className="text-lg font-semibold">{car.color ? `${car.color} ` : ""}{car.make} {car.model}</p>
-                                        <p className="text-sm text-gray-600">License Plate: {car.license_plate}</p>
-                                        {/* Add more car details if needed */}
+                                        <p className="text-sm text-gray-600">License Plate: {car.license_plate} {car.license_plate_state}</p>
                                     </CardContent>
                                 </Card>
                             ))

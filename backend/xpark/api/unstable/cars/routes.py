@@ -46,6 +46,7 @@ def create(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         model=request.json["model"],
         license_plate=request.json["license_plate"],
         license_plate_state=request.json["license_plate_state"],
+        color=request.json.get("color")
     ):
         case Ok(car_info):
             return car_info, 201
@@ -74,6 +75,7 @@ def patch(car_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         model=request.json.get("model"),
         license_plate=request.json.get("license_plate"),
         license_plate_state=request.json.get("license_plate_state"),
+        color=request.json.get("color")
     ):
         case Ok(car_info):
             return car_info, 200

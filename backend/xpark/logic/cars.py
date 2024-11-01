@@ -83,6 +83,7 @@ def add_car_info(
     model: str,
     license_plate: str,
     license_plate_state: str,
+    color: str | None = None,
 ) -> Result[Dict[str, Any], str]:
     # FIXME: Validate license_plate format
 
@@ -101,10 +102,10 @@ def add_car_info(
 
             # Insert the new car
             cur.execute(
-                "INSERT INTO cars (user_id, make, model, license_plate, license_plate_state, created_at, updated_at) "
-                "VALUES (%s, %s, %s, %s, %s, NOW(), NOW()) "
-                "RETURNING id, make, model, license_plate, license_plate_state, created_at, updated_at",
-                (user_id, make, model, license_plate, license_plate_state),
+                "INSERT INTO cars (user_id, make, model, license_plate, license_plate_state, color, created_at, updated_at) "
+                "VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW()) "
+                "RETURNING id, make, model, license_plate, license_plate_state, color, created_at, updated_at",
+                (user_id, make, model, license_plate, license_plate_state, color),
             )
             new_car = cur.fetchone()
             if not new_car:
@@ -125,6 +126,7 @@ def get_car_info(user_id: uuid.UUID, car_id: uuid.UUID) -> Result[Dict[str, Any]
                     model, 
                     license_plate,
                     license_plate_state,
+                    color,
                     created_at,
                     updated_at
                 FROM cars
@@ -147,6 +149,7 @@ def update_car(
     model: str | None = None,
     license_plate: str | None = None,
     license_plate_state: str | None = None,
+    color: str | None = None
 ) -> Result[Dict[Any, Any], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -183,11 +186,12 @@ def update_car(
                 model = COALESCE(%s, model),
                 license_plate = COALESCE(%s, license_plate),
                 license_plate_state = COALESCE(%s, license_plate_state),
+                color = COALESCE(%s, color),
                 updated_at = NOW()
                 WHERE id = %s
                 RETURNING id, make, model, license_plate, created_at, updated_at
                 """,
-                (make, model, license_plate, license_plate_state, car_id),
+                (make, model, license_plate, license_plate_state, color, car_id),
             )
             updated_car = cur.fetchone()
             if not updated_car:
