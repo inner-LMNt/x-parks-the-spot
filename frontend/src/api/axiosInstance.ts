@@ -39,16 +39,8 @@ axiosInstance.interceptors.response.use(
     return resp
   },
   (error) => {
-    if (error.status === 401) {
-      if (store) {
-        const state = store.getState();
-        state.user.isLoggedIn = false;
-      }
-    } else if (error.status === 403) {
-      if (store) {
-        const state = store.getState();
-        state.user.isLoggedIn = false;
-      }
+    if (error.status === 401 || error.status === 403) {
+      window.location = window.location.protocol + "//" + window.location.host + "/login"
     }
     return Promise.reject(error)
   }
