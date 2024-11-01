@@ -39,13 +39,36 @@ def get_all_user_parking_spaces(
                     verification_status, 
                     photos,
                     created_at, 
-                    updated_at
+                    updated_at,
+                    CASE WHEN is_paid THEN COALESCE(avg_availability_rating, 0) ELSE NULL END AS avg_availability_rating,
+                    CASE WHEN is_paid THEN COALESCE(avg_cleanliness_rating, 0) ELSE NULL END AS avg_cleanliness_rating,
+                    CASE WHEN is_paid THEN COALESCE(avg_total_rating, 0) ELSE NULL END AS avg_total_rating,
+                    CASE WHEN is_paid THEN COALESCE(ratings_count_availability, 0) ELSE NULL END AS ratings_count_availability,
+                    CASE WHEN is_paid THEN COALESCE(ratings_count_cleanliness, 0) ELSE NULL END AS ratings_count_cleanliness
                 FROM parking_spaces
                 WHERE owner = %s
             """,
                 (user_id,),
             )
             rows = cur.fetchall()
+
+            # Adjust the output for paid parking spaces
+            for row in rows:
+                if row['is_paid']:
+                    if (row['ratings_count_availability'] == 0 or row['ratings_count_availability'] is None) and \
+                       (row['ratings_count_cleanliness'] == 0 or row['ratings_count_cleanliness'] is None):
+                        row['avg_total_rating'] = "unrated"
+                    else:
+                        row['avg_total_rating'] = float(row['avg_total_rating']) if row['avg_total_rating'] != 0 else "unrated"
+                        row['avg_availability_rating'] = float(row['avg_availability_rating']) if row['avg_availability_rating'] != 0 else None
+                        row['avg_cleanliness_rating'] = float(row['avg_cleanliness_rating']) if row['avg_cleanliness_rating'] != 0 else None
+                else:
+                    # Remove rating fields for free spots
+                    row.pop('avg_availability_rating', None)
+                    row.pop('avg_cleanliness_rating', None)
+                    row.pop('avg_total_rating', None)
+                    row.pop('ratings_count_availability', None)
+                    row.pop('ratings_count_cleanliness', None)
 
             return Ok(rows)
 
@@ -86,16 +109,24 @@ def create_paid_parking_space(
                 VALUES (
                     %(user_id)s,
                     TRUE,
-                    ST_SetSRID(ST_MakePoint(%(long)s, %(lat)s),	4326),
-					%(addr)s,
-					%(photos)s,
-					'unverified',
-					%(name)s,
+                    ST_SetSRID(ST_MakePoint(%(long)s, %(lat)s), 4326),
+                    %(addr)s,
+                    %(photos)s,
+                    'unverified',
+                    %(name)s,
                     %(sched)s,
-					%(price)s,
-					NOW()
+                    %(price)s,
+                    NOW()
                 )
-                RETURNING id, created_at, updated_at
+                RETURNING 
+                    id, 
+                    created_at, 
+                    updated_at,
+                    avg_availability_rating,
+                    avg_cleanliness_rating,
+                    avg_total_rating,
+                    ratings_count_availability,
+                    ratings_count_cleanliness
                 """,
                 {
                     "user_id": user_id,
@@ -111,6 +142,13 @@ def create_paid_parking_space(
             parking_space = cur.fetchone()
             if not parking_space:
                 return Err("Error creating parking space")
+
+            # Initialize aggregated rating fields
+            parking_space['avg_availability_rating'] = "unrated"
+            parking_space['avg_cleanliness_rating'] = "unrated"
+            parking_space['avg_total_rating'] = "unrated"
+            parking_space['ratings_count_availability'] = 0
+            parking_space['ratings_count_cleanliness'] = 0
 
             # Regenerate availability schedule
             days_of_week_to_slots(cur, parking_space["id"], availability_schedule)
@@ -178,6 +216,7 @@ def create_free_parking_space(
 
             return Ok(parking_space)
 
+
 # TODO: Review
 def save_image(image_file: FileStorage) -> str:
     allowed_extensions = {"png", "jpg", "jpeg", "gif"}
@@ -217,15 +256,37 @@ def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str
                     availability_schedule,
                     verification_status,
                     created_at,
-                    updated_at
+                    updated_at,
+                    CASE WHEN is_paid THEN COALESCE(avg_availability_rating, 0) ELSE NULL END AS avg_availability_rating,
+                    CASE WHEN is_paid THEN COALESCE(avg_cleanliness_rating, 0) ELSE NULL END AS avg_cleanliness_rating,
+                    CASE WHEN is_paid THEN COALESCE(avg_total_rating, 0) ELSE NULL END AS avg_total_rating,
+                    CASE WHEN is_paid THEN COALESCE(ratings_count_availability, 0) ELSE NULL END AS ratings_count_availability,
+                    CASE WHEN is_paid THEN COALESCE(ratings_count_cleanliness, 0) ELSE NULL END AS ratings_count_cleanliness
                 FROM parking_spaces
                 WHERE id = %s
-                """,
+            """,
                 (parking_space_id,),
             )
             parking_space = cur.fetchone()
             if not parking_space:
                 return Err("Error getting parking space")
+
+            # Adjust the output for paid parking spaces
+            if parking_space['is_paid']:
+                if (parking_space['ratings_count_availability'] == 0 or parking_space['ratings_count_availability'] is None) and \
+                   (parking_space['ratings_count_cleanliness'] == 0 or parking_space['ratings_count_cleanliness'] is None):
+                    parking_space['avg_total_rating'] = "unrated"
+                else:
+                    parking_space['avg_total_rating'] = float(parking_space['avg_total_rating']) if parking_space['avg_total_rating'] != 0 else "unrated"
+                    parking_space['avg_availability_rating'] = float(parking_space['avg_availability_rating']) if parking_space['avg_availability_rating'] != 0 else None
+                    parking_space['avg_cleanliness_rating'] = float(parking_space['avg_cleanliness_rating']) if parking_space['avg_cleanliness_rating'] != 0 else None
+            else:
+                # Remove rating fields for free spots
+                parking_space.pop('avg_availability_rating', None)
+                parking_space.pop('avg_cleanliness_rating', None)
+                parking_space.pop('avg_total_rating', None)
+                parking_space.pop('ratings_count_availability', None)
+                parking_space.pop('ratings_count_cleanliness', None)
 
             return Ok(parking_space)
 
@@ -257,24 +318,26 @@ def update_paid_parking_space(
             cur.execute(
                 """
                 UPDATE parking_spaces SET
-                address =    COALESCE(%(addr)s, address),
-                location =   ST_MakePoint(
-                    COALESCE(%(long)s, ST_X(location::geometry)),
-                    COALESCE(%(lat)s,  ST_Y(location::geometry))
-                ),
-                name =       COALESCE(%(name)s, name),
-                price =      COALESCE(%(price)s, price),
-                availability_schedule = COALESCE(%(sched)s, availability_schedule),
-                updated_at = NOW()
-                WHERE id =   %(spot_id)s
+                    address = COALESCE(%(addr)s, address),
+                    location = ST_SetSRID(
+                        ST_MakePoint(
+                            COALESCE(%(long)s, ST_X(location::geometry)),
+                            COALESCE(%(lat)s, ST_Y(location::geometry))
+                        ), 4326
+                    ),
+                    name = COALESCE(%(name)s, name),
+                    price = COALESCE(%(price)s, price),
+                    availability_schedule = COALESCE(%(sched)s, availability_schedule),
+                    updated_at = NOW()
+                WHERE id = %(spot_id)s
                 RETURNING
                     id,
                     is_paid, 
                     name,
                     verification_status, 
                     json_build_object(
-                        'address',   parking_spaces.address,
-                        'latitude',  ST_Y(location::geometry),
+                        'address', parking_spaces.address,
+                        'latitude', ST_Y(location::geometry),
                         'longitude', ST_X(location::geometry)
                     ) as location,
                     json_build_object(
@@ -284,7 +347,12 @@ def update_paid_parking_space(
                     availability_schedule,
                     photos,
                     created_at, 
-                    updated_at
+                    updated_at,
+                    CASE WHEN is_paid THEN COALESCE(avg_availability_rating, 0) ELSE NULL END AS avg_availability_rating,
+                    CASE WHEN is_paid THEN COALESCE(avg_cleanliness_rating, 0) ELSE NULL END AS avg_cleanliness_rating,
+                    CASE WHEN is_paid THEN COALESCE(avg_total_rating, 0) ELSE NULL END AS avg_total_rating,
+                    CASE WHEN is_paid THEN COALESCE(ratings_count_availability, 0) ELSE NULL END AS ratings_count_availability,
+                    CASE WHEN is_paid THEN COALESCE(ratings_count_cleanliness, 0) ELSE NULL END AS ratings_count_cleanliness
                 """,
                 {
                     "addr": address,
@@ -309,6 +377,23 @@ def update_paid_parking_space(
                 days_of_week_to_slots(cur, parking_space["id"], availability_schedule)
                 # Recoalesce
                 recalculate_coalesce(cur, parking_space["id"])
+
+            # Adjust the output for paid parking spaces
+            if parking_space['is_paid']:
+                if (parking_space['ratings_count_availability'] == 0 or parking_space['ratings_count_availability'] is None) and \
+                   (parking_space['ratings_count_cleanliness'] == 0 or parking_space['ratings_count_cleanliness'] is None):
+                    parking_space['avg_total_rating'] = "unrated"
+                else:
+                    parking_space['avg_total_rating'] = float(parking_space['avg_total_rating']) if parking_space['avg_total_rating'] != 0 else "unrated"
+                    parking_space['avg_availability_rating'] = float(parking_space['avg_availability_rating']) if parking_space['avg_availability_rating'] != 0 else None
+                    parking_space['avg_cleanliness_rating'] = float(parking_space['avg_cleanliness_rating']) if parking_space['avg_cleanliness_rating'] != 0 else None
+            else:
+                # Remove rating fields for free spots
+                parking_space.pop('avg_availability_rating', None)
+                parking_space.pop('avg_cleanliness_rating', None)
+                parking_space.pop('avg_total_rating', None)
+                parking_space.pop('ratings_count_availability', None)
+                parking_space.pop('ratings_count_cleanliness', None)
 
             return Ok(parking_space)
 
@@ -367,3 +452,37 @@ def handle_submit_verification(
 
             return Ok(None)
 
+
+def submit_rating(
+        user_id: uuid.UUID,
+        parking_space_id: uuid.UUID,
+        availability_rating: Optional[int],
+        cleanliness_rating: Optional[int],
+) -> Result[None, str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            # Check if parking space exists and is paid
+            cur.execute(
+                "SELECT is_paid FROM parking_spaces WHERE id = %s",
+                (parking_space_id,)
+            )
+            result = cur.fetchone()
+
+            if not result:
+                return Err("Parking space does not exist")
+            if not result[0]:
+                return Err("Cannot rate a free parking space")
+
+            cur.execute(
+                """
+                INSERT INTO ratings (user_id, parking_space_id, availability_rating, cleanliness_rating)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (user_id, parking_space_id) 
+                DO UPDATE SET
+                    availability_rating = COALESCE(EXCLUDED.availability_rating, ratings.availability_rating),
+                    cleanliness_rating = COALESCE(EXCLUDED.cleanliness_rating, ratings.cleanliness_rating),
+                    updated_at = NOW()
+                """,
+                (user_id, parking_space_id, availability_rating, cleanliness_rating)
+            )
+            return Ok(None)

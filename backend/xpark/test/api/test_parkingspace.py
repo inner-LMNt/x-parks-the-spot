@@ -1,6 +1,12 @@
+import math
+import uuid
+from decimal import Decimal, ROUND_HALF_UP
+
 from flask.testing import FlaskClient
 from typing import Dict, cast
 import json
+
+from xpark.test.utils.utils import create_test_user, create_test_parking_space
 
 
 def test_api_create_free_parking_spot(client: FlaskClient) -> None:
@@ -186,3 +192,221 @@ def test_api_create_paid_parking_spot(client: FlaskClient) -> None:
     assert response.status_code == 200
     assert response.json
     assert len(response.json) == 1
+
+def test_api_submit_rating_success(client: FlaskClient) -> None:
+    """Test successful submission of ratings for a paid parking space"""
+    token = create_test_user(client, email="ratinguser@example.com")
+    spot_id = create_test_parking_space(client, token, is_paid=True)
+
+    # Submit a rating
+    rating_payload = {
+        "availability_rating": 4,
+        "cleanliness_rating": 5
+        # total_rating removed since it's calculated
+    }
+    response = client.post(
+        f"/api/unstable/parking-spaces/{spot_id}/rate",
+        headers={"Authorization": f"Bearer {token}"},
+        json=rating_payload
+    )
+    assert response.status_code == 200
+    assert response.json == {}
+
+    # Fetch the parking space to verify ratings
+    response = client.get(
+        f"/api/unstable/parking-spaces/{spot_id}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 200
+    parking_space = response.json
+    assert parking_space["avg_availability_rating"] == 4.0
+    assert parking_space["ratings_count_availability"] == 1
+    assert parking_space["avg_cleanliness_rating"] == 5.0
+    assert parking_space["ratings_count_cleanliness"] == 1
+    assert parking_space["avg_total_rating"] == 4.5
+
+
+def test_api_submit_partial_rating(client: FlaskClient) -> None:
+    """Test submission of partial ratings (only availability_rating)"""
+    token = create_test_user(client, email="partialrating@example.com")
+    spot_id = create_test_parking_space(client, token, is_paid=True)
+
+    rating_payload = {
+        "availability_rating": 3
+    }
+    response = client.post(
+        f"/api/unstable/parking-spaces/{spot_id}/rate",
+        headers={"Authorization": f"Bearer {token}"},
+        json=rating_payload
+    )
+    assert response.status_code == 200
+    assert response.json == {}
+
+    response = client.get(
+        f"/api/unstable/parking-spaces/{spot_id}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 200
+    parking_space = response.json
+    assert parking_space["avg_availability_rating"] == 3.0
+    assert parking_space["ratings_count_availability"] == 1
+    assert parking_space["avg_cleanliness_rating"] is None
+    assert parking_space["ratings_count_cleanliness"] == 0
+    assert parking_space["avg_total_rating"] == 3.0  # Single rating becomes total rating
+
+
+def test_api_submit_rating_free_spot(client: FlaskClient) -> None:
+    """Test that submitting a rating to a free parking space fails"""
+    token = create_test_user(client, email="freespotrating@example.com")
+    spot_id = create_test_parking_space(client, token, is_paid=False)
+
+    rating_payload = {
+        "availability_rating": 4,
+        "cleanliness_rating": 5
+    }
+    response = client.post(
+        f"/api/unstable/parking-spaces/{spot_id}/rate",
+        headers={"Authorization": f"Bearer {token}"},
+        json=rating_payload
+    )
+    assert response.status_code == 400
+    assert "Cannot rate a free parking space" in response.json["err"]
+
+
+def test_api_submit_rating_invalid_parking_space(client: FlaskClient) -> None:
+    """Test submitting a rating to a non-existent parking space"""
+    token = create_test_user(client, email="invalidspotrating@example.com")
+    fake_spot_id = str(uuid.uuid4())
+
+    rating_payload = {
+        "availability_rating": 4,
+        "cleanliness_rating": 5
+    }
+    response = client.post(
+        f"/api/unstable/parking-spaces/{fake_spot_id}/rate",
+        headers={"Authorization": f"Bearer {token}"},
+        json=rating_payload
+    )
+    assert response.status_code == 400
+    assert "Parking space does not exist" in response.json["err"]
+
+def test_api_submit_rating_stress(client: FlaskClient) -> None:
+    """Stress test for the /rate endpoint."""
+    owner_token = create_test_user(client, email="owner@example.com")
+    spot_id = create_test_parking_space(client, owner_token, is_paid=True)
+
+    # Create multiple users
+    num_users = 20
+    user_tokens = []
+    for i in range(num_users):
+        email = f"user{i}@example.com"
+        token = create_test_user(client, email=email)
+        user_tokens.append(token)
+
+    # Track ratings
+    user_ratings = {token: {"availability": None, "cleanliness": None} for token in user_tokens}
+    total_sum = Decimal('0.0')  # Track sum of individual total ratings
+    total_count = 0
+
+    # Initial rating submissions
+    for i, token in enumerate(user_tokens):
+        availability_rating = (i % 5) + 1
+        cleanliness_rating = ((i + 2) % 5) + 1
+
+        rating_payload = {
+            "availability_rating": availability_rating,
+            "cleanliness_rating": cleanliness_rating,
+        }
+
+        response = client.post(
+            f"/api/unstable/parking-spaces/{spot_id}/rate",
+            headers={"Authorization": f"Bearer {token}"},
+            json=rating_payload
+        )
+
+        assert response.status_code == 200
+        assert response.json == {}
+
+        # Update tracking structures
+        user_ratings[token]["availability"] = availability_rating
+        user_ratings[token]["cleanliness"] = cleanliness_rating
+
+        # Calculate this user's total rating using Decimal
+        total_sum += (Decimal(str(availability_rating)) + Decimal(str(cleanliness_rating))) / Decimal('2.0')
+        total_count += 1
+
+        response = client.get(
+            f"/api/unstable/parking-spaces/{spot_id}",
+            headers={"Authorization": f"Bearer {owner_token}"}
+        )
+        assert response.status_code == 200
+        parking_space = response.get_json()
+
+        # Calculate expected averages using Decimal
+        total_avail = sum(Decimal(str(r["availability"])) for r in user_ratings.values() if r["availability"] is not None)
+        total_clean = sum(Decimal(str(r["cleanliness"])) for r in user_ratings.values() if r["cleanliness"] is not None)
+        count_avail = sum(1 for r in user_ratings.values() if r["availability"] is not None)
+        count_clean = sum(1 for r in user_ratings.values() if r["cleanliness"] is not None)
+
+        expected_avg_availability = (total_avail / Decimal(str(count_avail))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        expected_avg_cleanliness = (total_clean / Decimal(str(count_clean))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        expected_avg_total = (total_sum / Decimal(str(total_count))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+        # Assert all rating fields
+        assert Decimal(str(parking_space["avg_availability_rating"])) == expected_avg_availability
+        assert Decimal(str(parking_space["avg_cleanliness_rating"])) == expected_avg_cleanliness
+        assert Decimal(str(parking_space["avg_total_rating"])) == expected_avg_total
+        assert parking_space["ratings_count_availability"] == count_avail
+        assert parking_space["ratings_count_cleanliness"] == count_clean
+
+    # Update ratings
+    for i, token in enumerate(user_tokens):
+        new_availability_rating = ((i + 1) % 5) + 1
+        new_cleanliness_rating = ((i + 3) % 5) + 1
+
+        rating_payload = {
+            "availability_rating": new_availability_rating,
+            "cleanliness_rating": new_cleanliness_rating,
+        }
+
+        response = client.post(
+            f"/api/unstable/parking-spaces/{spot_id}/rate",
+            headers={"Authorization": f"Bearer {token}"},
+            json=rating_payload
+        )
+
+        assert response.status_code == 200
+
+        # Subtract old total and add new total using Decimal
+        old_total = (Decimal(str(user_ratings[token]["availability"])) +
+                    Decimal(str(user_ratings[token]["cleanliness"]))) / Decimal('2.0')
+        new_total = (Decimal(str(new_availability_rating)) +
+                    Decimal(str(new_cleanliness_rating))) / Decimal('2.0')
+        total_sum = total_sum - old_total + new_total
+
+        # Update ratings
+        user_ratings[token]["availability"] = new_availability_rating
+        user_ratings[token]["cleanliness"] = new_cleanliness_rating
+
+        response = client.get(
+            f"/api/unstable/parking-spaces/{spot_id}",
+            headers={"Authorization": f"Bearer {owner_token}"}
+        )
+        assert response.status_code == 200
+        parking_space = response.get_json()
+
+        # Calculate expected averages using Decimal
+        total_avail = sum(Decimal(str(r["availability"])) for r in user_ratings.values() if r["availability"] is not None)
+        total_clean = sum(Decimal(str(r["cleanliness"])) for r in user_ratings.values() if r["cleanliness"] is not None)
+        count_avail = sum(1 for r in user_ratings.values() if r["availability"] is not None)
+        count_clean = sum(1 for r in user_ratings.values() if r["cleanliness"] is not None)
+
+        expected_avg_availability = (total_avail / Decimal(str(count_avail))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        expected_avg_cleanliness = (total_clean / Decimal(str(count_clean))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        expected_avg_total = (total_sum / Decimal(str(total_count))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+        assert Decimal(str(parking_space["avg_availability_rating"])) == expected_avg_availability
+        assert Decimal(str(parking_space["avg_cleanliness_rating"])) == expected_avg_cleanliness
+        assert Decimal(str(parking_space["avg_total_rating"])) == expected_avg_total
+        assert parking_space["ratings_count_availability"] == count_avail
+        assert parking_space["ratings_count_cleanliness"] == count_clean

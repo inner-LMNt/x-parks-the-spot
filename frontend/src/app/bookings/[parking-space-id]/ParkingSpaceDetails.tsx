@@ -168,8 +168,14 @@ export default function ParkingSpaceDetails() {
 
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center">
-                            <Star className="w-5 h-5 text-yellow-400 mr-1" />
-                            <span className="font-semibold">{parkingSpace.verification_status}</span>
+                            {parkingSpace.rating === null || parkingSpace.rating < 1 ? (
+                                <span className="text-muted-foreground">Not rated</span>
+                            ) : (
+                                <>
+                                    {Array.from({ length: Math.floor(parkingSpace.rating) }, (_, i) => <Star key={i} className="w-5 h-5 text-yellow-400 mr-1" />)}
+                                    <span className="font-semibold">{parkingSpace.verification_status}</span>
+                                </>
+                            )}
                         </div>
                         <Badge variant={lockStatus !== 'idle' ? 'destructive' : 'default'}>
                             {lockStatus !== 'idle' ? 'Locked' : 'Available'}

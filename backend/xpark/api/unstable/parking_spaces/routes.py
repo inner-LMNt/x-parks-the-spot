@@ -8,6 +8,7 @@ from xpark.logic.parkingspace import (
     is_paid_spot,
     get_all_user_parking_spaces,
     handle_submit_verification,
+    submit_rating
 )
 from flask import request
 from result import Ok, Err
@@ -159,3 +160,23 @@ def verify_spot_route(
             return {}, 200
         case Err(_):
             return {}, 400
+@bp.post("<parking_space_id>/rate")
+@require_logged_in_user
+def rate_parking_space_route(
+    parking_space_id: str, token: str, user_id: uuid.UUID
+) -> Tuple[Any, int]:
+    data = request.json or {}
+    availability_rating = data.get("availability_rating")
+    cleanliness_rating = data.get("cleanliness_rating")
+
+    result = submit_rating(
+        user_id=user_id,
+        parking_space_id=uuid.UUID(parking_space_id),
+        availability_rating=availability_rating,
+        cleanliness_rating=cleanliness_rating,
+    )
+
+    if result.is_ok():
+        return {}, 200
+    else:
+        return {"err": result.unwrap_err()}, 400
