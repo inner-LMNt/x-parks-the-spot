@@ -18,7 +18,6 @@ class ReservationStatus(Enum):
     cancel = "canceled"
     complete = "completed"
 
-
 def check_if_available(
     conn: psycopg.Connection,
     parking_spot_id: uuid.UUID,

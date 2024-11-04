@@ -107,7 +107,7 @@ function ReservationCard({
                         {format(new Date(reservation.end_time ?? new Date()), 'p')}
                     </p>
                 </div>
-                <div className="flex items-center mb-4">
+                <div className="items-center mb-4">
                     <p className="text-sm text-gray-700">
                         <strong>License Plate:</strong> {car.license_plate}
                     </p>

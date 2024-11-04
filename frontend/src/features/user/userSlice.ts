@@ -299,6 +299,17 @@ const userSlice = createSlice<UserState, {}, "user">({
           state.loading = false;
         }
       )
+      .addMatcher(
+            (action: { type: string }): action is { type: "user/errorReset" } =>
+                action.type === "user/errorReset",
+            (state) => {
+              state.error = null;
+              state.loading = false;
+              state.access_token = null;
+              state.isLoggedIn = false;
+              state.name = null;
+            }
+        )
 
       .addMatcher(
           (action: { type: string }): action is { type: "user/resetLoggedIn" } =>

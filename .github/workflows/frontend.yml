@@ -62,7 +62,7 @@ jobs:
         DATABASE_URI: "dbname=xpark user=postgres password=postgres host=127.0.0.1 port=5432"
         SECRET_KEY: test_key
         FLASK_APP: "xpark:create_app()"
-        FLASK_RUN_PORT: 5001
+        FLASK_RUN_PORT: 5000
         FLASK_RUN_HOST: localhost
         SMTP_FROM: '"X Parks The Spot" <xpark@example.com>'
         SMTP_USERNAME: xpark@example.com

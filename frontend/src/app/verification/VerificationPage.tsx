@@ -16,10 +16,12 @@ interface PendingSpot {
     name: string;
     is_paid: boolean;
     photos: string[];
+    owner_name: string;
+    owner_email: string;
+    latitude: number;
+    longitude: number;
     verification_photos?: string[];
-    location?: {
-        address?: string;
-    };
+    address:string;
 }
 
 export const VerificationPage = () => {
@@ -34,7 +36,7 @@ export const VerificationPage = () => {
     const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
     const [errorMessage, setErrorMessage] = useState("");
     const [expandedImage, setExpandedImage] = useState<string | null>(null); // State for expanded image
-
+    const MAX_ITEMS = 1;
     useEffect(() => {
         dispatch(getAllPendingSpots());
     }, [dispatch]);
@@ -117,7 +119,7 @@ export const VerificationPage = () => {
                     ) : (
                         isListExpanded && (
                             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                {pendingSpots.slice(0, 10).map((spot: PendingSpot) => (
+                                {pendingSpots.slice(0, MAX_ITEMS).map((spot: PendingSpot) => (
                                     <motion.div
                                         key={spot.id}
                                         initial={{ opacity: 0, scale: 0.9 }}
@@ -144,13 +146,21 @@ export const VerificationPage = () => {
                                                     <span>{spot.name || "Unnamed Spot"}</span>
                                                 </CardTitle>
                                                 <CardDescription>
-                                                    {spot.location?.address || 'Location not available'}
+                                                    <p><strong>Owner Name:</strong> {spot.owner_name || 'owner name not available'}
+                                                    </p>
+                                                    <p><strong>Owner Email:</strong> {spot.owner_email || 'owner email not available'}</p>
+                                                    <p>
+                                                        <strong>Address:</strong> {spot.address || 'Location not available'}
+                                                    </p>
+                                                    <p>
+                                                        <strong>Latitude:</strong> {spot.latitude ?? 'Latitude not available'}
+                                                    </p>
+                                                    <p>
+                                                        <strong>Longitude:</strong> {spot.longitude ?? 'Longitude not available'}
+                                                    </p>
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent className="pt-4">
-                                                <div className="flex justify-between items-center mb-4">
-                                                    <span className="text-sm font-medium">{spot.is_paid ? 'Paid' : 'Free'}</span>
-                                                </div>
 
                                                 {spot.verification_photos && spot.verification_photos.length > 0 && (
                                                     <Button

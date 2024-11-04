@@ -188,7 +188,7 @@ def create_sequential_reservations(
         start_time = end_time + timedelta(hours=hours_between)
 
     return reservation_ids
-  
+
 def submit_parking_verification(client: FlaskClient, token: str, space_id: str) -> None:
     """Helper to submit a verification request for a parking space with an image."""
     # Create a dummy image file for verification
@@ -210,3 +210,41 @@ def submit_parking_verification(client: FlaskClient, token: str, space_id: str) 
     data = response.get_json()
     assert data is not None
     print("Verification submitted successfully")
+
+
+def create_test_conflict(
+    client: FlaskClient, token: str, reservation_id: str,
+    description: str = "Test conflict", conflict_type: str = "Other"
+) -> str:
+    """
+    Create a test conflict using the provided client, token, reservation ID, and description.
+    Returns the conflict ID.
+    """
+    response = client.post(
+        "/api/unstable/reports",  # No trailing slash
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "reservation_id": reservation_id,
+            "description": description,
+            "type": conflict_type
+        }
+    )
+
+    # Check for successful response and capture conflict ID
+    assert response.status_code == 201, f"Expected 201, got {response.status_code} with response {response.data}"
+    data = response.get_json()
+    assert data is not None, "Expected non-empty response data"
+    assert "id" in data, "Response missing 'id' key"
+
+    return str(data["id"])
+
+def update_conflict_response(client: FlaskClient, token: str, conflict_id: str, response_text: str) -> None:
+    """
+    Update the response for an existing conflict using the provided client, token, conflict ID, and response text.
+    """
+    response = client.post(
+        "/api/unstable/admin/update-conflict",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"id": conflict_id, "response": response_text}
+    )
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
