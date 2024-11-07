@@ -28,7 +28,8 @@ import {
     Tag,
     User,
     MapPin,
-    ArrowLeft
+    ArrowLeft,
+    AlertCircle
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { format, isValid } from 'date-fns';
@@ -39,6 +40,76 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from "@/components/ui/dialog";
+
+interface ConfirmSubmitDialogProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    reservationDetails: {
+        type: string;
+        reservationName: string;
+        description: string;
+    };
+    isSubmitting: boolean;
+}
+
+const ConfirmSubmitDialog: React.FC<ConfirmSubmitDialogProps> = ({
+                                                                     isOpen,
+                                                                     onClose,
+                                                                     onConfirm,
+                                                                     reservationDetails,
+                                                                     isSubmitting
+                                                                 }) => {
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent className="w-96">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-slate-100">
+                        <AlertCircle className="w-5 h-5 text-yellow-500" />
+                        Confirm Report Submission
+                    </DialogTitle>
+                    <DialogDescription className="text-slate-200">
+                        Please review your report details before submitting:
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3">
+                    <div className="space-y-1">
+                        <p className="text-sm font-medium text-slate-200">Type of Issue</p>
+                        <p className="text-sm text-slate-300">{reservationDetails.type}</p>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-sm font-medium text-slate-200">Reservation</p>
+                        <p className="text-sm text-slate-300">{reservationDetails.reservationName}</p>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-sm font-medium text-slate-200">Description</p>
+                        <p className="text-sm text-slate-300">{reservationDetails.description}</p>
+                    </div>
+                </div>
+                <DialogFooter className="flex justify-end gap-2 content-center">
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={onClose}
+                        disabled={isSubmitting}
+                        className="text-slate-950 w-80"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        type="button"
+                        onClick={onConfirm}
+                        disabled={isSubmitting}
+                        className="text-slate-100 w-80"
+                    >
+                        {isSubmitting ? "..." : "Confirm"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
 
 const truncateText = (text: string | undefined, maxLength: number): string => {
     if (!text || text.length <= maxLength) return text as string;
@@ -253,6 +324,8 @@ export default function ReportsPage() {
     const { reservations, loading: reservationsLoading, error: reservationsError } = useAppSelector((state) => state.reservations);
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+    const [pendingSubmission, setPendingSubmission] = useState<FormValues | null>(null);
     const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
     const [filter, setFilter] = useState<string | null>(null);
 
@@ -261,6 +334,7 @@ export default function ReportsPage() {
         defaultValues: {
             reservation_id: '',
             description: '',
+            type: undefined
         },
     });
 
@@ -293,10 +367,17 @@ export default function ReportsPage() {
     };
 
     const handleSubmitReport = async (data: FormValues) => {
+        setPendingSubmission(data);
+        setIsConfirmDialogOpen(true);
+    };
+
+    const handleConfirmSubmit = async () => {
+        if (!pendingSubmission) return;
+
         const reportData = {
-            reservation_id: data.reservation_id,
-            description: data.description,
-            type: data.type,
+            reservation_id: pendingSubmission.reservation_id,
+            description: pendingSubmission.description,
+            type: pendingSubmission.type,
         };
 
         try {
@@ -309,6 +390,8 @@ export default function ReportsPage() {
             });
             form.reset();
             setIsDialogOpen(false);
+            setIsConfirmDialogOpen(false);
+            setPendingSubmission(null);
         } catch (err: any) {
             console.error("Report submission failed:", err);
             toast({
@@ -319,7 +402,14 @@ export default function ReportsPage() {
         }
     };
 
+    const getSelectedReservationName = (reservationId: string) => {
+        const reservation = reservations.find((r: Reservation) => r.id === reservationId);
+        if (!reservation) return "Selected Reservation";
+        return `${truncateText(reservation.name, 20)} - ${safeFormatDate(reservation.start_time, 'MM/dd')} to ${safeFormatDate(reservation.end_time, 'MM/dd')}`;
+    };
+
     const filteredReports = filter ? reports.filter((report: Report) => report.type === filter) : reports;
+
 
     return (
         <div className="min-h-screen bg-gray-50 p-4">
@@ -504,6 +594,24 @@ export default function ReportsPage() {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* Confirmation Dialog */}
+                {pendingSubmission && (
+                    <ConfirmSubmitDialog
+                        isOpen={isConfirmDialogOpen}
+                        onClose={() => {
+                            setIsConfirmDialogOpen(false);
+                            setPendingSubmission(null);
+                        }}
+                        onConfirm={handleConfirmSubmit}
+                        reservationDetails={{
+                            type: pendingSubmission.type,
+                            reservationName: getSelectedReservationName(pendingSubmission.reservation_id),
+                            description: pendingSubmission.description
+                        }}
+                        isSubmitting={reportsLoading}
+                    />
+                )}
 
                 {reportsLoading ? (
                     <BookingsReport reports={[]} isLoading={true} />
