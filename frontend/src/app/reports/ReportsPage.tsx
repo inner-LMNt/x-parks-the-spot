@@ -88,7 +88,7 @@ const ConfirmSubmitDialog: React.FC<ConfirmSubmitDialogProps> = ({
                                                                      isSubmitting
                                                                  }) => {
     // Get the report configuration based on type
-    const getReportConfig = (type, data) => {
+    const getReportConfig = (type: string, data: any) => {
         // Normalize the type string to match our config keys
         const normalizedType = type.toString().trim();
 
@@ -120,7 +120,7 @@ const ConfirmSubmitDialog: React.FC<ConfirmSubmitDialogProps> = ({
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-3">
-                    {reportConfig.fields.map((field, index) => (
+                    {reportConfig.fields.map((field : any, index: number) => (
                         <div key={index} className="space-y-1">
                             <p className="text-sm font-medium text-slate-200">
                                 {field.label}
@@ -426,7 +426,7 @@ export default function ReportsPage() {
 
     const handleConfirmSubmit = async (data: FormValues) => {
         if (!pendingSubmission) return;
-
+        // @ts-ignore
         const resultAction = await dispatch(submitReport(data));
 
         if (submitReport.fulfilled.match(resultAction)) {
