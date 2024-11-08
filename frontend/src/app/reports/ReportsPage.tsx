@@ -427,24 +427,7 @@ export default function ReportsPage() {
     const handleConfirmSubmit = async (data: FormValues) => {
         if (!pendingSubmission) return;
 
-        const enrichedData = {
-            ...data,
-            ...(data.type === 'Reservation Issue' && {
-                reservationName: getSelectedReservationName(data.reservation_id)
-            }),
-            ...(data.type === 'Renter Overstay' && {
-                originalEndTime: getReservationEndTime(data.reservation_id),
-                currentTime: new Date().toISOString(),
-                overstayDuration: calculateOverstayDuration(data.reservation_id)
-            }),
-            ...(data.type === 'Damage Report' && {
-                parkingSpotName: getParkingSpotName(data.reservation_id),
-                location: getParkingSpotLocation(data.reservation_id),
-                damageDescription: data.damage_description,
-            })
-        };
-
-        const resultAction = await dispatch(submitReport(enrichedData));
+        const resultAction = await dispatch(submitReport(data));
 
         if (submitReport.fulfilled.match(resultAction)) {
             toast({
