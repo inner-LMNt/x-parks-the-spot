@@ -366,3 +366,17 @@ def handle_get_notification_time(user_id: uuid.UUID) -> Result[str, str]:
                 return Err("User not found")
 
             return Ok(result[0])
+        
+
+def handle_get_points(user_id: uuid.UUID) -> Result[int, str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT points FROM users WHERE id = %s",
+                (str(user_id),),
+            )
+            result = cur.fetchone()
+            if not result:
+                return Err("User not found")
+
+            return Ok(result[0])

@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useDispatch, useSelector } from 'react-redux';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { get_points } from "@/features/user/userSlice";
 import { Settings, ArrowUpCircle, ArrowDownCircle, LogOut, FileWarning, Car } from 'lucide-react'; // Imported FileWarning
 import { logout } from '@/features/user/userSlice';
 import { Button } from "@/components/ui/button";
@@ -73,19 +74,20 @@ function CommentCard({
 }
 
 export default function ProfilePage() {
-    const dispatch = useDispatch();
-    const isLoggedIn = useSelector((state: any) => state.user.isLoggedIn);
+    const dispatch = useAppDispatch();
+    const isLoggedIn = useAppSelector((state: any) => state.user.isLoggedIn);
     //const yearsOnApp = useSelector((state:any) => state.user.);
     const [eloRating] = React.useState(1200);
     const router = useRouter();
-    const name = useSelector((state: any) => state.user.name);
+    const name = useAppSelector((state: any) => state.user.name);
+    const userPoints = useAppSelector((state) => state.user.points);
     const handleLogout = async () => {
         // @ts-ignore
         await dispatch(logout());
         router.push('/login');
     };
 
-    console.log("Select ", useSelector((state: any) => state.user))
+    console.log("Select ", useAppSelector((state: any) => state.user))
 
     const userProfile = {
         username: name,
@@ -115,6 +117,7 @@ export default function ProfilePage() {
     const [domLoaded, setDomLoaded] = useState(false);
     useEffect(() => {
         setDomLoaded(true);
+        dispatch(get_points());
     }, []);
 
     return (
@@ -163,6 +166,7 @@ export default function ProfilePage() {
                     <div className="flex flex-col items-center mb-4">
                         <div className="w-24 h-24 rounded-full bg-gray-300 mb-4 drop-shadow-lg" />
                         <h1 className="text-2xl md:text-3xl font-bold mb-1">{userProfile.username}</h1>
+                        <p className="text-lg md:text-xl text-gray-600 mb-4">Points: {userPoints}</p>
                         <div className="flex justify-center items-center space-x-8">
                             <ProfileStats label="Rating" value={eloRating} />
                             <ProfileStats label="Posts" value={userProfile.spotfindPosts} />
