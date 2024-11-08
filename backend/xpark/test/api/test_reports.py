@@ -18,14 +18,14 @@ def test_create_report_success(client: FlaskClient) -> None:
         json={
             "reservation_id": reservation_id,
             "description": "Test report",
-            "type": "Technical"
+            "type": "Reservation Issue"
         }
     )
     assert response.status_code == 201
     data = response.get_json()
     assert data is not None
     assert data["description"] == "Test report"
-    assert data["type"] == "Technical"
+    assert data["type"] == "Reservation Issue"
     assert data["status"] == "open"
     assert "id" in data, "Response missing report ID"
 
@@ -58,7 +58,7 @@ def test_get_user_reports(client: FlaskClient) -> None:
         json={
             "reservation_id": reservation_id,
             "description": "Test report",
-            "type": "Technical"
+            "type": "Reservation Issue"
         }
     )
     assert create_response.status_code == 201
@@ -89,7 +89,7 @@ def test_get_specific_report_success(client: FlaskClient) -> None:
         json={
             "reservation_id": reservation_id,
             "description": "Test report",
-            "type": "Technical"
+            "type": "Reservation Issue"
         }
     )
     assert report_response.status_code == 201
@@ -132,7 +132,7 @@ def test_update_report_admin_response_success(client: FlaskClient) -> None:
         json={
             "reservation_id": reservation_id,
             "description": "Test report",
-            "type": "Technical"
+            "type": "Reservation Issue"
         }
     )
     assert report_response.status_code == 201
@@ -167,7 +167,7 @@ def test_update_report_empty_admin_response(client: FlaskClient) -> None:
         json={
             "reservation_id": reservation_id,
             "description": "Test report",
-            "type": "Technical"
+            "type": "Reservation Issue"
         }
     )
     assert report_response.status_code == 201
@@ -203,7 +203,7 @@ def test_update_report_missing_response(client: FlaskClient) -> None:
         json={
             "reservation_id": reservation_id,
             "description": "Test report",
-            "type": "Technical"
+            "type": "Reservation Issue"
         }
     )
     assert report_response.status_code == 201
@@ -234,7 +234,7 @@ def test_endpoints_require_auth(client: FlaskClient) -> None:
         json={
             "reservation_id": str(UUID('00000000-0000-0000-0000-000000000000')),
             "description": "Test report",
-            "type": "Technical"
+            "type": "Reservation Issue"
         }
     )
     assert response.status_code == 403
@@ -263,7 +263,7 @@ def test_cross_user_access(client: FlaskClient) -> None:
         json={
             "reservation_id": reservation_id,
             "description": "User 1 report",
-            "type": "Technical"
+            "type": "Reservation Issue"
         }
     )
     assert report_response.status_code == 201
@@ -285,7 +285,7 @@ def test_create_report_types(client: FlaskClient) -> None:
     space_id = create_test_parking_space(client, token)
     reservation_id = create_test_reservation(client, token, space_id)
 
-    for report_type in ["Other", "Technical", "Billing"]:
+    for report_type in ["Other", "Reservation Issue", "Renter Overstay", "Damage Report"]:
         response = client.post(
             "/api/unstable/reports",
             headers={"Authorization": f"Bearer {token}"},
