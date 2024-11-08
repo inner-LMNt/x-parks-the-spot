@@ -29,7 +29,7 @@ import {
     User,
     MapPin,
     ArrowLeft,
-    AlertCircle
+    AlertCircle, ShieldX
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { format, isValid } from 'date-fns';
@@ -42,15 +42,40 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from "@/components/ui/dialog";
 
+// Define report type configurations
+const REPORT_TYPE_CONFIGS: Record<string, (data: any) => any> = {
+    "Reservation Issue": (data) => ({
+        title: "Reservation Issue",
+        fields: [
+            { label: "Type of Issue", value: data.type },
+            { label: "Reservation", value: data.reservation_id },
+            { label: "Description", value: data.description }
+        ]
+    }),
+    "Renter Overstay": (data) => ({
+        title: "Renter Overstay Report",
+        fields: [
+            { label: "Original End Time", value: data.originalEndTime },
+            { label: "Current Time", value: data.currentTime },
+            { label: "Overstay Duration", value: data.overstayDuration },
+        ]
+    }),
+    "Damage Report": (data) => ({
+        title: "Damage Report",
+        fields: [
+            { label: "Severity", value: data.severity },
+            { label: "Location", value: data.location },
+            { label: "Description", value: data.description }
+        ]
+    })
+};
+
 interface ConfirmSubmitDialogProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: () => void;
-    reservationDetails: {
-        type: string;
-        reservationName: string;
-        description: string;
-    };
+    reportType: string;
+    reportData: any;
     isSubmitting: boolean;
 }
 
@@ -58,42 +83,61 @@ const ConfirmSubmitDialog: React.FC<ConfirmSubmitDialogProps> = ({
                                                                      isOpen,
                                                                      onClose,
                                                                      onConfirm,
-                                                                     reservationDetails,
+                                                                     reportType,
+                                                                     reportData,
                                                                      isSubmitting
                                                                  }) => {
+    // Get the report configuration based on type
+    const getReportConfig = (type, data) => {
+        // Normalize the type string to match our config keys
+        const normalizedType = type.toString().trim();
+
+        // Get the config generator or fall back to OTHER
+        const configGenerator = REPORT_TYPE_CONFIGS[normalizedType] || REPORT_TYPE_CONFIGS["OTHER"];
+
+        if (typeof configGenerator !== 'function') {
+            console.error('Invalid config generator for type:', normalizedType);
+            return REPORT_TYPE_CONFIGS["OTHER"](data);
+        }
+
+        return configGenerator(data);
+    };
+
+    // Extract the actual data from the nested structure
+    const actualReportData = reportData.pendingSubmission || reportData;
+    const reportConfig = getReportConfig(reportType, actualReportData);
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="w-96">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-slate-100">
                         <AlertCircle className="w-5 h-5 text-yellow-500" />
-                        Confirm Report Submission
+                        {reportConfig.title}
                     </DialogTitle>
                     <DialogDescription className="text-slate-200">
                         Please review your report details before submitting:
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-3">
-                    <div className="space-y-1">
-                        <p className="text-sm font-medium text-slate-200">Type of Issue</p>
-                        <p className="text-sm text-slate-300">{reservationDetails.type}</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-sm font-medium text-slate-200">Reservation</p>
-                        <p className="text-sm text-slate-300">{reservationDetails.reservationName}</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-sm font-medium text-slate-200">Description</p>
-                        <p className="text-sm text-slate-300">{reservationDetails.description}</p>
-                    </div>
+                    {reportConfig.fields.map((field, index) => (
+                        <div key={index} className="space-y-1">
+                            <p className="text-sm font-medium text-slate-200">
+                                {field.label}
+                            </p>
+                            <p className="text-sm text-slate-300">
+                                {field.value || 'Not specified'}
+                            </p>
+                        </div>
+                    ))}
                 </div>
-                <DialogFooter className="flex justify-end gap-2 content-center">
+                <DialogFooter className="flex justify-end gap-4">
                     <Button
                         type="button"
                         variant="secondary"
                         onClick={onClose}
                         disabled={isSubmitting}
-                        className="text-slate-950 w-80"
+                        className="text-slate-950 w-24"
                     >
                         Cancel
                     </Button>
@@ -101,7 +145,7 @@ const ConfirmSubmitDialog: React.FC<ConfirmSubmitDialogProps> = ({
                         type="button"
                         onClick={onConfirm}
                         disabled={isSubmitting}
-                        className="text-slate-100 w-80"
+                        className="text-slate-100 w-24"
                     >
                         {isSubmitting ? "..." : "Confirm"}
                     </Button>
@@ -125,7 +169,15 @@ const safeFormatDate = (dateString: string | undefined, dateFormat: string): str
 const FormSchema = z.object({
     reservation_id: z.string().nonempty('Please select a reservation.'),
     description: z.string().min(10, 'Description must be at least 10 characters long.'),
-    type: z.enum(['Billing', 'Technical', 'Other']),
+    type: z.enum(['Reservation Issue', 'Renter Overstay', 'Damage Report', 'Other']),
+
+    // Optional fields for Renter Overstay
+    departure_time: z.string().optional(),
+    overstay_duration: z.string().optional(),
+
+    // Optional fields for Damage Report
+    damage_type: z.string().optional(),
+    damage_severity: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof FormSchema>;
@@ -188,10 +240,11 @@ const BookingsReport: React.FC<{ reports: Report[]; isLoading?: boolean }> = ({
                         <div className="flex justify-between items-start">
                             <div className="space-y-1">
                                 <div className="flex items-center gap-2">
-                                    {report.type === 'Billing' && <DollarSign className="w-5 h-5 text-green-600" />}
-                                    {report.type === 'Technical' && <Wrench className="w-5 h-5 text-blue-600" />}
-                                    {report.type === 'Other' && <Settings className="w-5 h-5 text-purple-600" />}
-                                    <CardTitle className="text-xl text-slate-950">{report.type} Reservation Issue</CardTitle>
+                                    {report.type === 'Reservation Issue' && <AlertCircle className="w-4 h-4 text-green-600" />}
+                                    {report.type === 'Renter Overstay' && <Clock className="w-4 h-4 text-yellow-600" />}
+                                    {report.type === 'Damage Report' && <Clock className="w-4 h-4 text-yellow-600" />}
+                                    {report.type === 'Other' && <Settings className="w-4 h-4 text-purple-600" />}
+                                    <CardTitle className="text-xl text-slate-950">{report.type}</CardTitle>
                                 </div>
                                 <div className= "items-center gap-1 text-sm text-slate-600">
                                     <div className="flex items-center gap-3">
@@ -371,18 +424,29 @@ export default function ReportsPage() {
         setIsConfirmDialogOpen(true);
     };
 
-    const handleConfirmSubmit = async () => {
+    const handleConfirmSubmit = async (data: FormValues) => {
         if (!pendingSubmission) return;
 
-        const reportData = {
-            reservation_id: pendingSubmission.reservation_id,
-            description: pendingSubmission.description,
-            type: pendingSubmission.type,
+        const enrichedData = {
+            ...data,
+            ...(data.type === 'Reservation Issue' && {
+                reservationName: getSelectedReservationName(data.reservation_id)
+            }),
+            ...(data.type === 'Renter Overstay' && {
+                originalEndTime: getReservationEndTime(data.reservation_id),
+                currentTime: new Date().toISOString(),
+                overstayDuration: calculateOverstayDuration(data.reservation_id)
+            }),
+            ...(data.type === 'Damage Report' && {
+                parkingSpotName: getParkingSpotName(data.reservation_id),
+                location: getParkingSpotLocation(data.reservation_id),
+                damageDescription: data.damage_description,
+            })
         };
 
-        try {
-            // @ts-ignore
-            await dispatch(submitReport(reportData));
+        const resultAction = await dispatch(submitReport(enrichedData));
+
+        if (submitReport.fulfilled.match(resultAction)) {
             toast({
                 title: "Report Submitted",
                 description: "Your reservation dispute has been submitted successfully.",
@@ -392,11 +456,10 @@ export default function ReportsPage() {
             setIsDialogOpen(false);
             setIsConfirmDialogOpen(false);
             setPendingSubmission(null);
-        } catch (err: any) {
-            console.error("Report submission failed:", err);
+        } else if (submitReport.rejected.match(resultAction)) {
             toast({
                 title: "Error",
-                description: reportsError || "Failed to submit report",
+                description: resultAction.payload || "Failed to submit report",
                 variant: "destructive",
             });
         }
@@ -442,19 +505,25 @@ export default function ReportsPage() {
                                     <span>All Reports</span>
                                 </div>
                             </SelectItem>
-                            <SelectItem value="Billing">
+                            <SelectItem value="Reservation Issue">
                                 <div className="flex items-center gap-2 text-slate-950">
-                                    <DollarSign className="w-4 h-4 text-green-600"/>
-                                    <span>Billing Issues</span>
+                                    <AlertCircle className="w-4 h-4 text-green-600"/>
+                                    <span>Reservation Issue</span>
                                 </div>
                             </SelectItem>
-                            <SelectItem value="Technical">
+                            <SelectItem value="Renter Overstay">
                                 <div className="flex items-center gap-2 text-slate-950">
-                                    <Wrench className="w-4 h-4 text-blue-600"/>
-                                    <span>Technical Issues</span>
+                                    <Clock className="w-4 h-4 text-yellow-600"/>
+                                    <span>Renter Overstay</span>
                                 </div>
                             </SelectItem>
-                            <SelectItem value="Other">
+                            <SelectItem value="Damage Report">
+                                <div className="flex items-center gap-2 text-slate-950">
+                                    <ShieldX className="w-4 h-4 text-red-600"/>
+                                    <span>Damage Report</span>
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="OTHER">
                                 <div className="flex items-center gap-2 text-slate-950">
                                     <Settings className="w-4 h-4 text-purple-600"/>
                                     <span>Other Issues</span>
@@ -518,22 +587,28 @@ export default function ReportsPage() {
                                                             <SelectValue placeholder="Select type"/>
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            <SelectItem value="Billing">
-                                                                <div className="flex items-center gap-2">
-                                                                    <DollarSign className="w-4 h-4 text-green-600"/>
-                                                                    <span className="text-slate-950">Billing</span>
+                                                            <SelectItem value="Reservation Issue">
+                                                                <div className="flex items-center gap-2 text-slate-950">
+                                                                    <AlertCircle className="w-4 h-4 text-green-600"/>
+                                                                    <span>Reservation Issue</span>
                                                                 </div>
                                                             </SelectItem>
-                                                            <SelectItem value="Technical">
-                                                                <div className="flex items-center gap-2">
-                                                                    <Wrench className="w-4 h-4 text-blue-600"/>
-                                                                    <span className="text-slate-950">Technical</span>
+                                                            <SelectItem value="Renter Overstay">
+                                                                <div className="flex items-center gap-2 text-slate-950">
+                                                                    <Clock className="w-4 h-4 text-yellow-600"/>
+                                                                    <span>Renter Overstay</span>
                                                                 </div>
                                                             </SelectItem>
-                                                            <SelectItem value="Other">
-                                                                <div className="flex items-center gap-2">
+                                                            <SelectItem value="Damage Report">
+                                                                <div className="flex items-center gap-2 text-slate-950">
+                                                                    <ShieldX className="w-4 h-4 text-red-600"/>
+                                                                    <span>Damage Report</span>
+                                                                </div>
+                                                            </SelectItem>
+                                                            <SelectItem value="OTHER">
+                                                                <div className="flex items-center gap-2 text-slate-950">
                                                                     <Settings className="w-4 h-4 text-purple-600"/>
-                                                                    <span className="text-slate-950">Other</span>
+                                                                    <span>Other Issues</span>
                                                                 </div>
                                                             </SelectItem>
                                                         </SelectContent>
@@ -603,12 +678,9 @@ export default function ReportsPage() {
                             setIsConfirmDialogOpen(false);
                             setPendingSubmission(null);
                         }}
-                        onConfirm={handleConfirmSubmit}
-                        reservationDetails={{
-                            type: pendingSubmission.type,
-                            reservationName: getSelectedReservationName(pendingSubmission.reservation_id),
-                            description: pendingSubmission.description
-                        }}
+                        onConfirm={() => handleConfirmSubmit(pendingSubmission)}
+                        reportType={pendingSubmission?.type || 'OTHER'}
+                        reportData={pendingSubmission}
                         isSubmitting={reportsLoading}
                     />
                 )}
