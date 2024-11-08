@@ -4,30 +4,21 @@ import React, { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { fetchUserReports, submitReport, resetReportsError } from '@/features/reports/reportSlice';
 import { fetchUserReservations } from '@/features/reservations/reservationsSlice';
-import { Report, ReportCreateRequest, Reservation } from '@/types/type';
+import { Report, Reservation } from '@/types/type';
 import {
     Card,
     CardHeader,
     CardTitle,
-    CardContent,
     CardDescription,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
     PlusCircle,
-    ChevronDown,
-    ChevronUp,
     Settings,
-    Wrench,
-    DollarSign,
     Layers,
     Clock,
     Calendar,
-    Tag,
-    User,
-    MapPin,
     ArrowLeft,
     AlertCircle, ShieldX
 } from 'lucide-react';
@@ -40,120 +31,9 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from "@/components/ui/dialog";
+import { BookingsReports } from "./components/BookingsReport";
+import {ConfirmSubmitDialog} from "./components/ConfirmSubmitDialog";
 
-// Define report type configurations
-const REPORT_TYPE_CONFIGS: Record<string, (data: any) => any> = {
-    "Reservation Issue": (data) => ({
-        title: "Reservation Issue",
-        fields: [
-            { label: "Type of Issue", value: data.type },
-            { label: "Reservation", value: data.reservation_id },
-            { label: "Description", value: data.description }
-        ]
-    }),
-    "Renter Overstay": (data) => ({
-        title: "Renter Overstay Report",
-        fields: [
-            { label: "Original End Time", value: data.originalEndTime },
-            { label: "Current Time", value: data.currentTime },
-            { label: "Overstay Duration", value: data.overstayDuration },
-        ]
-    }),
-    "Damage Report": (data) => ({
-        title: "Damage Report",
-        fields: [
-            { label: "Severity", value: data.severity },
-            { label: "Location", value: data.location },
-            { label: "Description", value: data.description }
-        ]
-    })
-};
-
-interface ConfirmSubmitDialogProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onConfirm: () => void;
-    reportType: string;
-    reportData: any;
-    isSubmitting: boolean;
-}
-
-const ConfirmSubmitDialog: React.FC<ConfirmSubmitDialogProps> = ({
-                                                                     isOpen,
-                                                                     onClose,
-                                                                     onConfirm,
-                                                                     reportType,
-                                                                     reportData,
-                                                                     isSubmitting
-                                                                 }) => {
-    // Get the report configuration based on type
-    const getReportConfig = (type: string, data: any) => {
-        // Normalize the type string to match our config keys
-        const normalizedType = type.toString().trim();
-
-        // Get the config generator or fall back to OTHER
-        const configGenerator = REPORT_TYPE_CONFIGS[normalizedType] || REPORT_TYPE_CONFIGS["OTHER"];
-
-        if (typeof configGenerator !== 'function') {
-            console.error('Invalid config generator for type:', normalizedType);
-            return REPORT_TYPE_CONFIGS["OTHER"](data);
-        }
-
-        return configGenerator(data);
-    };
-
-    // Extract the actual data from the nested structure
-    const actualReportData = reportData.pendingSubmission || reportData;
-    const reportConfig = getReportConfig(reportType, actualReportData);
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="w-96">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-slate-100">
-                        <AlertCircle className="w-5 h-5 text-yellow-500" />
-                        {reportConfig.title}
-                    </DialogTitle>
-                    <DialogDescription className="text-slate-200">
-                        Please review your report details before submitting:
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-3">
-                    {reportConfig.fields.map((field : any, index: number) => (
-                        <div key={index} className="space-y-1">
-                            <p className="text-sm font-medium text-slate-200">
-                                {field.label}
-                            </p>
-                            <p className="text-sm text-slate-300">
-                                {field.value || 'Not specified'}
-                            </p>
-                        </div>
-                    ))}
-                </div>
-                <DialogFooter className="flex justify-end gap-4">
-                    <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={onClose}
-                        disabled={isSubmitting}
-                        className="text-slate-950 w-24"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        type="button"
-                        onClick={onConfirm}
-                        disabled={isSubmitting}
-                        className="text-slate-100 w-24"
-                    >
-                        {isSubmitting ? "..." : "Confirm"}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-};
 
 const truncateText = (text: string | undefined, maxLength: number): string => {
     if (!text || text.length <= maxLength) return text as string;
@@ -171,204 +51,14 @@ const FormSchema = z.object({
     description: z.string().min(10, 'Description must be at least 10 characters long.'),
     type: z.enum(['Reservation Issue', 'Renter Overstay', 'Damage Report', 'Other']),
 
-    // Optional fields for Renter Overstay
     departure_time: z.string().optional(),
     overstay_duration: z.string().optional(),
 
-    // Optional fields for Damage Report
     damage_type: z.string().optional(),
     damage_severity: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof FormSchema>;
-
-const ReportSkeleton = () => (
-    <Card className="shadow-lg">
-        <CardHeader>
-            <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                        <Skeleton className="h-5 w-5" />
-                        <Skeleton className="h-7 w-48" />
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1">
-                            <Skeleton className="h-4 w-4" />
-                            <Skeleton className="h-4 w-32" />
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <Skeleton className="h-4 w-4" />
-                            <Skeleton className="h-4 w-24" />
-                        </div>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Skeleton className="h-6 w-24 rounded-full" />
-                </div>
-            </div>
-        </CardHeader>
-    </Card>
-);
-const BookingsReport: React.FC<{ reports: Report[]; isLoading?: boolean }> = ({
-                                                                                  reports,
-                                                                                  isLoading = false,
-                                                                              }) => {
-    const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
-
-    const toggleReport = (id: string) => {
-        setExpandedReportId(expandedReportId === id ? null : id);
-    };
-
-    if (isLoading) {
-        return (
-            <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                    <ReportSkeleton key={i} />
-                ))}
-            </div>
-        );
-    }
-
-    return (
-        <div className="space-y-4">
-            {reports.map((report) => (
-                <Card key={report.id} className="shadow-lg">
-                    <CardHeader
-                        className="cursor-pointer hover:bg-slate-50 transition-colors"
-                        onClick={() => toggleReport(report.id)}
-                    >
-                        <div className="flex justify-between items-start">
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                    {report.type === 'Reservation Issue' && <AlertCircle className="w-4 h-4 text-green-600" />}
-                                    {report.type === 'Renter Overstay' && <Clock className="w-4 h-4 text-yellow-600" />}
-                                    {report.type === 'Damage Report' && <ShieldX className="w-4 h-4 text-red-600"/>}
-                                    {report.type === 'Other' && <Settings className="w-4 h-4 text-gray-600" />}
-                                    <CardTitle className="text-xl text-slate-950">{report.type}</CardTitle>
-                                </div>
-                                <div className= "items-center gap-1 text-sm text-slate-600">
-                                    <div className="flex items-center gap-3">
-                                        <Calendar className="w-4 h-4" />
-                                        <span>Reported: {safeFormatDate(report.created_at, 'MMM dd, yyyy, hh:mm a')}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <Tag className="w-4 h-4" />
-                                        <span>{report.parking_space_name}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <MapPin className="w-4 h-4" />
-                                        <span>{report.parking_space_address}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusClass(report.status)}`}>
-                                    {formatStatus(report.status)}
-                                </span>
-                                {expandedReportId === report.id ? (
-                                    <ChevronUp className="w-5 h-5 text-slate-700" />
-                                ) : (
-                                    <ChevronDown className="w-5 h-5 text-slate-700" />
-                                )}
-                            </div>
-                        </div>
-                    </CardHeader>
-
-                    <AnimatePresence>
-                        {expandedReportId === report.id && (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                transition={{ duration: 0.3 }}
-                                className="overflow-hidden"
-                            >
-                                <CardContent className="bg-slate-50 space-y-6 py-2">
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div className="space-y-3">
-                                            <p className="flex items-center gap-2 text-slate-950">
-                                                <Calendar className="w-4 h-4 text-slate-600" />
-                                                <span>
-                                                    <strong>Reservation Period:</strong><br />
-                                                    {safeFormatDate(report.start_time, 'MMM dd, yyyy')} - {safeFormatDate(report.end_time, 'MMM dd, yyyy')}
-                                                </span>
-                                            </p>
-                                            <p className="flex items-center gap-2 text-slate-950">
-                                                <User className="w-4 h-4 text-slate-600" />
-                                                <span>
-                                                    <strong>Space Owner:</strong><br />
-                                                    {report.owner_name}
-                                                </span>
-                                            </p>
-                                            <p className="flex items-center gap-2 text-slate-950">
-                                                <Tag className="w-4 h-4 text-slate-600" />
-                                                <span>
-                                                    <strong>Reservation ID:</strong><br />
-                                                    {report.reservation_id.slice(0, 12)}...
-                                                </span>
-                                            </p>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <p className="flex items-center gap-2 text-slate-950">
-                                                <Clock className="w-4 h-4 text-slate-600" />
-                                                <span>
-                                                    <strong>Last Updated:</strong><br />
-                                                    {safeFormatDate(report.updated_at, 'MMM dd, yyyy HH:mm')}
-                                                </span>
-                                            </p>
-                                            <p className="flex items-center gap-2 text-slate-950">
-                                                <Tag className="w-4 h-4 text-slate-600" />
-                                                <span>
-                                                    <strong>Parking Space:</strong><br />
-                                                    {report.parking_space_name}
-                                                </span>
-                                            </p>
-                                            <p className="flex items-center gap-2 text-slate-950">
-                                                <MapPin className="w-4 h-4 text-slate-600" />
-                                                <span>
-                                                    <strong>Address:</strong><br />
-                                                    {report.parking_space_address}
-                                                </span>
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <motion.div
-                                            className="bg-white p-2 my-2 rounded-lg border border-slate-200 drop-shadow-lg"
-                                            initial={{ y: 20, opacity: 0 }}
-                                            animate={{ y: 0, opacity: 1 }}
-                                            transition={{ delay: 0.1 }}
-                                        >
-                                            <p className="text-slate-950 text-sm">
-                                                <strong>Description:</strong><br />
-                                                {report.description}
-                                            </p>
-                                        </motion.div>
-
-                                        {report.admin_response && (
-                                            <motion.div
-                                                className="bg-white p-2 my-2 rounded-lg border border-slate-200 drop-shadow-lg"
-                                                initial={{ y: 20, opacity: 0 }}
-                                                animate={{ y: 0, opacity: 1 }}
-                                                transition={{ delay: 0.2 }}
-                                            >
-                                                <p className="text-slate-950 text-sm">
-                                                    <strong>Admin Response:</strong><br />
-                                                    {report.admin_response}
-                                                </p>
-                                            </motion.div>
-                                        )}
-                                    </div>
-                                </CardContent>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </Card>
-            ))}
-        </div>
-    );
-};
 
 export default function ReportsPage() {
     const dispatch = useAppDispatch();
@@ -415,10 +105,6 @@ export default function ReportsPage() {
         }
     }, [reportsError, reservationsError, dispatch]);
 
-    const toggleReport = (reportId: string) => {
-        setExpandedReportId(expandedReportId === reportId ? null : reportId);
-    };
-
     const handleSubmitReport = async (data: FormValues) => {
         setPendingSubmission(data);
         setIsConfirmDialogOpen(true);
@@ -446,12 +132,6 @@ export default function ReportsPage() {
                 variant: "destructive",
             });
         }
-    };
-
-    const getSelectedReservationName = (reservationId: string) => {
-        const reservation = reservations.find((r: Reservation) => r.id === reservationId);
-        if (!reservation) return "Selected Reservation";
-        return `${truncateText(reservation.name, 20)} - ${safeFormatDate(reservation.start_time, 'MM/dd')} to ${safeFormatDate(reservation.end_time, 'MM/dd')}`;
     };
 
     const filteredReports = filter ? reports.filter((report: Report) => report.type === filter) : reports;
@@ -506,7 +186,7 @@ export default function ReportsPage() {
                                     <span>Damage Report</span>
                                 </div>
                             </SelectItem>
-                            <SelectItem value="OTHER">
+                            <SelectItem value="Other">
                                 <div className="flex items-center gap-2 text-slate-950">
                                     <Settings className="w-4 h-4 text-gray-600"/>
                                     <span>Other Issues</span>
@@ -669,38 +349,12 @@ export default function ReportsPage() {
                 )}
 
                 {reportsLoading ? (
-                    <BookingsReport reports={[]} isLoading={true} />
+                    <BookingsReports reports={[]} isLoading={true} />
                 ) : (
-                    <BookingsReport reports={filteredReports} />
+                    <BookingsReports reports={filteredReports} />
                 )}
 
             </div>
         </div>
     );
-}
-
-function getStatusClass(status: string): string {
-    switch (status) {
-        case 'open':
-            return 'bg-blue-100 text-blue-800';
-        case 'in_progress':
-            return 'bg-yellow-100 text-yellow-800';
-        case 'resolved':
-            return 'bg-green-100 text-green-800';
-        default:
-            return 'bg-gray-100 text-gray-800';
-    }
-}
-
-function formatStatus(status: string): string {
-    switch (status) {
-        case 'open':
-            return 'Open';
-        case 'in_progress':
-            return 'In Progress';
-        case 'resolved':
-            return 'Resolved';
-        default:
-            return 'Unknown';
-    }
 }
