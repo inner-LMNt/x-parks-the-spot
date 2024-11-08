@@ -242,8 +242,8 @@ const BookingsReport: React.FC<{ reports: Report[]; isLoading?: boolean }> = ({
                                 <div className="flex items-center gap-2">
                                     {report.type === 'Reservation Issue' && <AlertCircle className="w-4 h-4 text-green-600" />}
                                     {report.type === 'Renter Overstay' && <Clock className="w-4 h-4 text-yellow-600" />}
-                                    {report.type === 'Damage Report' && <Clock className="w-4 h-4 text-yellow-600" />}
-                                    {report.type === 'Other' && <Settings className="w-4 h-4 text-purple-600" />}
+                                    {report.type === 'Damage Report' && <ShieldX className="w-4 h-4 text-red-600"/>}
+                                    {report.type === 'Other' && <Settings className="w-4 h-4 text-gray-600" />}
                                     <CardTitle className="text-xl text-slate-950">{report.type}</CardTitle>
                                 </div>
                                 <div className= "items-center gap-1 text-sm text-slate-600">
@@ -508,7 +508,7 @@ export default function ReportsPage() {
                             </SelectItem>
                             <SelectItem value="OTHER">
                                 <div className="flex items-center gap-2 text-slate-950">
-                                    <Settings className="w-4 h-4 text-purple-600"/>
+                                    <Settings className="w-4 h-4 text-gray-600"/>
                                     <span>Other Issues</span>
                                 </div>
                             </SelectItem>
@@ -590,7 +590,7 @@ export default function ReportsPage() {
                                                             </SelectItem>
                                                             <SelectItem value="OTHER">
                                                                 <div className="flex items-center gap-2 text-slate-950">
-                                                                    <Settings className="w-4 h-4 text-purple-600"/>
+                                                                    <Settings className="w-4 h-4 text-gray-600"/>
                                                                     <span>Other Issues</span>
                                                                 </div>
                                                             </SelectItem>
