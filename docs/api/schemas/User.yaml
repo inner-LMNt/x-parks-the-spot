@@ -22,6 +22,8 @@ properties:
     $ref: './SpotFinderProfile.yaml'
   notification_preferences:
     $ref: './NotificationPreferences.yaml'
+  user_location:
+    $ref: './UserHomeLocation.yaml'
   created_at:
     type: string
     format: date-time

@@ -1940,6 +1940,10 @@ export interface components {
             push_notifications?: boolean;
             time?: string;
         };
+        UserHomeLocation: {
+            state?: string;
+            city?: string;
+        };
         User: {
             /** Format: uuid */
             id?: string;
@@ -1952,6 +1956,7 @@ export interface components {
             owner_profile?: components["schemas"]["OwnerProfile"];
             spot_finder_profile?: components["schemas"]["SpotFinderProfile"];
             notification_preferences?: components["schemas"]["NotificationPreferences"];
+            user_location?: components["schemas"]["UserHomeLocation"];
             /** Format: date-time */
             created_at?: string;
             /** Format: date-time */

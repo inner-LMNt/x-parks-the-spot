@@ -366,3 +366,36 @@ def handle_get_notification_time(user_id: uuid.UUID) -> Result[str, str]:
                 return Err("User not found")
 
             return Ok(result[0])
+        
+    
+def set_user_location_request(user_id: uuid.UUID, state: str, city: str) -> Result[None, str]:
+    query = """
+            UPDATE users
+            SET state_city = COALESCE(state_city, '{}'::jsonb) || jsonb_build_object('state', %s::text, 'city', %s::text)
+            WHERE id = %s
+            """
+    
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, (state, city, str(user_id)))
+            if cur.rowcount == 0:
+                return Err("User not found")
+
+            return Ok(None)
+        
+
+def get_user_location_request(user_id: uuid.UUID) -> Result[dict, str]:
+    query = """
+            SELECT state_city->>'state', state_city->>'city'
+            FROM users
+            WHERE id = %s
+            """
+    
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, (str(user_id),))
+            result = cur.fetchone()
+            if not result:
+                return Err("User not found")
+
+            return Ok({"state": result[0], "city": result[1]})
