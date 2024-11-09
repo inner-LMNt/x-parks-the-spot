@@ -2,9 +2,9 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchUserReservations } from '@/features/reservations/reservationsSlice';
+import { fetchUserReservationsTimes } from '@/features/reservations/reservationsSlice';
 import { get_notification_time } from '@/features/user/userSlice';
 import { Reservation } from '@/types/type';
 import { useRouter } from 'next/navigation';
@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation';
 const NotificationBanner = () => {
     const dispatch = useAppDispatch();
     const router = useRouter();
-    const reservations = useAppSelector((state) => state.reservations.reservations);
+    const reservations = useAppSelector((state) => state.reservations.reservationsTimes);
     const notificationTime = useAppSelector((state) => state.user.notificationTime);
     const [upcomingReservation, setUpcomingReservation] = useState<Reservation | null>(null);
     const [endingReservation, setEndingReservation] = useState<Reservation | null>(null);
@@ -20,37 +20,33 @@ const NotificationBanner = () => {
     const [visible, setVisible] = useState(true);
     const [fadeOut, setFadeOut] = useState(false);
     const [extendable, setExtendable] = useState(false);
-    const isLoggedIn = useAppSelector((state: any) => state.isLoggedIn);
-
-    useEffect(() => {
-        if (isLoggedIn) {
-            dispatch(fetchUserReservations());
-            dispatch(get_notification_time());
-        }
-    }, [domLoaded]);
+    const isLoggedIn = useAppSelector(state => state.user.isLoggedIn);
+    const [refreshKey, setRefreshKey] = useState(0); // State to force re-render
+    const firstRender = useRef(true);
 
     useEffect(() => {
         setDomLoaded(true);
     }, []);
 
-    useEffect(() => {
+    const checkNotifications = () => {
         const now = new Date();
         const notificationMinutes = parseInt(notificationTime, 10);
-        const notificationWindow = new Date(now.getTime() + notificationMinutes * 60 * 1000);
-
+        const notificationWindow = new Date(now.getTime() + notificationMinutes * 60 * 1000);    
         const upcoming = reservations.find((reservation: Reservation) => {
             const startTime = reservation.start_time ? new Date(reservation.start_time) : null;
+            const minutesUntilStart = startTime ? (startTime.getTime() - now.getTime()) / (60 * 1000) : null;
             return startTime !== null && startTime > now && startTime <= notificationWindow && reservation.status === 'booked';
         });
-
+    
         const ending = reservations.find((reservation: Reservation) => {
             const endTime = reservation.end_time ? new Date(reservation.end_time) : null;
+            const minutesUntilEnd = endTime ? (endTime.getTime() - now.getTime()) / (60 * 1000) : null;
             return endTime !== null && endTime > now && endTime <= notificationWindow && reservation.status === 'booked';
         });
-
+    
         setUpcomingReservation(upcoming || null);
         setEndingReservation(ending || null);
-
+    
         if (ending) {
             const oneHourAfterEnd = new Date(new Date(ending.end_time).getTime() + 60 * 60 * 1000);
             const isExtendable = !reservations.some((reservation: Reservation) => {
@@ -61,7 +57,28 @@ const NotificationBanner = () => {
         } else {
             setExtendable(false);
         }
-    }, [reservations, notificationTime]);
+    };
+
+    useEffect(() => {
+        const intervalId = setInterval(() => {    
+            if (isLoggedIn) {
+                dispatch(get_notification_time());
+                dispatch(fetchUserReservationsTimes()).then(() => {
+                    setRefreshKey(prevKey => prevKey + 1); // Force re-render
+                });
+            }
+        }, 10000);
+
+        return () => clearInterval(intervalId);
+    }, [isLoggedIn, dispatch]);
+
+    useEffect(() => {
+        if (firstRender.current) { // Otherwise, cache is used which may be outdated
+            firstRender.current = false;
+            return;
+        }
+        checkNotifications();
+    }, [reservations]);
 
     if ((!upcomingReservation && !endingReservation) || !visible) {
         return null;

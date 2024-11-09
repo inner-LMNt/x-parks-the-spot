@@ -15,6 +15,8 @@ interface ReservationsState {
     loading: boolean;
     error: string | null;
     reservations: Reservation[];
+    reservationsTimes: Reservation[];
+    loadingReservationTimes: boolean;
 }
 
 /**
@@ -24,6 +26,8 @@ const initialState: ReservationsState = {
     loading: false,
     error: null,
     reservations: [],
+    reservationsTimes: [],  // Added an extra copy of reservations for use in notifications component
+    loadingReservationTimes: false,
 };
 
 /**
@@ -39,6 +43,34 @@ export const fetchUserReservations = createAsyncThunk<
     void,
     { rejectValue: string }
 >("reservations/fetchUserReservations", async (_, { rejectWithValue }) => {
+    try {
+        const response = await axios.get<Reservation[]>("/reservations");
+        return response.data;
+    } catch (error: any) {
+        if (error.response?.status === 401) {
+            return rejectWithValue("Unauthorized");
+        }
+        if (error.response?.status === 403) {
+            return rejectWithValue("Forbidden");
+        }
+        if (error.response?.status === 404) {
+            return rejectWithValue("Not found");
+        }
+        return rejectWithValue("Failed to fetch reservations");
+    }
+});
+
+/**
+ * Fetch Current User's Reservations
+ * GET /reservations
+ * This is used to get the reservations for the notification banner
+ */
+
+export const fetchUserReservationsTimes = createAsyncThunk<
+    Reservation[],
+    void,
+    { rejectValue: string }
+>("reservations/fetchUserReservationsTimes", async (_, { rejectWithValue }) => {
     try {
         const response = await axios.get<Reservation[]>("/reservations");
         return response.data;
@@ -257,6 +289,32 @@ const reservationsSlice = createSlice({
                 (state: ReservationsState, action) => {
                     state.loading = false;
                     state.error = action.payload || "Failed to fetch reservations";
+                }
+            );
+
+        /**
+         * Handle fetchUserReservationsTimes actions
+         */
+        builder
+            .addCase(
+                fetchUserReservationsTimes.pending,
+                (state: ReservationsState) => {
+                    state.loadingReservationTimes = true;
+                    state.error = null;
+                }
+            )
+            .addCase(
+                fetchUserReservationsTimes.fulfilled,
+                (state: ReservationsState, action) => {
+                    state.loadingReservationTimes = false;
+                    state.reservationsTimes = action.payload;
+                }
+            )
+            .addCase(
+                fetchUserReservationsTimes.rejected,
+                (state: ReservationsState, action) => {
+                    state.loadingReservationTimes = false;
+                    state.error = action.payload || "Failed to fetch reservationsTimes";
                 }
             );
 
