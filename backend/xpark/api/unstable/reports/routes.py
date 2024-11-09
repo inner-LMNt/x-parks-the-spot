@@ -135,9 +135,8 @@ def create_other_issue_report(token: str, user_id: UUID) -> Tuple[Any, int]:
     """
     Create a new other issue report.
     """
-    data = request.get_json()
 
-    description = data.get("description")
+    description = request.form.get("description")
     report_type = "Other"
 
     if not description:

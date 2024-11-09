@@ -318,7 +318,7 @@ export const BookingsReports: React.FC<{ reports: Report[]; isLoading?: boolean 
                                     {report.image_url && (
                                         <div className="relative w-full h-64">
                                             <ImageWrapper
-                                                src={getFullImageUrl(report.image_url)}
+                                                src={report.image_url}
                                                 alt={report.parking_space_name || 'Report Image'}
                                                 layout="fill"
                                                 objectFit="cover"

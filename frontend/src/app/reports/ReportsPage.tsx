@@ -646,7 +646,7 @@ const RenterOverstayFields = ({
             name="departure_time"
             render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Expected Departure Time</FormLabel>
+                    <FormLabel>Departure Time</FormLabel>
                     <FormControl>
                         <input
                             type="datetime-local"
