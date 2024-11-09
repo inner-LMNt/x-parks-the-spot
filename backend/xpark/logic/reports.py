@@ -1,35 +1,46 @@
 # src/features/reports/logic.py
-from typing import Any, Dict, List
+
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 from psycopg.rows import dict_row
 from result import Err, Ok, Result
 from xpark.utils.db import DB
 
 def get_user_reports_logic(user_id: UUID) -> Result[List[Dict[str, Any]], str]:
+    """
+    Fetch all reports associated with the user.
+    """
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
+            # Query to fetch all reports where the user is either the reporter or the renter
             cur.execute(
                 """
                 SELECT 
                     reports.id, 
                     reports.reservation_id,
+                    reports.user_id,
                     reports.description,
                     reports.type,
                     reports.status,
                     reports.admin_response,
                     reports.created_at,
                     reports.updated_at,
-                    users.name as owner_name,
-                    parking_spaces.name as parking_space_name,
-                    parking_spaces.address as parking_space_address,
-                    lower(reservations.time) as start_time, 
-                    upper(reservations.time) as end_time, 
+                    reports.departure_time,
+                    reports.overstay_duration,
+                    reports.damage_type,
+                    reports.damage_severity,
+                    reports.image_url,
+                    owners.name AS owner_name,
+                    parking_spaces.name AS parking_space_name,
+                    parking_spaces.address AS parking_space_address,
+                    LOWER(reservations.time) AS start_time, 
+                    UPPER(reservations.time) AS end_time, 
                     reservations.parking_space_id
                 FROM reports
-                JOIN reservations ON reports.reservation_id = reservations.id
-                JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
-                JOIN users ON users.id = parking_spaces.owner
-                WHERE reservations.renter_id = %(user_id)s
+                LEFT JOIN reservations ON reports.reservation_id = reservations.id
+                LEFT JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                LEFT JOIN users AS owners ON parking_spaces.owner = owners.id
+                WHERE reports.user_id = %(user_id)s OR reservations.renter_id = %(user_id)s
                 ORDER BY reports.created_at DESC
                 """,
                 {"user_id": user_id}
@@ -37,23 +48,27 @@ def get_user_reports_logic(user_id: UUID) -> Result[List[Dict[str, Any]], str]:
             reports = cur.fetchall()
             return Ok(reports)
 
-
-def create_report_logic(user_id: UUID, reservation_id: UUID, report_type: str, description: str) -> (
-        Result)[Dict[str, Any] | None, str]:
+def create_report_logic(user_id: UUID, reservation_id: UUID, report_type: str, description: str) -> Result[Dict[str, Any], str]:
+    """
+    Logic for creating a general reservation issue report.
+    """
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
+            # Insert the new report
             cur.execute(
                 """
                 INSERT INTO reports (
+                    user_id,
                     reservation_id,
                     description,
                     type,
                     status
                 )
-                VALUES (%(reservation_id)s, %(description)s, %(type)s, %(status)s)
+                VALUES (%(user_id)s, %(reservation_id)s, %(description)s, %(type)s, %(status)s)
                 RETURNING id
                 """,
                 {
+                    "user_id": user_id,
                     "reservation_id": reservation_id,
                     "description": description,
                     "type": report_type,
@@ -61,107 +76,353 @@ def create_report_logic(user_id: UUID, reservation_id: UUID, report_type: str, d
                 }
             )
             fetched = cur.fetchone()
-            new_report_id = "" if fetched is None else fetched["id"]
+            new_report_id = fetched["id"] if fetched else None
 
-            cur.execute("""
-                         SELECT 
-                                reports.id, 
-                                reports.reservation_id,
-                                reports.description,
-                                reports.type,
-                                reports.status,
-                                reports.admin_response,
-                                reports.created_at,
-                                reports.updated_at,
-                                users.name as owner_name,
-                                parking_spaces.name as parking_space_name,
-                                parking_spaces.address as parking_space_address,
-                                lower(reservations.time) as start_time, 
-                                upper(reservations.time) as end_time, 
-                                reservations.parking_space_id
-                            FROM reports
-                            JOIN reservations ON reports.reservation_id = reservations.id
-                            JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
-                            JOIN users ON users.id = parking_spaces.owner
-                            WHERE reports.id = %s
-                            """, (new_report_id,))
-            new_space = cur.fetchone()
-            return Ok(new_space)
+            if not new_report_id:
+                return Err("Failed to create report.")
+
+            # Fetch the newly created report
+            cur.execute(
+                """
+                SELECT 
+                    reports.id, 
+                    reports.reservation_id,
+                    reports.user_id,
+                    reports.description,
+                    reports.type,
+                    reports.status,
+                    reports.admin_response,
+                    reports.created_at,
+                    reports.updated_at,
+                    owners.name AS owner_name,
+                    parking_spaces.name AS parking_space_name,
+                    parking_spaces.address AS parking_space_address,
+                    LOWER(reservations.time) AS start_time, 
+                    UPPER(reservations.time) AS end_time, 
+                    reservations.parking_space_id
+                FROM reports
+                LEFT JOIN reservations ON reports.reservation_id = reservations.id
+                LEFT JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                LEFT JOIN users AS owners ON parking_spaces.owner = owners.id
+                WHERE reports.id = %(report_id)s
+                """,
+                {"report_id": new_report_id}
+            )
+            new_report = cur.fetchone()
+            return Ok(new_report) if new_report else Err("Failed to retrieve new report.")
+
+def create_renter_overstay_report_logic(
+    user_id: UUID,
+    reservation_id: UUID,
+    report_type: str,
+    description: str,
+    departure_time: str,
+    overstay_duration: int,
+    image_url: Optional[str]
+) -> Result[Dict[str, Any], str]:
+    """
+    Logic for creating a renter overstay report.
+    """
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Insert into reports with additional fields
+            cur.execute(
+                """
+                INSERT INTO reports (
+                    user_id,
+                    reservation_id,
+                    description,
+                    type,
+                    status,
+                    departure_time,
+                    overstay_duration,
+                    image_url
+                )
+                VALUES (
+                    %(user_id)s,
+                    %(reservation_id)s,
+                    %(description)s,
+                    %(type)s,
+                    %(status)s,
+                    %(departure_time)s,
+                    %(overstay_duration)s,
+                    %(image_url)s
+                )
+                RETURNING id
+                """,
+                {
+                    "user_id": user_id,
+                    "reservation_id": reservation_id,
+                    "description": description,
+                    "type": report_type,
+                    "status": "open",
+                    "departure_time": departure_time,
+                    "overstay_duration": overstay_duration,
+                    "image_url": image_url
+                }
+            )
+            fetched = cur.fetchone()
+            new_report_id = fetched["id"] if fetched else None
+
+            if not new_report_id:
+                return Err("Failed to create report.")
+
+            # Fetch the newly created report
+            cur.execute(
+                """
+                SELECT 
+                    reports.id, 
+                    reports.reservation_id,
+                    reports.user_id,
+                    reports.description,
+                    reports.type,
+                    reports.status,
+                    reports.admin_response,
+                    reports.departure_time,
+                    reports.overstay_duration,
+                    reports.image_url,
+                    reports.created_at,
+                    reports.updated_at,
+                    owners.name AS owner_name,
+                    parking_spaces.name AS parking_space_name,
+                    parking_spaces.address AS parking_space_address,
+                    LOWER(reservations.time) AS start_time, 
+                    UPPER(reservations.time) AS end_time, 
+                    reservations.parking_space_id
+                FROM reports
+                LEFT JOIN reservations ON reports.reservation_id = reservations.id
+                LEFT JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                LEFT JOIN users AS owners ON parking_spaces.owner = owners.id
+                WHERE reports.id = %(report_id)s
+                """,
+                {"report_id": new_report_id}
+            )
+            new_report = cur.fetchone()
+            return Ok(new_report) if new_report else Err("Failed to retrieve new report.")
+
+def create_damage_report_logic(
+    user_id: UUID,
+    reservation_id: UUID,
+    report_type: str,
+    description: str,
+    damage_type: str,
+    damage_severity: str,
+    image_url: Optional[str]
+) -> Result[Dict[str, Any], str]:
+    """
+    Logic for creating a damage report.
+    """
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Insert into reports with additional fields
+            cur.execute(
+                """
+                INSERT INTO reports (
+                    user_id,
+                    reservation_id,
+                    description,
+                    type,
+                    status,
+                    damage_type,
+                    damage_severity,
+                    image_url
+                )
+                VALUES (
+                    %(user_id)s,
+                    %(reservation_id)s,
+                    %(description)s,
+                    %(type)s,
+                    %(status)s,
+                    %(damage_type)s,
+                    %(damage_severity)s,
+                    %(image_url)s
+                )
+                RETURNING id
+                """,
+                {
+                    "user_id": user_id,
+                    "reservation_id": reservation_id,
+                    "description": description,
+                    "type": report_type,
+                    "status": "open",
+                    "damage_type": damage_type,
+                    "damage_severity": damage_severity,
+                    "image_url": image_url
+                }
+            )
+            fetched = cur.fetchone()
+            new_report_id = fetched["id"] if fetched else None
+
+            if not new_report_id:
+                return Err("Failed to create report.")
+
+            # Fetch the newly created report
+            cur.execute(
+                """
+                SELECT 
+                    reports.id, 
+                    reports.reservation_id,
+                    reports.user_id,
+                    reports.description,
+                    reports.type,
+                    reports.status,
+                    reports.admin_response,
+                    reports.damage_type,
+                    reports.damage_severity,
+                    reports.image_url,
+                    reports.created_at,
+                    reports.updated_at,
+                    owners.name AS owner_name,
+                    parking_spaces.name AS parking_space_name,
+                    parking_spaces.address AS parking_space_address,
+                    LOWER(reservations.time) AS start_time, 
+                    UPPER(reservations.time) AS end_time, 
+                    reservations.parking_space_id
+                FROM reports
+                LEFT JOIN reservations ON reports.reservation_id = reservations.id
+                LEFT JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                LEFT JOIN users AS owners ON parking_spaces.owner = owners.id
+                WHERE reports.id = %(report_id)s
+                """,
+                {"report_id": new_report_id}
+            )
+            new_report = cur.fetchone()
+            return Ok(new_report) if new_report else Err("Failed to retrieve new report.")
+
+def create_other_issue_report_logic(user_id: UUID, report_type: str, description: str) -> Result[Dict[str, Any], str]:
+    """
+    Logic for creating an 'Other' issue report without a reservation ID.
+    """
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Insert into reports without reservation_id
+            cur.execute(
+                """
+                INSERT INTO reports (
+                    user_id,
+                    description,
+                    type,
+                    status
+                )
+                VALUES (
+                    %(user_id)s,
+                    %(description)s,
+                    %(type)s,
+                    %(status)s
+                )
+                RETURNING id
+                """,
+                {
+                    "user_id": user_id,
+                    "description": description,
+                    "type": report_type,
+                    "status": "open"
+                }
+            )
+            fetched = cur.fetchone()
+            new_report_id = fetched["id"] if fetched else None
+
+            if not new_report_id:
+                return Err("Failed to create report.")
+
+            # Fetch the newly created report
+            cur.execute(
+                """
+                SELECT 
+                    reports.id, 
+                    reports.user_id,
+                    reports.description,
+                    reports.type,
+                    reports.status,
+                    reports.admin_response,
+                    reports.created_at,
+                    reports.updated_at
+                FROM reports
+                WHERE reports.id = %(report_id)s
+                """,
+                {"report_id": new_report_id}
+            )
+            new_report = cur.fetchone()
+            return Ok(new_report) if new_report else Err("Failed to retrieve new report.")
 
 def get_report_by_id_logic(report_id: UUID, user_id: UUID) -> Result[Dict[str, Any], str]:
     """
     Fetch a specific report by ID for a user.
     """
-    print(f"Fetching report with report_id: {report_id} for user_id: {user_id}")
-
-    with DB.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cur:
-        cur.execute("""
-            SELECT 
-                reports.id, 
-                reports.reservation_id,
-                reports.description,
-                reports.type,
-                reports.status,
-                reports.admin_response,
-                reports.created_at,
-                reports.updated_at,
-                owners.name as owner_name,
-                parking_spaces.name as parking_space_name,
-                parking_spaces.address as parking_space_address,
-                lower(reservations.time) as start_time, 
-                upper(reservations.time) as end_time, 
-                reservations.parking_space_id
-            FROM reports 
-            JOIN reservations ON reports.reservation_id = reservations.id
-            JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
-            JOIN users owners ON parking_spaces.owner = owners.id
-            WHERE reports.id = %(report_id)s AND reservations.renter_id = %(user_id)s
-            """, {"report_id": report_id, "user_id": user_id})
-
-        report = cur.fetchone()
-        print(f"Report found: {report}" if report else "No report found.")
-        return Ok(report) if report else Err("Report not found.")
-
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT 
+                    reports.id, 
+                    reports.reservation_id,
+                    reports.user_id,
+                    reports.description,
+                    reports.type,
+                    reports.status,
+                    reports.admin_response,
+                    reports.departure_time,
+                    reports.overstay_duration,
+                    reports.damage_type,
+                    reports.damage_severity,
+                    reports.image_url,
+                    reports.created_at,
+                    reports.updated_at,
+                    owners.name AS owner_name,
+                    parking_spaces.name AS parking_space_name,
+                    parking_spaces.address AS parking_space_address,
+                    LOWER(reservations.time) AS start_time, 
+                    UPPER(reservations.time) AS end_time, 
+                    reservations.parking_space_id
+                FROM reports 
+                LEFT JOIN reservations ON reports.reservation_id = reservations.id
+                LEFT JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                LEFT JOIN users AS owners ON parking_spaces.owner = owners.id
+                WHERE reports.id = %(report_id)s AND (reports.user_id = %(user_id)s OR reservations.renter_id = %(user_id)s)
+                """,
+                {"report_id": report_id, "user_id": user_id}
+            )
+            report = cur.fetchone()
+            return Ok(report) if report else Err("Report not found.")
 
 def update_report_admin_response_logic(report_id: UUID, admin_response: str, user_id: UUID) -> Result[Dict[str, Any], str]:
     """
     Update the admin response for a specific report.
     """
-    print(f"Updating admin response for report_id: {report_id}, user_id: {user_id}")
     if not admin_response:
         return Err("Admin response cannot be empty.")
 
-    with DB.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cur:
-        cur.execute("""
-            WITH updated AS (
-                UPDATE reports 
-                SET admin_response = %(admin_response)s, 
-                    status = 'resolved', 
-                    updated_at = NOW()
-                FROM reservations
-                WHERE reports.id = %(report_id)s 
-                AND reports.reservation_id = reservations.id
-                AND reservations.renter_id = %(user_id)s
-                RETURNING reports.*
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                WITH updated AS (
+                    UPDATE reports 
+                    SET admin_response = %(admin_response)s, 
+                        status = 'resolved', 
+                        updated_at = NOW()
+                    WHERE id = %(report_id)s
+                    RETURNING *
+                )
+                SELECT 
+                    updated.*, 
+                    owners.name AS owner_name,
+                    parking_spaces.name AS parking_space_name,
+                    parking_spaces.address AS parking_space_address,
+                    LOWER(reservations.time) AS start_time,
+                    UPPER(reservations.time) AS end_time,
+                    reservations.parking_space_id
+                FROM updated
+                LEFT JOIN reservations ON updated.reservation_id = reservations.id
+                LEFT JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                LEFT JOIN users AS owners ON parking_spaces.owner = owners.id
+                WHERE updated.user_id = %(user_id)s OR reservations.renter_id = %(user_id)s
+                """,
+                {
+                    "admin_response": admin_response,
+                    "report_id": report_id,
+                    "user_id": user_id
+                }
             )
-            SELECT 
-                updated.*, 
-                parking_spaces.name as parking_space_name,
-                owners.name as owner_name,
-                parking_spaces.address as parking_space_address,
-                lower(reservations.time) as start_time,
-                upper(reservations.time) as end_time,
-                reservations.parking_space_id
-            FROM updated
-            JOIN reservations ON updated.reservation_id = reservations.id
-            JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
-            JOIN users owners ON parking_spaces.owner = owners.id
-        """, {
-            "admin_response": admin_response,
-            "report_id": report_id,
-            "user_id": user_id
-        })
-
-        updated_report = cur.fetchone()
-        print(f"Updated report: {updated_report}" if updated_report else "No report found or unauthorized update.")
-        return Ok(updated_report) if updated_report else Err("Report not found or not authorized to update.")
+            updated_report = cur.fetchone()
+            return Ok(updated_report) if updated_report else Err("Report not found or not authorized to update.")

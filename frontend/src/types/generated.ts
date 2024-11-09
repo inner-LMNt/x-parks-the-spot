@@ -2085,26 +2085,35 @@ export interface components {
             id: string;
             /**
              * Format: uuid
+             * @description Unique identifier of the user who created the report.
+             */
+            user_id?: string;
+            /**
+             * Format: uuid
              * @description Unique identifier of the reservation associated with this report.
              */
-            reservation_id: string;
+            reservation_id?: string | null;
             /**
              * Format: uuid
              * @description Unique identifier of the parking space involved in the reservation.
              */
-            parking_space_id: string;
-            /** @description Address of parking space. */
-            parking_space_address: string;
+            parking_space_id?: string | null;
+            /** @description Name of the parking space. */
+            parking_space_name?: string | null;
+            /** @description Address of the parking space. */
+            parking_space_address?: string | null;
+            /** @description Name of the owner of the parking space. */
+            owner_name?: string | null;
             /**
              * Format: date-time
              * @description Start time of the reservation.
              */
-            start_time: string;
+            start_time?: string | null;
             /**
              * Format: date-time
              * @description End time of the reservation.
              */
-            end_time: string;
+            end_time?: string | null;
             /**
              * @description Type of the report.
              * @enum {string}
@@ -2118,7 +2127,7 @@ export interface components {
              */
             status: "open" | "in_progress" | "resolved";
             /** @description Response from the admin regarding the report. */
-            admin_response: string | null;
+            admin_response?: string | null;
             /**
              * Format: date-time
              * @description Timestamp when the report was created.
@@ -2129,10 +2138,19 @@ export interface components {
              * @description Timestamp when the report was last updated.
              */
             updated_at: string;
-            /** @description Name of the owner of the parking space. */
-            owner_name: string;
-            /** @description Name of the parking space. */
-            parking_space_name: string;
+            /**
+             * Format: date-time
+             * @description Actual departure time of the renter (for Renter Overstay reports).
+             */
+            departure_time?: string | null;
+            /** @description Duration of the overstay in minutes (for Renter Overstay reports). */
+            overstay_duration?: number | null;
+            /** @description Type of damage reported (for Damage Report). */
+            damage_type?: string | null;
+            /** @description Severity of the damage (for Damage Report). */
+            damage_severity?: string | null;
+            /** @description URL of the image associated with the report. */
+            image_url?: string | null;
         };
         ReportListResponse: components["schemas"]["Report"][];
         ReportCreateRequest: {
