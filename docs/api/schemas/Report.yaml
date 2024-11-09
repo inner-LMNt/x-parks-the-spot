@@ -47,8 +47,9 @@ properties:
   type:
     type: string
     enum:
-      - Billing
-      - Technical
+      - Reservation Issue
+      - Renter Overstay
+      - Damage Report
       - Other
     description: Type of the report.
 

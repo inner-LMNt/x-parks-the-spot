@@ -1864,7 +1864,6 @@ export interface components {
             color?: string;
             license_plate: string;
             license_plate_state: string;
-            state?: string;
             default?: boolean;
         };
         RenterProfile: {
@@ -2110,7 +2109,7 @@ export interface components {
              * @description Type of the report.
              * @enum {string}
              */
-            type: "Billing" | "Technical" | "Other";
+            type: "Reservation Issue" | "Renter Overstay" | "Damage Report" | "Other";
             /** @description Detailed description of the issue. */
             description: string;
             /**
