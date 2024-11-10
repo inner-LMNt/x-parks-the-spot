@@ -21,7 +21,6 @@ export const FormSchema = z.discriminatedUnion('type', [
         type: z.literal('Renter Overstay'),
         owner_reservation_id: z.string().nonempty('Please select a reservation.'),
         departure_time: z.string().nonempty('Please provide departure time.'),
-        overstay_duration: z.string().nonempty('Please provide overstay duration.'),
         image: ImageSchema,
         description: z.string().min(10, 'Description must be at least 10 characters long.'),
     }),

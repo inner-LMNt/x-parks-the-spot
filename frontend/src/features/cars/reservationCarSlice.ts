@@ -19,7 +19,7 @@ export const fetchReservationCar = createAsyncThunk<
     CarInfo,
     string,
     { rejectValue: string }
->("ReservationCar/fetchReservationCar", async (carInfoId, { rejectWithValue }) => {
+>("reservationCar/fetchReservationCar", async (carInfoId, { rejectWithValue }) => {
     try {
         const response = await axios.get<CarInfo>(`/cars/${carInfoId}`);
         return response.data;
@@ -30,8 +30,8 @@ export const fetchReservationCar = createAsyncThunk<
     }
 });
 
-const ReservationCarSlice = createSlice({
-    name: "ReservationCar",
+const reservationCarSlice = createSlice({
+    name: "reservationCar",
     initialState,
     reducers: {
         resetCarInfo(state) {
@@ -56,5 +56,5 @@ const ReservationCarSlice = createSlice({
     },
 });
 
-export const { resetCarInfo } = ReservationCarSlice.actions;
-export default ReservationCarSlice.reducer;
+export const { resetCarInfo } = reservationCarSlice.actions;
+export default reservationCarSlice.reducer;

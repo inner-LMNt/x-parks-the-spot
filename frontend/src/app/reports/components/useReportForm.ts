@@ -34,7 +34,7 @@ export const useReportForm = () => {
         };
     }, [imageSource]);
 
-    const handleCapturePhoto = () => {
+    const handleCapturePhoto = async (): Promise<File | null> => {
         if (videoRef.current) {
             const canvas = document.createElement('canvas');
             canvas.width = videoRef.current.videoWidth;
@@ -42,14 +42,19 @@ export const useReportForm = () => {
             const ctx = canvas.getContext('2d');
             if (ctx) {
                 ctx.drawImage(videoRef.current, 0, 0);
-                canvas.toBlob(blob => {
-                    if (blob) {
-                        const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
-                        return file;
-                    }
-                }, 'image/jpeg');
+                return new Promise<File | null>((resolve) => {
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+                            resolve(file);
+                        } else {
+                            resolve(null);
+                        }
+                    }, 'image/jpeg');
+                });
             }
         }
+        return null;
     };
 
     return {
