@@ -4,7 +4,7 @@ from argon2.exceptions import VerifyMismatchError, VerificationError
 import uuid
 from xpark.config import Config
 from result import Result, Ok, Err, is_err
-from typing import cast, Tuple
+from typing import cast, Tuple, Dict
 import secrets
 from xpark.utils.mailer import generate_templated_email, send_email
 
@@ -368,15 +368,26 @@ def handle_get_notification_time(user_id: uuid.UUID) -> Result[str, str]:
             return Ok(result[0])
         
 
-def handle_get_points(user_id: uuid.UUID) -> Result[int, str]:
+def handle_get_points(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT points FROM users WHERE id = %s",
+                "SELECT points->>'total', points->>'current' FROM users WHERE id = %s",
                 (str(user_id),),
             )
             result = cur.fetchone()
             if not result:
                 return Err("User not found")
 
-            return Ok(result[0])
+            return Ok({"total": int(result[0]), "current": int(result[1])})
+        
+
+# Testing purposes
+def randomize_user_points(user_id: uuid.UUID) -> None:
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE users SET points = jsonb_build_object('total', floor(random() * 1000)::int, 'current', floor(random() * 1000)::int) WHERE id = %s",
+                (str(user_id),),
+            )
+            return Ok(None)

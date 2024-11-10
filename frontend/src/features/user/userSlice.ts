@@ -31,7 +31,8 @@ interface UserState {
   loading: boolean;
   error: string | null;
   notificationTime: string | null;
-  points: number | null;
+  total_points: number | null;
+  current_points: number | null;
 }
 
 const initialState: UserState = {
@@ -45,7 +46,8 @@ const initialState: UserState = {
   loading: false,
   error: null,
   notificationTime: null,
-  points: 0,
+  total_points: 0,
+  current_points: 0,
 };
 
 /**
@@ -224,15 +226,28 @@ export const get_notification_time = createAsyncThunk<
 });
 
 export const get_points = createAsyncThunk<
-  number | null,
+  { total: number; current: number } | null,
   void,
   { rejectValue: string }
 >("user/get_points", async (_, { rejectWithValue }) => {
   try {
     const response = await axios.get("auth/points");
+    console.log('data', response.data);
     return response.data.points;
   } catch (error: any) {
     return rejectWithValue("Failed to get points");
+  }
+});
+
+export const randomize_all_points = createAsyncThunk<
+  void,
+  void,
+  { rejectValue: string }
+>("user/randomize_all_points", async (_, { rejectWithValue }) => {
+  try {
+    await axios.post("auth/randomize-points");
+  } catch (error: any) {
+    return rejectWithValue("Failed to randomize points");
   }
 });
 
@@ -254,6 +269,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof reset_password.pending
           | typeof update_notification_time.pending
           | typeof get_points.pending
+          | typeof randomize_all_points.pending
         > => action.type.endsWith("/pending"),
         (state) => {
           state.loading = true;
@@ -272,6 +288,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof reset_password.rejected
           // | typeof update_notification_time.rejected
           | typeof get_points.rejected
+          | typeof randomize_all_points.rejected
         > => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false;
@@ -360,9 +377,17 @@ const userSlice = createSlice<UserState, {}, "user">({
         isAnyOf(get_points.fulfilled),
         (state, action) => {
           state.loading = false;
-          state.points = action.payload;
+          state.total_points = action.payload?.total || 123;
+          state.current_points = action.payload?.current || 123;
         }
       )
+
+      .addMatcher(
+        isAnyOf(randomize_all_points.fulfilled),
+        (state) => {
+          state.loading = false;
+        }
+      );
   },
 });
 
