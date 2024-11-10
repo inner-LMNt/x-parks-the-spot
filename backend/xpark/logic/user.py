@@ -4,7 +4,7 @@ from argon2.exceptions import VerifyMismatchError, VerificationError
 import uuid
 from xpark.config import Config
 from result import Result, Ok, Err, is_err
-from typing import cast, Tuple
+from typing import cast, Tuple, Dict
 import secrets
 from xpark.utils.mailer import generate_templated_email, send_email
 
@@ -384,7 +384,7 @@ def set_user_location_request(user_id: uuid.UUID, state: str, city: str) -> Resu
             return Ok(None)
         
 
-def get_user_location_request(user_id: uuid.UUID) -> Result[dict, str]:
+def get_user_location_request(user_id: uuid.UUID) -> Result[Dict[str, str], str]:
     query = """
             SELECT state_city->>'state', state_city->>'city'
             FROM users
