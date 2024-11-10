@@ -1,6 +1,6 @@
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
 
 from werkzeug.datastructures import FileStorage
@@ -13,6 +13,139 @@ from xpark.utils.db import DB
 from result import Result, Ok, Err
 import uuid
 from .timeslots import days_of_week_to_slots, recalculate_coalesce
+
+
+def award_points(
+    user_id: uuid.UUID,
+    parking_space_id: uuid.UUID,
+    status: str,
+    points_amount: int = 10,
+    image_file: Optional[FileStorage] = None
+) -> Result[Dict[str, Any], str]:
+
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Get the owner of the parking space
+            cur.execute("""
+                SELECT owner FROM parking_spaces WHERE id = %s
+            """, (parking_space_id,))
+            parking_space = cur.fetchone()
+            if not parking_space:
+                return Err("Parking space not found")
+
+            parking_space_owner_id = parking_space['owner']
+
+            if status == 'taken':
+                # Handle "taken" status
+                new_photo_url = []
+                if image_file:
+                    try:
+                        photo_url = save_image(image_file)
+                        new_photo_url = [photo_url]
+                    except ValueError as e:
+                        return Err(f"Image upload failed: {str(e)}")
+
+                cur.execute("""
+                    UPDATE parking_spaces
+                    SET
+                        is_taken = TRUE,
+                        updated_at = NOW(),
+                        photos = %(new_photo_url)s || photos
+                    WHERE id = %(parking_space_id)s
+                    RETURNING id, is_taken, updated_at
+                """, {
+                    "new_photo_url": new_photo_url,
+                    "parking_space_id": parking_space_id
+                })
+
+                if not cur.fetchone():
+                    return Err("Failed to update parking space")
+                return Ok({"action": "Status set to 'taken'"})
+
+            elif status == 'parked':
+                # Handle "parked" status
+                cur.execute("""
+                    DELETE FROM parking_spaces
+                    WHERE id = %s AND is_paid = FALSE
+                    RETURNING id
+                """, (parking_space_id,))
+
+                if not cur.fetchone():
+                    return Err("Parking space not found or deletion not authorized")
+
+                # Award points if the requestor is not the owner
+                if parking_space_owner_id != user_id:
+                    now = datetime.now()
+
+                    # Check for recent award restrictions
+                    cur.execute("""
+                        SELECT timestamp
+                        FROM points_transaction
+                        WHERE user_id = %s AND transaction_type = 'award' AND timestamp >= %s
+                    """, (str(user_id), now - timedelta(hours=2)))
+                    if cur.fetchone():
+                        return Err("Points can only be awarded once every 2 hours to a spot finder.")
+
+                    cur.execute("""
+                        SELECT timestamp
+                        FROM points_transaction
+                        WHERE user_id = %s AND transaction_type = 'award' AND date_trunc('day', timestamp) = date_trunc('day', %s)
+                    """, (str(parking_space_owner_id), now))
+                    if cur.fetchone():
+                        return Ok({"message": "Points can only be awarded once per day to the same spot finder."})
+
+                    # Update points for the owner
+                    cur.execute("""
+                        SELECT points->>'current' AS current_points, points->>'total' AS total_points
+                        FROM users
+                        WHERE id = %s
+                    """, (str(parking_space_owner_id),))
+                    owner_points = cur.fetchone()
+
+                    if not owner_points:
+                        return Err("Owner not found")
+
+                    current_points = int(owner_points['current_points'])
+                    total_points = int(owner_points['total_points'])
+
+                    new_current_points = current_points + points_amount
+                    new_total_points = total_points + points_amount
+
+                    cur.execute("""
+                        UPDATE users
+                        SET points = jsonb_set(
+                            jsonb_set(points, '{current}', to_jsonb(%s::text)),
+                            '{total}', to_jsonb(%s::text)
+                        )
+                        WHERE id = %s
+                    """, (str(new_current_points), str(new_total_points), str(parking_space_owner_id)))
+
+                    transaction_desc = f"Awarded for {status} parking space {parking_space_id}"
+                    cur.execute("""
+                        INSERT INTO points_transaction (
+                            user_id,
+                            transaction_type,
+                            points_amount,
+                            description,
+                            balance_after_transaction,
+                            timestamp
+                        ) VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (str(parking_space_owner_id), "award", points_amount, transaction_desc, new_current_points, now))
+
+                    conn.commit()
+                    return Ok({
+                        "current_points": new_current_points,
+                        "total_points": new_total_points,
+                        "action": f"{status} - award"
+                    })
+
+                return Ok({"action": "No points awarded as the user is the owner of the parking space"})
+
+            else:
+                return Err("Invalid status provided. Use 'taken' or 'parked'.")
+
+
+
 
 def get_all_user_parking_spaces(
     user_id: uuid.UUID,
@@ -300,14 +433,6 @@ def update_taken(
     """
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            # Verify that the user owns the parking space
-            cur.execute(
-                "SELECT 1 FROM parking_spaces WHERE id = %s AND owner = %s",
-                (parking_space_id, user_id),
-            )
-            if not cur.fetchone():
-                return Err("Parking space not found or user not authorized to update")
-
             updated_name = f'Updated at {datetime.now().strftime("%I:%M %p, %B %d %Y")}'
 
             # Handle photo processing if an image is provided
@@ -343,6 +468,7 @@ def update_taken(
                 return Err("Failed to update parking space")
 
             return Ok(updated_space)
+
 
 def update_paid_parking_space(
     user_id: uuid.UUID,

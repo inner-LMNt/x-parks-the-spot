@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { markSpotTaken } from '@/features/parking-space/parkingSpaceSlice';
+import { awardPoints } from '@/features/parking-space/parkingSpaceSlice';
 import { RootState } from '@/store';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -36,11 +36,6 @@ const DriverArrive = ({ currentSpotId, userLocation, closeDriverArriveDialog }) 
                     setIsCameraActive(false);
                     setPhotoTimestamp(new Date().toLocaleString());
                     setPhotoLocation(`${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`);
-                    console.log("Photo captured and sset successfully:", file); // Debugging statement
-                    console.log("phpy", photo);
-                    console.log("prev", previewUrl);
-                    console.log("userLocation", userLocation);
-                    console.log("urrentSpotId", currentSpotId);
                 })
                 .catch(error => {
                     console.error("Error converting image to file:", error);
@@ -57,7 +52,7 @@ const DriverArrive = ({ currentSpotId, userLocation, closeDriverArriveDialog }) 
                 description: 'Please upload a photo and ensure location is available.',
                 variant: 'destructive',
             });
-            console.warn("Submission aborted: Missing currentSpotId, userLocation, or photo."); // Debugging statement
+            console.warn("Submission aborted: Missing currentSpotId, userLocation, or photo.");
             return;
         }
 
@@ -68,9 +63,9 @@ const DriverArrive = ({ currentSpotId, userLocation, closeDriverArriveDialog }) 
             formData.append('photo', photo);
             formData.append('status', statusSelection);
 
-            console.log("Submitting form data:", formData); // Debugging statement
+            console.log("Submitting form data:", formData);
 
-            await dispatch(markSpotTaken({ parkingSpaceId: currentSpotId, formData })).unwrap();
+            await dispatch(awardPoints({ parkingSpaceId: currentSpotId, formData })).unwrap();
             toast({
                 title: 'Thank you for updating the spot',
                 description: '',
@@ -94,7 +89,7 @@ const DriverArrive = ({ currentSpotId, userLocation, closeDriverArriveDialog }) 
         setIsCameraActive(true);
         setPhotoTimestamp(null);
         setPhotoLocation(null);
-        console.log("Photo reset for retake."); // Debugging statement
+        console.log("Photo reset for retake.");
     };
 
     return (
@@ -137,7 +132,7 @@ const DriverArrive = ({ currentSpotId, userLocation, closeDriverArriveDialog }) 
                         </div>
                     )}
 
-                    {/* Radio buttons for "This Spot is Taken" and "I Am Parked Here" */}
+                    {/* Radio buttons for "This Spot was Already Taken" and "I Am Parked Here" */}
                     <div className="flex flex-col mt-4 space-y-2">
                         <label className="flex items-center space-x-2">
                             <input
@@ -147,7 +142,7 @@ const DriverArrive = ({ currentSpotId, userLocation, closeDriverArriveDialog }) 
                                 onChange={() => setStatusSelection('taken')}
                                 className="form-radio h-5 w-5 text-green-500"
                             />
-                            <span>This Spot is Taken</span>
+                            <span>This Spot was Already Taken</span>
                         </label>
                         <label className="flex items-center space-x-2">
                             <input

@@ -208,13 +208,21 @@ export const fetchUserRating = createAsyncThunk<
 
 export const awardPoints = createAsyncThunk<
     void,
-    { parkingSpaceId: string; userId: string },
+    { parkingSpaceId: string; formData: FormData },
     { rejectValue: string }
->("parkingSpace/awardPoints", async ({ parkingSpaceId, userId }, { rejectWithValue }) => {
+>("parkingSpace/awardPoints", async ({ parkingSpaceId, formData }, { rejectWithValue }) => {
     try {
-        await axios.post(`/parking-spaces/${parkingSpaceId}/award-points`, { userId });
+        await axios.post(`/parking-spaces/${parkingSpaceId}/award-points`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
     } catch (error: any) {
-        return rejectWithValue(error.response?.data?.error || "Failed to award points");
+        console.error("Error response:", error.response);  // Log the full error response
+        console.error("Error data:", error.response?.data); // Log the error data if available
+
+        const errorMessage = error.response?.data?.err || "Failed to award points";  // Check for backend 'err' message
+        return rejectWithValue(errorMessage);
     }
 });
 
