@@ -14,6 +14,7 @@ interface ParkingSpaceState {
     } | null;
     lockStatus: "idle" | "locking" | "locked" | "unlocking" | "failed";
     lockExpiresAt: number | null;
+    pointsAwarded: boolean;
 }
 
 const initialState: ParkingSpaceState = {
@@ -23,6 +24,7 @@ const initialState: ParkingSpaceState = {
     userRating: null,
     lockStatus: "idle",
     lockExpiresAt: null,
+    pointsAwarded: false,
 };
 
 interface RatingPayload {
@@ -204,6 +206,19 @@ export const fetchUserRating = createAsyncThunk<
     }
 );
 
+export const awardPoints = createAsyncThunk<
+    void,
+    { parkingSpaceId: string; userId: string },
+    { rejectValue: string }
+>("parkingSpace/awardPoints", async ({ parkingSpaceId, userId }, { rejectWithValue }) => {
+    try {
+        await axios.post(`/parking-spaces/${parkingSpaceId}/award-points`, { userId });
+    } catch (error: any) {
+        return rejectWithValue(error.response?.data?.error || "Failed to award points");
+    }
+});
+
+
 /**
  * **Parking Space Slice**
  */
@@ -227,9 +242,24 @@ const parkingSpaceSlice = createSlice({
             state.lockExpiresAt = null;
             state.error = null;
             state.loading = false;
+            state.pointsAwarded = false;
         },
     },
     extraReducers: (builder) => {
+        builder
+            .addCase(awardPoints.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(awardPoints.fulfilled, (state) => {
+                state.loading = false;
+                state.pointsAwarded = true;
+            })
+            .addCase(awardPoints.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || "Failed to award points";
+            });
+
         builder
             .addCase(markSpotTaken.pending, (state: ParkingSpaceState) => {
                 state.loading = true;

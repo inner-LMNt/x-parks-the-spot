@@ -42,6 +42,7 @@ import ImageWrapper from "@/components/custom/ImageWrapper";
 import { Badge } from "@/components/ui/badge";
 import { components } from "@/types/generated";
 import {RatingDisplay} from "@/components/custom/RatingDisplay";
+import DriverArrive from "@/app/search/components/driverArrive";
 
 const default_center = {
   // Purdue University coords
@@ -109,6 +110,15 @@ export default function SearchPage() {
   const [includeTakenSpots, setIncludeTakenSpots] = useState(false); // Default to showing only available spots
   const [photoTimestamp, setPhotoTimestamp] = useState<string | null>(null);
   const [photoLocation, setPhotoLocation] = useState<string | null>(null);
+  const [driverArriveOpen, setDriverArriveOpen] = useState(false);
+
+  const openDriverArriveDialog = () => {
+    setDriverArriveOpen(true);
+  };
+
+  const closeDriverArriveDialog = () => {
+    setDriverArriveOpen(false);
+  };
 
 
   const openUpdateStatusDialog = (spotId: string) => {
@@ -1462,82 +1472,78 @@ export default function SearchPage() {
                 Exit Navigation
               </button>
             )}
-          </CardHeader>
-          <CardContent>
-            {navigationMode ? (
-              reachedDestination ? (
-                <div className="text-center">
-                  <h3 className="text-md font-semibold mb-4">You've reached your destination</h3>
-                </div>
-              ) : (
-                <div>
-                  {/* <h3 className="text-md font-semibold">From: {userLocation?.lat}, {userLocation?.lng}</h3>
-                  <h3 className="text-md font-semibold">To: {selectedSpot?.location.latitude}, {selectedSpot?.location.longitude}</h3> */}
-                  {/* <div className="border-b border-gray-300 my-4"></div> */}
-                  <div className="mt-0">
-                    <h3 className="text-md font-semibold">Step {currentStepIndex + 1}</h3>
-                    <div className="w-3"></div>
 
-                    {/* <div className="flex items-center justify-between"> // Do we want this feature?
-                      <button
-                        onClick={() => setCurrentStepIndex(currentStepIndex - 1)}
-                        disabled={currentStepIndex === 0}
-                        className="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded focus:outline-none"
-                      >
-                        <ChevronLeft size={16} />
-                      </button>
-                      <h3 className="text-md font-semibold">Step {currentStepIndex + 1}</h3>
-                      <button
-                        onClick={() => setCurrentStepIndex(currentStepIndex + 1)}
-                        disabled={currentStepIndex === directions.routes[0].legs[0].steps.length - 1}
-                        className="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded focus:outline-none"
-                      >
-                        <ChevronRight size={16} />
-                      </button>
-                    </div> */}
-                    <div className="w-8"></div>
-                    {directions && (
-                      <span
-                        dangerouslySetInnerHTML={{ __html: directions.routes[0].legs[0].steps[currentStepIndex].instructions }} />
-                    )}
-                    {directions && (
-                      <div className="text-sm text-gray-600">
-                        <p>Distance: {directions.routes[0].legs[0].steps[currentStepIndex].distance?.text ?? ''}</p>
-                        <p>Duration: {directions.routes[0].legs[0].steps[currentStepIndex].duration?.text ?? ''}</p>
+          </CardHeader>
+            <CardContent>
+              {navigationMode ? (
+                  reachedDestination ? (
+                      <div className="text-center">
+                        <h3 className="text-md font-semibold mb-4">You've reached your destination</h3>
+                        {/* Show "Was this spot taken?" button only for non-paid spots */}
+
+                        {!selectedSpot?.is_paid && (
+                            <button
+                                onClick={openDriverArriveDialog}
+                                className="mt-4 px-3 py-2 bg-blue-500 text-white text-sm font-semibold rounded hover:bg-blue-700 focus:outline-none"
+                            >
+                              Was this spot taken?
+                            </button>
+
+                        )}
                       </div>
-                    )}
-                    <div className="flex justify-between mt-4">
-                      <button
-                        onClick={() => setCurrentStepIndex((prev) => Math.max(prev - 1, 0))}
-                        className="px-3 py-2 bg-blue-500 text-white text-sm font-semibold rounded hover:bg-blue-700 focus:outline-none"
-                      >
-                        Previous
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (directions) {
-                            setCurrentStepIndex((prev) => Math.min(prev + 1, directions.routes[0].legs[0].steps.length - 1));
-                          }
-                        }}
-                        className="px-3 py-2 bg-blue-500 text-white text-sm font-semibold rounded hover:bg-blue-700 focus:outline-none"
-                      >
-                        Next
-                      </button>
-                      <button
-                        onClick={() => setCurrentStepIndex(0)}
-                        className="px-3 py-2 bg-green-500 text-white text-sm font-semibold rounded hover:bg-green-700 focus:outline-none"
-                      >
-                        Current
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )
-            ) : (
-              <p className="text-sm text-gray-500">No directions available.</p>
-            )}
-          </CardContent>
-        </Card>
+                  ) : (
+                      // Continue with navigation step-by-step rendering
+                      <div>
+                        <h3 className="text-md font-semibold">Step {currentStepIndex + 1}</h3>
+                        {directions && (
+                            <span
+                                dangerouslySetInnerHTML={{
+                                  __html: directions.routes[0].legs[0].steps[currentStepIndex].instructions,
+                                }}
+                            />
+                        )}
+                        <div className="flex justify-between mt-4">
+                          {/* Step navigation buttons */}
+                          <button
+                              onClick={() => setCurrentStepIndex((prev) => Math.max(prev - 1, 0))}
+                              className="px-3 py-2 bg-blue-500 text-white text-sm font-semibold rounded hover:bg-blue-700 focus:outline-none"
+                          >
+                            Previous
+                          </button>
+                          <button
+                              onClick={() =>
+                                  setCurrentStepIndex((prev) =>
+                                      Math.min(prev + 1, directions.routes[0].legs[0].steps.length - 1)
+                                  )
+                              }
+                              className="px-3 py-2 bg-blue-500 text-white text-sm font-semibold rounded hover:bg-blue-700 focus:outline-none"
+                          >
+                            Next
+                          </button>
+                          <button
+                              onClick={() => setCurrentStepIndex(0)}
+                              className="px-3 py-2 bg-green-500 text-white text-sm font-semibold rounded hover:bg-green-700 focus:outline-none"
+                          >
+                            Current
+                          </button>
+                        </div>
+                      </div>
+                  )
+              ) : (
+                  <p className="text-sm text-gray-500">No directions available.</p>
+              )}
+
+              {/* Render DriverArrive dialog when "Was this spot taken?" button is clicked */}
+              {driverArriveOpen && (
+                  <DriverArrive
+                      currentSpotId={selectedSpot.id}
+                      userLocation={userLocation}
+                      closeDriverArriveDialog={closeDriverArriveDialog}
+                  />
+              )}
+            </CardContent>
+
+          </Card>
       </div>
     </div >
   ));
