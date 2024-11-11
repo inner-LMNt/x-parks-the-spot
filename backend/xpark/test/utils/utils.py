@@ -52,7 +52,7 @@ def create_test_parking_space(client: FlaskClient, token: str, is_paid: bool = T
 
         # Update with proper type annotations
         parking_space_data["pricing_info"] = {
-            "base_price": 10.0
+            "base_price": 1000
         }
         parking_space_data["availability_schedule"] = slots
 

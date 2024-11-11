@@ -26,7 +26,7 @@ def test_search_parking_spaces(client: FlaskClient) -> None:
         "radius": 5,  # in kilometers
         "paid_status": "UNPAID",
         "min_price": 0,
-        "max_price": 5,
+        "max_price": 500,
         "start_time": "2000-01-23T01:22:45.678+09:00",
         "end_time": "2000-01-23T01:23:45.678+09:00",
         "is_taken": False,

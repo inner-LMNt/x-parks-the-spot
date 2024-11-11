@@ -34,7 +34,7 @@ def test_coalesce() -> None:
         0.0,
         "address",
         name="name",
-        price=10.00,
+        price=1000,
         availability_schedule=[
             {"day_of_week": "Monday", "start_time": "00:00", "end_time": "23:59"},
             {"day_of_week": "Tuesday", "start_time": "00:00", "end_time": "23:59"},

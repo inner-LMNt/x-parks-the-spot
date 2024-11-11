@@ -105,7 +105,7 @@ def calculate_booking_price(
     res = cur.fetchone()
     assert res
     price = res["price"]
-    assert type(price) is float
+    assert type(price) is int
     delta = end_time - start_time
     hours = delta.days * 24 + delta.seconds / 3600
     return hours * price
@@ -299,7 +299,7 @@ def update_reservation(
             owner_id = parking_space["owner"]
             parking_address = parking_space.get("address", "Unknown Location")
             parking_price = parking_space.get(
-                "price", 0.0
+                "price", 0
             )  # Assuming price is a float representing price per hour
 
         # Fetch the owner's email and name from the users table
@@ -355,14 +355,14 @@ def update_reservation(
         if extension_delta.total_seconds() > 0:
             extension_hours = extension_delta.total_seconds() / 3600
             # Round to two decimal places for currency formatting
-            extra_earned = round(extension_hours * parking_price, 2)
+            extra_earned = "%.2f" % extension_hours * parking_price / 100
             # Format extension length into hours and minutes
             hours = int(extension_hours)
             minutes = int((extension_hours - hours) * 60)
             extension_length_str = f"{hours} hours and {minutes} minutes"
         else:
             extension_length_str = "No extension"
-            extra_earned = 0.0
+            extra_earned = "0.00"
 
         # Convert start_time and end_time to EST
         est = ZoneInfo("America/New_York")
@@ -391,7 +391,7 @@ def update_reservation(
         - End Time: {end_time_est}
         - Car: {car_info}
         - Extension Length: {extension_length_str}
-        - Extra Earned: ${extra_earned}
+        - Extra Earned: ¢{extra_earned}
 
         If you have any questions or concerns, please feel free to contact us.
 
