@@ -31,6 +31,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchReportDetails } from '@/features/reports/reportDetailsSlice';
 import { fetchReservationCar } from '@/features/cars/reservationCarSlice';
 import { RootState } from '@/store';
+import EmptyReportsState from "@/app/reports/components/EmptyReportsState";
 
 const safeFormatDate = (dateString: string | undefined, dateFormat: string): string => {
     if (!dateString) return 'N/A';
@@ -92,10 +93,19 @@ const ReportSkeleton = () => (
     </Card>
 );
 
-export const BookingsReports: React.FC<{ reports: Report[]; isLoading?: boolean }> = ({
-                                                                                          reports,
-                                                                                          isLoading = false,
-                                                                                      }) => {
+export const BookingsReports: React.FC<{
+    reports: Report[];
+    isLoading?: boolean;
+    totalReportsCount: number;
+    onClearFilters: () => void;
+    onCreateReport: () => void;
+}> = ({
+          reports,
+          isLoading = false,
+          totalReportsCount,
+          onClearFilters,
+          onCreateReport,
+      }) => {
     const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
     const dispatch = useDispatch();
 
@@ -127,6 +137,13 @@ export const BookingsReports: React.FC<{ reports: Report[]; isLoading?: boolean 
 
     return (
         <div className="space-y-4">
+            {Array.isArray(reports) && reports.length === 0 && (
+                <EmptyReportsState
+                    hasReports={totalReportsCount > 0}
+                    onClearFilters={onClearFilters}
+                    onCreateReport={onCreateReport}
+                />
+            )}
             {Array.isArray(reports) &&
                 reports.map((report) => (
                     <Card key={report.id} className="shadow-lg">

@@ -9,7 +9,7 @@ import {
 } from '@/features/reports/reportSlice';
 import { fetchUserReservations } from '@/features/reservations/reservationsSlice';
 import { fetchOwnerReservations } from '@/features/owner-reservations/ownerReservationsSlice';
-import { ArrowLeft, Layers, AlertCircle, Clock, ShieldX, Settings } from 'lucide-react';
+import { ArrowLeft, Layers, AlertCircle, Clock, ShieldX, Settings, CheckCircle2, Circle, CircleDot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
@@ -22,7 +22,8 @@ export default function ReportsPage() {
     const router = useRouter();
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [filter, setFilter] = useState<string | null>(null);
+    const [typeFilter, setTypeFilter] = useState<string | null>(null);
+    const [statusFilter, setStatusFilter] = useState<string | null>("active");
     const [selectedReservation, setSelectedReservation] = useState(null);
     const [selectedReportType, setSelectedReportType] = useState<string | null>(null);
 
@@ -35,6 +36,15 @@ export default function ReportsPage() {
     const { loading: ownerReservationsLoading, error: ownerReservationsError } = useAppSelector(
         (state) => state.ownerReservations
     );
+
+    const handleClearFilters = () => {
+        setTypeFilter(null);
+        setStatusFilter(null);
+    };
+
+    const handleCreateReport = () => {
+        handleReportClick();
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -70,9 +80,14 @@ export default function ReportsPage() {
         setIsDialogOpen(true);
     };
 
-    const filteredReports = filter
-        ? reports.filter((report) => report.type === filter)
-        : reports;
+    const filteredReports = reports
+        .filter((report) => {
+            const matchesType = !typeFilter || report.type === typeFilter;
+            const matchesStatus = !statusFilter ||
+                (statusFilter === 'active' && ['open', 'in_progress'].includes(report.status)) ||
+                (statusFilter === 'resolved' && report.status === 'resolved');
+            return matchesType && matchesStatus;
+        });
 
     const isLoading = reportsLoading || reservationsLoading || ownerReservationsLoading;
 
@@ -92,62 +107,98 @@ export default function ReportsPage() {
                 </header>
 
                 <div className="flex justify-between items-center mb-6">
-                    <Select
-                        onValueChange={(value) =>
-                            value === 'all' ? setFilter(null) : setFilter(value)
-                        }
-                        value={filter || 'all'}
-                    >
-                        <SelectTrigger className="w-48 border border-gray-300 rounded-lg shadow-sm text-slate-950">
-                            <SelectValue placeholder="Filter by type"/>
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all" className="text-slate-950">
-                                <div className="flex items-center gap-2">
-                                    <Layers className="w-4 h-4 text-slate-700" />
-                                    <span>All Reports</span>
-                                </div>
-                            </SelectItem>
-                            <SelectItem value="Reservation Issue" className="text-slate-950">
-                                <div className="flex items-center gap-2">
-                                    <AlertCircle className="w-4 h-4 text-green-600" />
-                                    <span>Reservation Issues</span>
-                                </div>
-                            </SelectItem>
-                            <SelectItem value="Renter Overstay" className="text-slate-950">
-                                <div className="flex items-center gap-2">
-                                    <Clock className="w-4 h-4 text-yellow-600" />
-                                    <span>Renter Overstay</span>
-                                </div>
-                            </SelectItem>
-                            <SelectItem value="Damage Report" className="text-slate-950">
-                                <div className="flex items-center gap-2">
-                                    <ShieldX className="w-4 h-4 text-red-600" />
-                                    <span>Damage Reports</span>
-                                </div>
-                            </SelectItem>
-                            <SelectItem value="Other" className="text-slate-950">
-                                <div className="flex items-center gap-2">
-                                    <Settings className="w-4 h-4 text-gray-600" />
-                                    <span>Other Issues</span>
-                                </div>
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
+                    <div className="flex gap-3">
+                        <Select
+                            onValueChange={(value) =>
+                                value === 'all' ? setTypeFilter(null) : setTypeFilter(value)
+                            }
+                            value={typeFilter || 'all'}
+                        >
+                            <SelectTrigger className="w-48 border border-gray-300 rounded-lg shadow-sm text-slate-950">
+                                <SelectValue placeholder="Filter by type"/>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all" className="text-slate-950">
+                                    <div className="flex items-center gap-2">
+                                        <Layers className="w-4 h-4 text-slate-700" />
+                                        <span>All Reports</span>
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="Reservation Issue" className="text-slate-950">
+                                    <div className="flex items-center gap-2">
+                                        <AlertCircle className="w-4 h-4 text-green-600" />
+                                        <span>Reservation Issues</span>
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="Renter Overstay" className="text-slate-950">
+                                    <div className="flex items-center gap-2">
+                                        <Clock className="w-4 h-4 text-yellow-600" />
+                                        <span>Renter Overstay</span>
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="Damage Report" className="text-slate-950">
+                                    <div className="flex items-center gap-2">
+                                        <ShieldX className="w-4 h-4 text-red-600" />
+                                        <span>Damage Reports</span>
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="Other" className="text-slate-950">
+                                    <div className="flex items-center gap-2">
+                                        <Settings className="w-4 h-4 text-gray-600" />
+                                        <span>Other Issues</span>
+                                    </div>
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <Select
+                            onValueChange={(value) =>
+                                value === 'all' ? setStatusFilter(null) : setStatusFilter(value)
+                            }
+                            value={statusFilter || 'all'}
+                        >
+                            <SelectTrigger className="w-36 border border-gray-300 rounded-lg shadow-sm text-slate-950">
+                                <SelectValue placeholder="Filter by status"/>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all" className="text-slate-950">
+                                    <div className="flex items-center gap-2">
+                                        <CircleDot className="w-4 h-4 text-slate-700" />
+                                        <span>All Statuses</span>
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="active" className="text-slate-950">
+                                    <div className="flex items-center gap-2">
+                                        <Circle className="w-4 h-4 text-blue-600" />
+                                        <span>Active</span>
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="resolved" className="text-slate-950">
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                        <span>Resolved</span>
+                                    </div>
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
 
                     <Button
                         onClick={() => handleReportClick()}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 w-24"
                     >
                         <AlertCircle className="w-4 h-4" />
-                        Report Issue
+                        Report
                     </Button>
                 </div>
 
                 <AnimatePresence mode="wait">
                     <BookingsReports
+                        totalReportsCount={reports.length}
                         reports={filteredReports}
                         isLoading={isLoading}
+                        onClearFilters={handleClearFilters}
+                        onCreateReport={handleCreateReport}
                     />
                 </AnimatePresence>
 
