@@ -399,7 +399,7 @@ def test_non_existent_reservation(client: FlaskClient) -> None:
     ]
 
     for endpoint, data in test_cases:
-        data["description"] = "Testing non-existent reservation"
+        data["description"] = "Testing non-existent reservation"  # type: ignore
         response = client.post(
             f"/api/unstable/reports/{endpoint}",
             headers={"Authorization": f"Bearer {token}"},

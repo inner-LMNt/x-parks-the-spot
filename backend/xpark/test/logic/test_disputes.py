@@ -1,7 +1,5 @@
 from flask.testing import FlaskClient
-from uuid import uuid4
-import pytest
-from ..utils.utils import create_test_user, create_test_parking_space, create_test_reservation, create_test_report, submit_parking_verification
+from ..utils.utils import create_test_user, create_test_parking_space, create_test_reservation, create_test_report
 
 
 def test_get_all_conflicts(client: FlaskClient) -> None:

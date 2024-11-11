@@ -292,7 +292,7 @@ def update_conflict_response(
     token: str,
     conflict_id: str,
     admin_response: str
-) -> Dict[str, Any]:
+) -> str | Any:
     """
     Update the response for an existing conflict using the PUT endpoint.
     Returns the updated report data.
@@ -329,16 +329,16 @@ def create_test_report(
         url = "/api/unstable/reports/other-issue"
     elif report_type == "Reservation Issue":
         url = "/api/unstable/reports/reservation-issue"
-        data["reservation_id"] = reservation_id
+        data["reservation_id"] = reservation_id  # type: ignore
     elif report_type == "Renter Overstay":
         url = "/api/unstable/reports/renter-overstay"
-        data["owner_reservation_id"] = reservation_id
+        data["owner_reservation_id"] = reservation_id  # type: ignore
         data["departure_time"] = (departure_time or datetime.now(timezone.utc)).isoformat()
         if not image:
             image = create_test_image()
     elif report_type == "Damage Report":
         url = "/api/unstable/reports/damage-report"
-        data["owner_reservation_id"] = reservation_id
+        data["owner_reservation_id"] = reservation_id  # type: ignore
         data["damage_type"] = damage_type or "scratch"
         data["damage_severity"] = damage_severity or "Minor"
         if not image:
@@ -361,7 +361,7 @@ def create_test_report(
         )
 
     assert response.status_code == 201, f"Failed to create report: {response.get_json()}"
-    return response.get_json()
+    return response.get_json()  # type: ignore
 
 def create_test_image(filename: str = "test.jpg", content_type: str = "image/jpeg") -> FileStorage:
     """Create a test image file"""

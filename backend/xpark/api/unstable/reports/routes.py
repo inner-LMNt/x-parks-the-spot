@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any, Tuple
 from uuid import UUID
+from werkzeug.datastructures import FileStorage
 
 from flask import jsonify, request
 from result import Ok, Err
@@ -27,6 +28,8 @@ def get_user_reports(token: str, user_id: UUID) -> Tuple[Any, int]:
     match get_user_reports_logic(user_id):
         case Ok(reports):
             return jsonify(reports), 200
+        case _:
+            return jsonify({"error": "Unknown error"}), 400  # Added return for missing case
 
 
 @bp.route('reservation-issue', methods=['POST'])
@@ -38,6 +41,9 @@ def create_reservation_issue_report(token: str, user_id: UUID) -> Tuple[Any, int
     reservation_id = request.form.get("reservation_id")
     description = request.form.get("description")
     report_type = "Reservation Issue"
+
+    # Type assertions
+    assert description is not None
 
     match create_reservation_issue_report_logic(
         user_id, UUID(reservation_id), report_type, description
@@ -62,7 +68,11 @@ def create_renter_overstay_report(token: str, user_id: UUID) -> Tuple[Any, int]:
     image = request.files.get("image")
     report_type = "Renter Overstay"
 
-    image_url = save_image(image)  # Implement this function to save the image and return its URL
+    assert isinstance(image, FileStorage) 
+    assert description is not None
+    assert departure_time_str is not None
+
+    image_url = save_image(image)
 
     # Parse departure_time and make it timezone-aware (assuming UTC)
     departure_time = datetime.fromisoformat(departure_time_str)
@@ -98,7 +108,13 @@ def create_damage_report(token: str, user_id: UUID) -> Tuple[Any, int]:
     image = request.files.get("image")
     report_type = "Damage Report"
 
-    image_url = save_image(image)  # Implement this function to save the image and return its URL
+    # Type assertions
+    assert isinstance(image, FileStorage)
+    assert description is not None
+    assert damage_type is not None
+    assert damage_severity is not None
+
+    image_url = save_image(image)
 
     match create_damage_report_logic(
         user_id,
@@ -125,6 +141,9 @@ def create_other_issue_report(token: str, user_id: UUID) -> Tuple[Any, int]:
     """
     description = request.form.get("description")
     report_type = "Other"
+
+    # Type assertion
+    assert description is not None
 
     match create_other_issue_report_logic(user_id, report_type, description):
         case Ok(report):
