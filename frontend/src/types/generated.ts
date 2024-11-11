@@ -2104,6 +2104,8 @@ export interface components {
             parking_space_address?: string | null;
             /** @description Name of the owner of the parking space. */
             owner_name?: string | null;
+            /** @description Name of the renter of the parking space. */
+            renter_name?: string | null;
             /**
              * Format: date-time
              * @description Start time of the reservation.
@@ -2146,7 +2148,7 @@ export interface components {
             /** @description Duration of the overstay in minutes (for Renter Overstay reports). */
             overstay_duration?: number | null;
             /** @description Charge for the overstay (for Renter Overstay reports). */
-            overstay_charge?: Record<string, never>;
+            overstay_charge?: number | null;
             /** @description Type of damage reported (for Damage Report). */
             damage_type?: string | null;
             /** @description Severity of the damage (for Damage Report). */

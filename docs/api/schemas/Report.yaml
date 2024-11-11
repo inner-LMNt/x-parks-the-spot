@@ -44,6 +44,11 @@ properties:
     description: Name of the owner of the parking space.
     nullable: true
 
+  renter_name:
+    type: string
+    description: Name of the renter of the parking space.
+    nullable: true
+
   start_time:
     type: string
     format: date-time

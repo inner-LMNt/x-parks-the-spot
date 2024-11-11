@@ -344,6 +344,7 @@ def get_report_by_id_logic(report_id: UUID, user_id: UUID) -> Result[Dict[str, A
                     reports.created_at,
                     reports.updated_at,
                     owners.name AS owner_name,
+                    renters.name AS renter_name,
                     parking_spaces.name AS parking_space_name,
                     parking_spaces.address AS parking_space_address,
                     LOWER(reservations.time) AS start_time, 
@@ -353,11 +354,13 @@ def get_report_by_id_logic(report_id: UUID, user_id: UUID) -> Result[Dict[str, A
                 LEFT JOIN reservations ON reports.reservation_id = reservations.id
                 LEFT JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
                 LEFT JOIN users AS owners ON parking_spaces.owner = owners.id
-                WHERE reports.id = %(report_id)s AND (reports.user_id = %(user_id)s OR reservations.renter_id = %(user_id)s)
+                LEFT JOIN users AS renters ON reservations.renter_id = renters.id
+                WHERE reports.id = %(report_id)s AND reports.user_id = %(user_id)s
                 """,
                 {"report_id": report_id, "user_id": user_id}
             )
             report = cur.fetchone()
+            print(report["renter_name"])
             return Ok(report) if report else Err("Report not found.")
 
 

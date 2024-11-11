@@ -136,7 +136,7 @@ const reportsSlice = createSlice({
             })
             .addCase(submitReservationIssueReport.fulfilled, (state, action: PayloadAction<Report>) => {
                 state.loading = false;
-                state.reports.push(action.payload);
+                state.reports.unshift(action.payload);
             })
             .addCase(submitReservationIssueReport.rejected, (state, action) => {
                 state.loading = false;
@@ -149,7 +149,7 @@ const reportsSlice = createSlice({
             })
             .addCase(submitRenterOverstayReport.fulfilled, (state, action: PayloadAction<Report>) => {
                 state.loading = false;
-                state.reports.push(action.payload);
+                state.reports.unshift(action.payload);
             })
             .addCase(submitRenterOverstayReport.rejected, (state, action) => {
                 state.loading = false;
@@ -162,7 +162,7 @@ const reportsSlice = createSlice({
             })
             .addCase(submitDamageReport.fulfilled, (state, action: PayloadAction<Report>) => {
                 state.loading = false;
-                state.reports.push(action.payload);
+                state.reports.unshift(action.payload);
             })
             .addCase(submitDamageReport.rejected, (state, action) => {
                 state.loading = false;
@@ -175,7 +175,7 @@ const reportsSlice = createSlice({
             })
             .addCase(submitOtherIssueReport.fulfilled, (state, action: PayloadAction<Report>) => {
                 state.loading = false;
-                state.reports.push(action.payload);
+                state.reports.unshift(action.payload);
             })
             .addCase(submitOtherIssueReport.rejected, (state, action) => {
                 state.loading = false;

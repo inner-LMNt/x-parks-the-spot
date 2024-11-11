@@ -196,43 +196,17 @@ export const BookingsReports: React.FC<{ reports: Report[]; isLoading?: boolean 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     {/* Left Column */}
                                                     <div className="space-y-2">
-                                                        {/* Report ID and Reporter Name */}
-                                                        <div className="flex items-center gap-2 text-slate-950">
-                                                            <Tag className="w-4 h-4 text-slate-600" />
-                                                            <span>
-                                                                <strong>ID:</strong> {report.id}
-                                                            </span>
-                                                            {reportDetails.data?.reporter_name && (
-                                                                <>
-                                                                    <User className="w-4 h-4 text-slate-600 ml-4" />
-                                                                    <span>
-                                                                        <strong>Reporter:</strong>{' '}
-                                                                        {reportDetails.data.reporter_name}
-                                                                    </span>
-                                                                </>
-                                                            )}
-                                                        </div>
                                                         {/* Last Updated and Status */}
                                                         <div className="flex items-center gap-2 text-slate-950">
                                                             <Clock className="w-4 h-4 text-slate-600" />
                                                             <span>
                                                                 <strong>Updated:</strong>{' '}
                                                                 {safeFormatDate(
-                                                                    report.updated_at,
+                                                                    reportDetails.data.updated_at,
                                                                     'MMM dd, yyyy, hh:mm a'
                                                                 )}
                                                             </span>
                                                         </div>
-                                                        {/* Owner Name */}
-                                                        {reportDetails.data?.owner_name && (
-                                                            <div className="flex items-center gap-2 text-slate-950">
-                                                                <User className="w-4 h-4 text-slate-600" />
-                                                                <span>
-                                                                    <strong>Owner:</strong>{' '}
-                                                                    {reportDetails.data.owner_name}
-                                                                </span>
-                                                            </div>
-                                                        )}
                                                         {/* Car Information */}
                                                         {reservationCar.carInfo && (
                                                             <div className="flex items-center gap-2 text-slate-950">
@@ -251,19 +225,23 @@ export const BookingsReports: React.FC<{ reports: Report[]; isLoading?: boolean 
                                                         {/* Parking Space Name and Address */}
                                                         {report.parking_space_name && (
                                                             <div className="flex items-center gap-2 text-slate-950">
-                                                                <MapPin className="w-4 h-4 text-slate-600" />
+                                                                <span className="flex-shrink-0">
+                                                                    <MapPin className="w-4 h-4 text-slate-600" />
+                                                                </span>
                                                                 <span>
                                                                     <strong>Space:</strong>{' '}
-                                                                    {report.parking_space_name}
+                                                                    {reportDetails.data.parking_space_name}
                                                                 </span>
                                                             </div>
                                                         )}
                                                         {report.parking_space_address && (
                                                             <div className="flex items-center gap-2 text-slate-950">
-                                                                <MapPin className="w-4 h-4 text-slate-600" />
+                                                                <span className="flex-shrink-0">
+                                                                    <MapPin className="w-4 h-4 text-slate-600"/>
+                                                                </span>
                                                                 <span>
                                                                     <strong>Address:</strong>{' '}
-                                                                    {report.parking_space_address}
+                                                                    {reportDetails.data.parking_space_address}
                                                                 </span>
                                                             </div>
                                                         )}
@@ -274,27 +252,49 @@ export const BookingsReports: React.FC<{ reports: Report[]; isLoading?: boolean 
                                                                 <span>
                                                                     <strong>Reservation:</strong>{' '}
                                                                     {safeFormatDate(
-                                                                        report.start_time,
+                                                                        reportDetails.data.start_time,
                                                                         'MMM dd, yyyy, hh:mm a'
                                                                     )}{' '}
                                                                     -{' '}
                                                                     {safeFormatDate(
-                                                                        report.end_time,
+                                                                        reportDetails.data.end_time,
                                                                         'MMM dd, yyyy, hh:mm a'
                                                                     )}
                                                                 </span>
                                                             </div>
                                                         )}
+                                                        {report.type === 'Reservation Issue' && reportDetails.data?.owner_name && (
+                                                                <>
+                                                                    <div className="flex items-center gap-2 text-slate-950">
+                                                                        <User className="w-4 h-4 text-slate-600" />
+                                                                        <span>
+                                                                            <strong>Owner:</strong>{' '}
+                                                                            {reportDetails.data.owner_name}
+                                                                        </span>
+                                                                    </div>
+                                                                </>
+                                                        )}
                                                         {/* Additional Fields Based on Report Type */}
                                                         {report.type === 'Renter Overstay' && (
                                                             <>
+                                                                {/* Renter Name */}
+                                                                {reportDetails.data?.renter_name && (
+                                                                    <div className="flex items-center gap-2 text-slate-950">
+                                                                        <User className="w-4 h-4 text-slate-600" />
+                                                                        <span>
+                                                                            <strong>Renter:</strong>{' '}
+                                                                            {reportDetails.data.renter_name}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+
                                                                 {/* Departure Time */}
                                                                 <div className="flex items-center gap-2 text-slate-950">
                                                                     <Clock className="w-4 h-4 text-slate-600" />
                                                                     <span>
                                                                         <strong>Departure:</strong>{' '}
                                                                         {safeFormatDate(
-                                                                            report.departure_time,
+                                                                            reportDetails.data.departure_time,
                                                                             'MMM dd, yyyy, hh:mm a'
                                                                         )}
                                                                     </span>
@@ -304,28 +304,39 @@ export const BookingsReports: React.FC<{ reports: Report[]; isLoading?: boolean 
                                                                     <Clock className="w-4 h-4 text-slate-600" />
                                                                     <span>
                                                                         <strong>Overstay:</strong>{' '}
-                                                                        {report.overstay_duration} mins
+                                                                        {reportDetails.data.overstay_duration} mins
                                                                     </span>
                                                                     <DollarSign className="w-4 h-4 text-slate-600 ml-4" />
                                                                     <span>
                                                                         <strong>Charge:</strong> $
-                                                                        {report.overstay_charge}
+                                                                        {reportDetails.data.overstay_charge}
                                                                     </span>
                                                                 </div>
                                                             </>
                                                         )}
                                                         {report.type === 'Damage Report' && (
                                                             <>
+                                                                {/* Renter Name */}
+                                                                {reportDetails.data?.renter_name && (
+                                                                    <div className="flex items-center gap-2 text-slate-950">
+                                                                        <User className="w-4 h-4 text-slate-600" />
+                                                                        <span>
+                                                                            <strong>Renter:</strong>{' '}
+                                                                            {reportDetails.data.renter_name}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+
                                                                 {/* Damage Type and Severity */}
                                                                 <div className="flex items-center gap-2 text-slate-950">
                                                                     <Tag className="w-4 h-4 text-slate-600" />
                                                                     <span>
                                                                         <strong>Damage:</strong>{' '}
-                                                                        {report.damage_type}
+                                                                        {reportDetails.data.damage_type}
                                                                     </span>
                                                                     <span className="ml-4">
                                                                         <strong>Severity:</strong>{' '}
-                                                                        {report.damage_severity}
+                                                                        {reportDetails.data.damage_severity}
                                                                     </span>
                                                                 </div>
                                                             </>
@@ -334,11 +345,11 @@ export const BookingsReports: React.FC<{ reports: Report[]; isLoading?: boolean 
                                                 </div>
 
                                                 {/* Image */}
-                                                {report.image_url && (
+                                                {reportDetails.data.image_url && (
                                                     <div className="relative w-full h-64 mt-4">
                                                         <ImageWrapper
-                                                            src={report.image_url}
-                                                            alt={report.parking_space_name || 'Report Image'}
+                                                            src={reportDetails.data.image_url}
+                                                            alt={reportDetails.data.parking_space_name || 'Report Image'}
                                                             layout="fill"
                                                             objectFit="cover"
                                                             className="object-cover rounded-lg border border-slate-200"
@@ -350,16 +361,16 @@ export const BookingsReports: React.FC<{ reports: Report[]; isLoading?: boolean 
                                                 <div className="space-y-2 mt-4">
                                                     <div className="bg-white p-2 rounded-lg border border-slate-200 drop-shadow-sm">
                                                         <p className="text-slate-950 text-sm">
-                                                            <strong>Description:</strong> {report.description}
+                                                            <strong>Description:</strong> {reportDetails.data.description}
                                                         </p>
                                                     </div>
 
                                                     {/* Admin Response */}
-                                                    {report.admin_response && (
+                                                    {reportDetails.data.admin_response && (
                                                         <div className="bg-white p-2 rounded-lg border border-slate-200 drop-shadow-sm">
                                                             <p className="text-slate-950 text-sm">
                                                                 <strong>Admin Response:</strong>{' '}
-                                                                {report.admin_response}
+                                                                {reportDetails.data.admin_response}
                                                             </p>
                                                         </div>
                                                     )}
