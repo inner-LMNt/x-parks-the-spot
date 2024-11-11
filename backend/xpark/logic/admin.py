@@ -130,22 +130,31 @@ def get_all_conflicts() -> Result[List[Dict[str, Any]], str]:
                 SELECT
                     reports.id,
                     reports.reservation_id,
+                    reports.user_id,
                     reports.description,
                     reports.type,
                     reports.status,
                     reports.admin_response,
+                    reports.departure_time,
+                    reports.overstay_duration,
+                    reports.overstay_charge,
+                    reports.damage_type,
+                    reports.damage_severity,
+                    reports.image_url,
                     reports.created_at,
                     reports.updated_at,
-                    users.name as owner_name,
-                    parking_spaces.name as parking_space_name,
-                    parking_spaces.address as parking_space_address,
-                    lower(reservations.time) as start_time,
-                    upper(reservations.time) as end_time,
+                    owners.name AS owner_name,
+                    renters.name AS renter_name,
+                    parking_spaces.name AS parking_space_name,
+                    parking_spaces.address AS parking_space_address,
+                    LOWER(reservations.time) AS start_time,
+                    UPPER(reservations.time) AS end_time,
                     reservations.parking_space_id
                 FROM reports
-                JOIN reservations ON reports.reservation_id = reservations.id
-                JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
-                JOIN users ON users.id = parking_spaces.owner
+                LEFT JOIN reservations ON reports.reservation_id = reservations.id
+                LEFT JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                LEFT JOIN users AS owners ON parking_spaces.owner = owners.id
+                LEFT JOIN users AS renters ON reservations.renter_id = renters.id
                 WHERE reports.status != 'resolved' -- Only get non-resolved reports
                 ORDER BY reports.created_at DESC
                 """
