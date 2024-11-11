@@ -166,22 +166,18 @@ export const ReportForm = ({
                     {selectedReportType === 'Renter Overstay' && (
                         <RenterOverstayFields
                             form={form}
-                            ownerReservations={ownerReservations}
-                            ownerReservationsLoading={ownerReservationsLoading}
                             handleReservationSelect={handleReservationSelect}
-                            imageUploadProps={imageUploadProps}
                             selectedReservation={selectedReservation}
+                            imageUploadProps={imageUploadProps}
                         />
                     )}
 
                     {selectedReportType === 'Damage Report' && (
                         <DamageReportFields
                             form={form}
-                            ownerReservations={ownerReservations}
-                            ownerReservationsLoading={ownerReservationsLoading}
                             handleReservationSelect={handleReservationSelect}
-                            imageUploadProps={imageUploadProps}
                             selectedReservation={selectedReservation}
+                            imageUploadProps={imageUploadProps}
                         />
                     )}
 

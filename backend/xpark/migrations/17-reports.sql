@@ -12,4 +12,5 @@ ALTER TABLE reports
     ADD COLUMN overstay_duration INTEGER,
     ADD COLUMN image_url TEXT,
     ADD COLUMN damage_type TEXT,
-    ADD COLUMN damage_severity TEXT;
+    ADD COLUMN damage_severity TEXT,
+    ADD COLUMN overstay_charge NUMERIC(10,2);

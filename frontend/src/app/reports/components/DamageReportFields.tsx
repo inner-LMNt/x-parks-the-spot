@@ -17,25 +17,19 @@ import {
 } from '@/components/ui/select';
 import { ImageUpload } from './ImageUpload';
 import { ReservationsGroupSelect } from './ReservationsGroupSelect';
-import { Reservation } from '@/types/type'; // Assuming you have a Reservation type defined
+import { Reservation } from '@/types/type';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchReservationCar } from '@/features/cars/reservationCarSlice';
 
 interface DamageReportFieldsProps {
     form: any;
-    ownerReservations: Reservation[];
-    ownerReservationsLoading: boolean;
     handleReservationSelect: (value: string) => void;
-    imageUploadProps: {
-        // Remove unused properties since we're not using camera functionality
-    };
-    selectedReservation: Reservation | null; // Pass the selected reservation
+    selectedReservation: Reservation | null;
+    imageUploadProps: any; // Adjust this according to your actual props
 }
 
 export const DamageReportFields = ({
                                        form,
-                                       ownerReservations,
-                                       ownerReservationsLoading,
                                        handleReservationSelect,
                                        imageUploadProps,
                                        selectedReservation,
@@ -78,17 +72,14 @@ export const DamageReportFields = ({
                 )}
             />
 
-            {/* Display dynamic car info below the form fields */}
+            {/* Display car info in a compact form */}
             {selectedReservation && carInfo && (
-                <div className="mt-4 p-4 bg-gray-100 rounded-md space-y-2">
-                    <p>
-                        <strong>Car Make:</strong> {carInfo.make}
+                <div className="mt-2 space-y-1">
+                    <p className="text-sm font-medium">
+                        Car: {carInfo.make} {carInfo.model}
                     </p>
-                    <p>
-                        <strong>Car Model:</strong> {carInfo.model}
-                    </p>
-                    <p>
-                        <strong>License Plate:</strong> {carInfo.license_plate}
+                    <p className="text-sm text-gray-600">
+                        License Plate: {carInfo.license_plate}
                     </p>
                 </div>
             )}
@@ -143,6 +134,7 @@ export const DamageReportFields = ({
                         <FormLabel>Photo Evidence</FormLabel>
                         <FormControl>
                             <ImageUpload
+                                {...imageUploadProps}
                                 onFileSelect={(file) => form.setValue('image', file)}
                             />
                         </FormControl>

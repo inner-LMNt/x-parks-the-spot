@@ -2145,6 +2145,8 @@ export interface components {
             departure_time?: string | null;
             /** @description Duration of the overstay in minutes (for Renter Overstay reports). */
             overstay_duration?: number | null;
+            /** @description Charge for the overstay (for Renter Overstay reports). */
+            overstay_charge?: Record<string, never>;
             /** @description Type of damage reported (for Damage Report). */
             damage_type?: string | null;
             /** @description Severity of the damage (for Damage Report). */

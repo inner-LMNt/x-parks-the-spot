@@ -103,6 +103,11 @@ properties:
     description: Duration of the overstay in minutes (for Renter Overstay reports).
     nullable: true
 
+  overstay_charge:
+    type: number
+    description: Charge for the overstay (for Renter Overstay reports).
+    nullable: true
+
   damage_type:
     type: string
     description: Type of damage reported (for Damage Report).

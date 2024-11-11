@@ -27,9 +27,9 @@ def get(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 @bp.get("<car_id>")
 @require_logged_in_user
 def get_car(car_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    match get_car_info(user_id, car_id=uuid.UUID(car_id)):
-        case Ok(cars):
-            return cars, 200
+    match get_car_info(car_id=uuid.UUID(car_id)):
+        case Ok(car):
+            return car, 200
         case Err(e):
             return {"err": e}, 500
 

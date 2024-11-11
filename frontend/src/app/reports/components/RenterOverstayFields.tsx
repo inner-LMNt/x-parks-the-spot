@@ -11,31 +11,38 @@ import {
 } from '@/components/ui/form';
 import { ImageUpload } from './ImageUpload';
 import { ReservationsGroupSelect } from './ReservationsGroupSelect';
-import { Reservation } from '@/types/type'; // Assuming you have a Reservation type defined
-import { Input } from '@/components/ui/input'; // Assuming you have an Input component
+import { Reservation } from '@/types/type';
+import { Input } from '@/components/ui/input';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { fetchReservationCar } from '@/features/cars/reservationCarSlice';
 
 interface RenterOverstayFieldsProps {
     form: any;
-    ownerReservations: Reservation[];
-    ownerReservationsLoading: boolean;
     handleReservationSelect: (value: string) => void;
-    imageUploadProps: {
-        imageSource: 'upload' | 'camera';
-        setImageSource: (source: 'upload' | 'camera') => void;
-        videoRef: React.RefObject<HTMLVideoElement>;
-        handleCapturePhoto: () => void;
-    };
-    selectedReservation: Reservation | null; // Pass the selected reservation
+    imageUploadProps: any; // Adjust this according to your actual props
+    selectedReservation: Reservation | null;
 }
 
 export const RenterOverstayFields = ({
                                          form,
-                                         ownerReservations,
-                                         ownerReservationsLoading,
                                          handleReservationSelect,
                                          imageUploadProps,
                                          selectedReservation,
                                      }: RenterOverstayFieldsProps) => {
+    const dispatch = useAppDispatch();
+
+    // Fetch car info when a reservation is selected
+    useEffect(() => {
+        if (selectedReservation && selectedReservation.car_info_id) {
+            dispatch(fetchReservationCar(selectedReservation.car_info_id));
+        }
+    }, [dispatch, selectedReservation]);
+
+    // Get car info from Redux store
+    const { carInfo, loading: carInfoLoading } = useAppSelector(
+        (state) => state.reservationCar
+    );
+
     const [overstayDuration, setOverstayDuration] = useState<number>(0);
     const [overstayCharge, setOverstayCharge] = useState<number>(0);
 
@@ -113,7 +120,18 @@ export const RenterOverstayFields = ({
                 )}
             />
 
-            {/* Add departure_time input field */}
+            {/* Display car info in a compact form */}
+            {selectedReservation && carInfo && (
+                <div className="mt-2 space-y-1">
+                    <p className="text-sm font-medium">
+                        Car: {carInfo.make} {carInfo.model}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                        License Plate: {carInfo.license_plate}
+                    </p>
+                </div>
+            )}
+
             <FormField
                 control={form.control}
                 name="departure_time"
@@ -135,9 +153,9 @@ export const RenterOverstayFields = ({
                 )}
             />
 
-            {/* Display dynamic data directly below the form fields */}
+            {/* Display dynamic data compactly */}
             {selectedReservation && departureTimeStr && (
-                <div className="mt-4 p-4 bg-gray-100 rounded-md space-y-2">
+                <div className="mt-2 space-y-1 text-sm">
                     <p>
                         <strong>Reservation End Time:</strong>{' '}
                         {format(
