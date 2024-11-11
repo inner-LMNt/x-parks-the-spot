@@ -125,7 +125,7 @@ export default function SettingsPage() {
             .finally(() => setIsNotificationDialogOpen(false));
     };
 
-    // Handle save state and city
+    // save state and city
     const handleSaveLocation = (data: { state: string, city: string }) => {
         dispatch(set_user_location({ state: data.state, city: data.city })).then((resultAction: any) => {
             if (set_user_location.fulfilled.match(resultAction)) {
