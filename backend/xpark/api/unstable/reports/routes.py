@@ -45,6 +45,8 @@ def create_reservation_issue_report(token: str, user_id: UUID) -> Tuple[Any, int
         case Ok(report):
             return jsonify(report), 201
         case Err(e):
+            if "not found" in e:
+                return jsonify({"error": e}), 404
             return jsonify({"error": e}), 400
 
 
@@ -78,6 +80,8 @@ def create_renter_overstay_report(token: str, user_id: UUID) -> Tuple[Any, int]:
         case Ok(report):
             return jsonify(report), 201
         case Err(e):
+            if "not found" in e:
+                return jsonify({"error": e}), 404
             return jsonify({"error": e}), 400
 
 
@@ -108,6 +112,8 @@ def create_damage_report(token: str, user_id: UUID) -> Tuple[Any, int]:
         case Ok(report):
             return jsonify(report), 201
         case Err(e):
+            if "not found" in e:
+                return jsonify({"error": e}), 404
             return jsonify({"error": e}), 400
 
 
@@ -139,10 +145,7 @@ def get_report(report_id: str, token: str, user_id: UUID) -> Tuple[Any, int]:
         case Ok(report):
             return jsonify(report), 200
         case Err(e):
-            if e == "Report not found.":
-                return jsonify({"error": "Report not found"}), 404
-            else:
-                return jsonify({"error": e}), 400
+            return jsonify({"error": e}), 400
 
 
 @bp.route("/<report_id>", methods=["PUT"])

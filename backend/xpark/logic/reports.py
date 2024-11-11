@@ -62,7 +62,17 @@ def create_reservation_issue_report_logic(
     """
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            # Insert into reports and return specific fields
+            cur.execute(
+                """
+                SELECT 1
+                FROM reservations
+                WHERE id = %(reservation_id)s
+                """,
+                {"reservation_id": reservation_id}
+            )
+            if not cur.fetchone():
+                return Err("Reservation not found.")
+
             cur.execute(
                 """
                 INSERT INTO reports (
@@ -134,10 +144,6 @@ def create_renter_overstay_report_logic(
             reservation_start_time = reservation['start_time']
             reservation_price = reservation['price']
 
-            # Ensure reservation_end_time is timezone-aware
-            if reservation_end_time.tzinfo is None:
-                reservation_end_time = reservation_end_time.replace(tzinfo=timezone.utc)
-
             # Convert both times to UTC
             departure_time = departure_time.astimezone(timezone.utc)
             reservation_end_time = reservation_end_time.astimezone(timezone.utc)
@@ -148,8 +154,6 @@ def create_renter_overstay_report_logic(
 
             # Calculate hourly rate
             reservation_duration_hours = (reservation_end_time - reservation_start_time).total_seconds() / 3600
-            if reservation_duration_hours == 0:
-                return Err("Reservation duration is zero.")
             hourly_rate = reservation_price / reservation_duration_hours
 
             # Calculate overstay charge
@@ -223,7 +227,17 @@ def create_damage_report_logic(
     """
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            # Insert into reports and return specific fields
+            cur.execute(
+                """
+                SELECT 1
+                FROM reservations
+                WHERE id = %(reservation_id)s
+                """,
+                {"reservation_id": reservation_id}
+            )
+            if not cur.fetchone():
+                return Err("Reservation not found.")
+
             cur.execute(
                 """
                 INSERT INTO reports (
@@ -284,7 +298,7 @@ def create_other_issue_report_logic(
     """
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            # Insert into reports and return specific fields
+
             cur.execute(
                 """
                 INSERT INTO reports (
@@ -360,8 +374,9 @@ def get_report_by_id_logic(report_id: UUID, user_id: UUID) -> Result[Dict[str, A
                 {"report_id": report_id, "user_id": user_id}
             )
             report = cur.fetchone()
-            print(report["renter_name"])
-            return Ok(report) if report else Err("Report not found.")
+            if not report:
+                return Err("Report not found or not authorized to view.")
+            return Ok(report)
 
 
 def update_report_admin_response_logic(report_id: UUID, admin_response: str, user_id: UUID) -> Result[Dict[str, Any], str]:
