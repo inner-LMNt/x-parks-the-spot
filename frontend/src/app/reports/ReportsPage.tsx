@@ -16,6 +16,7 @@ import { toast } from '@/hooks/use-toast';
 import { AnimatePresence } from 'framer-motion';
 import { ReportDialog } from './components/ReportDialog';
 import { BookingsReports } from './components/BookingsReports';
+import {Report} from "@/types/type";
 
 export default function ReportsPage() {
     const dispatch = useAppDispatch();
@@ -25,7 +26,7 @@ export default function ReportsPage() {
     const [typeFilter, setTypeFilter] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<string | null>("active");
     const [selectedReservation, setSelectedReservation] = useState(null);
-    const [selectedReportType, setSelectedReportType] = useState<string | null>(null);
+    const [selectedReportType, setSelectedReportType] = useState<string | null>( null);
 
     const { reports, loading: reportsLoading, error: reportsError } = useAppSelector(
         (state) => state.reports
@@ -81,7 +82,7 @@ export default function ReportsPage() {
     };
 
     const filteredReports = reports
-        .filter((report) => {
+        .filter((report : Report) => {
             const matchesType = !typeFilter || report.type === typeFilter;
             const matchesStatus = !statusFilter ||
                 (statusFilter === 'active' && ['open', 'in_progress'].includes(report.status)) ||

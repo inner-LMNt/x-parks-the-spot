@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Loader2 } from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
+import {Reservation} from "@/types/type";
 
 interface ReservationsGroupSelectProps {
     onChange: (value: string) => void;
@@ -49,7 +50,7 @@ export const ReservationsGroupSelect = ({
                 {reservationsArray.length === 0 ? (
                     <div className="p-2 text-sm text-gray-500">No reservations found</div>
                 ) : (
-                    reservationsArray.map((reservation) => (
+                    reservationsArray.map((reservation: Reservation) => (
                         <SelectItem
                             key={reservation.id}
                             value={reservation.id}

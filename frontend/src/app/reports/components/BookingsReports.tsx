@@ -118,10 +118,8 @@ export const BookingsReports: React.FC<{
             setExpandedReportId(null);
         } else {
             setExpandedReportId(report.id);
+            // @ts-ignore
             dispatch(fetchReportDetails(report.id));
-            if (report.reservation_id && report.car_info_id) {
-                dispatch(fetchReservationCar(report.car_info_id));
-            }
         }
     };
 
@@ -240,7 +238,7 @@ export const BookingsReports: React.FC<{
                                                     {/* Right Column */}
                                                     <div className="space-y-2">
                                                         {/* Parking Space Name and Address */}
-                                                        {report.parking_space_name && (
+                                                        {reportDetails.data.parking_space_name && (
                                                             <div className="flex items-center gap-2 text-slate-950">
                                                                 <span className="flex-shrink-0">
                                                                     <MapPin className="w-4 h-4 text-slate-600" />
@@ -251,7 +249,7 @@ export const BookingsReports: React.FC<{
                                                                 </span>
                                                             </div>
                                                         )}
-                                                        {report.parking_space_address && (
+                                                        {reportDetails.data.parking_space_address && (
                                                             <div className="flex items-center gap-2 text-slate-950">
                                                                 <span className="flex-shrink-0">
                                                                     <MapPin className="w-4 h-4 text-slate-600"/>
@@ -263,7 +261,7 @@ export const BookingsReports: React.FC<{
                                                             </div>
                                                         )}
                                                         {/* Reservation Period */}
-                                                        {report.start_time && report.end_time && (
+                                                        {reportDetails.data.start_time && reportDetails.data.end_time && (
                                                             <div className="flex items-center gap-2 text-slate-950">
                                                                 <Calendar className="w-4 h-4 text-slate-600" />
                                                                 <span>

@@ -1,11 +1,17 @@
 import { AlertCircle, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+interface EmptyReportsStateProps {
+    hasReports?: boolean;
+    onClearFilters: () => void;
+    onCreateReport: () => void;
+}
+
 const EmptyReportsState = ({
-                               hasReports = false,
-                               onClearFilters,
-                               onCreateReport
-                           }) => {
+                              hasReports = false,
+                              onClearFilters,
+                              onCreateReport,
+                          }: EmptyReportsStateProps) => {
     return (
         <div className="flex flex-col items-center justify-center p-8 bg-white rounded-lg border border-gray-200 shadow-sm">
             <div className="w-12 h-12 mb-4 rounded-full bg-slate-100 flex items-center justify-center">

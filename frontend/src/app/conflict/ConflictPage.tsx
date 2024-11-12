@@ -263,7 +263,7 @@ const AdminReportsPage = () => {
         if (parkingSpaceId && !parkingSpaceData[parkingSpaceId]) {
             dispatch(fetchParkingSpace(parkingSpaceId))
                 .unwrap()
-                .then(data => setParkingSpaceData(prev => ({ ...prev, [parkingSpaceId]: data })))
+                .then((data: any) => setParkingSpaceData(prev => ({ ...prev, [parkingSpaceId]: data })))
                 .catch(() => {
                     toast({
                         title: "Error",
@@ -346,7 +346,7 @@ const AdminReportsPage = () => {
                     <p className="text-center text-gray-800">No reports or cancellations available.</p>
                 ) : (
                     <div className="space-y-4">
-                        {visibleReports.map(report => (
+                        {visibleReports.map((report : Report) => (
                             <ReportCard
                                 key={report.id}
                                 report={report}
@@ -359,7 +359,7 @@ const AdminReportsPage = () => {
                                 parkingSpaceData={parkingSpaceData}
                             />
                         ))}
-                        {visibleCancellations.map(cancellation => (
+                        {visibleCancellations.map((cancellation : any) => (
                             <CancellationCard
                                 key={cancellation.id}
                                 cancellation={cancellation}

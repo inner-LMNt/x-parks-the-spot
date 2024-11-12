@@ -29,7 +29,7 @@ import { Reservation } from '@/types/type'; // Assuming you have a Reservation t
 interface ReportFormProps {
     onClose: () => void;
     preselectedReservation?: any;
-    preselectedType?: string;
+    preselectedType: string | null;
 }
 
 export const ReportForm = ({
@@ -56,7 +56,7 @@ export const ReportForm = ({
     const form = useForm({
         resolver: zodResolver(FormSchema),
         defaultValues: {
-            type: preselectedType || undefined,
+            type: preselectedType || null,
             reservation_id: preselectedReservation?.id || undefined,
             owner_reservation_id: preselectedReservation?.id || undefined,
             description: '',
@@ -85,7 +85,7 @@ export const ReportForm = ({
     }, [dispatch]);
 
     const handleReservationSelect = (reservationId: string) => {
-        const selectedRes = ownerReservations.find((r) => r.id === reservationId);
+        const selectedRes = ownerReservations.find((r: Reservation) => r.id === reservationId);
         if (selectedRes) {
             setSelectedReservation(selectedRes);
             // Optionally set default departure_time to now

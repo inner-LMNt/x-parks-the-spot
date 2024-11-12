@@ -7,12 +7,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ReportForm } from './ReportForm';
 import { X } from 'lucide-react';
 
-export const ReportDialog = ({
-                                 isOpen,
-                                 onClose,
-                                 preselectedReservation = null,
-                                 preselectedType = null
-                             }) => {
+export const ReportDialog: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    preselectedReservation?: any;
+    preselectedType: string | null;
+}> = ({
+    isOpen,
+    onClose,
+    preselectedReservation = undefined,
+    preselectedType = null
+}) => {
     if (!isOpen) return null;
 
     return (
