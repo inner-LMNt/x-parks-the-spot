@@ -8,3 +8,7 @@ CREATE TABLE points_transaction (
     balance_after_transaction INTEGER,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+ALTER TABLE users
+ADD COLUMN points jsonb NOT NULL DEFAULT '{"total": "0", "current": "0"}';
+
