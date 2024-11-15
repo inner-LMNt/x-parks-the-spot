@@ -31,6 +31,8 @@ interface UserState {
   loading: boolean;
   error: string | null;
   notificationTime: string | null;
+  total_points: number | null;
+  current_points: number | null;
 }
 
 const initialState: UserState = {
@@ -44,6 +46,8 @@ const initialState: UserState = {
   loading: false,
   error: null,
   notificationTime: null,
+  total_points: 0,
+  current_points: 0,
 };
 
 /**
@@ -221,6 +225,21 @@ export const get_notification_time = createAsyncThunk<
   }
 });
 
+export const get_points = createAsyncThunk<
+  { total: number; current: number } | null,
+  void,
+  { rejectValue: string }
+>("user/get_points", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("auth/points");
+    console.log('data', response.data);
+    return response.data.points;
+  } catch (error: any) {
+    return rejectWithValue("Failed to get points");
+  }
+});
+
+
 // @ts-ignore
 const userSlice = createSlice<UserState, {}, "user">({
   name: "user",
@@ -238,6 +257,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof logout.pending
           | typeof reset_password.pending
           | typeof update_notification_time.pending
+          | typeof get_points.pending
         > => action.type.endsWith("/pending"),
         (state) => {
           state.loading = true;
@@ -255,6 +275,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof logout.rejected
           | typeof reset_password.rejected
           // | typeof update_notification_time.rejected
+          | typeof get_points.rejected
         > => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false;
@@ -337,7 +358,18 @@ const userSlice = createSlice<UserState, {}, "user">({
           state.loading = false;
           state.notificationTime = action.payload;
         }
-      );
+      )
+
+      .addMatcher(
+        isAnyOf(get_points.fulfilled),
+        (state, action) => {
+          state.loading = false;
+          //@ts-ignore
+          state.total_points = action.payload?.total;
+          //@ts-ignore
+          state.current_points = action.payload?.current;
+        }
+      )
   },
 });
 
