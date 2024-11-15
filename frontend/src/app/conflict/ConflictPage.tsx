@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Report } from '@/types/type';
 import { format, isValid } from 'date-fns';
 import { Skeleton } from "@/components/ui/skeleton";
+import DeleteListingDialog from "@/app/conflict/components/DeleteListingDialog";
 
 const MAX_ITEMS = 4;
 
@@ -129,6 +130,17 @@ const ReportCard = ({ report, expandedReportId, toggleReport, handleResponseSubm
                                                 {safeFormatDate(report.start_time, 'MMM dd, yyyy, hh:mm a')} -{' '}
                                                 {safeFormatDate(report.end_time, 'MMM dd, yyyy, hh:mm a')}
                                             </span>
+                                        </div>
+                                    )}
+                                    {/* Parking Space */}
+                                    {report.parking_space_name && (
+                                        <div className="flex items-center gap-2 text-slate-950">
+                                            <MapPin className="w-4 h-4 text-slate-600" />
+                                            <span><strong>Rented Parking Space:</strong> {report.parking_space_name}</span>
+                                            <DeleteListingDialog
+                                                parkingSpaceId={report.parking_space_id}
+                                                parkingSpaceName={report.parking_space_name}
+                                            />
                                         </div>
                                     )}
                                 </div>

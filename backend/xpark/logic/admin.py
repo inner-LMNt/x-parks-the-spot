@@ -1,6 +1,9 @@
+import os
 from typing import Dict, Any, List
 
 from psycopg.rows import dict_row
+
+from xpark import Config
 from xpark.utils.mailer import generate_templated_email, send_email
 from xpark.utils.db import DB
 from result import Result, Ok, Err
@@ -331,3 +334,127 @@ def handle_verify_parking(parking_space_id: uuid.UUID, is_verified: bool) -> Res
         )
 
     return Ok(updated_space)
+
+def admin_delete_paid_parking_space(
+        parking_space_id: uuid.UUID,
+        reason: str
+) -> Result[None, str]:
+    """
+    Delete a paid parking space and ensure notifications are sent before cascade deletion
+    """
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            # 1. First get ALL necessary information before any deletions
+            # Get parking space and owner info
+            cur.execute(
+                """
+                SELECT p.owner, p.is_paid, p.photos, p.name, u.email, u.name
+                FROM parking_spaces p
+                JOIN users u ON p.owner = u.id
+                WHERE p.id = %s
+                """,
+                (parking_space_id,)
+            )
+            result = cur.fetchone()
+
+            if not result:
+                return Err("spot not found")
+
+            owner_id, is_paid, photos, parking_space_name, owner_email, owner_name = result
+
+            if not is_paid:
+                return Err("not a paid spot")
+
+            # Get future reservations information BEFORE deletion
+            cur.execute(
+                """
+                SELECT DISTINCT 
+                    r.id,
+                    r.renter_id,
+                    lower(r.time) as start_time,
+                    upper(r.time) as end_time,
+                    u.email as renter_email,
+                    u.name as renter_name
+                FROM reservations r
+                JOIN users u ON r.renter_id = u.id
+                WHERE r.parking_space_id = %s
+                AND upper(r.time) > NOW()
+                AND r.status = 'booked'
+                """,
+                (parking_space_id,)
+            )
+            future_reservations = cur.fetchall()
+
+            # Store all notification info before any deletions
+            notifications = []
+            for reservation in future_reservations:
+                _, _, start_time, end_time, renter_email, renter_name = reservation
+                notifications.append({
+                    'email': renter_email,
+                    'name': renter_name,
+                    'start_time': start_time,
+                    'end_time': end_time
+                })
+
+            # 2. Now do the deletion (will cascade to all related tables)
+            cur.execute(
+                "DELETE FROM parking_spaces WHERE id = %s",
+                (parking_space_id,)
+            )
+
+            # 3. Clean up photos
+            if photos:
+                for photo in photos:
+                    image_path = os.path.join(Config.BASE_FOLDER, photo.lstrip("/"))
+                    if os.path.exists(image_path):
+                        os.remove(image_path)
+
+            # 4. Send all notifications after successful deletion
+            # Send to renters
+            for notification in notifications:
+                email_content = f"""
+                Dear {notification['name']},
+
+                Your parking reservation for {parking_space_name} has been cancelled by the administrator.
+
+                Reservation Details:
+                Start: {notification['start_time'].strftime('%Y-%m-%d %H:%M %Z')}
+                End: {notification['end_time'].strftime('%Y-%m-%d %H:%M %Z')}
+
+                Reason for cancellation: {reason}
+
+                We apologize for any inconvenience caused.
+
+                Best regards,
+                XPark Team
+                """
+
+                send_email(
+                    to=notification['email'],
+                    subject="Your Parking Reservation Has Been Cancelled",
+                    content=email_content
+                )
+
+            # Send to owner
+            owner_email_content = f"""
+            Dear {owner_name},
+
+            Your parking space "{parking_space_name}" has been removed from XPark by the administrator.
+
+            Reason: {reason}
+
+            All future reservations have been cancelled and affected users have been notified.
+
+            If you have any questions, please contact support.
+
+            Best regards,
+            XPark Team
+            """
+
+            send_email(
+                to=owner_email,
+                subject="Your Parking Space Has Been Removed",
+                content=owner_email_content
+            )
+
+            return Ok(None)
