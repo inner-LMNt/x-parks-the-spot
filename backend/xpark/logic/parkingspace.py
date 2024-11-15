@@ -71,7 +71,7 @@ def award_points(
                         SELECT timestamp
                         FROM points_transaction
                         WHERE user_id = %s AND transaction_type = 'award' AND timestamp >= %s
-                    """, (str(user_id), now - timedelta(hours=2)))
+                    """, (user_id, now - timedelta(hours=2)))
                     if cur.fetchone():
                         return Ok({"message": "Points can only be awarded once every 2 hours to a spot finder."})
 
@@ -79,7 +79,7 @@ def award_points(
                         SELECT timestamp
                         FROM points_transaction
                         WHERE user_id = %s AND transaction_type = 'award' AND date_trunc('day', timestamp) = date_trunc('day', %s)
-                    """, (str(parking_space_owner_id), now))
+                    """, (parking_space_owner_id, now))
                     if cur.fetchone():
                         return Ok({"message": "Points can only be awarded once per day to the same spot finder."})
 
@@ -88,7 +88,7 @@ def award_points(
                         SELECT points->>'current' AS current_points, points->>'total' AS total_points
                         FROM users
                         WHERE id = %s
-                    """, (str(parking_space_owner_id),))
+                    """, (parking_space_owner_id,))
                     owner_points = cur.fetchone()
 
                     if not owner_points:
@@ -107,7 +107,7 @@ def award_points(
                             '{total}', to_jsonb(%s::text)
                         )
                         WHERE id = %s
-                    """, (str(new_current_points), str(new_total_points), str(parking_space_owner_id)))
+                    """, (new_current_points, new_total_points, parking_space_owner_id))
 
                     transaction_desc = f"Awarded for {status} parking space {parking_space_id}"
                     cur.execute("""
@@ -119,9 +119,8 @@ def award_points(
                             balance_after_transaction,
                             timestamp
                         ) VALUES (%s, %s, %s, %s, %s, %s)
-                    """, (str(parking_space_owner_id), "award", points_amount, transaction_desc, new_current_points, now))
+                    """, (parking_space_owner_id, "award", points_amount, transaction_desc, new_current_points, now))
 
-                    conn.commit()
                     return Ok({
                         "current_points": new_current_points,
                         "total_points": new_total_points,
@@ -688,7 +687,7 @@ def get_user_rating(
                 FROM ratings
                 WHERE parking_space_id = %s AND user_id = %s
                 """,
-                (str(parking_space_id), str(user_id))
+                (parking_space_id, user_id)
             )
             rating = cur.fetchone()
         return Ok(rating)
