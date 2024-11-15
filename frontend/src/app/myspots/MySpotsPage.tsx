@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Edit, Trash2, Plus, FileCheck2, ShieldEllipsis, ShieldCheck, ShieldX } from 'lucide-react';
+import {MapPin, Edit, Trash2, Plus, FileCheck2, ShieldEllipsis, ShieldCheck, ShieldX, TrendingUp} from 'lucide-react';
 import { ParkingSpace } from '@/types/type';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useRouter } from 'next/navigation';
@@ -213,10 +213,35 @@ export default function MySpotsPage() {
                         transition={{ duration: 0.5 }}
                         className="bg-white shadow-md rounded-lg p-6 mb-8"
                     >
-                        <div className="flex justify-between items-center mb-6">
-                            <div>
-                                <h1 className="text-3xl font-bold mb-2 text-black">My Parking Spots</h1>
-                                <p className="text-gray-600">Manage and track your parking locations</p>
+                        <div className="sticky top-0 z-50 bg-white border-b border-gray-200 mb-6">
+                            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+                                <div
+                                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 gap-4">
+                                    <div>
+                                        <h1 className="text-3xl font-bold text-gray-900">My Parking Spots</h1>
+                                        <p className="text-gray-600 mt-1">Manage and track your parking locations</p>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                                        <Link href="/owner-dashboard" className="w-full sm:w-auto">
+                                            <Button
+                                                variant="outline"
+                                                className="w-full h-11 bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-900"
+                                            >
+                                                <TrendingUp className="w-4 h-4 mr-2 text-gray-600"/>
+                                                Analytics Dashboard
+                                            </Button>
+                                        </Link>
+                                        <Link href="/add" className="w-full sm:w-auto">
+                                            <Button
+                                                className="w-full h-11 shadow-sm"
+                                            >
+                                                <Plus className="w-4 h-4 mr-2"/>
+                                                Add New Spot
+                                            </Button>
+                                        </Link>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
