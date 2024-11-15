@@ -373,7 +373,7 @@ def handle_get_points(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
-                "SELECT points->>'total' as total, points->>'current' as current FROM users WHERE id = %s",
+                "SELECT (points->>'total')::integer as total, (points->>'current')::integer as current FROM users WHERE id = %s",
                 (user_id,),
             )
             result = cur.fetchone()
