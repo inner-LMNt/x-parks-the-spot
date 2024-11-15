@@ -370,15 +370,14 @@ def handle_get_notification_time(user_id: uuid.UUID) -> Result[str, str]:
 
 def handle_get_points(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
     with DB.pool.connection() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
-                "SELECT points->>'total', points->>'current' FROM users WHERE id = %s",
-                (str(user_id),),
+                "SELECT points->>'total' as total, points->>'current' as current FROM users WHERE id = %s",
+                (user_id),
             )
             result = cur.fetchone()
             if not result:
                 return Err("User not found")
-
-            return Ok({"total": int(result[0]), "current": int(result[1])})
+            return Ok(result)
         
 
