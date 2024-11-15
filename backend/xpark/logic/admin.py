@@ -412,6 +412,7 @@ def admin_delete_paid_parking_space(
             for notification in notifications:
                 email_content = generate_templated_email("reservation_spot_deleted",
                                                          name=notification['name'],
+                                                         parking_space_name=parking_space_name,
                                                          start_time=notification['start_time'].strftime('%Y-%m-%d %H:%M %Z'),
                                                          end_time=notification['end_time'].strftime('%Y-%m-%d %H:%M %Z'),
                                                          cancel_reason=reason)
