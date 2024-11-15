@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useDispatch, useSelector } from 'react-redux';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { get_points} from "@/features/user/userSlice";
 import { Settings, ArrowUpCircle, ArrowDownCircle, LogOut, FileWarning, Car } from 'lucide-react'; // Imported FileWarning
 import { logout } from '@/features/user/userSlice';
 import { Button } from "@/components/ui/button";
@@ -73,19 +74,21 @@ function CommentCard({
 }
 
 export default function ProfilePage() {
-    const dispatch = useDispatch();
-    const isLoggedIn = useSelector((state: any) => state.user.isLoggedIn);
+    const dispatch = useAppDispatch();
+    const isLoggedIn = useAppSelector((state: any) => state.user.isLoggedIn);
     //const yearsOnApp = useSelector((state:any) => state.user.);
     const [eloRating] = React.useState(1200);
     const router = useRouter();
-    const name = useSelector((state: any) => state.user.name);
+    const name = useAppSelector((state: any) => state.user.name);
+    const currentPoints = useAppSelector((state) => state.user.current_points);
+    const totalPoints = useAppSelector((state) => state.user.total_points);
     const handleLogout = async () => {
         // @ts-ignore
         await dispatch(logout());
         router.push('/login');
     };
 
-    console.log("Select ", useSelector((state: any) => state.user))
+    console.log("Select ", useAppSelector((state: any) => state.user))
 
     const userProfile = {
         username: name,
@@ -115,6 +118,7 @@ export default function ProfilePage() {
     const [domLoaded, setDomLoaded] = useState(false);
     useEffect(() => {
         setDomLoaded(true);
+        dispatch(get_points());
     }, []);
 
     return (
@@ -143,26 +147,28 @@ export default function ProfilePage() {
                         </AlertDialogContent>
                     </AlertDialog>
 
-                {/* Settings and Reports Icons */}
-                <div className="absolute top-4 right-4 flex">
-                    {/* Reports Icon */}
-                    <Link href="/reports" passHref>
-                        <Button variant="ghost" size="icon" className="p-2">
-                            <FileWarning className="w-6 h-6 text-gray-400 hover:text-gray-600" aria-label="Reports"/>
-                        </Button>
-                    </Link>
-                    {/* Settings Icon */}
-                    <Link href="/settings" passHref>
-                        <Button variant="ghost" size="icon" className="p-2">
-                            <Settings className="w-6 h-6 text-gray-400 cursor-pointer hover:text-gray-600" aria-label="Settings"/>
-                        </Button>
-                    </Link>
-                </div>
+                    {/* Settings and Reports Icons */}
+                    <div className="absolute top-4 right-4 flex">
+                        {/* Reports Icon */}
+                        <Link href="/reports" passHref>
+                            <Button variant="ghost" size="icon" className="p-2">
+                                <FileWarning className="w-6 h-6 text-gray-400 hover:text-gray-600" aria-label="Reports" />
+                            </Button>
+                        </Link>
+                        {/* Settings Icon */}
+                        <Link href="/settings" passHref>
+                            <Button variant="ghost" size="icon" className="p-2">
+                                <Settings className="w-6 h-6 text-gray-400 cursor-pointer hover:text-gray-600" aria-label="Settings" />
+                            </Button>
+                        </Link>
+                    </div>
 
                     {/* Profile Section */}
                     <div className="flex flex-col items-center mb-4">
                         <div className="w-24 h-24 rounded-full bg-gray-300 mb-4 drop-shadow-lg" />
                         <h1 className="text-2xl md:text-3xl font-bold mb-1">{userProfile.username}</h1>
+                        <p className="text-lg md:text-xl text-gray-600 mb-4">Total Points: {totalPoints}</p>
+                        <p className="text-lg md:text-xl text-gray-600 mb-4">Current Points: {currentPoints}</p>
                         <div className="flex justify-center items-center space-x-8">
                             <ProfileStats label="Rating" value={eloRating} />
                             <ProfileStats label="Posts" value={userProfile.spotfindPosts} />
@@ -175,6 +181,7 @@ export default function ProfilePage() {
                         <div className="bg-green-500 h-4 rounded-full"
                             style={{ width: `${(eloRating / maxElo) * 100}%` }}></div>
                     </div>
+
 
                     {/* Achievements Section */}
                     <div className="text-left mb-6">
@@ -201,22 +208,22 @@ export default function ProfilePage() {
                         </div>
                     </div>
                     <div className="text-left mb-6">
-                    <h2 className="text-lg font-semibold mb-4">Reports</h2>
-                    <Link href="/reports" passHref>
-                        <Button variant="outline">
-                            <FileWarning className="mr-2" /> View Your Reports
-                        </Button>
-                    </Link>
+                        <h2 className="text-lg font-semibold mb-4">Reports</h2>
+                        <Link href="/reports" passHref>
+                            <Button variant="outline">
+                                <FileWarning className="mr-2" /> View Your Reports
+                            </Button>
+                        </Link>
+                    </div>
+                    <div className="text-left mb-6">
+                        <h2 className="text-lg font-semibold mb-4">Cars</h2>
+                        <Link href="/cars" passHref>
+                            <Button variant="outline">
+                                <Car className="mr-2" /> View Your Cars
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
-                <div className="text-left mb-6">
-                    <h2 className="text-lg font-semibold mb-4">Cars</h2>
-                    <Link href="/cars" passHref>
-                        <Button variant="outline">
-                            <Car className="mr-2" /> View Your Cars
-                        </Button>
-                    </Link>
-                </div>
-            </div>
                 <div className="flex h-16">
                 </div>
             </div>

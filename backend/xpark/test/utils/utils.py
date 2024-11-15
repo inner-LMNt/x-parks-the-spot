@@ -7,6 +7,19 @@ import json
 import io
 from werkzeug.datastructures import FileStorage
 
+def create_points_transaction(client: FlaskClient, token: str, transaction_type: str, parking_space_id: uuid.UUID) -> Any:
+    """Create a test points transaction."""
+    response = client.post(
+        "/api/unstable/points",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "transaction_type": transaction_type,
+            "parking_space_id": str(parking_space_id),
+            "points": 10
+        }
+    )
+    assert response.status_code == 201, f"Expected 201 but got {response.status_code}"
+    return response.get_json()
 
 def create_test_user(client: FlaskClient, email: str = "test@example.com") -> str:
     """Helper to create a test user and return access token"""

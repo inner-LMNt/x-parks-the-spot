@@ -4,8 +4,9 @@ from argon2.exceptions import VerifyMismatchError, VerificationError
 import uuid
 from xpark.config import Config
 from result import Result, Ok, Err, is_err
-from typing import cast, Tuple
+from typing import cast, Tuple, Dict
 import secrets
+from psycopg.rows import dict_row
 from xpark.utils.mailer import generate_templated_email, send_email
 
 
@@ -366,3 +367,18 @@ def handle_get_notification_time(user_id: uuid.UUID) -> Result[str, str]:
                 return Err("User not found")
 
             return Ok(result[0])
+        
+
+def handle_get_points(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                "SELECT (points->>'total')::integer as total, (points->>'current')::integer as current FROM users WHERE id = %s",
+                (user_id,),
+            )
+            result = cur.fetchone()
+            if not result:
+                return Err("User not found")
+            return Ok(result)
+        
+
