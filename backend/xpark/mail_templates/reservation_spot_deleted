@@ -1,0 +1,14 @@
+Dear $name,
+
+    Your parking reservation for {parking_space_name} has been cancelled by the administrator.
+
+    Reservation Details:
+    Start: $start_time
+    End: $end_time
+
+    Reason for cancellation: $cancel_reason
+
+    We apologize for any inconvenience caused.
+
+Best regards,
+XPark Team

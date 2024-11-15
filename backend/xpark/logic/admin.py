@@ -410,23 +410,11 @@ def admin_delete_paid_parking_space(
 
             # 4. Send all notifications after successful deletion
             for notification in notifications:
-                email_content = f"""
-                Dear {notification['name']},
-
-                Your parking reservation for {parking_space_name} has been cancelled by the administrator.
-
-                Reservation Details:
-                Start: {notification['start_time'].strftime('%Y-%m-%d %H:%M %Z')}
-                End: {notification['end_time'].strftime('%Y-%m-%d %H:%M %Z')}
-
-                Reason for cancellation: {reason}
-
-                We apologize for any inconvenience caused.
-
-                Best regards,
-                XPark Team
-                """
-
+                email_content = generate_templated_email("reservation_spot_deleted",
+                                                         name=notification['name'],
+                                                         start_time=notification['start_time'].strftime('%Y-%m-%d %H:%M %Z'),
+                                                         end_time=notification['end_time'].strftime('%Y-%m-%d %H:%M %Z'),
+                                                         cancel_reason=reason)
                 send_email(
                     to=notification['email'],
                     subject="Your Parking Reservation Has Been Cancelled",
@@ -434,20 +422,10 @@ def admin_delete_paid_parking_space(
                 )
 
             # Send to owner
-            owner_email_content = f"""
-            Dear {owner_name},
-
-            Your parking space "{parking_space_name}" has been removed from XPark by the administrator.
-
-            Reason: {reason}
-
-            All future reservations have been cancelled and affected users have been notified.
-
-            If you have any questions, please contact support.
-
-            Best regards,
-            XPark Team
-            """
+            owner_email_content = generate_templated_email("spot_deleted",
+                                                           owner_name=owner_name,
+                                                           parking_space_name=parking_space_name,
+                                                           reason=reason)
 
             send_email(
                 to=owner_email,

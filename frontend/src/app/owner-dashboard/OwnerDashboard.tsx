@@ -217,17 +217,17 @@ export default function OwnerDashboard() {
                     animate={{ y: 0 }}
                     className="container mx-auto px-4 py-4"
                 >
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <header className"flex items-center justify-center mb-6">
-                            <Button
-                                variant="ghost"
-                                className="absolute left-0 flex items-center text-gray-800"
-                                onClick={() => router.push('/myspots')}
-                            >
-                                <ArrowLeft className="w-5 h-5 mr-1"/>
-                                Back
-                            </Button>
-                            <h1 className="text-3xl font-bold text-slate-950">Your Reports</h1>
+                    <Button
+                        variant="ghost"
+                        className="absolute left-0 flex items-center text-gray-800"
+                        onClick={() => router.push('/myspots')}
+                    >
+                        <ArrowLeft className="w-5 h-5 mr-1"/>
+                        Back
+                    </Button>
+                    <div className="flex flex-col justify-between items-center gap-2">
+                        <header className="relative flex items-center justify-center my-2">
+                            <div className="text-3xl font-bold text-slate-950">Your Reports</div>
                         </header>
                         <p className="text-sm text-gray-500">
                             {paidSpots.length} spots • {analytics.totalBookings} total bookings
