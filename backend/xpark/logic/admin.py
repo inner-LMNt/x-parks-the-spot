@@ -3,7 +3,6 @@ from typing import Dict, Any, List
 
 from psycopg.rows import dict_row
 
-from xpark import Config
 from xpark.utils.mailer import generate_templated_email, send_email
 from xpark.utils.db import DB
 from result import Result, Ok, Err
@@ -345,7 +344,6 @@ def admin_delete_paid_parking_space(
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             # 1. First get ALL necessary information before any deletions
-            # Get parking space and owner info
             cur.execute(
                 """
                 SELECT p.owner, p.is_paid, p.photos, p.name, u.email, u.name
@@ -385,7 +383,6 @@ def admin_delete_paid_parking_space(
             )
             future_reservations = cur.fetchall()
 
-            # Store all notification info before any deletions
             notifications = []
             for reservation in future_reservations:
                 _, _, start_time, end_time, renter_email, renter_name = reservation
@@ -405,12 +402,13 @@ def admin_delete_paid_parking_space(
             # 3. Clean up photos
             if photos:
                 for photo in photos:
-                    image_path = os.path.join(Config.BASE_FOLDER, photo.lstrip("/"))
+                    image_path = os.path.join(os.environ.get("BASE_FOLDER")
+                                              or os.path.abspath(os.path.dirname(__file__)),
+                                              photo.lstrip("/"))
                     if os.path.exists(image_path):
                         os.remove(image_path)
 
             # 4. Send all notifications after successful deletion
-            # Send to renters
             for notification in notifications:
                 email_content = f"""
                 Dear {notification['name']},

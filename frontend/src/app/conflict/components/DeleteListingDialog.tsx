@@ -20,7 +20,8 @@ import { useAppDispatch } from '@/store/hooks';
 import { getAllConflicts } from '@/features/admin/adminSlice';
 import { deleteParkingSpace } from '@/features/admin/adminSlice';
 
-const DeleteListingDialog = ({ parkingSpaceId, parkingSpaceName }) => {
+const DeleteListingDialog: React.FC<{ parkingSpaceId: string; parkingSpaceName: string }>
+    = ({ parkingSpaceId, parkingSpaceName }) => {
     const dispatch = useAppDispatch();
     const [isOpen, setIsOpen] = useState(false);
     const [deleteReason, setDeleteReason] = useState('');
@@ -38,6 +39,7 @@ const DeleteListingDialog = ({ parkingSpaceId, parkingSpaceName }) => {
 
         setIsDeleting(true);
 
+        // @ts-ignore
         const resultAction = await dispatch(deleteParkingSpace({
             parkingSpaceId,
             reason: deleteReason

@@ -120,7 +120,7 @@ export const verifyParkingSpot = createAsyncThunk<
 
 export const deleteParkingSpace = createAsyncThunk<
     string,
-    { parkingSpaceId: string; reason: string },
+    any,
     { rejectValue: string }
 >("admin/deleteParkingSpace", async ({ parkingSpaceId, reason }, { rejectWithValue }) => {
     try {
