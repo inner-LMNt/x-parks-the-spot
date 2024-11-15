@@ -59,18 +59,24 @@ def create_reservation_issue_report_logic(
 ) -> Result[Dict[str, Any], str]:
     """
     Logic for creating a reservation issue report.
+    Includes the parking space's photo URL from the associated parking space.
     """
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
+            # First fetch the reservation and associated parking space photo
             cur.execute(
                 """
-                SELECT 1
+                SELECT 
+                    reservations.id,
+                    parking_spaces.photos
                 FROM reservations
-                WHERE id = %(reservation_id)s
+                JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                WHERE reservations.id = %(reservation_id)s
                 """,
                 {"reservation_id": reservation_id}
             )
-            if not cur.fetchone():
+            result = cur.fetchone()
+            if not result:
                 return Err("Reservation not found.")
 
             cur.execute(
@@ -80,14 +86,16 @@ def create_reservation_issue_report_logic(
                     reservation_id,
                     description,
                     type,
-                    status
+                    status,
+                    image_url
                 )
                 VALUES (
                     %(user_id)s,
                     %(reservation_id)s,
                     %(description)s,
                     %(type)s,
-                    %(status)s
+                    %(status)s,
+                    %(image_url)s
                 )
                 RETURNING
                     id,
@@ -96,6 +104,7 @@ def create_reservation_issue_report_logic(
                     description,
                     type,
                     status,
+                    image_url,
                     created_at,
                     updated_at
                 """,
@@ -104,12 +113,12 @@ def create_reservation_issue_report_logic(
                     "reservation_id": reservation_id,
                     "description": description,
                     "type": report_type,
-                    "status": "open"
+                    "status": "open",
+                    "image_url": result['photos'][0]
                 },
             )
             new_report = cur.fetchone()
             return Ok(new_report) if new_report else Err("Failed to create report")
-
 
 def create_renter_overstay_report_logic(
     user_id: UUID,
