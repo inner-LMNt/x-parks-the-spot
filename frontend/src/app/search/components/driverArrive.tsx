@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Webcam from "react-webcam";
 
+//@ts-ignore
 const DriverArrive = ({ currentSpotId, userLocation, closeDriverArriveDialog }) => {
     const dispatch = useDispatch();
     const { toast } = useToast();
@@ -65,6 +66,7 @@ const DriverArrive = ({ currentSpotId, userLocation, closeDriverArriveDialog }) 
 
             console.log("Submitting form data:", formData);
 
+            //@ts-ignore
             await dispatch(awardPoints({ parkingSpaceId: currentSpotId, formData })).unwrap();
             toast({
                 title: 'Thank you for updating the spot',

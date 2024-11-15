@@ -382,12 +382,3 @@ def handle_get_points(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
             return Ok({"total": int(result[0]), "current": int(result[1])})
         
 
-# Testing purposes
-def randomize_user_points(user_id: uuid.UUID) -> None:
-    with DB.pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "UPDATE users SET points = jsonb_build_object('total', floor(random() * 1000)::int, 'current', floor(random() * 1000)::int) WHERE id = %s",
-                (str(user_id),),
-            )
-            return Ok(None)

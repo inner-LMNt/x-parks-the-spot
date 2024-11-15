@@ -239,17 +239,6 @@ export const get_points = createAsyncThunk<
   }
 });
 
-export const randomize_all_points = createAsyncThunk<
-  void,
-  void,
-  { rejectValue: string }
->("user/randomize_all_points", async (_, { rejectWithValue }) => {
-  try {
-    await axios.post("auth/randomize-points");
-  } catch (error: any) {
-    return rejectWithValue("Failed to randomize points");
-  }
-});
 
 // @ts-ignore
 const userSlice = createSlice<UserState, {}, "user">({
@@ -269,7 +258,6 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof reset_password.pending
           | typeof update_notification_time.pending
           | typeof get_points.pending
-          | typeof randomize_all_points.pending
         > => action.type.endsWith("/pending"),
         (state) => {
           state.loading = true;
@@ -288,7 +276,6 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof reset_password.rejected
           // | typeof update_notification_time.rejected
           | typeof get_points.rejected
-          | typeof randomize_all_points.rejected
         > => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false;
@@ -377,17 +364,12 @@ const userSlice = createSlice<UserState, {}, "user">({
         isAnyOf(get_points.fulfilled),
         (state, action) => {
           state.loading = false;
-          state.total_points = action.payload?.total || 123;
-          state.current_points = action.payload?.current || 123;
+          //@ts-ignore
+          state.total_points = action.payload?.total;
+          //@ts-ignore
+          state.current_points = action.payload?.current;
         }
       )
-
-      .addMatcher(
-        isAnyOf(randomize_all_points.fulfilled),
-        (state) => {
-          state.loading = false;
-        }
-      );
   },
 });
 

@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 
 interface Conflict {
     id: string;
-    description: string;foln
+    description: string;
     type: "Other" | "Technical" | "Billing";
     status: "open" | "in_progress" | "resolved";
     admin_response: string | null;

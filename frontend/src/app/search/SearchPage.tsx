@@ -1490,6 +1490,14 @@ export default function SearchPage() {
                             </button>
 
                         )}
+                        {/* Render DriverArrive dialog when "Was this spot taken?" button is clicked */}
+                        {driverArriveOpen && (
+                            <DriverArrive
+                                currentSpotId={selectedSpot?.id}
+                                userLocation={userLocation}
+                                closeDriverArriveDialog={closeDriverArriveDialog}
+                            />
+                        )}
                       </div>
                   ) : (
                       // Continue with navigation step-by-step rendering
@@ -1511,11 +1519,14 @@ export default function SearchPage() {
                             Previous
                           </button>
                           <button
-                              onClick={() =>
+
+                              onClick={() => {
+                                if (directions && directions.routes.length > 0 && directions.routes[0].legs.length > 0) {
                                   setCurrentStepIndex((prev) =>
                                       Math.min(prev + 1, directions.routes[0].legs[0].steps.length - 1)
-                                  )
-                              }
+                                  );
+                                }
+                              }}
                               className="px-3 py-2 bg-blue-500 text-white text-sm font-semibold rounded hover:bg-blue-700 focus:outline-none"
                           >
                             Next
@@ -1533,14 +1544,6 @@ export default function SearchPage() {
                   <p className="text-sm text-gray-500">No directions available.</p>
               )}
 
-              {/* Render DriverArrive dialog when "Was this spot taken?" button is clicked */}
-              {driverArriveOpen && (
-                  <DriverArrive
-                      currentSpotId={selectedSpot.id}
-                      userLocation={userLocation}
-                      closeDriverArriveDialog={closeDriverArriveDialog}
-                  />
-              )}
             </CardContent>
 
           </Card>

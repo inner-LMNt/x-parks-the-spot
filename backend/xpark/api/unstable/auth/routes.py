@@ -10,9 +10,9 @@ from xpark.logic.user import (
     handle_password_reset_confirmation,
     handle_set_notification_time,
     handle_get_notification_time,
-    handle_get_points,
-    randomize_user_points,  # Testing purposes
+    handle_get_points,  # Testing purposes
 )
+
 
 from flask import request
 from result import Ok, Err
@@ -139,17 +139,7 @@ def get_points(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return {"points": points}, 200
         case Err(e):
             return {"err": e}, 403
-        
 
-# Testing purposes
-@bp.post("randomize-points")
-@require_logged_in_user
-def randomize_points(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    match randomize_user_points(user_id):
-        case Ok(_):
-            return {"message": "Points randomized successfully"}, 200
-        case Err(e):
-            return {"err": e}, 403
 
 
 # @bp.get("id")

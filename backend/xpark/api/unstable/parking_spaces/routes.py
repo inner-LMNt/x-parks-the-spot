@@ -33,8 +33,10 @@ def get_all_user_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[A
 @bp.post("<parking_space_id>/award-points")
 @require_logged_in_user
 def award_points_route(parking_space_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    data = request.form
+    data = request.form.to_dict()
     status = data.get("status")  # Expect "taken" or "parked"
+    if not status:
+          return {"err": "Invalid status provided. Use 'taken' or 'parked'."}, 400  # Handle missing status
     points_amount = int(data.get("points_amount", 10))
     image_file = request.files.get("photo") if status == 'taken' else None
 

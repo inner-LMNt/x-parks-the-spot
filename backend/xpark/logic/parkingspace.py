@@ -35,8 +35,9 @@ def award_points(
 
             parking_space_owner_id = parking_space['owner']
 
-            if status == 'taken':
-                # Handle "taken" status
+            # Handle "taken" and "parked" statuses
+            if status in ['taken', 'parked']:
+                # Prepare for updating the parking space
                 new_photo_url = []
                 if image_file:
                     try:
@@ -60,21 +61,9 @@ def award_points(
 
                 if not cur.fetchone():
                     return Err("Failed to update parking space")
-                return Ok({"action": "Status set to 'taken'"})
 
-            elif status == 'parked':
-                # Handle "parked" status
-                cur.execute("""
-                    DELETE FROM parking_spaces
-                    WHERE id = %s AND is_paid = FALSE
-                    RETURNING id
-                """, (parking_space_id,))
-
-                if not cur.fetchone():
-                    return Err("Parking space not found or deletion not authorized")
-
-                # Award points if the requestor is not the owner
-                if parking_space_owner_id != user_id:
+                # Award points only for "parked" status
+                if status == 'parked' and parking_space_owner_id != user_id:
                     now = datetime.now()
 
                     # Check for recent award restrictions
@@ -84,7 +73,7 @@ def award_points(
                         WHERE user_id = %s AND transaction_type = 'award' AND timestamp >= %s
                     """, (str(user_id), now - timedelta(hours=2)))
                     if cur.fetchone():
-                        return Err("Points can only be awarded once every 2 hours to a spot finder.")
+                        return Ok({"message": "Points can only be awarded once every 2 hours to a spot finder."})
 
                     cur.execute("""
                         SELECT timestamp
@@ -139,12 +128,9 @@ def award_points(
                         "action": f"{status} - award"
                     })
 
-                return Ok({"action": "No points awarded as the user is the owner of the parking space"})
-
+                return Ok({"action": f"Status set to '{status}', no points awarded as the user is the owner of the parking space"})
             else:
                 return Err("Invalid status provided. Use 'taken' or 'parked'.")
-
-
 
 
 def get_all_user_parking_spaces(

@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { get_points, randomize_all_points } from "@/features/user/userSlice";
+import { get_points} from "@/features/user/userSlice";
 import { Settings, ArrowUpCircle, ArrowDownCircle, LogOut, FileWarning, Car } from 'lucide-react'; // Imported FileWarning
 import { logout } from '@/features/user/userSlice';
 import { Button } from "@/components/ui/button";
@@ -182,17 +182,6 @@ export default function ProfilePage() {
                             style={{ width: `${(eloRating / maxElo) * 100}%` }}></div>
                     </div>
 
-                    <div className="flex justify-center mb-6">
-                        <button
-                            onClick={() => {
-                                dispatch(randomize_all_points());
-                                dispatch(get_points());
-                            }}
-                            className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75"
-                        >
-                            Randomize All Points
-                        </button>
-                    </div>
 
                     {/* Achievements Section */}
                     <div className="text-left mb-6">
