@@ -35,6 +35,7 @@ interface UserState {
   userState: string | null;
   total_points: number | null;
   current_points: number | null;
+  badges: number[];
 }
 
 const initialState: UserState = {
@@ -52,6 +53,7 @@ const initialState: UserState = {
   userState: null,
   total_points: 0,
   current_points: 0,
+  badges: [],
 };
 
 /**
@@ -282,6 +284,20 @@ export const buy_badge = createAsyncThunk<
   }
 });
 
+export const get_badge_list = createAsyncThunk<
+  number[],
+  void,
+  { rejectValue: string }
+>("user/get_badge_list", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("auth/badge-list");
+    console.log("data34", response.data.badges);
+    return response.data.badges;
+  } catch (error: any) {
+    return rejectWithValue("Failed to get badge list");
+  }
+});
+
 // @ts-ignore
 const userSlice = createSlice<UserState, {}, "user">({
   name: "user",
@@ -300,6 +316,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof update_notification_time.pending
           | typeof get_points.pending
           | typeof buy_badge.pending
+          | typeof get_badge_list.pending
         > => action.type.endsWith("/pending"),
         (state) => {
           state.loading = true;
@@ -319,6 +336,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           // | typeof update_notification_time.rejected
           | typeof get_points.rejected
           | typeof buy_badge.rejected
+          | typeof get_badge_list.rejected
         > => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false;
@@ -419,6 +437,15 @@ const userSlice = createSlice<UserState, {}, "user">({
       .addMatcher(isAnyOf(buy_badge.fulfilled), (state, action) => {
         state.loading = false;
         state.current_points = action.payload?.current_points ?? null;
+        if (!state.badges) {
+          state.badges = [];
+        }
+        state.badges.push(Number(action.meta.arg.badgeId));
+      })
+
+      .addMatcher(isAnyOf(get_badge_list.fulfilled), (state, action) => {
+        state.loading = false;
+        state.badges = action.payload;
       });
   },
 });

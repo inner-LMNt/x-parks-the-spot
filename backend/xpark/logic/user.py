@@ -474,3 +474,18 @@ def handle_buy_badge(user_id: uuid.UUID, badge_id: int, price: int) -> Result[No
             )
 
             return Ok(None)
+        
+
+def handle_get_badge_list(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                "SELECT badges FROM users WHERE id = %s",
+                (user_id,),
+            )
+            result = cur.fetchone()
+            if not result:
+                return Err("User not found")
+            
+            result = list(map(int, result['badges']))
+            return Ok(result)

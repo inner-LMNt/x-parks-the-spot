@@ -14,6 +14,7 @@ from xpark.logic.user import (
     get_user_location_request,
     handle_get_points,  # Testing purposes
     handle_buy_badge,
+    handle_get_badge_list,
 )
 
 
@@ -177,7 +178,18 @@ def use_points(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         case Ok(points):
             return {"message": "Badge bought successfully", "points": points}, 200
         case Err(e):
-            return {"err": e}, 402
+            return {"err": e}, 402  # placeholder to prevent 403 redirection
+        
+
+@bp.get("badge-list")
+@require_logged_in_user
+def get_badge_list(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    print("get_badge_list")
+    match handle_get_badge_list(user_id):
+        case Ok(badges):
+            return {"badges": badges}, 200
+        case Err(e):
+            return {"err": e}, 403
 
 # @bp.get("id")
 # @require_logged_in_user
