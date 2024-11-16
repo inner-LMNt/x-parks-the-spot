@@ -31,6 +31,10 @@ interface UserState {
   loading: boolean;
   error: string | null;
   notificationTime: string | null;
+  userCity: string | null;
+  userState: string | null;
+  total_points: number | null;
+  current_points: number | null;
 }
 
 const initialState: UserState = {
@@ -44,6 +48,10 @@ const initialState: UserState = {
   loading: false,
   error: null,
   notificationTime: null,
+  userCity: null,
+  userState: null,
+  total_points: 0,
+  current_points: 0,
 };
 
 /**
@@ -221,12 +229,52 @@ export const get_notification_time = createAsyncThunk<
   }
 });
 
+export const set_user_location = createAsyncThunk<
+  void,
+  { state: string; city: string },
+  { rejectValue: string }
+>("user/set_user_location", async ({ state, city }, { rejectWithValue }) => {
+  try {
+    const response = await axios.post("auth/user-location", { state, city });
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue("Failed to set user location");
+  }
+});
+
+export const get_user_location = createAsyncThunk<
+  { state: string; city: string } | null,
+  void,
+  { rejectValue: string }
+>("user/get_user_location", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("auth/user-location");
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue("Failed to get user location");
+  }
+});
+
+export const get_points = createAsyncThunk<
+  { total: number; current: number } | null,
+  void,
+  { rejectValue: string }
+>("user/get_points", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("auth/points");
+    console.log('data', response.data);
+    return response.data.points;
+  } catch (error: any) {
+    return rejectWithValue("Failed to get points");
+  }
+});
+
+
 // @ts-ignore
 const userSlice = createSlice<UserState, {}, "user">({
   name: "user",
   initialState,
-  reducers: {
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       .addMatcher(
@@ -238,6 +286,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof logout.pending
           | typeof reset_password.pending
           | typeof update_notification_time.pending
+          | typeof get_points.pending
         > => action.type.endsWith("/pending"),
         (state) => {
           state.loading = true;
@@ -255,6 +304,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof logout.rejected
           | typeof reset_password.rejected
           // | typeof update_notification_time.rejected
+          | typeof get_points.rejected
         > => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false;
@@ -300,27 +350,27 @@ const userSlice = createSlice<UserState, {}, "user">({
         }
       )
       .addMatcher(
-            (action: { type: string }): action is { type: "user/errorReset" } =>
-                action.type === "user/errorReset",
-            (state) => {
-              state.error = null;
-              state.loading = false;
-              state.access_token = null;
-              state.isLoggedIn = false;
-              state.name = null;
-            }
-        )
+        (action: { type: string }): action is { type: "user/errorReset" } =>
+          action.type === "user/errorReset",
+        (state) => {
+          state.error = null;
+          state.loading = false;
+          state.access_token = null;
+          state.isLoggedIn = false;
+          state.name = null;
+        }
+      )
 
       .addMatcher(
-          (action: { type: string }): action is { type: "user/resetLoggedIn" } =>
-              action.type === "user/resetLoggedIn",
-          (state) => {
-            state.error = null;
-            state.loading = false;
-            state.access_token = null;
-            state.isLoggedIn = false;
-            state.name = null;
-          }
+        (action: { type: string }): action is { type: "user/resetLoggedIn" } =>
+          action.type === "user/resetLoggedIn",
+        (state) => {
+          state.error = null;
+          state.loading = false;
+          state.access_token = null;
+          state.isLoggedIn = false;
+          state.name = null;
+        }
       )
 
       .addMatcher(
@@ -331,13 +381,40 @@ const userSlice = createSlice<UserState, {}, "user">({
         }
       )
 
+      .addMatcher(isAnyOf(get_notification_time.fulfilled), (state, action) => {
+        state.loading = false;
+        state.notificationTime = action.payload;
+      })
+
+      .addMatcher(isAnyOf(set_user_location.fulfilled), (state, action) => {
+        state.loading = false;
+        state.userState = action.meta.arg.state;
+        state.userCity = action.meta.arg.city;
+      })
+      .addMatcher(isAnyOf(get_user_location.fulfilled), (state, action) => {
+        state.loading = false;
+        state.userState = action.payload?.state || null;
+        state.userCity = action.payload?.city || null;
+      })
+
       .addMatcher(
         isAnyOf(get_notification_time.fulfilled),
         (state, action) => {
           state.loading = false;
           state.notificationTime = action.payload;
         }
-      );
+      )
+
+      .addMatcher(
+        isAnyOf(get_points.fulfilled),
+        (state, action) => {
+          state.loading = false;
+          //@ts-ignore
+          state.total_points = action.payload?.total;
+          //@ts-ignore
+          state.current_points = action.payload?.current;
+        }
+      )
   },
 });
 

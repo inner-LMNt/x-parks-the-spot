@@ -7,6 +7,19 @@ import json
 import io
 from werkzeug.datastructures import FileStorage
 
+def create_points_transaction(client: FlaskClient, token: str, transaction_type: str, parking_space_id: uuid.UUID) -> Any:
+    """Create a test points transaction."""
+    response = client.post(
+        "/api/unstable/points",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "transaction_type": transaction_type,
+            "parking_space_id": str(parking_space_id),
+            "points": 10
+        }
+    )
+    assert response.status_code == 201, f"Expected 201 but got {response.status_code}"
+    return response.get_json()
 
 def create_test_user(client: FlaskClient, email: str = "test@example.com") -> str:
     """Helper to create a test user and return access token"""
@@ -26,12 +39,16 @@ def create_test_user(client: FlaskClient, email: str = "test@example.com") -> st
     return str(access_token)
 
 
-def create_test_parking_space(client: FlaskClient, token: str, is_paid: bool = True) -> str:
+def create_test_parking_space(client: FlaskClient,
+                              token: str,
+                              is_paid: bool = True,
+                              price: float = 10.0,
+                              name: str = "Test Space") -> str:
     """Helper to create a test parking space and return its ID"""
     # Create the parking space data
 
     parking_space_data: Dict[str, Any] = {
-        "name": "Test Space" if is_paid else None,
+        "name": name if is_paid else None,
         "is_paid": is_paid,
         "location": {
             "longitude": -74.0060,
@@ -52,7 +69,7 @@ def create_test_parking_space(client: FlaskClient, token: str, is_paid: bool = T
 
         # Update with proper type annotations
         parking_space_data["pricing_info"] = {
-            "base_price": 10.0
+            "base_price": price
         }
         parking_space_data["availability_schedule"] = slots
 
@@ -116,7 +133,7 @@ def create_test_reservation_at_time(
         space_id: str,
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
-        car_id: Optional[str] = None,
+        car_id: Optional[str] = None
 ) -> str:
     """Helper to create a test reservation with specific times"""
     if start_time is None:
@@ -148,7 +165,7 @@ def create_test_reservation(client: FlaskClient, token: str, space_id: str) -> s
     # First create a car for the reservation
     car_id = create_test_car(client, token)
 
-    start_time = datetime.now(timezone.utc) + timedelta(hours=1)
+    start_time = datetime.now(timezone.utc) + timedelta(hours=10)
     end_time = start_time + timedelta(hours=1)
 
     response = client.post(
@@ -213,24 +230,69 @@ def submit_parking_verification(client: FlaskClient, token: str, space_id: str) 
 
 
 def create_test_conflict(
-    client: FlaskClient, token: str, reservation_id: str,
-    description: str = "Test conflict", conflict_type: str = "Other"
+    client: FlaskClient,
+    token: str,
+    reservation_id: str,
+    description: str = "Test conflict",
+    conflict_type: str = "Other",
+    damage_type: Optional[str] = None,
+    damage_severity: Optional[str] = None,
+    departure_time: Optional[datetime] = None,
+    image: Optional[FileStorage] = None,
 ) -> str:
     """
-    Create a test conflict using the provided client, token, reservation ID, and description.
+    Create a test conflict (report) using the provided parameters.
     Returns the conflict ID.
     """
-    response = client.post(
-        "/api/unstable/reports",  # No trailing slash
-        headers={"Authorization": f"Bearer {token}"},
-        json={
-            "reservation_id": reservation_id,
+    # Determine the endpoint based on conflict type
+    if conflict_type == "Other":
+        url = "/api/unstable/reports/other-issue"
+        data = {"description": description}
+    elif conflict_type == "Reservation Issue":
+        url = "/api/unstable/reports/reservation-issue"
+        data = {
             "description": description,
-            "type": conflict_type
+            "reservation_id": reservation_id
         }
-    )
+    elif conflict_type == "Damage Report":
+        url = "/api/unstable/reports/damage-report"
+        data = {
+            "description": description,
+            "owner_reservation_id": reservation_id,
+            "damage_type": damage_type or "scratch",
+            "damage_severity": damage_severity or "Minor"
+        }
+        if not image:
+            image = create_test_image()
+    elif conflict_type == "Renter Overstay":
+        url = "/api/unstable/reports/renter-overstay"
+        data = {
+            "description": description,
+            "owner_reservation_id": reservation_id,
+            "departure_time": (departure_time or datetime.now(timezone.utc)).isoformat()
+        }
+        if not image:
+            image = create_test_image()
+    else:
+        raise ValueError(f"Unsupported conflict type: {conflict_type}")
 
-    # Check for successful response and capture conflict ID
+    # Add image if provided
+    if image:
+        files = {"image": image}
+        response = client.post(
+            url,
+            data={**data, **files},
+            headers={"Authorization": f"Bearer {token}"},
+            content_type="multipart/form-data"
+        )
+    else:
+        response = client.post(
+            url,
+            data=data,
+            headers={"Authorization": f"Bearer {token}"},
+            content_type="application/x-www-form-urlencoded"
+        )
+
     assert response.status_code == 201, f"Expected 201, got {response.status_code} with response {response.data}"
     data = response.get_json()
     assert data is not None, "Expected non-empty response data"
@@ -238,13 +300,86 @@ def create_test_conflict(
 
     return str(data["id"])
 
-def update_conflict_response(client: FlaskClient, token: str, conflict_id: str, response_text: str) -> None:
+def update_conflict_response(
+    client: FlaskClient,
+    token: str,
+    conflict_id: str,
+    admin_response: str
+) -> str | Any:
     """
-    Update the response for an existing conflict using the provided client, token, conflict ID, and response text.
+    Update the response for an existing conflict using the PUT endpoint.
+    Returns the updated report data.
     """
-    response = client.post(
-        "/api/unstable/admin/update-conflict",
+    response = client.put(
+        f"/api/unstable/reports/{conflict_id}",
         headers={"Authorization": f"Bearer {token}"},
-        json={"id": conflict_id, "response": response_text}
+        json={"admin_response": admin_response}
     )
     assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+    data = response.get_json()
+    assert data is not None, "Expected non-empty response data"
+    return data
+
+def create_test_report(
+        client: FlaskClient,
+        token: str,
+        report_type: str,
+        reservation_id: Optional[str] = None,
+        description: str = "This is a detailed test report description",
+        departure_time: Optional[datetime] = None,
+        damage_type: Optional[str] = None,
+        damage_severity: Optional[str] = None,
+        image: Optional[FileStorage] = None,
+) -> Dict[str, Any]:
+    """Create a test report based on type with proper form data"""
+
+    if len(description) < 10:
+        raise ValueError("Description must be at least 10 characters long")
+
+    data = {"description": description}
+
+    if report_type == "Other":
+        url = "/api/unstable/reports/other-issue"
+    elif report_type == "Reservation Issue":
+        url = "/api/unstable/reports/reservation-issue"
+        data["reservation_id"] = reservation_id  # type: ignore
+    elif report_type == "Renter Overstay":
+        url = "/api/unstable/reports/renter-overstay"
+        data["owner_reservation_id"] = reservation_id  # type: ignore
+        data["departure_time"] = (departure_time or datetime.now(timezone.utc)).isoformat()
+        if not image:
+            image = create_test_image()
+    elif report_type == "Damage Report":
+        url = "/api/unstable/reports/damage-report"
+        data["owner_reservation_id"] = reservation_id  # type: ignore
+        data["damage_type"] = damage_type or "scratch"
+        data["damage_severity"] = damage_severity or "Minor"
+        if not image:
+            image = create_test_image()
+
+    if image:
+        files = {"image": image}
+        response = client.post(
+            url,
+            data={**data, **files},
+            headers={"Authorization": f"Bearer {token}"},
+            content_type="multipart/form-data"
+        )
+    else:
+        response = client.post(
+            url,
+            data=data,
+            headers={"Authorization": f"Bearer {token}"},
+            content_type="application/x-www-form-urlencoded"
+        )
+
+    assert response.status_code == 201, f"Failed to create report: {response.get_json()}"
+    return response.get_json()  # type: ignore
+
+def create_test_image(filename: str = "test.jpg", content_type: str = "image/jpeg") -> FileStorage:
+    """Create a test image file"""
+    return FileStorage(
+        stream=io.BytesIO(b"dummy image content"),
+        filename=filename,
+        content_type=content_type
+    )
