@@ -1,0 +1,12 @@
+Dear $owner_name,
+
+Your parking space "$parking_space_name" has been removed from XPark by the administrator.
+
+Reason: $reason
+
+All future reservations have been cancelled and affected users have been notified.
+
+If you have any questions, please contact support.
+
+Best regards,
+XPark Team

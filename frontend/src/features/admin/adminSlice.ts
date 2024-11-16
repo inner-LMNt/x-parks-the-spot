@@ -118,6 +118,38 @@ export const verifyParkingSpot = createAsyncThunk<
     }
 });
 
+export const deleteParkingSpace = createAsyncThunk<
+    string,
+    any,
+    { rejectValue: string }
+>("admin/deleteParkingSpace", async ({ parkingSpaceId, reason }, { rejectWithValue }) => {
+    try {
+        const response = await axios.delete(`/admin/parking-spaces/${parkingSpaceId}`, {
+            data: { reason }
+        });
+
+        if (response.status === 200) {
+            return parkingSpaceId;
+        }
+    } catch (error: any) {
+        const errorMessage = error.response?.data?.err || "Failed to delete parking space";
+
+        // Handle specific error cases
+        if (error.response?.status === 403) {
+            if (error.response?.data?.err === "Not allowed to delete paid spot") {
+                return rejectWithValue("Cannot delete a paid parking spot");
+            }
+            return rejectWithValue("Not authorized to delete this parking spot");
+        }
+
+        if (error.response?.status === 404) {
+            return rejectWithValue("Parking spot not found");
+        }
+
+        return rejectWithValue(errorMessage);
+    }
+});
+
 const adminSlice = createSlice({
     name: "admin",
     initialState,
@@ -208,7 +240,18 @@ const adminSlice = createSlice({
             .addCase(verifyParkingSpot.rejected, (state: AdminState, action: any) => {
                 state.loading = false;
                 state.error = action.payload as string;
-            });
+            })
+            .addCase(deleteParkingSpace.pending, (state: AdminState) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(deleteParkingSpace.fulfilled, (state: AdminState, action) => {
+                state.loading = false;
+            })
+            .addCase(deleteParkingSpace.rejected, (state: AdminState, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+            });;
     },
 });
 
