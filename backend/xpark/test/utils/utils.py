@@ -165,7 +165,7 @@ def create_test_reservation(client: FlaskClient, token: str, space_id: str) -> s
     # First create a car for the reservation
     car_id = create_test_car(client, token)
 
-    start_time = datetime.now(timezone.utc) + timedelta(hours=1)
+    start_time = datetime.now(timezone.utc) + timedelta(hours=10)
     end_time = start_time + timedelta(hours=1)
 
     response = client.post(

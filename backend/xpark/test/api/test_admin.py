@@ -104,18 +104,21 @@ def test_verify_parking_space_invalid_id(client: FlaskClient) -> None:
 
 def test_get_cancellations(client: FlaskClient) -> None:
     """Test fetching cancellations."""
-    admin_token = create_test_user(client)
+    admin_token = create_test_user(client, "admin@example.com")
+    owner_token = create_test_user(client, "owner@example.com")
     user_token = create_test_user(client, "user@example.com")
 
     # Setup: Create and cancel a reservation
-    space_id = create_test_parking_space(client, user_token)
+    space_id = create_test_parking_space(client, owner_token)
     reservation_id = create_test_reservation(client, user_token, space_id)
 
     # Cancel the reservation
-    client.post(
-        f"/api/unstable/reservations/{reservation_id}/cancel",
+    response = client.delete(
+        f"/api/unstable/reservations/{reservation_id}",
         headers={"Authorization": f"Bearer {user_token}"}
     )
+
+    assert response.status_code == 200
 
     response = client.get(
         "/api/unstable/admin/get-cancellations",
@@ -124,6 +127,7 @@ def test_get_cancellations(client: FlaskClient) -> None:
     assert response.status_code == 200
     data = response.get_json()
     assert data is not None
+    print(data)
     assert any(cancellation["id"] == reservation_id for cancellation in data)
 
 
@@ -135,10 +139,12 @@ def test_acknowledge_cancellation_success(client: FlaskClient) -> None:
     # Setup: Create and cancel a reservation
     space_id = create_test_parking_space(client, user_token)
     reservation_id = create_test_reservation(client, user_token, space_id)
-    client.post(
-        f"/api/unstable/reservations/{reservation_id}/cancel",
+    response = client.delete(
+        f"/api/unstable/reservations/{reservation_id}",
         headers={"Authorization": f"Bearer {user_token}"}
     )
+
+    assert response.status_code == 200
 
     # Acknowledge the cancellation
     response = client.post(

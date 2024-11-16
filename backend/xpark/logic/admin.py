@@ -20,7 +20,7 @@ def get_all_cancellations() -> Result[List[Dict[str, Any]], str]:
                 cur.execute(
                     """
                     SELECT
-                        reservations.id,
+                        reservations.id as id,
                         reservations.status,
                         reservations.created_at,
                         reservations.updated_at,
