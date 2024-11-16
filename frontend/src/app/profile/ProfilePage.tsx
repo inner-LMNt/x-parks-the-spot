@@ -82,7 +82,6 @@ export default function ProfilePage() {
     const userState = useAppSelector((state: any) => state.user.userState);
     const userCity = useAppSelector((state: any) => state.user.userCity);
     //const yearsOnApp = useSelector((state:any) => state.user.);
-    const name = useAppSelector((state: any) => state.user.name);
     const currentPoints = useAppSelector((state) => state.user.current_points);
     const totalPoints = useAppSelector((state) => state.user.total_points);
 
