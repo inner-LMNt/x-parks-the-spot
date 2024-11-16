@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { get_user_location } from '@/features/user/userSlice';
 import { get_points} from "@/features/user/userSlice";
 import { Settings, ArrowUpCircle, ArrowDownCircle, LogOut, FileWarning, Car } from 'lucide-react'; // Imported FileWarning
 import { logout } from '@/features/user/userSlice';
@@ -18,7 +19,6 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { router } from "next/client";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
@@ -76,12 +76,15 @@ function CommentCard({
 export default function ProfilePage() {
     const dispatch = useAppDispatch();
     const isLoggedIn = useAppSelector((state: any) => state.user.isLoggedIn);
-    //const yearsOnApp = useSelector((state:any) => state.user.);
     const [eloRating] = React.useState(1200);
     const router = useRouter();
     const name = useAppSelector((state: any) => state.user.name);
+    const userState = useAppSelector((state: any) => state.user.userState);
+    const userCity = useAppSelector((state: any) => state.user.userCity);
+    //const yearsOnApp = useSelector((state:any) => state.user.);
     const currentPoints = useAppSelector((state) => state.user.current_points);
     const totalPoints = useAppSelector((state) => state.user.total_points);
+
     const handleLogout = async () => {
         // @ts-ignore
         await dispatch(logout());
@@ -97,11 +100,10 @@ export default function ProfilePage() {
         yearsOnApp: 2,
     };
 
-
     const maxElo = 3000; // ????
 
     const comments = [
-        { user: 'User1', comment: 'Logged many good spots!', sentiment: 'positive' },
+        { user: 'User1', comment: 'Logged many spots!', sentiment: 'positive' },
         { user: 'User2', comment: 'Found a great spot, thanks!', sentiment: 'positive' },
         { user: 'User3', comment: 'Logged a spot that was on private property', sentiment: 'negative' },
         { user: 'User4', comment: 'Helpful and friendly service!', sentiment: 'positive' },
@@ -117,6 +119,7 @@ export default function ProfilePage() {
 
     const [domLoaded, setDomLoaded] = useState(false);
     useEffect(() => {
+        dispatch(get_user_location());
         setDomLoaded(true);
         dispatch(get_points());
     }, []);
@@ -152,13 +155,13 @@ export default function ProfilePage() {
                         {/* Reports Icon */}
                         <Link href="/reports" passHref>
                             <Button variant="ghost" size="icon" className="p-2">
-                                <FileWarning className="w-6 h-6 text-gray-400 hover:text-gray-600" aria-label="Reports" />
+                                <FileWarning className="w-6 h-6 text-gray-400 hover:text-gray-600" aria-label="Reports"/>
                             </Button>
                         </Link>
                         {/* Settings Icon */}
                         <Link href="/settings" passHref>
                             <Button variant="ghost" size="icon" className="p-2">
-                                <Settings className="w-6 h-6 text-gray-400 cursor-pointer hover:text-gray-600" aria-label="Settings" />
+                                <Settings className="w-6 h-6 text-gray-400 cursor-pointer hover:text-gray-600" aria-label="Settings"/>
                             </Button>
                         </Link>
                     </div>
@@ -174,6 +177,13 @@ export default function ProfilePage() {
                             <ProfileStats label="Posts" value={userProfile.spotfindPosts} />
                             <ProfileStats label="Years" value={userProfile.yearsOnApp} />
                         </div>
+                    </div>
+
+                    {/* Location Section */}
+                    <div className="text-left mb-6">
+                        <h2 className="text-lg font-semibold mb-4">Location</h2>
+                        <p className="text-sm text-gray-700">State: {userState}</p>
+                        <p className="text-sm text-gray-700">City: {userCity}</p>
                     </div>
 
                     {/* Elo Rating Bar */}

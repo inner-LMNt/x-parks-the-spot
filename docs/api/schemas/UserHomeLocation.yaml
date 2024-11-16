@@ -1,0 +1,6 @@
+type: object
+properties:
+  state:
+    type: string
+  city:
+    type: string

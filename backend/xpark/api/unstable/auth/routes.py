@@ -10,6 +10,8 @@ from xpark.logic.user import (
     handle_password_reset_confirmation,
     handle_set_notification_time,
     handle_get_notification_time,
+    set_user_location_request,
+    get_user_location_request,
     handle_get_points,  # Testing purposes
 )
 
@@ -129,6 +131,29 @@ def get_notification_time(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return {"time": time}, 200
         case Err(e):
             return {"err": e}, 403
+        
+
+@bp.post("user-location")
+@require_logged_in_user
+def set_user_location(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    assert request.json
+    state = request.json["state"]
+    city = request.json["city"]
+    match set_user_location_request(user_id, state, city):
+        case Ok(_):
+            return {"message": "User location set successfully"}, 200
+        case Err(e):
+            return {"err": e}, 404
+
+
+@bp.get("user-location")
+@require_logged_in_user
+def get_user_location(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match get_user_location_request(user_id):
+        case Ok(location):
+            return location, 200
+        case Err(e):
+            return {"err": e}, 404
 
 
 @bp.get("points")
