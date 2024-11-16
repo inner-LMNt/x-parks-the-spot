@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useDispatch, useSelector } from 'react-redux';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { get_user_location } from '@/features/user/userSlice';
 import { Settings, ArrowUpCircle, ArrowDownCircle, LogOut, FileWarning, Car } from 'lucide-react'; // Imported FileWarning
 import { logout } from '@/features/user/userSlice';
 import { Button } from "@/components/ui/button";
@@ -72,13 +73,13 @@ function CommentCard({
 }
 
 export default function ProfilePage() {
-    const dispatch = useDispatch();
-    const isLoggedIn = useSelector((state: any) => state.user.isLoggedIn);
+    const dispatch = useAppDispatch();
+    const isLoggedIn = useAppSelector((state: any) => state.user.isLoggedIn);
     const [eloRating] = React.useState(1200);
     const router = useRouter();
-    const name = useSelector((state: any) => state.user.name);
-    const userState = useSelector((state: any) => state.user.userState);
-    const userCity = useSelector((state: any) => state.user.userCity);
+    const name = useAppSelector((state: any) => state.user.name);
+    const userState = useAppSelector((state: any) => state.user.userState);
+    const userCity = useAppSelector((state: any) => state.user.userCity);
 
     const handleLogout = async () => {
         // @ts-ignore
@@ -112,6 +113,7 @@ export default function ProfilePage() {
 
     const [domLoaded, setDomLoaded] = useState(false);
     useEffect(() => {
+        dispatch(get_user_location());
         setDomLoaded(true);
     }, []);
 

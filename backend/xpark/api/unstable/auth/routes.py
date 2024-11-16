@@ -141,7 +141,7 @@ def set_user_location(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         case Ok(_):
             return {"message": "User location set successfully"}, 200
         case Err(e):
-            return {"err": e}, 403
+            return {"err": e}, 404
 
 
 @bp.get("user-location")
@@ -151,7 +151,7 @@ def get_user_location(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         case Ok(location):
             return location, 200
         case Err(e):
-            return {"err": e}, 403
+            return {"err": e}, 404
 
 
 # @bp.get("id")

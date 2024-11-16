@@ -3,7 +3,8 @@ from xpark.utils.password import password_hasher
 from argon2.exceptions import VerifyMismatchError, VerificationError
 import uuid
 from xpark.config import Config
-import requests
+import pandas as pd
+import os
 from result import Result, Ok, Err, is_err
 from typing import cast, Tuple, Dict
 import secrets
@@ -369,13 +370,27 @@ def handle_get_notification_time(user_id: uuid.UUID) -> Result[str, str]:
             return Ok(result[0])
 
 
+base_dir = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(base_dir, "../static/data/uscities.csv")
+CITIES_DATA = pd.read_csv(csv_path)
+
 def validate_city_state(state: str, city: str) -> bool:
-    response = requests.get(f'https://api.example.com/validate-city-state?state={state}&city={city}')
-    return response.json().get('isValid', False)
+    state = state.strip().upper()
+    city = city.strip().lower()
+
+    matching_rows = CITIES_DATA[
+        (CITIES_DATA["state_id"] == state) & (CITIES_DATA["city"].str.lower() == city)
+    ]
+    return not matching_rows.empty
     
 def set_user_location_request(user_id: uuid.UUID, state: str, city: str) -> Result[None, str]:
-    if not validate_city_state(state, city):
-        return Err("Invalid city-state combination")
+    city = city.title()
+    print("state", state, "city", city)
+    if city != "None":
+        if not validate_city_state(state, city):
+            return Err("Invalid city-state combination")
+
+    print("state", state, "city", city)
         
     query = """
             UPDATE users

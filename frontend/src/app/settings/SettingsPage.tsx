@@ -268,6 +268,9 @@ export default function SettingsPage() {
                                 {...locationRegister('city', { required: 'City is required' })}
                                 className="mt-1 block w-full text-gray-800"
                             />
+                            <p className="text-gray-600 text-sm mt-1">
+                                Type "none" if you don't want to specify a city.
+                            </p>
                             {locationErrors.city && (
                                 <p className="text-red-600 text-sm mt-1">{locationErrors.city.message}</p>
                             )}
