@@ -14,6 +14,7 @@ interface ParkingSpaceState {
     } | null;
     lockStatus: "idle" | "locking" | "locked" | "unlocking" | "failed";
     lockExpiresAt: number | null;
+    pointsAwarded: boolean;
 }
 
 const initialState: ParkingSpaceState = {
@@ -23,6 +24,7 @@ const initialState: ParkingSpaceState = {
     userRating: null,
     lockStatus: "idle",
     lockExpiresAt: null,
+    pointsAwarded: false,
 };
 
 interface RatingPayload {
@@ -204,6 +206,27 @@ export const fetchUserRating = createAsyncThunk<
     }
 );
 
+export const awardPoints = createAsyncThunk<
+    void,
+    { parkingSpaceId: string; formData: FormData },
+    { rejectValue: string }
+>("parkingSpace/awardPoints", async ({ parkingSpaceId, formData }, { rejectWithValue }) => {
+    try {
+        await axios.post(`/parking-spaces/${parkingSpaceId}/award-points`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+    } catch (error: any) {
+        console.error("Error response:", error.response);  // Log the full error response
+        console.error("Error data:", error.response?.data); // Log the error data if available
+
+        const errorMessage = error.response?.data?.err || "Failed to award points";  // Check for backend 'err' message
+        return rejectWithValue(errorMessage);
+    }
+});
+
+
 /**
  * **Parking Space Slice**
  */
@@ -227,9 +250,24 @@ const parkingSpaceSlice = createSlice({
             state.lockExpiresAt = null;
             state.error = null;
             state.loading = false;
+            state.pointsAwarded = false;
         },
     },
     extraReducers: (builder) => {
+        builder
+            .addCase(awardPoints.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(awardPoints.fulfilled, (state) => {
+                state.loading = false;
+                state.pointsAwarded = true;
+            })
+            .addCase(awardPoints.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || "Failed to award points";
+            });
+
         builder
             .addCase(markSpotTaken.pending, (state: ParkingSpaceState) => {
                 state.loading = true;

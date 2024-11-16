@@ -9,7 +9,8 @@ from xpark.logic.parkingspace import (
     get_all_user_parking_spaces,
     handle_submit_verification,
     update_taken,
-    submit_rating, get_user_rating
+    submit_rating, get_user_rating,
+    award_points
 )
 from flask import request
 from result import Ok, Err
@@ -29,6 +30,35 @@ def get_all_user_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[A
         case Err(e):
             return {"err": e}, 500
 
+@bp.post("<parking_space_id>/award-points")
+@require_logged_in_user
+def award_points_route(parking_space_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    data = request.form.to_dict()
+    status = data.get("status")  # Expect "taken" or "parked"
+    if not status:
+          return {"err": "Invalid status provided. Use 'taken' or 'parked'."}, 400  # Handle missing status
+    points_amount = int(data.get("points_amount", 10))
+    image_file = request.files.get("photo") if status == 'taken' else None
+
+    parking_space_uuid = uuid.UUID(parking_space_id)
+
+    result = award_points(
+        user_id=user_id,
+        parking_space_id=parking_space_uuid,
+        status=status,
+        points_amount=points_amount,
+        image_file=image_file
+    )
+    print("Award points result:", result)  # Debugging output
+
+    match result:
+        case Ok(data):
+            return {"result": "good"}, 200
+        case Err(e):
+            error_message = str(e)
+            print("Error occurred:", error_message)  # Print detailed error in backend
+            return {"err": error_message}, 400
+    return {"err": "Unexpected error occurred"}, 500
 
 @bp.post("")
 @require_logged_in_user

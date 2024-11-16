@@ -12,7 +12,9 @@ from xpark.logic.user import (
     handle_get_notification_time,
     set_user_location_request,
     get_user_location_request,
+    handle_get_points,  # Testing purposes
 )
+
 
 from flask import request
 from result import Ok, Err
@@ -152,6 +154,17 @@ def get_user_location(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return location, 200
         case Err(e):
             return {"err": e}, 404
+
+
+@bp.get("points")
+@require_logged_in_user
+def get_points(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match handle_get_points(user_id):
+        case Ok(points):
+            return {"points": points}, 200
+        case Err(e):
+            return {"err": e}, 403
+
 
 
 # @bp.get("id")

@@ -202,25 +202,26 @@ export default function ParkingSpaceBooking() {
             renter_id: booking.renter_id,
         };
 
-        try {
-            // @ts-ignore
-            await dispatch(bookParkingSpace(reservationRequest));
+        const resultAction = await dispatch(bookParkingSpace(reservationRequest));
+        if (bookParkingSpace.fulfilled.match(resultAction)) {
+            // Booking successful
             toast({
                 title: 'Booking Successful',
                 description: 'Your reservation has been confirmed.',
                 variant: "success",
             });
             router.push('/bookings');
-        } catch (error: any) {
+        }
+        else {
+            // Booking failed
             const errormsg = useAppSelector((state) => state.reservations.error);
             toast({
                 title: 'Booking Failed',
                 description: errormsg || 'Unable to complete your booking.',
                 variant: 'destructive',
             });
-        } finally {
-            setIsSubmitting(false); // Reset the submitting state
         }
+        setIsSubmitting(false); // Reset the submitting state
     };
 
     /**

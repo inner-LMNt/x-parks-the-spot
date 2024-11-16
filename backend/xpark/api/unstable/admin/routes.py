@@ -5,7 +5,7 @@ from xpark.logic.admin import (
     get_all_conflicts,
     update_conflict_response,  # Import the new logic function
     get_all_cancellations,
-    handle_acknowledge_cancellation
+    handle_acknowledge_cancellation, admin_delete_paid_parking_space
 )
 from flask import request, jsonify
 from result import Ok, Err
@@ -111,3 +111,23 @@ def acknowledge_cancellation_route(token: str, user_id: uuid.UUID) -> Tuple[Any,
         return jsonify({"message": "Cancellation acknowledged"}), 200
     else:
         return jsonify({"error": result.unwrap_err()}), 400
+
+@bp.delete("parking-spaces/<parking_space_id>")
+@require_admin
+def admin_delete_parking_space_route(token: str, user_id: uuid.UUID, parking_space_id: str) -> Tuple[Any, int]:
+    """
+    Admin route to delete a paid parking space and handle associated reservations
+    """
+    data = request.get_json()
+    reason = data.get("reason")
+
+    if not parking_space_id or not reason:
+        return {"error": "Parking space ID and reason are required"}, 400
+
+    match admin_delete_paid_parking_space(uuid.UUID(parking_space_id), reason):
+        case Ok(_):
+            return {}, 200
+        case Err("spot not found"):
+            return {"err": "Parking space not found"}, 404
+        case Err(e):
+            return {"err": str(e)}, 400
