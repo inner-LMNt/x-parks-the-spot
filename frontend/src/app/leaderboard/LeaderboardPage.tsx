@@ -5,9 +5,10 @@ import { CarIcon, MapPinIcon } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { useAppSelector } from "@/store/hooks"
 
 // Mock data
-const users = [
+const mockUsers = [
     { id: 1, name: "Alice Johnson", points: 1250, state: "California", city: "Los Angeles" },
     { id: 2, name: "Bob Smith", points: 980, state: "New York", city: "New York City" },
     { id: 3, name: "Charlie Brown", points: 1100, state: "California", city: "San Francisco" },
@@ -18,6 +19,14 @@ const users = [
     { id: 8, name: "Henry Davis", points: 1150, state: "Texas", city: "Austin" },
     { id: 9, name: "Ivy Chen", points: 890, state: "California", city: "San Diego" },
     { id: 10, name: "Jack Anderson", points: 1200, state: "Florida", city: "Orlando" },
+    { id: 11, name: "Katie White", points: 940, state: "Illinois", city: "Chicago" },
+    { id: 12, name: "Liam Harris", points: 1000, state: "New York", city: "New York City" },
+    { id: 13, name: "Mia Thompson", points: 970, state: "California", city: "Los Angeles" },
+    { id: 14, name: "Noah Martinez", points: 1020, state: "Texas", city: "Houston" },
+    { id: 15, name: "Olivia Brown", points: 860, state: "Florida", city: "Miami" },
+    { id: 16, name: "Peter Wilson", points: 1080, state: "Illinois", city: "Chicago" },
+    { id: 17, name: "Quinn Lee", points: 930, state: "New York", city: "Buffalo" },
+    { id: 18, name: "Ryan Taylor", points: 1100, state: "Texas", city: "Austin" },
 ]
 
 const states = ["All States", "California", "New York", "Texas", "Florida", "Illinois"]
@@ -33,6 +42,8 @@ const cities = {
 export default function LeaderboardComponent() {
     const [selectedState, setSelectedState] = useState("All States")
     const [selectedCity, setSelectedCity] = useState("All Cities")
+    const users = useAppSelector(state => state.search.leaderboard)
+    console.log(users)
 
     const filteredUsers = users.filter(user =>
         (selectedState === "All States" || user.state === selectedState) &&

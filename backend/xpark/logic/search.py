@@ -1,10 +1,7 @@
 from typing import Any, Optional
-
 from psycopg.rows import dict_row
-
 from xpark.utils.db import DB
-
-
+from result import Ok, Err
 from datetime import datetime, timezone
 
 def search_query(
@@ -105,3 +102,21 @@ def search_query(
                         parking_space['avg_cleanliness_rating'] = float(parking_space['avg_cleanliness_rating']) if parking_space['avg_cleanliness_rating'] != 0 else None
 
             return parking_spaces
+        
+
+def search_leaderboard() -> list[dict[str, Any]]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT
+                    users.name,
+                    users.points->>'total' as points,
+                    users.state_city
+                FROM users
+                ORDER BY points DESC
+                LIMIT 10
+                """
+            )
+            leaderboard = cur.fetchall()
+            return Ok(leaderboard)

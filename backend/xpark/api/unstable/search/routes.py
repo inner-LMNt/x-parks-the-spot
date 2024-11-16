@@ -1,8 +1,14 @@
 from . import bp
-from xpark.logic.search import search_query
+from xpark.logic.search import (
+    search_query,
+    search_leaderboard,
+)
 from flask import request
 from typing import Tuple, Any
 from datetime import datetime
+from result import Ok, Err
+import uuid
+
 
 
 @bp.post("")
@@ -34,3 +40,12 @@ def search() -> Tuple[Any, int]:
         ),
         200,
     )
+
+
+@bp.get("leaderboard")
+def get_leaderboard() -> Tuple[Any, int]:
+    match search_leaderboard():
+        case Ok(leaderboard):
+            return {"leaderboard", leaderboard}, 200
+        case Err(e):
+            return {"err": e}, 401

@@ -1,17 +1,19 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "../../api/axiosInstance";
-import { ParkingSpace, SearchRequest, SearchResponse } from "@/types/type";
+import { ParkingSpace, SearchRequest, SearchResponse, User } from "@/types/type";
 
 interface SearchState {
   loading: boolean;
   error: string | null;
   spots: ParkingSpace[];
+  leaderboard: User[];
 }
 
 const initialState: SearchState = {
   loading: false,
   error: null,
   spots: [],
+  leaderboard: [],
 };
 
 export const searchSpots = createAsyncThunk<
@@ -24,6 +26,19 @@ export const searchSpots = createAsyncThunk<
     return response.data;
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.message || "Search failed");
+  }
+});
+
+export const searchLeaderboard = createAsyncThunk<
+  User[],
+  void,
+  { rejectValue: string }
+>("search/leaderboard", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get<User[]>("/leaderboard");
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.message || "Leaderboard fetch failed");
   }
 });
 
@@ -46,6 +61,18 @@ const searchSlice = createSlice({
         state.spots = action.payload;
       })
       .addCase(searchSpots.rejected, (state: SearchState, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(searchLeaderboard.pending, (state: SearchState) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(searchLeaderboard.fulfilled, (state: SearchState, action: any) => {
+        state.loading = false;
+        state.leaderboard = action.payload;
+      })
+      .addCase(searchLeaderboard.rejected, (state: SearchState, action: any) => {
         state.loading = false;
         state.error = action.payload as string;
       })
