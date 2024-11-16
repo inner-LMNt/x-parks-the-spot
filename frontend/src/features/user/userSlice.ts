@@ -395,7 +395,7 @@ const userSlice = createSlice<UserState, {}, "user">({
         state.loading = false;
         state.userState = action.payload?.state || null;
         state.userCity = action.payload?.city || null;
-      });
+      })
 
       .addMatcher(
         isAnyOf(get_notification_time.fulfilled),
