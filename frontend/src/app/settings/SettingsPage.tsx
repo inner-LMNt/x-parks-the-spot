@@ -269,6 +269,7 @@ export default function SettingsPage() {
                                 className="mt-1 block w-full text-gray-800"
                             />
                             <p className="text-gray-600 text-sm mt-1">
+                                Case insensitive. <br />
                                 Type "none" if you don't want to specify a city.
                             </p>
                             {locationErrors.city && (
