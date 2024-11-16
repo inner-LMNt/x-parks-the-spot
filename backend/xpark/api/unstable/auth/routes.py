@@ -13,6 +13,7 @@ from xpark.logic.user import (
     set_user_location_request,
     get_user_location_request,
     handle_get_points,  # Testing purposes
+    handle_buy_badge,
 )
 
 
@@ -166,6 +167,17 @@ def get_points(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return {"err": e}, 403
 
 
+@bp.post("buy-badge")
+@require_logged_in_user
+def use_points(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    assert request.json
+    price = request.json["price"]
+    badge_id = request.json["badgeId"]
+    match handle_buy_badge(user_id, badge_id, price):
+        case Ok(points):
+            return {"message": "Badge bought successfully", "points": points}, 200
+        case Err(e):
+            return {"err": e}, 402
 
 # @bp.get("id")
 # @require_logged_in_user

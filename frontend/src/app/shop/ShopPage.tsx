@@ -1,11 +1,13 @@
 "use client"
 
 import { useState } from "react"
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { get_points, buy_badge } from "@/features/user/userSlice";
 import { ShoppingCart, Award, Ticket } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { toast, useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock data for shop items
 const shopItems = [
@@ -18,15 +20,16 @@ const shopItems = [
 ]
 
 export default function ShopPage() {
-  const [userPoints, setUserPoints] = useState(5000) // Mock user points
+  const dispatch = useAppDispatch();
+  const userPoints = useAppSelector((state) => state.user.current_points);
   const { toast } = useToast()
 
   const handlePurchase = (item: typeof shopItems[0]) => {
     if (userPoints >= item.points) {
-      setUserPoints(prevPoints => prevPoints - item.points)
       toast({
         title: "Purchase Successful!",
         description: `You've purchased ${item.name} for ${item.points} points.`,
+        variant: "success",
       })
     } else {
       toast({
@@ -35,6 +38,29 @@ export default function ShopPage() {
         variant: "destructive",
       })
     }
+  }
+
+  const handlePurchaseBadge = (item: typeof shopItems[0]) => {
+    dispatch(buy_badge({ badgeId: item.id, price: item.points }))
+      .then((resultAction: any) => {
+        if (buy_badge.fulfilled.match(resultAction)) {
+          dispatch(get_points())
+          toast({
+            title: "Purchase Successful!",
+            description: `You've purchased ${item.name} for ${item.points} points.`,
+            variant: "success",
+          })
+        } else if (buy_badge.rejected.match(resultAction)) {
+          toast({
+            title: "Purchase Failed",
+            description: resultAction.payload ? resultAction.payload : "An unknown error occurred",
+            variant: "destructive",
+          });
+        }
+      })
+      .catch((error: any) => {
+        console.error("Failed to purchase badge", error)
+      })
   }
 
   return (
@@ -71,7 +97,9 @@ export default function ShopPage() {
               </p>
             </CardContent>
             <CardFooter className="flex justify-between items-center">
-              <Button onClick={() => handlePurchase(item)}>Purchase</Button>
+              <Button onClick={() => (item.id >= 1 && item.id <= 3 ? handlePurchaseBadge(item) : handlePurchase(item))}>
+                Purchase
+              </Button>
             </CardFooter>
           </Card>
         ))}

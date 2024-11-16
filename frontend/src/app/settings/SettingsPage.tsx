@@ -44,7 +44,7 @@ interface LocationFormData {
 }
 
 export default function SettingsPage() {
-    const dispatch = useAppDispatch(); // Use the typed dispatch
+    const dispatch = useAppDispatch();
     const router = useRouter();
     const [accountDeleted, setAccountDeleted] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');

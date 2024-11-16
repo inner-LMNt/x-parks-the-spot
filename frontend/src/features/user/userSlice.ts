@@ -262,13 +262,25 @@ export const get_points = createAsyncThunk<
 >("user/get_points", async (_, { rejectWithValue }) => {
   try {
     const response = await axios.get("auth/points");
-    console.log('data', response.data);
+    console.log("data", response.data);
     return response.data.points;
   } catch (error: any) {
     return rejectWithValue("Failed to get points");
   }
 });
 
+export const buy_badge = createAsyncThunk<
+  { current_points: number } | null,
+  { badgeId: number; price: number },
+  { rejectValue: string }
+>("user/buy_badge", async ({ badgeId, price }, { rejectWithValue }) => {
+  try {
+    const response = await axios.post("auth/buy-badge", { badgeId, price });
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.err || "Failed to buy badge");
+  }
+});
 
 // @ts-ignore
 const userSlice = createSlice<UserState, {}, "user">({
@@ -287,6 +299,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof reset_password.pending
           | typeof update_notification_time.pending
           | typeof get_points.pending
+          | typeof buy_badge.pending
         > => action.type.endsWith("/pending"),
         (state) => {
           state.loading = true;
@@ -305,18 +318,11 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof reset_password.rejected
           // | typeof update_notification_time.rejected
           | typeof get_points.rejected
+          | typeof buy_badge.rejected
         > => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false;
-
-          // Note: because the type of the action could be different, I need to simply
-          // parse it as a json string and back to json to get the field out
-
-          const actionmessage = JSON.parse(
-            JSON.stringify(action, null, 2)
-          ).payload;
-          state.error = actionmessage || "An error occurred";
-          state.loading = false;
+          state.error = action.payload || "An error occurred";
         }
       )
 
@@ -397,24 +403,23 @@ const userSlice = createSlice<UserState, {}, "user">({
         state.userCity = action.payload?.city || null;
       })
 
-      .addMatcher(
-        isAnyOf(get_notification_time.fulfilled),
-        (state, action) => {
-          state.loading = false;
-          state.notificationTime = action.payload;
-        }
-      )
+      .addMatcher(isAnyOf(get_notification_time.fulfilled), (state, action) => {
+        state.loading = false;
+        state.notificationTime = action.payload;
+      })
 
-      .addMatcher(
-        isAnyOf(get_points.fulfilled),
-        (state, action) => {
-          state.loading = false;
-          //@ts-ignore
-          state.total_points = action.payload?.total;
-          //@ts-ignore
-          state.current_points = action.payload?.current;
-        }
-      )
+      .addMatcher(isAnyOf(get_points.fulfilled), (state, action) => {
+        state.loading = false;
+        //@ts-ignore
+        state.total_points = action.payload?.total;
+        //@ts-ignore
+        state.current_points = action.payload?.current;
+      })
+
+      .addMatcher(isAnyOf(buy_badge.fulfilled), (state, action) => {
+        state.loading = false;
+        state.current_points = action.payload?.current_points ?? null;
+      });
   },
 });
 

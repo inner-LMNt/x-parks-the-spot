@@ -387,12 +387,9 @@ def validate_city_state(state: str, city: str) -> bool:
     
 def set_user_location_request(user_id: uuid.UUID, state: str, city: str) -> Result[None, str]:
     city = city.title()
-    print("state", state, "city", city)
     if city != "None":
         if not validate_city_state(state, city):
             return Err("Invalid city-state combination")
-
-    print("state", state, "city", city)
         
     query = """
             UPDATE users
@@ -437,4 +434,43 @@ def handle_get_points(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
             if not result:
                 return Err("User not found")
             return Ok(result)
-        
+
+
+def handle_buy_badge(user_id: uuid.UUID, badge_id: int, price: int) -> Result[None, str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            # Check sufficient points
+            cur.execute(
+                "SELECT points FROM users WHERE id = %s FOR UPDATE",
+                (user_id,),
+            )
+            result = cur.fetchone()
+            if not result:
+                return Err("User not found")
+            points = result[0]
+            if points["current"] < price:
+                return Err("Insufficient points")
+            
+            # Check if badge already exists
+            cur.execute(
+                "SELECT badges FROM users WHERE id = %s",
+                (user_id,),
+            )
+            result = cur.fetchone()
+            if not result:
+                return Err("User not found")
+            badges = result[0]
+            if str(badge_id) in badges:
+                return Err("Badge already purchased")
+            
+            # Update points and badges
+            cur.execute(
+                "UPDATE users SET points = jsonb_set(points, '{current}', ((points->>'current')::integer - %s)::text::jsonb) WHERE id = %s",
+                (price, user_id),
+            )
+            cur.execute(
+                "UPDATE users SET badges = array_append(badges, %s::text) WHERE id = %s",
+                (badge_id, user_id),
+            )
+
+            return Ok(None)
