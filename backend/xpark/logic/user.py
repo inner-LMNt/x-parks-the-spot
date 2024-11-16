@@ -472,6 +472,10 @@ def handle_buy_badge(user_id: uuid.UUID, badge_id: int, price: int) -> Result[No
                 "UPDATE users SET badges = array_append(badges, %s::text) WHERE id = %s",
                 (badge_id, user_id),
             )
+            cur.execute(
+                "INSERT INTO points_transaction (user_id, transaction_type, points_amount, description, balance_after_transaction) VALUES (%s, 'spend', %s, %s, %s)",
+                (user_id, price, f"Badge purchase: {badge_id}", points["current"] - price),
+            )
 
             return Ok(None)
         
