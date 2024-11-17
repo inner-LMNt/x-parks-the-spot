@@ -12,7 +12,7 @@
     "test:watch": "jest --watch"
   },
   "prettier": {
-    "semi": false,
+    "semi": false
   },
   "dependencies": {
     "@headlessui/react": "^2.1.9",
