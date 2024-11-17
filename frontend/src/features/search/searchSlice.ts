@@ -54,7 +54,7 @@ const searchSlice = createSlice({
           action.type === "search/resetSpots",
         (state: SearchState) => {
           console.log("Resetting spots");
-        }
+        },
       );
   },
 });
