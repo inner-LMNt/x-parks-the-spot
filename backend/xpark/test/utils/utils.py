@@ -387,7 +387,6 @@ def create_test_image(filename: str = "test.jpg", content_type: str = "image/jpe
         content_type=content_type
     )
 
-
 def setup_analytics_scenario(
         client: FlaskClient,
         num_spots: int = 3,
