@@ -10,60 +10,6 @@ import { LeaderboardUser } from "@/types/type";
 import { searchLeaderboard } from "@/features/search/searchSlice";
 import { get_user_name, get_points } from "@/features/user/userSlice";
 
-const states = [
-    "All States",
-    "Alabama",
-    "Alaska",
-    "Arizona",
-    "Arkansas",
-    "California",
-    "Colorado",
-    "Connecticut",
-    "Delaware",
-    "Florida",
-    "Georgia",
-    "Hawaii",
-    "Idaho",
-    "Illinois",
-    "Indiana",
-    "Iowa",
-    "Kansas",
-    "Kentucky",
-    "Louisiana",
-    "Maine",
-    "Maryland",
-    "Massachusetts",
-    "Michigan",
-    "Minnesota",
-    "Mississippi",
-    "Missouri",
-    "Montana",
-    "Nebraska",
-    "Nevada",
-    "New Hampshire",
-    "New Jersey",
-    "New Mexico",
-    "New York",
-    "North Carolina",
-    "North Dakota",
-    "Ohio",
-    "Oklahoma",
-    "Oregon",
-    "Pennsylvania",
-    "Rhode Island",
-    "South Carolina",
-    "South Dakota",
-    "Tennessee",
-    "Texas",
-    "Utah",
-    "Vermont",
-    "Virginia",
-    "Washington",
-    "West Virginia",
-    "Wisconsin",
-    "Wyoming",
-]
-
 const stateDictionary: { [key: string]: string } = {
     "AL": "Alabama",
     "AK": "Alaska",
@@ -126,7 +72,7 @@ export default function LeaderboardComponent() {
     const dispatch = useAppDispatch();
     const [selectedState, setSelectedState] = useState("All States")
     const [currentPage, setCurrentPage] = useState(1);
-    const usersPerPage = 5;
+    const [usersPerPage, setUsersPerPage] = useState(5);
     const users = useAppSelector(state => state.search.leaderboard)
     const userName = useAppSelector(state => state.user.name)
     const userPoints = useAppSelector(state => state.user.total_points)
@@ -150,6 +96,11 @@ export default function LeaderboardComponent() {
 
     const handlePageChange = (newPage: number) => {
         setCurrentPage(newPage);
+    }
+
+    const handleUsersPerPageChange = (value: string) => {
+        setUsersPerPage(Number(value));
+        setCurrentPage(1); // Reset to first page when users per page changes
     }
 
     const indexOfLastUser = currentPage * usersPerPage;
@@ -177,7 +128,7 @@ export default function LeaderboardComponent() {
                                 <SelectValue placeholder="Select State" />
                             </SelectTrigger>
                             <SelectContent>
-                                {states.map(state => (
+                                {["All States", ...Object.keys(reversedStateDictionary)].map(state => (
                                     <SelectItem key={state} value={state}>{state}</SelectItem>
                                 ))}
                             </SelectContent>
@@ -234,8 +185,20 @@ export default function LeaderboardComponent() {
                         >
                             Previous
                         </button>
-                        <div className="flex-grow text-center text-black">
-                            {totalPages === 0 ? 0 : currentPage}/{totalPages}
+                        <div className="flex items-center space-x-2">
+                            <div className="text-black">
+                                {totalPages === 0 ? 0 : currentPage}/{totalPages}
+                            </div>
+                            <Select value={String(usersPerPage)} onValueChange={handleUsersPerPageChange}>
+                                <SelectTrigger className="w-20">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {[5, 10, 25, 50].map(number => (
+                                        <SelectItem key={number} value={String(number)}>{number}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <button
                             onClick={() => handlePageChange(currentPage + 1)}
