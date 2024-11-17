@@ -1,68 +1,178 @@
 "use client"
 
-import { useState } from "react"
-import { CarIcon, MapPinIcon } from "lucide-react"
+import { useEffect, useState } from "react"
+import { MapPinIcon, RefreshCwIcon } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { useAppSelector } from "@/store/hooks"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { LeaderboardUser } from "@/types/type";
+import { searchLeaderboard } from "@/features/search/searchSlice";
+import { get_user_name, get_points } from "@/features/user/userSlice";
 
-// Mock data
-const mockUsers = [
-    { id: 1, name: "Alice Johnson", points: 1250, state: "California", city: "Los Angeles" },
-    { id: 2, name: "Bob Smith", points: 980, state: "New York", city: "New York City" },
-    { id: 3, name: "Charlie Brown", points: 1100, state: "California", city: "San Francisco" },
-    { id: 4, name: "David Lee", points: 850, state: "Texas", city: "Houston" },
-    { id: 5, name: "Eva Martinez", points: 1300, state: "Florida", city: "Miami" },
-    { id: 6, name: "Frank Wilson", points: 920, state: "Illinois", city: "Chicago" },
-    { id: 7, name: "Grace Taylor", points: 1050, state: "New York", city: "Buffalo" },
-    { id: 8, name: "Henry Davis", points: 1150, state: "Texas", city: "Austin" },
-    { id: 9, name: "Ivy Chen", points: 890, state: "California", city: "San Diego" },
-    { id: 10, name: "Jack Anderson", points: 1200, state: "Florida", city: "Orlando" },
-    { id: 11, name: "Katie White", points: 940, state: "Illinois", city: "Chicago" },
-    { id: 12, name: "Liam Harris", points: 1000, state: "New York", city: "New York City" },
-    { id: 13, name: "Mia Thompson", points: 970, state: "California", city: "Los Angeles" },
-    { id: 14, name: "Noah Martinez", points: 1020, state: "Texas", city: "Houston" },
-    { id: 15, name: "Olivia Brown", points: 860, state: "Florida", city: "Miami" },
-    { id: 16, name: "Peter Wilson", points: 1080, state: "Illinois", city: "Chicago" },
-    { id: 17, name: "Quinn Lee", points: 930, state: "New York", city: "Buffalo" },
-    { id: 18, name: "Ryan Taylor", points: 1100, state: "Texas", city: "Austin" },
+const states = [
+    "All States",
+    "Alabama",
+    "Alaska",
+    "Arizona",
+    "Arkansas",
+    "California",
+    "Colorado",
+    "Connecticut",
+    "Delaware",
+    "Florida",
+    "Georgia",
+    "Hawaii",
+    "Idaho",
+    "Illinois",
+    "Indiana",
+    "Iowa",
+    "Kansas",
+    "Kentucky",
+    "Louisiana",
+    "Maine",
+    "Maryland",
+    "Massachusetts",
+    "Michigan",
+    "Minnesota",
+    "Mississippi",
+    "Missouri",
+    "Montana",
+    "Nebraska",
+    "Nevada",
+    "New Hampshire",
+    "New Jersey",
+    "New Mexico",
+    "New York",
+    "North Carolina",
+    "North Dakota",
+    "Ohio",
+    "Oklahoma",
+    "Oregon",
+    "Pennsylvania",
+    "Rhode Island",
+    "South Carolina",
+    "South Dakota",
+    "Tennessee",
+    "Texas",
+    "Utah",
+    "Vermont",
+    "Virginia",
+    "Washington",
+    "West Virginia",
+    "Wisconsin",
+    "Wyoming",
 ]
 
-const states = ["All States", "California", "New York", "Texas", "Florida", "Illinois"]
-const cities = {
-    "All States": ["All Cities"],
-    "California": ["All Cities", "Los Angeles", "San Francisco", "San Diego"],
-    "New York": ["All Cities", "New York City", "Buffalo"],
-    "Texas": ["All Cities", "Houston", "Austin"],
-    "Florida": ["All Cities", "Miami", "Orlando"],
-    "Illinois": ["All Cities", "Chicago"],
+const stateDictionary: { [key: string]: string } = {
+    "AL": "Alabama",
+    "AK": "Alaska",
+    "AZ": "Arizona",
+    "AR": "Arkansas",
+    "CA": "California",
+    "CO": "Colorado",
+    "CT": "Connecticut",
+    "DE": "Delaware",
+    "FL": "Florida",
+    "GA": "Georgia",
+    "HI": "Hawaii",
+    "ID": "Idaho",
+    "IL": "Illinois",
+    "IN": "Indiana",
+    "IA": "Iowa",
+    "KS": "Kansas",
+    "KY": "Kentucky",
+    "LA": "Louisiana",
+    "ME": "Maine",
+    "MD": "Maryland",
+    "MA": "Massachusetts",
+    "MI": "Michigan",
+    "MN": "Minnesota",
+    "MS": "Mississippi",
+    "MO": "Missouri",
+    "MT": "Montana",
+    "NE": "Nebraska",
+    "NV": "Nevada",
+    "NH": "New Hampshire",
+    "NJ": "New Jersey",
+    "NM": "New Mexico",
+    "NY": "New York",
+    "NC": "North Carolina",
+    "ND": "North Dakota",
+    "OH": "Ohio",
+    "OK": "Oklahoma",
+    "OR": "Oregon",
+    "PA": "Pennsylvania",
+    "RI": "Rhode Island",
+    "SC": "South Carolina",
+    "SD": "South Dakota",
+    "TN": "Tennessee",
+    "TX": "Texas",
+    "UT": "Utah",
+    "VT": "Vermont",
+    "VA": "Virginia",
+    "WA": "Washington",
+    "WV": "West Virginia",
+    "WI": "Wisconsin",
+    "WY": "Wyoming",
+    "None": "None"
 }
 
-export default function LeaderboardComponent() {
-    const [selectedState, setSelectedState] = useState("All States")
-    const [selectedCity, setSelectedCity] = useState("All Cities")
-    const users = useAppSelector(state => state.search.leaderboard)
-    console.log(users)
+const reversedStateDictionary: { [key: string]: string } = Object.fromEntries(
+    Object.entries(stateDictionary).map(([abbr, name]) => [name, abbr])
+);
 
-    const filteredUsers = users.filter(user =>
-        (selectedState === "All States" || user.state === selectedState) &&
-        (selectedCity === "All Cities" || user.city === selectedCity)
-    ).sort((a, b) => b.points - a.points)
+export default function LeaderboardComponent() {
+    const dispatch = useAppDispatch();
+    const [selectedState, setSelectedState] = useState("All States")
+    const [currentPage, setCurrentPage] = useState(1);
+    const usersPerPage = 5;
+    const users = useAppSelector(state => state.search.leaderboard)
+    const userName = useAppSelector(state => state.user.name)
+    const userPoints = useAppSelector(state => state.user.total_points)
+    const userState = useAppSelector(state => state.user.userState)
+    const userCity = useAppSelector(state => state.user.userCity)
+
+    const filteredUsers = Array.isArray(users) ? users.filter((user: LeaderboardUser) =>
+        user.state !== "None" &&
+        (selectedState === "All States" || stateDictionary[user.state] === selectedState)
+    ).sort((a: LeaderboardUser, b: LeaderboardUser) => b.points - a.points) : [];
+
+    useEffect(() => {
+        dispatch(searchLeaderboard());
+        dispatch(get_user_name());
+        dispatch(get_points());
+    }, [dispatch])
+
+    const handleRefresh = () => {
+        dispatch(searchLeaderboard());
+    }
+
+    const handlePageChange = (newPage: number) => {
+        setCurrentPage(newPage);
+    }
+
+    const indexOfLastUser = currentPage * usersPerPage;
+    const indexOfFirstUser = indexOfLastUser - usersPerPage;
+    const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+
+    const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-500 to-purple-600 p-4">
             <Card className="w-full max-w-4xl mx-auto px-2 sm:px-4 overflow-y-auto max-h-[80vh]">
-                <CardHeader>
-                    <CardTitle className="text-2xl font-bold text-center">Parking Spot Leaderboard</CardTitle>
-                    <CardDescription className="text-center">Top contributors in finding free parking spots</CardDescription>
+                <CardHeader className="flex justify-between items-center">
+                    <div>
+                        <CardTitle className="text-2xl font-bold text-center">Parking Spot Leaderboard</CardTitle>
+                        <CardDescription className="text-center">Top contributors in finding free parking spots</CardDescription>
+                    </div>
+                    <button onClick={handleRefresh} className="text-blue-500 hover:text-blue-700">
+                        <RefreshCwIcon className="h-6 w-6" />
+                    </button>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col sm:flex-row justify-center gap-4 mb-6">
-                        <Select value={selectedState} onValueChange={(value) => {
-                            setSelectedState(value);
-                            setSelectedCity("All Cities");
-                        }}>
+                        <Select value={selectedState} onValueChange={setSelectedState}>
                             <SelectTrigger className="w-full sm:w-[180px]">
                                 <SelectValue placeholder="Select State" />
                             </SelectTrigger>
@@ -72,55 +182,68 @@ export default function LeaderboardComponent() {
                                 ))}
                             </SelectContent>
                         </Select>
-                        <Select
-                            value={selectedCity}
-                            onValueChange={setSelectedCity}
-                            disabled={selectedState === "All States"}
-                        >
-                            <SelectTrigger className="w-full sm:w-[180px]">
-                                <SelectValue placeholder="Select City" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {cities[selectedState as keyof typeof cities].map(city => (
-                                    <SelectItem key={city} value={city}>{city}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
                     </div>
                     <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[50px]">Rank</TableHead>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead className="text-right">Points</TableHead>
-                                    <TableHead className="hidden sm:table-cell">Location</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredUsers.map((user, index) => (
-                                    <TableRow key={user.id}>
-                                        <TableCell className="font-medium">{index + 1}</TableCell>
-                                        <TableCell className="font-medium sm:font-normal">{user.name}</TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex items-center justify-end">
-                                                <CarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                                                {user.points}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="hidden sm:table-cell">
-                                            <div className="flex items-center">
-                                                <MapPinIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                                                {user.city}, {user.state}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="sm:hidden text-xs text-muted-foreground">
-                                            {user.city}, {user.state}
-                                        </TableCell>
+                        {currentUsers.length > 0 ? (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-[50px]">Rank</TableHead>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead className="text-right">Points</TableHead>
+                                        <TableHead className="hidden sm:table-cell">Location</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {currentUsers.map((user: LeaderboardUser, index: number) => {
+                                        const isCurrentUser = user.name === userName && Number(user.points) === userPoints && user.state === userState && user.city === userCity;
+                                        const userKey = `${user.name}-${user.points}-${user.state}-${user.city}`;
+
+                                        return (
+                                            <TableRow key={userKey} className={isCurrentUser ? "bg-cyan-100" : ""}>
+                                                <TableCell className="font-medium">{indexOfFirstUser + index + 1}</TableCell>
+                                                <TableCell className="font-medium sm:font-normal">{user.name}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex items-center justify-end">
+                                                        {user.points}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="hidden sm:table-cell">
+                                                    <div className="flex items-center">
+                                                        <MapPinIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                                                        {user.city !== "None" ? `${user.city}, ` : ""}{stateDictionary[user.state]}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="sm:hidden text-xs text-muted-foreground">
+                                                    {user.city !== "None" ? `${user.city}, ` : ""}{stateDictionary[user.state]}
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <div className="text-center text-black">No users found for this state.</div>
+                        )}
+                    </div>
+                    <div className="flex justify-center items-center mt-4 space-x-4">
+                        <button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1 || totalPages === 0}
+                            className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+                        >
+                            Previous
+                        </button>
+                        <div className="flex-grow text-center text-black">
+                            {totalPages === 0 ? 0 : currentPage}/{totalPages}
+                        </div>
+                        <button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages || totalPages === 0}
+                            className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+                        >
+                            Next
+                        </button>
                     </div>
                 </CardContent>
             </Card>

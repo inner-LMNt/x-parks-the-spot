@@ -8,6 +8,7 @@ from xpark.logic.user import (
     handle_confirm_delete,
     handle_password_reset_request,
     handle_password_reset_confirmation,
+    handle_get_name,
     handle_set_notification_time,
     handle_get_notification_time,
     set_user_location_request,
@@ -111,6 +112,15 @@ def reset_password(token: str) -> Tuple[Any, int]:
         case Ok(_):
             return {"message": "Password reset successfully"}, 200
         
+
+@bp.get("user-name")
+@require_logged_in_user
+def get_user_name(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match handle_get_name(user_id):
+        case Ok(name):
+            return {"name": name}, 200
+        case Err(e):
+            return {"err": e}, 404
 
 
 @bp.post("notification-time")

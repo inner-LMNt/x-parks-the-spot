@@ -1,5 +1,6 @@
 // src/types/type.ts
 
+import { UUID } from 'crypto';
 import { components } from './generated';
 
 /**
@@ -27,6 +28,12 @@ export type CarInfo = components["schemas"]["CarInfo"];
 export type RenterProfile = components["schemas"]["RenterProfile"];
 export type OwnerProfile = components["schemas"]["OwnerProfile"];
 export type SpotFinderProfile = components["schemas"]["SpotFinderProfile"];
+export type LeaderboardUser = {
+  name: string;
+  points: number;
+  state: string;
+  city: string;
+}
 
 /**
  * **Parking Space Types**

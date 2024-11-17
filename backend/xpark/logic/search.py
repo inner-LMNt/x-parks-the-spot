@@ -112,10 +112,11 @@ def search_leaderboard() -> list[dict[str, Any]]:
                 SELECT
                     users.name,
                     users.points->>'total' as points,
-                    users.state_city
+                    users.state_city->>'city' as city,
+                    users.state_city->>'state' as state
                 FROM users
                 ORDER BY points DESC
-                LIMIT 10
+                LIMIT 50
                 """
             )
             leaderboard = cur.fetchall()

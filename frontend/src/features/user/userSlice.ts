@@ -200,6 +200,20 @@ export const reset_request = createAsyncThunk<
   }
 });
 
+export const get_user_name = createAsyncThunk<
+  string | null,
+  void,
+  { rejectValue: string }
+>("user/get_user_name", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("auth/user-name");
+    return response.data.name;
+  } catch (error: any) {
+    console.log("error", error);
+    return rejectWithValue(error.response?.data?.err || "Failed to get user name");
+  }
+});
+
 export const update_notification_time = createAsyncThunk<
   User,
   { notificationTime: string },
@@ -291,7 +305,6 @@ export const get_badge_list = createAsyncThunk<
 >("user/get_badge_list", async (_, { rejectWithValue }) => {
   try {
     const response = await axios.get("auth/badge-list");
-    console.log("data34", response.data.badges);
     return response.data.badges;
   } catch (error: any) {
     return rejectWithValue("Failed to get badge list");
@@ -313,6 +326,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof register_acc.pending
           | typeof logout.pending
           | typeof reset_password.pending
+          | typeof get_user_name.pending
           | typeof update_notification_time.pending
           | typeof get_points.pending
           | typeof buy_badge.pending
@@ -334,6 +348,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof logout.rejected
           | typeof reset_password.rejected
           // | typeof update_notification_time.rejected
+          | typeof get_user_name.rejected
           | typeof get_points.rejected
           | typeof buy_badge.rejected
           | typeof get_badge_list.rejected
@@ -394,6 +409,14 @@ const userSlice = createSlice<UserState, {}, "user">({
           state.access_token = null;
           state.isLoggedIn = false;
           state.name = null;
+        }
+      )
+
+      .addMatcher(
+        isAnyOf(get_user_name.fulfilled),
+        (state, action) => {
+          state.loading = false;
+          state.name = action.payload;
         }
       )
 

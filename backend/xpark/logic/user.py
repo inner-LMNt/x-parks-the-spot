@@ -341,6 +341,18 @@ def handle_password_reset_confirmation(
     return Ok(None)
 
 
+def handle_get_name(user_id: uuid.UUID) -> Result[str, str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT name FROM users WHERE id = %s", (user_id,))
+            user_data = cur.fetchone()
+
+            if not user_data:
+                return Err("User not found")
+
+            return Ok(user_data[0])
+
+
 def handle_set_notification_time(user_id: uuid.UUID, time: str) -> Result[None, str]:
     query = """
             UPDATE users

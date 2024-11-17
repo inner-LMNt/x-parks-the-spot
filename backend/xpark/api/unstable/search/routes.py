@@ -46,6 +46,6 @@ def search() -> Tuple[Any, int]:
 def get_leaderboard() -> Tuple[Any, int]:
     match search_leaderboard():
         case Ok(leaderboard):
-            return {"leaderboard", leaderboard}, 200
+            return {"leaderboard": leaderboard}, 200
         case Err(e):
-            return {"err": e}, 401
+            return {"err": e}, 404
