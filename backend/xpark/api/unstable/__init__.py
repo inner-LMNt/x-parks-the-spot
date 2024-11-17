@@ -1,7 +1,6 @@
 from flask import Blueprint
 from .auth import bp as auth_bp
 from .admin import bp as admin_bp
-from .analytics import bp as analytics_bp
 from .parking_spaces import bp as parking_space_bp
 from .search import bp as search_bp
 from .reservations import bp as reservations_bp
@@ -15,7 +14,6 @@ CORS(bp)
 RequireJSON(bp)
 
 bp.register_blueprint(auth_bp)
-bp.register_blueprint(analytics_bp)
 bp.register_blueprint(parking_space_bp)
 bp.register_blueprint(search_bp)
 bp.register_blueprint(reservations_bp)
