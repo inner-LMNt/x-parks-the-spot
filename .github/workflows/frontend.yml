@@ -47,7 +47,11 @@ jobs:
     - name: Build
       run: npm run build --if-present
     - name: Styling
-      run: prettier -c **/*
+      run: |
+        npm config set prefix '~/.local/'
+        mkdir -p ~/.local/bin
+        npm install -g prettier
+        ~/.local/bin/prettier -c **/*
       working-directory: frontend/src
     - name: OpenAPI Generation Check
       run: node node_modules/openapi-typescript/bin/cli.js ../docs/api/openapi.yaml --output ./src/types/generated.ts --export-type --root-types --check
