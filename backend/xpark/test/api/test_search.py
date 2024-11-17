@@ -38,7 +38,9 @@ def test_search_parking_spaces(client: FlaskClient) -> None:
         headers={"Authorization": f"Bearer {token}"},
         json=search_params,
     )
-    assert response.status_code == 200, f"Failed to search parking spaces: {response.json}"
+    assert (
+        response.status_code == 200
+    ), f"Failed to search parking spaces: {response.json}"
     assert response.json is not None
     search_results = response.json
 
@@ -46,18 +48,30 @@ def test_search_parking_spaces(client: FlaskClient) -> None:
 
     for parking_space in search_results:
         # Check that each returned space meets the 'UNPAID' criteria
-        assert not parking_space["is_paid"], f"Expected unpaid spaces, but found a paid space: {parking_space}"
+        assert not parking_space[
+            "is_paid"
+        ], f"Expected unpaid spaces, but found a paid space: {parking_space}"
         # Check the price range
-        assert search_params["min_price"] <= parking_space["pricing_info"]["base_price"] <= search_params["max_price"], \
-            f"Price out of range for space: {parking_space}"
+        assert (
+            search_params["min_price"]
+            <= parking_space["pricing_info"]["base_price"]
+            <= search_params["max_price"]
+        ), f"Price out of range for space: {parking_space}"
         # Check location data is structured correctly
-        assert "latitude" in parking_space["location"], "Missing latitude in location data"
-        assert "longitude" in parking_space["location"], "Missing longitude in location data"
-        assert "address" in parking_space["location"], "Missing address in location data"
+        assert (
+            "latitude" in parking_space["location"]
+        ), "Missing latitude in location data"
+        assert (
+            "longitude" in parking_space["location"]
+        ), "Missing longitude in location data"
+        assert (
+            "address" in parking_space["location"]
+        ), "Missing address in location data"
         # Verify is_taken status if specified
         if search_params["is_taken"] is not None:
-            assert parking_space["is_taken"] == search_params["is_taken"], \
-                f"Expected is_taken to be {search_params['is_taken']} but found {parking_space['is_taken']}"
+            assert (
+                parking_space["is_taken"] == search_params["is_taken"]
+            ), f"Expected is_taken to be {search_params['is_taken']} but found {parking_space['is_taken']}"
 
 
 def test_search_parking_spaces_with_elapsed_time(client: FlaskClient) -> None:
@@ -78,18 +92,22 @@ def test_search_parking_spaces_with_elapsed_time(client: FlaskClient) -> None:
         "/api/unstable/parking-spaces",
         headers={"Authorization": f"Bearer {token}"},
         data={
-            "data": json.dumps({
-                "location": {
-                    "latitude": 40.4297,
-                    "longitude": -86.9289,
-                    "address": "Elapsed Spot Address",
-                },
-                "is_paid": False,
-                "is_taken": True,  # Mark as taken for testing elapsed time
-            })
+            "data": json.dumps(
+                {
+                    "location": {
+                        "latitude": 40.4297,
+                        "longitude": -86.9289,
+                        "address": "Elapsed Spot Address",
+                    },
+                    "is_paid": False,
+                    "is_taken": True,  # Mark as taken for testing elapsed time
+                }
+            )
         },
     )
-    assert response.status_code == 201, f"Failed to create parking spot: {response.json}"
+    assert (
+        response.status_code == 201
+    ), f"Failed to create parking spot: {response.json}"
     assert response.json
     spot_id = response.json["id"]
 
@@ -105,17 +123,24 @@ def test_search_parking_spaces_with_elapsed_time(client: FlaskClient) -> None:
     # Retrieve the spot directly from the database to verify the update
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute("""SELECT id, is_taken, updated_at,
+            cur.execute(
+                """SELECT id, is_taken, updated_at,
                         json_build_object(
                             'address',   parking_spaces.address,
                             'latitude',  ST_Y(location::geometry),
                             'longitude', ST_X(location::geometry)
                         ) as location
-                        FROM parking_spaces WHERE id = %s""", (spot_id,))
+                        FROM parking_spaces WHERE id = %s""",
+                (spot_id,),
+            )
             db_spot = cur.fetchone()
             assert db_spot is not None, "Parking spot not found in database"
-            assert db_spot["is_taken"] is True, f"Expected is_taken=True, got {db_spot['is_taken']}"
-            assert db_spot["updated_at"] == past_time, f"Expected updated_at={past_time}, got {db_spot['updated_at']}"
+            assert (
+                db_spot["is_taken"] is True
+            ), f"Expected is_taken=True, got {db_spot['is_taken']}"
+            assert (
+                db_spot["updated_at"] == past_time
+            ), f"Expected updated_at={past_time}, got {db_spot['updated_at']}"
 
     # Perform a search that includes taken spots
     search_params = {
@@ -129,17 +154,28 @@ def test_search_parking_spaces_with_elapsed_time(client: FlaskClient) -> None:
         headers={"Authorization": f"Bearer {token}"},
         json=search_params,
     )
-    assert response.status_code == 200, f"Failed to search parking spaces: {response.json}"
+    assert (
+        response.status_code == 200
+    ), f"Failed to search parking spaces: {response.json}"
     assert response.json is not None
     search_results = response.json
 
     # Filter the results to ensure we find only the spot with is_taken = True
-    taken_spot = next((space for space in search_results if space["id"] == spot_id and space["is_taken"] is True), None)
+    taken_spot = next(
+        (
+            space
+            for space in search_results
+            if space["id"] == spot_id and space["is_taken"] is True
+        ),
+        None,
+    )
     assert taken_spot, "Test taken parking spot not found in search results"
 
     # Calculate expected elapsed time and compare with the `name` field for the taken spot
     expected_name = "Updated 2 hours ago"
-    assert taken_spot["name"] == expected_name, f"Expected '{expected_name}', but got '{taken_spot['name']}'"
+    assert (
+        taken_spot["name"] == expected_name
+    ), f"Expected '{expected_name}', but got '{taken_spot['name']}'"
 
     # Clean up by deleting the parking spot
     response = client.delete(

@@ -140,7 +140,7 @@ def update_car(
     model: str | None = None,
     license_plate: str | None = None,
     license_plate_state: str | None = None,
-    color: str | None = None
+    color: str | None = None,
 ) -> Result[Dict[Any, Any], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:

@@ -347,7 +347,7 @@ def handle_set_notification_time(user_id: uuid.UUID, time: str) -> Result[None, 
             SET user_preferences = COALESCE(user_preferences, '{}'::jsonb) || jsonb_build_object('notification_time', %s::text)
             WHERE id = %s
             """
-    
+
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(query, (time, str(user_id)))
@@ -370,10 +370,11 @@ def handle_get_notification_time(user_id: uuid.UUID) -> Result[str, str]:
 
             return Ok(result[0])
 
-          
+
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(base_dir, "../static/data/uscities.csv")
 CITIES_DATA = pd.read_csv(csv_path)
+
 
 def validate_city_state(state: str, city: str) -> bool:
     state = state.strip().upper()
@@ -383,9 +384,11 @@ def validate_city_state(state: str, city: str) -> bool:
         (CITIES_DATA["state_id"] == state) & (CITIES_DATA["city"].str.lower() == city)
     ]
     return not matching_rows.empty
-    
-    
-def set_user_location_request(user_id: uuid.UUID, state: str, city: str) -> Result[None, str]:
+
+
+def set_user_location_request(
+    user_id: uuid.UUID, state: str, city: str
+) -> Result[None, str]:
     city = city.title()
     print("state", state, "city", city)
     if city != "None":
@@ -393,13 +396,13 @@ def set_user_location_request(user_id: uuid.UUID, state: str, city: str) -> Resu
             return Err("Invalid city-state combination")
 
     print("state", state, "city", city)
-        
+
     query = """
             UPDATE users
             SET state_city = COALESCE(state_city, '{}'::jsonb) || jsonb_build_object('state', %s::text, 'city', %s::text)
             WHERE id = %s
             """
-    
+
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(query, (state, city, str(user_id)))
@@ -407,7 +410,7 @@ def set_user_location_request(user_id: uuid.UUID, state: str, city: str) -> Resu
                 return Err("User not found")
 
             return Ok(None)
-        
+
 
 def get_user_location_request(user_id: uuid.UUID) -> Result[Dict[str, str], str]:
     query = """
@@ -415,7 +418,7 @@ def get_user_location_request(user_id: uuid.UUID) -> Result[Dict[str, str], str]
             FROM users
             WHERE id = %s
             """
-    
+
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(query, (str(user_id),))
@@ -425,7 +428,7 @@ def get_user_location_request(user_id: uuid.UUID) -> Result[Dict[str, str], str]
 
             return Ok({"state": result[0], "city": result[1]})
 
-          
+
 def handle_get_points(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -437,4 +440,3 @@ def handle_get_points(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
             if not result:
                 return Err("User not found")
             return Ok(result)
-        
