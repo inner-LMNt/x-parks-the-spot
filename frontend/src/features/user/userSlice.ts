@@ -36,6 +36,7 @@ interface UserState {
   total_points: number | null;
   current_points: number | null;
   badges: number[];
+  transactions: any[];
 }
 
 const initialState: UserState = {
@@ -54,6 +55,7 @@ const initialState: UserState = {
   total_points: 0,
   current_points: 0,
   badges: [],
+  transactions: [],
 };
 
 /**
@@ -285,6 +287,19 @@ export const get_points = createAsyncThunk<
   }
 });
 
+export const get_transactions = createAsyncThunk<
+  any[],
+  void,
+  { rejectValue: string }
+>("user/get_transactions", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("auth/transaction-history");
+    return response.data.transactions;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.err || "Failed to get transactions");
+  }
+});
+
 export const buy_badge = createAsyncThunk<
   { current_points: number } | null,
   { badgeId: number; price: number },
@@ -329,6 +344,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof get_user_name.pending
           | typeof update_notification_time.pending
           | typeof get_points.pending
+          | typeof get_transactions.pending
           | typeof buy_badge.pending
           | typeof get_badge_list.pending
         > => action.type.endsWith("/pending"),
@@ -350,6 +366,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           // | typeof update_notification_time.rejected
           | typeof get_user_name.rejected
           | typeof get_points.rejected
+          | typeof get_transactions.rejected
           | typeof buy_badge.rejected
           | typeof get_badge_list.rejected
         > => action.type.endsWith("/rejected"),
@@ -455,6 +472,11 @@ const userSlice = createSlice<UserState, {}, "user">({
         state.total_points = action.payload?.total;
         //@ts-ignore
         state.current_points = action.payload?.current;
+      })
+
+      .addMatcher(isAnyOf(get_transactions.fulfilled), (state, action) => {
+        state.loading = false;
+        state.transactions = action.payload;
       })
 
       .addMatcher(isAnyOf(buy_badge.fulfilled), (state, action) => {

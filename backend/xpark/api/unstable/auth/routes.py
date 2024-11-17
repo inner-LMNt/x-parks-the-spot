@@ -14,6 +14,7 @@ from xpark.logic.user import (
     set_user_location_request,
     get_user_location_request,
     handle_get_points,  # Testing purposes
+    handle_get_transaction_history,
     handle_buy_badge,
     handle_get_badge_list,
 )
@@ -176,11 +177,21 @@ def get_points(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return {"points": points}, 200
         case Err(e):
             return {"err": e}, 403
+        
+
+@bp.get("transaction-history")
+@require_logged_in_user
+def get_transaction_history(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match handle_get_transaction_history(user_id):
+        case Ok(transactions):
+            return {"transactions": transactions}, 200
+        case Err(e):
+            return {"err": e}, 402  # placeholder to prevent 403 redirection
 
 
 @bp.post("buy-badge")
 @require_logged_in_user
-def use_points(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+def use_points_badge(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     assert request.json
     price = request.json["price"]
     badge_id = request.json["badgeId"]

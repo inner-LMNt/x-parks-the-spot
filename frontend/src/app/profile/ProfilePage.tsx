@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { get_user_location, get_points, get_badge_list } from '@/features/user/userSlice';
-import { Settings, ArrowUpCircle, ArrowDownCircle, LogOut, FileWarning, Car } from 'lucide-react'; // Imported FileWarning
+import { get_user_location, get_points, get_badge_list, buy_badge } from '@/features/user/userSlice';
+import { Settings, ArrowUpCircle, ArrowDownCircle, LogOut, FileWarning, Car } from 'lucide-react';
 import { logout } from '@/features/user/userSlice';
 import { Button } from "@/components/ui/button";
 import {
@@ -19,9 +19,8 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useToast } from '@/hooks/use-toast';
 
-// Profile stats component
 function ProfileStats({ label, value }: { label: string; value: number }) {
     return (
         <div>
@@ -31,12 +30,11 @@ function ProfileStats({ label, value }: { label: string; value: number }) {
     );
 }
 
-// Achievement card component supporting both Tailwind colors and hex codes
 function AchievementCard({ colorClass, label }: { colorClass: string; label: string }) {
     return (
         <div className="flex flex-col items-center">
             <div
-                className={`w-12 h-12 rounded-full mb-2 ${colorClass} drop-shadow-lg`} // Added drop shadow here
+                className={`w-12 h-12 rounded-full mb-2 ${colorClass} drop-shadow-lg`}
                 role="img"
                 aria-label={label}
             ></div>
@@ -45,7 +43,6 @@ function AchievementCard({ colorClass, label }: { colorClass: string; label: str
     );
 }
 
-// Comment card component
 function CommentCard({
     user,
     comment,
@@ -56,7 +53,7 @@ function CommentCard({
     sentiment: string;
 }) {
     return (
-        <div className="bg-gray-100 p-4 rounded-lg shadow-sm flex justify-between items-start drop-shadow-lg"> {/* Added drop shadow here */}
+        <div className="bg-gray-100 p-4 rounded-lg shadow-sm flex justify-between items-start drop-shadow-lg">
             <div>
                 <p className="text-sm font-bold text-gray-900">{user}</p>
                 <p className="text-sm text-gray-700">{comment}</p>
@@ -85,12 +82,9 @@ export default function ProfilePage() {
     const userBadges = useAppSelector((state) => state.user.badges) || [];
 
     const handleLogout = async () => {
-        // @ts-ignore
         await dispatch(logout());
         router.push('/login');
     };
-
-    console.log("Select ", useAppSelector((state: any) => state.user))
 
     const userProfile = {
         username: name,
@@ -99,7 +93,7 @@ export default function ProfilePage() {
         yearsOnApp: 2,
     };
 
-    const maxElo = 3000; // ????
+    const maxElo = 3000;
 
     const comments = [
         { user: 'User1', comment: 'Logged many spots!', sentiment: 'positive' },
@@ -119,23 +113,25 @@ export default function ProfilePage() {
     const [domLoaded, setDomLoaded] = useState(false);
     useEffect(() => {
         dispatch(get_user_location());
-        setDomLoaded(true);
         dispatch(get_points());
         dispatch(get_badge_list());
-        console.log(Array.isArray(userBadges))
+        setDomLoaded(true);
+    }, [dispatch]);
+
+    useEffect(() => {
+        dispatch(get_badge_list());
     }, []);
 
     const badgeDetails: { [key: string]: { colorClass: string; label: string } } = {
-        '1': { colorClass: "bg-blue-500", label: "Top Spot" },
-        '2': { colorClass: "bg-yellow-500", label: "Quick Finder" },
-        '3': { colorClass: "bg-red-500", label: "Top Rating" },
+        '1': { colorClass: "bg-yellow-600", label: "Bronze Badge" },
+        '2': { colorClass: "bg-gray-400", label: "Silver Badge" },
+        '3': { colorClass: "bg-yellow-300", label: "Gold Badge" },
     };
 
     return (
         domLoaded && (
             <div className="min-h-screen flex flex-col items-center justify-between bg-gray-50 p-4 md:p-8 text-gray-900">
                 <div className="relative w-full max-w-md md:max-w-lg lg:max-w-xl text-center white rounded-lg p-6 md:p-8">
-                    {/* Logout Button with AlertDialog */}
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="destructive" size="sm" className="absolute top-4 left-4">
@@ -157,15 +153,12 @@ export default function ProfilePage() {
                         </AlertDialogContent>
                     </AlertDialog>
 
-                    {/* Settings and Reports Icons */}
                     <div className="absolute top-4 right-4 flex">
-                        {/* Reports Icon */}
                         <Link href="/reports" passHref>
                             <Button variant="ghost" size="icon" className="p-2">
                                 <FileWarning className="w-6 h-6 text-gray-400 hover:text-gray-600" aria-label="Reports" />
                             </Button>
                         </Link>
-                        {/* Settings Icon */}
                         <Link href="/settings" passHref>
                             <Button variant="ghost" size="icon" className="p-2">
                                 <Settings className="w-6 h-6 text-gray-400 cursor-pointer hover:text-gray-600" aria-label="Settings" />
@@ -173,7 +166,6 @@ export default function ProfilePage() {
                         </Link>
                     </div>
 
-                    {/* Profile Section */}
                     <div className="flex flex-col items-center mb-4">
                         <div className="w-24 h-24 rounded-full bg-gray-300 mb-4 drop-shadow-lg" />
                         <h1 className="text-2xl md:text-3xl font-bold mb-1">{userProfile.username}</h1>
@@ -186,38 +178,36 @@ export default function ProfilePage() {
                         </div>
                     </div>
 
-                    {/* Location Section */}
                     <div className="text-left mb-6">
                         <h2 className="text-lg font-semibold mb-4">Location</h2>
                         <p className="text-sm text-gray-700">State: {userState}</p>
                         <p className="text-sm text-gray-700">City: {userCity}</p>
                     </div>
 
-                    {/* Elo Rating Bar */}
                     <div className="w-full bg-gray-300 rounded-full h-4 mb-6 drop-shadow-lg">
                         <div className="bg-green-500 h-4 rounded-full"
                             style={{ width: `${(eloRating / maxElo) * 100}%` }}></div>
                     </div>
 
-                    {/* Achievements Section */}
                     <div className="text-left mb-6">
                         <h2 className="text-lg font-semibold mb-4"> Badges </h2>
                         <div className="grid grid-cols-3 gap-4">
                             {Array.isArray(userBadges) && userBadges.length > 0 ? (
-                                userBadges.map((badge: number) => (
-                                    <AchievementCard
-                                        key={badge}
-                                        colorClass={badgeDetails[badge].colorClass}
-                                        label={badgeDetails[badge].label}
-                                    />
-                                ))
+                                [...userBadges]
+                                    .sort((a: number, b: number) => a - b)
+                                    .map((badge: number) => (
+                                        <AchievementCard
+                                            key={badge}
+                                            colorClass={badgeDetails[badge].colorClass}
+                                            label={badgeDetails[badge].label}
+                                        />
+                                    ))
                             ) : (
-                                <p className="text-sm text-gray-600">No achievements yet.</p>
+                                <p className="text-sm text-gray-600">No badges yet.</p>
                             )}
                         </div>
                     </div>
 
-                    {/* Comments/Review Section */}
                     <div className="text-left mb-6">
                         <h2 className="text-lg font-semibold mb-4">Comments</h2>
                         <div className="space-y-2">

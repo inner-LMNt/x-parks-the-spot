@@ -447,6 +447,25 @@ def handle_get_points(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
                 return Err("User not found")
             return Ok(result)
 
+def handle_get_transaction_history(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT
+                    balance_after_transaction,
+                    description,
+                    points_amount,
+                    transaction_type
+                FROM points_transaction
+                WHERE user_id = %s
+                """,
+                (user_id,),
+            )
+            result = cur.fetchall()
+            if not result:
+                return Err("User not found")
+            return Ok(result)
 
 def handle_buy_badge(user_id: uuid.UUID, badge_id: int, price: int) -> Result[None, str]:
     with DB.pool.connection() as conn:
@@ -484,9 +503,19 @@ def handle_buy_badge(user_id: uuid.UUID, badge_id: int, price: int) -> Result[No
                 "UPDATE users SET badges = array_append(badges, %s::text) WHERE id = %s",
                 (badge_id, user_id),
             )
+            
+            # Might want to change this later by storing shop items in a separate table
+            # Right now, they're all hardcoded
+            id_to_name = {
+                1: "Bronze",
+                2: "Silver",
+                3: "Gold",
+            }
+            description = f"Badge purchase: {id_to_name[badge_id]}"
+
             cur.execute(
                 "INSERT INTO points_transaction (user_id, transaction_type, points_amount, description, balance_after_transaction) VALUES (%s, 'spend', %s, %s, %s)",
-                (user_id, price, f"Badge purchase: {badge_id}", points["current"] - price),
+                (user_id, price, description, points["current"] - price),
             )
 
             return Ok(None)
