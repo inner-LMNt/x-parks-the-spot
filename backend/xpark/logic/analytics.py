@@ -183,7 +183,7 @@ def get_dashboard_analytics(user_id: uuid.UUID, time_filter: str = '30_days', sp
                 })
 
             # Calculate overall occupancy rate
-            overall_occupancy_rate = overall_occupancy_rate / len(spot_metrics_rows) if spot_metrics_rows else 0
+            overall_occupancy_rate = int(overall_occupancy_rate / len(spot_metrics_rows)) if spot_metrics_rows else 0
 
             # Recent Bookings
             recent_params = [user_id, start_date]

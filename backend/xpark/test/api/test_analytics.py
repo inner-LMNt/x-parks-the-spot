@@ -1,9 +1,7 @@
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Any, List
 
 from flask.testing import FlaskClient
-import pytest
 
 # Import utility functions
 from xpark.test.utils.utils import (
@@ -16,7 +14,7 @@ from xpark.test.utils.utils import (
     mark_reservations_completed,
 )
 
-def test_basic_analytics_response_structure(client: FlaskClient):
+def test_basic_analytics_response_structure(client: FlaskClient) -> None:
     """Test that the analytics endpoint returns the expected data structure and contents."""
     # Create an owner user
     owner_email = f"owner_{uuid.uuid4().hex}@example.com"
@@ -87,7 +85,7 @@ def test_basic_analytics_response_structure(client: FlaskClient):
         assert key in upcoming_earnings, f"'{key}' key not found in upcomingEarnings"
     assert isinstance(upcoming_earnings["reservations"], list), "'reservations' should be a list"
 
-def test_analytics_with_no_data(client: FlaskClient):
+def test_analytics_with_no_data(client: FlaskClient) -> None:
     """Test that the analytics endpoint returns zeros or empty lists when there is no data."""
     # Create an owner user
     owner_email = f"owner_{uuid.uuid4().hex}@example.com"
@@ -148,7 +146,7 @@ def test_analytics_with_no_data(client: FlaskClient):
     assert isinstance(reservations, list), "'reservations' should be a list"
     assert len(reservations) == 0, "Expected 'reservations' to be empty"
 
-def test_analytics_with_single_parking_space(client: FlaskClient):
+def test_analytics_with_single_parking_space(client: FlaskClient) -> None:
     """Test analytics data when there is a single parking space and no reservations."""
     # Create an owner user
     owner_email = f"owner_{uuid.uuid4().hex}@example.com"
@@ -191,7 +189,7 @@ def test_analytics_with_single_parking_space(client: FlaskClient):
     assert spot_data["popularHours"] == [], "Expected popularHours to be empty"
     assert spot_data["popularDays"] == [], "Expected popularDays to be empty"
 
-def test_analytics_with_reservations(client: FlaskClient):
+def test_analytics_with_reservations(client: FlaskClient) -> None:
     """Test analytics data when there are reservations."""
     # Create an owner and a renter
     owner_email = f"owner_{uuid.uuid4().hex}@example.com"
@@ -222,7 +220,7 @@ def test_analytics_with_reservations(client: FlaskClient):
         reservation_ids.append(reservation_id)
 
     # Mark reservations as completed
-    mark_reservations_completed(client, reservation_ids)
+    mark_reservations_completed(reservation_ids)
 
     # Make a GET request to the analytics endpoint
     response = client.get(
@@ -254,7 +252,7 @@ def test_analytics_with_reservations(client: FlaskClient):
     assert spot_data["totalBookings"] == num_reservations, f"Expected totalBookings to be {num_reservations}"
     assert spot_data["totalRevenue"] == total_revenue, "Expected totalRevenue to match overall revenue"
 
-def test_analytics_with_time_filter(client: FlaskClient):
+def test_analytics_with_time_filter(client: FlaskClient) -> None:
     """Test the analytics endpoint with different time filters."""
     # Create an owner and a renter
     owner_email = f"owner_{uuid.uuid4().hex}@example.com"
@@ -336,7 +334,7 @@ def test_analytics_with_time_filter(client: FlaskClient):
     assert total_bookings_1_year == expected_bookings_1_year, \
         f"Expected {expected_bookings_1_year} bookings for 1_year, got {total_bookings_1_year}"
 
-def test_analytics_with_invalid_time_filter(client: FlaskClient):
+def test_analytics_with_invalid_time_filter(client: FlaskClient) -> None:
     """Test that the analytics endpoint returns an error with an invalid time filter."""
     # Create an owner user
     owner_email = f"owner_{uuid.uuid4().hex}@example.com"
@@ -352,7 +350,7 @@ def test_analytics_with_invalid_time_filter(client: FlaskClient):
     data = response.get_json()
     assert "err" in data, "Expected error message in response"
 
-def test_analytics_with_spot_id_filter(client: FlaskClient):
+def test_analytics_with_spot_id_filter(client: FlaskClient) -> None:
     """Test the analytics endpoint with a specific parking space (spot_id) filter."""
     # Create an owner and a renter
     owner_email = f"owner_{uuid.uuid4().hex}@example.com"
@@ -409,7 +407,7 @@ def test_analytics_with_spot_id_filter(client: FlaskClient):
     assert space_id_2 in spot_performance_2, f"Space ID {space_id_2} should be in spotPerformance"
     assert space_id_1 not in spot_performance_2, f"Space ID {space_id_1} should not be in spotPerformance"
 
-def test_analytics_upcoming_earnings(client: FlaskClient):
+def test_analytics_upcoming_earnings(client: FlaskClient) -> None:
     """Test the upcoming earnings data."""
     # Create an owner and a renter
     owner_email = f"owner_{uuid.uuid4().hex}@example.com"
@@ -453,7 +451,7 @@ def test_analytics_upcoming_earnings(client: FlaskClient):
     assert total_upcoming > 0, "Expected total upcoming earnings to be greater than 0"
     assert len(reservations) == num_reservations, f"Expected {num_reservations} upcoming reservations"
 
-def test_analytics_with_no_auth(client: FlaskClient):
+def test_analytics_with_no_auth(client: FlaskClient) -> None:
     """Test that the analytics endpoint returns 403 when no authorization is provided."""
     response = client.get("/api/unstable/analytics/dashboard")
     assert response.status_code == 403, f"Expected status code 403, got {response.status_code}"

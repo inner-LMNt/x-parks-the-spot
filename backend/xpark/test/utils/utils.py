@@ -392,7 +392,7 @@ def setup_analytics_scenario(
         num_spots: int = 3,
         reservations_per_spot: int = 5,
         days_of_history: int = 30
-) -> Tuple[str, str, Dict[str, List[str]]]:
+) -> Tuple[str, str, Any]:
     """
     Creates a complete analytics testing scenario with:
     - One owner with multiple spots
@@ -539,7 +539,7 @@ def insert_reservation_directly(
     car_id: str,
     start_time: datetime,
     end_time: datetime
-):
+) -> None:
     """Inserts a reservation directly into the database for testing purposes."""
     reservation_id = str(uuid.uuid4())
     duration_hours = (end_time - start_time).total_seconds() / 3600
@@ -589,9 +589,9 @@ def get_user_id_from_token(client: FlaskClient, token: str) -> str:
     data = response.get_json()
     user_id = data.get("id")
     assert user_id is not None, "User ID not found in response"
-    return user_id
+    return str(user_id)
 
-def mark_reservations_completed(client: FlaskClient, reservation_ids: List[str]):
+def mark_reservations_completed(reservation_ids: List[str]) -> None:
     """Marks the specified reservations as completed in the database."""
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
