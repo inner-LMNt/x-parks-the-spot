@@ -12,6 +12,8 @@ from xpark.logic.parkingspace import (
     submit_rating,
     get_user_rating,
     award_points,
+    bookmark_spot,
+    remove_bookmarked_spot,
 )
 from flask import request
 from result import Ok, Err
@@ -263,3 +265,29 @@ def get_user_rating_route(
             return data, 200
         case Err(e):
             return {"err": e}, 400
+
+
+@bp.post("<parking_space_id>/bookmark")
+@require_logged_in_user
+def bookmark_spot_route(
+    parking_space_id: str, token: str, user_id: uuid.UUID
+) -> Tuple[Any, int]:
+    parking_space_uuid = uuid.UUID(parking_space_id)
+    match bookmark_spot(user_id, parking_space_uuid):
+        case Ok(data):
+            return data, 204
+        case Err(e):
+            return {"err": e}, 409
+
+
+@bp.delete("<parking_space_id>/bookmark")
+@require_logged_in_user
+def delete_bookmark_spot_route(
+    parking_space_id: str, token: str, user_id: uuid.UUID
+) -> Tuple[Any, int]:
+    parking_space_uuid = uuid.UUID(parking_space_id)
+    match remove_bookmarked_spot(user_id, parking_space_uuid):
+        case Ok(data):
+            return data, 204
+        case Err(e):
+            return {"err": e}, 404

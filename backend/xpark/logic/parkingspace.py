@@ -7,6 +7,7 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from psycopg.rows import dict_row
+from psycopg.errors import UniqueViolation
 
 from xpark.config import Config
 from xpark.utils.db import DB
@@ -785,3 +786,59 @@ def get_user_rating(
             )
             rating = cur.fetchone()
         return Ok(rating)
+
+
+def bookmark_spot(
+    user_id: uuid.UUID, parking_space_id: uuid.UUID
+) -> Result[None, None]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            try:
+                cur.execute(
+                    """
+                    INSERT INTO bookmarked_spots (parking_space_id, user_id)
+                    VALUES (%s, %s)
+                    """,
+                    (parking_space_id, user_id),
+                )
+                return Ok(None)
+            except UniqueViolation:
+                return Err(None)
+
+
+def remove_bookmarked_spot(
+    user_id: uuid.UUID, parking_space_id: uuid.UUID
+) -> Result[None, None]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                DELETE FROM bookmarked_spots WHERE parking_space_id = %s AND user_id = %s
+            """,
+                (parking_space_id, user_id),
+            )
+            if cur.rowcount != 1:
+                return Err(None)
+            else:
+                return Ok(None)
+
+
+def get_bookmarked_spots(user_id: uuid.UUID) -> Result[list[Dict[Any, Any]], None]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT parking_space_id, name,
+                json_build_object(
+                    'address', parking_spaces.address,
+                    'latitude', ST_Y(parking_spaces.location::geometry),
+                    'longitude', ST_X(parking_spaces.location::geometry)
+                ) as location,
+                bookmarked_spots.updated_at,
+                bookmarked_spots.created_at
+                FROM bookmarked_spots JOIN parking_spaces ON parking_space_id = parking_spaces.id
+                WHERE bookmarked_spots.user_id = %s
+            """,
+                (user_id,),
+            )
+            return Ok(cur.fetchall())
