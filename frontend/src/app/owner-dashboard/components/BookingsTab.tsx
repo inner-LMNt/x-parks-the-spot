@@ -107,7 +107,7 @@ export default function BookingsTab({ bookingMetrics }: BookingsTabProps) {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {bookingMetrics.stats.completionRate.toFixed(1)}%
+                            {Number(bookingMetrics.stats.completionRate).toFixed(1)}%
                         </div>
                     </CardContent>
                 </Card>
@@ -119,7 +119,7 @@ export default function BookingsTab({ bookingMetrics }: BookingsTabProps) {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {bookingMetrics.stats.avgDuration.toFixed(1)}h
+                            {Number(bookingMetrics.stats.avgDuration).toFixed(1)}h
                         </div>
                     </CardContent>
                 </Card>
@@ -163,7 +163,7 @@ export default function BookingsTab({ bookingMetrics }: BookingsTabProps) {
                                         <TableCell>
                                             {format(new Date(booking.startTime ?? new Date()), 'PPP')}
                                         </TableCell>
-                                        <TableCell>{booking.duration}h</TableCell>
+                                        <TableCell>{Number(booking.duration).toFixed(1)}hrs</TableCell>
                                         <TableCell>${booking.price.toFixed(2)}</TableCell>
                                         <TableCell>
                                             <Badge

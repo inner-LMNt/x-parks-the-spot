@@ -1,8 +1,6 @@
-// src/app/owner-dashboard/OwnerDashboard.tsx
-
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchOwnerReservations } from '@/features/owner-reservations/ownerReservationsSlice';
@@ -12,15 +10,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import RevenueTab from './components/RevenueTab';
 import BookingsTab from './components/BookingsTab';
 import SpotsTab from './components/SpotsTab';
-import RatingsTab from './components/RatingsTab'; // Import the new RatingsTab component
+import RatingsTab from './components/RatingsTab';
+
+const TIME_FILTERS = {
+    '7_days': 'Last 7 Days',
+    '30_days': 'Last 30 Days',
+    '1_year': 'Last Year'
+} as const;
 
 export default function OwnerDashboard() {
     const dispatch = useAppDispatch();
     const router = useRouter();
-    const [selectedTab, setSelectedTab] = React.useState('metrics');
+    const [selectedTab, setSelectedTab] = useState('revenue');
+    const [timeFilter, setTimeFilter] = useState<keyof typeof TIME_FILTERS>('30_days');
+    const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
 
     const { paidSpots, pendingSpots, loading: spotsLoading, error: spotsError } =
         useAppSelector((state) => state.owner);
@@ -35,15 +42,59 @@ export default function OwnerDashboard() {
         error: analyticsError,
     } = useAppSelector((state) => state.dashboardAnalytics);
 
-    // Fetch initial data
+    // Fetch initial data with filters
     useEffect(() => {
         dispatch(getOwnerSpots());
         dispatch(fetchOwnerReservations());
-        dispatch(fetchDashboardAnalytics());
-    }, [dispatch]);
+        dispatch(fetchDashboardAnalytics({
+            timeFilter,
+            spotId: selectedSpotId
+        }));
+    }, [dispatch, timeFilter, selectedSpotId]);
 
     const loading = spotsLoading || reservationsLoading || analyticsLoading;
     const error = spotsError || reservationsError || analyticsError;
+
+    const FilterControls = () => (
+        <div className="mb-2 flex gap-4 mt-4 justify-center items-center text-slate-950">
+            <div className="w-48">
+                <Select
+                    value={timeFilter}
+                    onValueChange={(value: keyof typeof TIME_FILTERS) => setTimeFilter(value)}
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select time range"/>
+                    </SelectTrigger>
+                    <SelectContent>
+                        {Object.entries(TIME_FILTERS).map(([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                                {label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+
+            <div className="w-48">
+                <Select
+                    value={selectedSpotId || 'all'}
+                    onValueChange={(value) => setSelectedSpotId(value === 'all' ? null : value)}
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select spot"/>
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Spots</SelectItem>
+                        {paidSpots.map((spot) => (
+                            <SelectItem key={spot.id} value={spot.id}>
+                                {spot.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
+    );
 
     if (loading) {
         return (
@@ -67,7 +118,10 @@ export default function OwnerDashboard() {
                         onClick={() => {
                             dispatch(getOwnerSpots());
                             dispatch(fetchOwnerReservations());
-                            dispatch(fetchDashboardAnalytics());
+                            dispatch(fetchDashboardAnalytics({
+                                timeFilter,
+                                spotId: selectedSpotId
+                            }));
                         }}
                     >
                         Try Again
@@ -106,6 +160,7 @@ export default function OwnerDashboard() {
                             bookings
                         </p>
                     </div>
+                    <FilterControls />
                 </motion.div>
             </div>
 
@@ -115,11 +170,11 @@ export default function OwnerDashboard() {
                     onValueChange={setSelectedTab}
                     className="space-y-4"
                 >
-                    <TabsList className="grid w-full grid-cols-5"> {/* Updated grid-cols to 5 */}
+                    <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="revenue">Revenue</TabsTrigger>
                         <TabsTrigger value="bookings">Bookings</TabsTrigger>
                         <TabsTrigger value="spots">Spots</TabsTrigger>
-                        <TabsTrigger value="ratings">Ratings</TabsTrigger> {/* Re-added Ratings tab */}
+                        <TabsTrigger value="ratings">Ratings</TabsTrigger>
                     </TabsList>
 
                     {analytics && (

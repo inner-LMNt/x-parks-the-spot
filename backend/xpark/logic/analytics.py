@@ -246,7 +246,7 @@ def get_dashboard_analytics(user_id: uuid.UUID, time_filter: str = '30_days', sp
                                 COUNT(*) AS total_ratings
                             FROM ratings r
                             JOIN parking_spaces ps ON r.parking_space_id = ps.id
-                            WHERE ps.owner = %s {spot_filter_sql}
+                            WHERE ps.owner = %s AND ps.is_paid = TRUE {spot_filter_sql}
                         """, rating_params)
             overall_ratings = cur.fetchone() or {}
 
@@ -264,7 +264,7 @@ def get_dashboard_analytics(user_id: uuid.UUID, time_filter: str = '30_days', sp
                                 COUNT(r.id) AS rating_count
                             FROM parking_spaces ps
                             LEFT JOIN ratings r ON ps.id = r.parking_space_id
-                            WHERE ps.owner = %s {spot_filter_sql}
+                            WHERE ps.owner = %s AND ps.is_paid = TRUE {spot_filter_sql}
                             GROUP BY ps.id, ps.name
                         """, ratings_by_spot_params)
             ratings_by_spot_rows = cur.fetchall()

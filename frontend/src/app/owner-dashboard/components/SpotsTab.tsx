@@ -187,18 +187,18 @@ export default function SpotsTab({
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-500">Total Revenue</p>
-                                <p className="text-lg font-bold">${spot.performance.totalRevenue.toFixed(2)}</p>
+                                <p className="text-lg font-bold">${Number(spot.performance.totalRevenue).toFixed(2)}</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-500">Occupancy Rate</p>
                                 <p className="text-lg font-bold">
-                                    {spot.performance.occupancyRate.toFixed(1)}%
+                                    {Number(spot.performance.occupancyRate).toFixed(1)}%
                                 </p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-500">Avg Booking Length</p>
                                 <p className="text-lg font-bold">
-                                    {spot.performance.averageBookingLength.toFixed(1)}h
+                                    {Number(spot.performance.averageBookingLength).toFixed(1)}hrs
                                 </p>
                             </div>
                             <div className="space-y-1">

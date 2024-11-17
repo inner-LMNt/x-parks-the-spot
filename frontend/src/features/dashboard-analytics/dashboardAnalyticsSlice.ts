@@ -1,7 +1,10 @@
-// src/features/dashboard-analytics/dashboardAnalyticsSlice.ts
-
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from "@/api/axiosInstance";
+
+export interface FetchReservationsParams {
+    timeFilter?: '7_days' | '30_days' | '1_year';
+    spotId?: string | null;
+}
 
 export interface DashboardAnalytics {
     overallMetrics: {
@@ -9,7 +12,7 @@ export interface DashboardAnalytics {
             total: number;
             perBooking: number;
             trends: Array<{
-                date: string; // Month and Year
+                date: string;
                 revenue: number;
             }>;
         };
@@ -23,10 +26,7 @@ export interface DashboardAnalytics {
         bookings: {
             total: number;
             active: number;
-            completed: number;
-            canceled: number;
-            avgDuration: number;
-            completionRate: number;
+            percentageActive: number;
         };
     };
     revenueMetrics: {
@@ -66,8 +66,8 @@ export interface DashboardAnalytics {
             spotId: string;
             spotName: string;
             renterName: string;
-            startTime: string; // ISO Date string
-            endTime: string;   // ISO Date string
+            startTime: string;
+            endTime: string;
             status: 'active' | 'completed' | 'canceled';
             price: number;
             duration: number;
@@ -93,8 +93,8 @@ export interface DashboardAnalytics {
         total: number;
         reservations: Array<{
             spotName: string;
-            startTime: string; // ISO Date string
-            endTime: string;   // ISO Date string
+            startTime: string;
+            endTime: string;
             earnings: number;
         }>;
     };
@@ -117,7 +117,11 @@ export interface DashboardAnalytics {
                 count: number;
                 percentage: number;
             }>;
-            recentReviews: Array<any>; // Empty array since ratings have no comments
+            recentReviews: Array<{
+                rating: number;
+                daysAgo: number;
+                isVerified: boolean;
+            }>;
         }>;
     };
 }
