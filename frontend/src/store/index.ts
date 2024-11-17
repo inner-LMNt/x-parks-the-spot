@@ -11,10 +11,12 @@ import adminReducer from "@/features/admin/adminSlice"; // Import admin slice
 import ownerReservationsReducer from "@/features/owner-reservations/ownerReservationsSlice";
 import reportReducer from "@/features/reports/reportSlice";
 import reportDetailsReducer from "@/features/reports/reportDetailsSlice";
+import dashboardAnalyticsReducer from "@/features/dashboard-analytics/dashboardAnalyticsSlice"
 import { customMiddleware } from "./middleware"; // Import your custom middleware
 import throttle from "lodash.throttle";
 import { saveState, loadState } from "./localStorage";
 import ownerSlice from "@/features/owner/ownerSlice";
+import dashboardAnalyticsSlice from "@/features/dashboard-analytics/dashboardAnalyticsSlice";
 
 // Function to create and configure the store
 // @ts-ignore
@@ -33,7 +35,8 @@ export const createStore = (preloadedState?: Partial<RootState>) => {
       reports: reportReducer,
       reportDetails: reportDetailsReducer,
       ownerReservations: ownerReservationsReducer,
-      reservationCar: reservationCarReducer
+      reservationCar: reservationCarReducer,
+      dashboardAnalytics: dashboardAnalyticsReducer
     },
     // @ts-ignore
     middleware: (getDefaultMiddleware) =>

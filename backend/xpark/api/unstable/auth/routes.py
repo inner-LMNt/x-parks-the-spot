@@ -165,10 +165,8 @@ def get_points(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         case Err(e):
             return {"err": e}, 403
 
+@bp.get('/me')
+@require_logged_in_user
+def get_user_info_route(token: str, user_id: uuid.UUID):
+    return {'id': str(user_id)}, 200
 
-
-# @bp.get("id")
-# @require_logged_in_user
-# def id(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-#     print(user_id)
-#     return str(user_id), 200
