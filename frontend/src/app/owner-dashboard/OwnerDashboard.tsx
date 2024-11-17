@@ -172,7 +172,7 @@ export default function OwnerDashboard() {
     // Fetch analytics when spots and reservations are loaded
     useEffect(() => {
         if (paidSpots.length > 0 && ownerReservations.length > 0) {
-            dispatch(fetchDashboardAnalytics());
+            dispatch(fetchDashboardAnalytics(null));
         }
     }, [paidSpots, ownerReservations, dispatch]);
 
@@ -198,7 +198,7 @@ export default function OwnerDashboard() {
                     <Button onClick={() => {
                         dispatch(getOwnerSpots());
                         dispatch(fetchOwnerReservations());
-                        dispatch(fetchDashboardAnalytics());
+                        dispatch(fetchDashboardAnalytics(null));
                     }}>
                         Try Again
                     </Button>

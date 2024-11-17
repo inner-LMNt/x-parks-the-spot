@@ -162,8 +162,8 @@ export default function BookingsTab({
                                     <TableCell>${booking.price}</TableCell>
                                     <TableCell>
                                         <Badge variant={
-                                            booking.status === 'completed' ? 'default' :
-                                                booking.status === 'active' ? 'success' :
+                                            booking.status === 'completed' ? 'outline' :
+                                                booking.status === 'active' ? 'default' :
                                                     'secondary'
                                         }>
                                             {booking.status}

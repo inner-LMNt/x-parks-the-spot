@@ -1891,7 +1891,7 @@ export interface components {
         };
         ParkingSpace: {
             /** Format: uuid */
-            id?: string;
+            id: string;
             is_paid: boolean;
             is_taken?: boolean;
             /** Format: uuid */

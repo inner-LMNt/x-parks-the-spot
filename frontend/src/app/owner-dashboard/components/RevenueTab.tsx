@@ -41,12 +41,12 @@ interface RevenueMetrics {
 }
 
 interface RevenueTabProps {
-    spots: ParkingSpace[];
+    // spots: ParkingSpace[];
     revenueMetrics: RevenueMetrics;
 }
 
 export default function RevenueTab({
-                                       spots,
+                                       // spots,
                                        revenueMetrics
                                    }: RevenueTabProps) {
     return (

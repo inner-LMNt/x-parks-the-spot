@@ -110,7 +110,7 @@ const initialState: DashboardAnalyticsState = {
 };
 
 // Fetch all dashboard analytics in a single call
-export const fetchDashboardAnalytics = createAsyncThunk(
+export const fetchDashboardAnalytics = createAsyncThunk<any, any>(
     'dashboardAnalytics/fetchDashboardAnalytics',
     async ({ timeFilter = '30_days', spotId = null }, { rejectWithValue }) => {
         try {
