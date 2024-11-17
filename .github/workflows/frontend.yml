@@ -49,6 +49,8 @@ jobs:
     - name: Styling
       run: prettier -c **/*
       working-directory: frontend/src
+    - name: OpenAPI Generation Check
+      run: node node_modules/openapi-typescript/bin/cli.js ../docs/api/openapi.yaml --output ./src/types/generated.ts --export-type --root-types --check
 
     - name: Backend Setup
       run: |
