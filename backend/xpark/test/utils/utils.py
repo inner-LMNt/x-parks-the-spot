@@ -591,12 +591,3 @@ def get_user_id_from_token(client: FlaskClient, token: str) -> str:
     user_id = data.get("id")
     assert user_id is not None, "User ID not found in response"
     return user_id
-
-def mark_reservations_completed(client: FlaskClient, reservation_ids: List[str]):
-    """Marks the specified reservations as completed in the database."""
-    with DB.pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "UPDATE reservations SET status = 'completed' WHERE id = ANY(%s)",
-                (reservation_ids,)
-            )

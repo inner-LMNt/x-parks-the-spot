@@ -35,18 +35,18 @@ def get_dashboard_analytics(user_id: uuid.UUID, time_filter: str = '30_days', sp
                         WHEN COUNT(*) > 0 THEN SUM(r.price) / COUNT(*)
                         ELSE 0 
                     END AS revenue_per_booking,
-                    COALESCE(SUM(CASE WHEN r.status = 'active' THEN 1 ELSE 0 END), 0) AS active_bookings,
-                    COALESCE(AVG(EXTRACT(EPOCH FROM UPPER(r.time) - LOWER(r.time))/3600), 0) AS avg_duration,
-                    COALESCE(SUM(CASE WHEN r.status = 'completed' THEN 1 ELSE 0 END), 0) AS completed_bookings,
-                    COALESCE(SUM(CASE WHEN r.status = 'canceled' THEN 1 ELSE 0 END), 0) AS canceled_bookings,
+                    SUM(CASE WHEN r.status = 'active' THEN 1 ELSE 0 END) AS active_bookings,
+                    AVG(EXTRACT(EPOCH FROM UPPER(r.time) - LOWER(r.time))/3600) AS avg_duration,
+                    SUM(CASE WHEN r.status = 'completed' THEN 1 ELSE 0 END) AS completed_bookings,
+                    SUM(CASE WHEN r.status = 'canceled' THEN 1 ELSE 0 END) AS canceled_bookings,
                     CASE 
                         WHEN COUNT(*) > 0 
-                        THEN (COALESCE(SUM(CASE WHEN r.status = 'active' THEN 1 ELSE 0 END), 0)::float / COUNT(*)) * 100 
+                        THEN (SUM(CASE WHEN r.status = 'active' THEN 1 ELSE 0 END)::float / COUNT(*)) * 100 
                         ELSE 0 
                     END AS percentage_active,
                     CASE 
                         WHEN COUNT(*) > 0 
-                        THEN (COALESCE(SUM(CASE WHEN r.status = 'completed' THEN 1 ELSE 0 END), 0)::float / COUNT(*)) * 100 
+                        THEN (SUM(CASE WHEN r.status = 'completed' THEN 1 ELSE 0 END)::float / COUNT(*)) * 100 
                         ELSE 0 
                     END AS completion_rate
                 FROM reservations r
@@ -77,7 +77,7 @@ def get_dashboard_analytics(user_id: uuid.UUID, time_filter: str = '30_days', sp
             cur.execute(f"""
                 SELECT 
                     TO_CHAR(DATE_TRUNC('month', LOWER(r.time)), 'Mon YYYY') AS month,
-                    COALESCE(SUM(r.price), 0) AS revenue,
+                    SUM(r.price) AS revenue,
                     COUNT(*) AS bookings
                 FROM reservations r
                 JOIN parking_spaces ps ON r.parking_space_id = ps.id
@@ -94,7 +94,7 @@ def get_dashboard_analytics(user_id: uuid.UUID, time_filter: str = '30_days', sp
             cur.execute(f"""
                 SELECT 
                     TO_CHAR(DATE_TRUNC('day', LOWER(r.time)), 'YYYY-MM-DD') AS date,
-                    COALESCE(SUM(r.price), 0)  AS revenue
+                    SUM(r.price) AS revenue
                 FROM reservations r
                 JOIN parking_spaces ps ON r.parking_space_id = ps.id
                 WHERE ps.owner = %s AND ps.is_paid = TRUE AND LOWER(r.time) >= %s {spot_filter_sql}
@@ -110,7 +110,7 @@ def get_dashboard_analytics(user_id: uuid.UUID, time_filter: str = '30_days', sp
             cur.execute(f"""
                 SELECT 
                     EXTRACT(HOUR FROM LOWER(r.time))::integer AS hour,
-                    COALESCE(SUM(r.price), 0) AS revenue,
+                    SUM(r.price) AS revenue,
                     COUNT(*) AS bookings
                 FROM reservations r
                 JOIN parking_spaces ps ON r.parking_space_id = ps.id
@@ -129,15 +129,15 @@ def get_dashboard_analytics(user_id: uuid.UUID, time_filter: str = '30_days', sp
                     ps.id AS spot_id,
                     ps.name AS spot_name,
                     ps.price AS base_price,
-                    COALESCE(COUNT(r.id), 0) AS total_bookings,
-                    COALESCE(SUM(r.price), 0) AS total_revenue,
-                    COALESCE(SUM(CASE WHEN r.status = 'active' THEN 1 ELSE 0 END), 0) AS active_bookings,
-                    COALESCE(SUM(CASE WHEN r.status = 'completed' THEN 1 ELSE 0 END), 0) AS completed_bookings,
-                    COALESCE(SUM(CASE WHEN r.status = 'canceled' THEN 1 ELSE 0 END), 0) AS canceled_bookings,
-                    COALESCE(AVG(EXTRACT(EPOCH FROM UPPER(r.time) - LOWER(r.time))/3600), 0) AS average_booking_length,
+                    COUNT(r.id) AS total_bookings,
+                    SUM(r.price) AS total_revenue,
+                    SUM(CASE WHEN r.status = 'active' THEN 1 ELSE 0 END) AS active_bookings,
+                    SUM(CASE WHEN r.status = 'completed' THEN 1 ELSE 0 END) AS completed_bookings,
+                    SUM(CASE WHEN r.status = 'canceled' THEN 1 ELSE 0 END) AS canceled_bookings,
+                    AVG(EXTRACT(EPOCH FROM UPPER(r.time) - LOWER(r.time))/3600) AS average_booking_length,
                     ARRAY_AGG(EXTRACT(HOUR FROM LOWER(r.time))::integer) FILTER (WHERE r.id IS NOT NULL) AS popular_hours,
                     ARRAY_AGG(TO_CHAR(LOWER(r.time), 'Day')) FILTER (WHERE r.id IS NOT NULL) AS popular_days,
-                    (COALESCE(COUNT(r.id), 0)::float / NULLIF(EXTRACT(DAYS FROM %s - %s), 0)) * 100 AS occupancy_rate
+                    (COUNT(r.id)::float / NULLIF(EXTRACT(DAYS FROM %s - %s), 0)) * 100 AS occupancy_rate
                 FROM parking_spaces ps
                 LEFT JOIN reservations r ON ps.id = r.parking_space_id AND LOWER(r.time) >= %s
                 WHERE ps.owner = %s AND ps.is_paid = TRUE {spot_filter_sql}
@@ -264,7 +264,7 @@ def get_dashboard_analytics(user_id: uuid.UUID, time_filter: str = '30_days', sp
                         "active": overall['active_bookings'],
                         "completed": overall['completed_bookings'],
                         "canceled": overall['canceled_bookings'],
-                        "avgDuration": float(overall['avg_duration']),
+                        "avgDuration": overall['avg_duration'],
                         "completionRate": overall['completion_rate']
                     },
                     "recentBookings": recent_bookings_rows
