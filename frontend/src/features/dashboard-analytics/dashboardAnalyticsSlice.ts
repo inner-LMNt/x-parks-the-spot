@@ -1,7 +1,9 @@
+// src/features/dashboard-analytics/dashboardAnalyticsSlice.ts
+
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from "@/api/axiosInstance";
 
-interface DashboardAnalytics {
+export interface DashboardAnalytics {
     overallMetrics: {
         revenue: {
             total: number;
@@ -19,9 +21,12 @@ interface DashboardAnalytics {
             }>;
         };
         bookings: {
-            active: number;
             total: number;
-            percentageActive: number;
+            active: number;
+            completed: number;
+            canceled: number;
+            avgDuration: number;
+            completionRate: number;
         };
     };
     revenueMetrics: {
@@ -61,15 +66,14 @@ interface DashboardAnalytics {
             spotId: string;
             spotName: string;
             renterName: string;
-            startTime: string;
-            endTime: string;
+            startTime: string; // ISO Date string
+            endTime: string;   // ISO Date string
             status: 'active' | 'completed' | 'canceled';
             price: number;
             duration: number;
             carDetails: {
                 make: string;
                 model: string;
-                year: number;
                 color: string;
             };
         }>;
@@ -88,14 +92,35 @@ interface DashboardAnalytics {
     upcomingEarnings: {
         total: number;
         reservations: Array<{
-            spot_name: string;
-            start_time: string;
-            end_time: string;
+            spotName: string;
+            startTime: string; // ISO Date string
+            endTime: string;   // ISO Date string
             earnings: number;
         }>;
     };
+    ratingMetrics: {
+        averageRatings: {
+            availability: number;
+            cleanliness: number;
+            total: number;
+        };
+        totalRatings: number;
+        ratingsBySpot: Array<{
+            spotId: string;
+            spotName: string;
+            availabilityRating: number;
+            cleanlinessRating: number;
+            totalRating: number;
+            ratingCount: number;
+            ratingDistribution: Array<{
+                stars: number;
+                count: number;
+                percentage: number;
+            }>;
+            recentReviews: Array<any>; // Empty array since ratings have no comments
+        }>;
+    };
 }
-
 
 interface DashboardAnalyticsState {
     analytics: DashboardAnalytics | null;
@@ -112,17 +137,35 @@ const initialState: DashboardAnalyticsState = {
 // Fetch all dashboard analytics in a single call
 export const fetchDashboardAnalytics = createAsyncThunk(
     'dashboardAnalytics/fetchDashboardAnalytics',
-    async ({ timeFilter = '30_days', spotId = null }, { rejectWithValue }) => {
+    async (
+        { timeFilter = '30_days', spotId = null }: { timeFilter?: string; spotId?: string | null } = {},
+        { rejectWithValue }
+    ) => {
         try {
             const params = new URLSearchParams();
             params.append('time_filter', timeFilter);
             if (spotId) {
                 params.append('spot_id', spotId);
             }
-            const response = await axios.get(`/analytics/dashboard?${params.toString()}`);
-            return response.data;
+            const response = await axios.get<DashboardAnalytics>(`/analytics/dashboard?${params.toString()}`);
+            const data = response.data;
+
+            console.log('Fetched Dashboard Analytics:', data);
+
+            // Transform 'upcomingEarnings.reservations' if necessary
+            if (data.upcomingEarnings && data.upcomingEarnings.reservations) {
+                data.upcomingEarnings.reservations = data.upcomingEarnings.reservations.map((reservation) => ({
+                    spotName: reservation.spotName, // Assuming backend sends 'spotName' in camelCase
+                    startTime: reservation.startTime,
+                    endTime: reservation.endTime,
+                    earnings: reservation.earnings,
+                }));
+            }
+
+            return data;
         } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Failed to fetch dashboard analytics');
+            console.error('Error fetching dashboard analytics:', error);
+            return rejectWithValue(error.response?.data?.err || 'Failed to fetch dashboard analytics');
         }
     }
 );

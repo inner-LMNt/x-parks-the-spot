@@ -309,7 +309,6 @@ def get_dashboard_analytics(user_id: uuid.UUID, time_filter: str = '30_days', sp
                             """, [spot_row['spot_id']])
                 recent_reviews = cur.fetchall()
 
-
                 ratings_by_spot.append({
                     'spotId': spot_id_str,
                     'spotName': spot_row['spot_name'],

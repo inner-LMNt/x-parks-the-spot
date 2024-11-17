@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
@@ -6,15 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { ParkingSpace } from '@/types/type';
 import {
-    BarChart,
-    Bar,
     LineChart,
     Line,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
-    ResponsiveContainer
+    ResponsiveContainer,
+    BarChart,
+    Bar,
 } from 'recharts';
 import { Clock, MapPin, ShieldCheck, Star } from 'lucide-react';
 
@@ -23,7 +23,6 @@ interface SpotPerformance {
     totalBookings: number;
     occupancyRate: number;
     averageBookingLength: number;
-    repeatBookers: number;
     activeBookings: number;
     completedBookings: number;
     canceledBookings: number;
@@ -40,18 +39,21 @@ interface SpotsTabProps {
 export default function SpotsTab({
                                      paidSpots,
                                      pendingSpots,
-                                     spotPerformance
+                                     spotPerformance,
                                  }: SpotsTabProps) {
-    const verifiedSpots = useMemo(() =>
-            paidSpots.filter(spot => spot.verification_status === 'verified'),
+    const verifiedSpots = useMemo(
+        () => paidSpots.filter((spot) => spot.verification_status === 'verified'),
         [paidSpots]
     );
 
-    const spotsWithPerformance = useMemo(() =>
-            paidSpots.filter(spot => spotPerformance[spot.id]).map(spot => ({
-                ...spot,
-                performance: spotPerformance[spot.id]
-            })),
+    const spotsWithPerformance = useMemo(
+        () =>
+            paidSpots
+                .filter((spot) => spotPerformance[spot.id])
+                .map((spot) => ({
+                    ...spot,
+                    performance: spotPerformance[spot.id],
+                })),
         [paidSpots, spotPerformance]
     );
 
@@ -71,7 +73,10 @@ export default function SpotsTab({
                     <CardContent>
                         <div className="text-2xl font-bold">{verifiedSpots.length}</div>
                         <p className="text-xs text-muted-foreground">
-                            {((verifiedSpots.length / paidSpots.length) * 100).toFixed(0)}% of total spots
+                            {paidSpots.length > 0
+                                ? ((verifiedSpots.length / paidSpots.length) * 100).toFixed(0)
+                                : 0}
+                            % of total spots
                         </p>
                     </CardContent>
                 </Card>
@@ -94,14 +99,24 @@ export default function SpotsTab({
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {(paidSpots.reduce((acc, spot) =>
-                                acc + (spot.avg_total_rating === 'unrated' ? 0 : Number(spot.avg_total_rating || 0)), 0
-                            ) / verifiedSpots.length).toFixed(1)}
+                            {verifiedSpots.length > 0
+                                ? (
+                                    verifiedSpots.reduce(
+                                        (acc, spot) =>
+                                            acc +
+                                            (spot.avg_total_rating || 0),
+                                        0
+                                    ) / verifiedSpots.length
+                                ).toFixed(1)
+                                : 'N/A'}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Based on {verifiedSpots.reduce((acc, spot) =>
-                            acc + (spot.ratings_count_availability || 0), 0
-                        )} reviews
+                            Based on{' '}
+                            {verifiedSpots.reduce(
+                                (acc, spot) => acc + (spot.ratings_count_availability || 0),
+                                0
+                            )}{' '}
+                            reviews
                         </p>
                     </CardContent>
                 </Card>
@@ -118,11 +133,15 @@ export default function SpotsTab({
                                     {spot.location.address}
                                 </CardDescription>
                             </div>
-                            <Badge variant={
-                                spot.verification_status === 'verified' ? 'default' :
-                                    spot.verification_status === 'pending' ? 'secondary' :
-                                        'destructive'
-                            }>
+                            <Badge
+                                variant={
+                                    spot.verification_status === 'verified'
+                                        ? 'default'
+                                        : spot.verification_status === 'pending'
+                                            ? 'secondary'
+                                            : 'destructive'
+                                }
+                            >
                                 {spot.verification_status}
                             </Badge>
                         </div>
@@ -168,19 +187,23 @@ export default function SpotsTab({
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-500">Total Revenue</p>
-                                <p className="text-lg font-bold">${spot.performance.totalRevenue}</p>
+                                <p className="text-lg font-bold">${spot.performance.totalRevenue.toFixed(2)}</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-500">Occupancy Rate</p>
-                                <p className="text-lg font-bold">{spot.performance.occupancyRate.toFixed(1)}%</p>
+                                <p className="text-lg font-bold">
+                                    {spot.performance.occupancyRate.toFixed(1)}%
+                                </p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-500">Avg Booking Length</p>
-                                <p className="text-lg font-bold">{spot.performance.averageBookingLength}h</p>
+                                <p className="text-lg font-bold">
+                                    {spot.performance.averageBookingLength.toFixed(1)}h
+                                </p>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-sm text-gray-500">Repeat Bookings</p>
-                                <p className="text-lg font-bold">{spot.performance.repeatBookers}</p>
+                                <p className="text-sm text-gray-500">Active Bookings</p>
+                                <p className="text-lg font-bold">{spot.performance.activeBookings}</p>
                             </div>
                         </div>
                     </CardContent>
