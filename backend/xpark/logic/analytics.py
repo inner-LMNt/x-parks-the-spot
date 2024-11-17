@@ -234,6 +234,103 @@ def get_dashboard_analytics(user_id: uuid.UUID, time_filter: str = '30_days', sp
 
             total_upcoming_earnings = sum([row['earnings'] for row in upcoming_earnings_rows])
 
+            # Overall Average Ratings
+            rating_params = [user_id]
+            if spot_id:
+                rating_params.append(spot_id)
+            cur.execute(f"""
+                            SELECT 
+                                COALESCE(AVG(r.availability_rating), 0) AS avg_availability_rating,
+                                COALESCE(AVG(r.cleanliness_rating), 0) AS avg_cleanliness_rating,
+                                COALESCE(AVG(r.total_rating), 0) AS avg_total_rating,
+                                COUNT(*) AS total_ratings
+                            FROM ratings r
+                            JOIN parking_spaces ps ON r.parking_space_id = ps.id
+                            WHERE ps.owner = %s {spot_filter_sql}
+                        """, rating_params)
+            overall_ratings = cur.fetchone() or {}
+
+            # Ratings By Spot
+            ratings_by_spot_params = [user_id]
+            if spot_id:
+                ratings_by_spot_params.append(spot_id)
+            cur.execute(f"""
+                            SELECT 
+                                ps.id AS spot_id,
+                                ps.name AS spot_name,
+                                COALESCE(AVG(r.availability_rating), 0) AS avg_availability_rating,
+                                COALESCE(AVG(r.cleanliness_rating), 0) AS avg_cleanliness_rating,
+                                COALESCE(AVG(r.total_rating), 0) AS avg_total_rating,
+                                COUNT(r.id) AS rating_count
+                            FROM parking_spaces ps
+                            LEFT JOIN ratings r ON ps.id = r.parking_space_id
+                            WHERE ps.owner = %s {spot_filter_sql}
+                            GROUP BY ps.id, ps.name
+                        """, ratings_by_spot_params)
+            ratings_by_spot_rows = cur.fetchall()
+
+            # Rating Distribution and Recent Reviews per Spot
+            ratings_by_spot = []
+            for spot_row in ratings_by_spot_rows:
+                spot_id_str = str(spot_row['spot_id'])
+                # Rating Distribution
+                cur.execute("""
+                                SELECT 
+                                    FLOOR(r.total_rating)::int AS stars,
+                                    COUNT(*) AS count
+                                FROM ratings r
+                                WHERE r.parking_space_id = %s
+                                GROUP BY stars
+                                ORDER BY stars DESC
+                            """, [spot_row['spot_id']])
+                rating_distribution_rows = cur.fetchall()
+                total_ratings = sum([row['count'] for row in rating_distribution_rows])
+                rating_distribution = []
+                for row in rating_distribution_rows:
+                    stars = row['stars']
+                    count = row['count']
+                    percentage = (count / total_ratings) * 100 if total_ratings > 0 else 0
+                    rating_distribution.append({
+                        'stars': stars,
+                        'count': count,
+                        'percentage': percentage
+                    })
+
+                # Recent Reviews
+                cur.execute("""
+                                SELECT 
+                                    r.total_rating AS rating,
+                                    EXTRACT(DAY FROM NOW() - r.created_at) AS days_ago,
+                                    TRUE AS is_verified
+                                FROM ratings r
+                                WHERE r.parking_space_id = %s
+                                ORDER BY r.created_at DESC
+                                LIMIT 5
+                            """, [spot_row['spot_id']])
+                recent_reviews = cur.fetchall()
+
+
+                ratings_by_spot.append({
+                    'spotId': spot_id_str,
+                    'spotName': spot_row['spot_name'],
+                    'availabilityRating': spot_row['avg_availability_rating'],
+                    'cleanlinessRating': spot_row['avg_cleanliness_rating'],
+                    'totalRating': spot_row['avg_total_rating'],
+                    'ratingCount': spot_row['rating_count'],
+                    'ratingDistribution': rating_distribution,
+                    'recentReviews': recent_reviews,
+                })
+
+            rating_metrics = {
+                'averageRatings': {
+                    'availability': float(overall_ratings.get('avg_availability_rating', 0)),
+                    'cleanliness': float(overall_ratings.get('avg_cleanliness_rating', 0)),
+                    'total': float(overall_ratings.get('avg_total_rating', 0))
+                },
+                'totalRatings': overall_ratings.get('total_ratings', 0),
+                'ratingsBySpot': ratings_by_spot,
+            }
+
             # Construct the final response
             return Ok({
                 "overallMetrics": {
@@ -273,5 +370,6 @@ def get_dashboard_analytics(user_id: uuid.UUID, time_filter: str = '30_days', sp
                 "upcomingEarnings": {
                     "total": total_upcoming_earnings,
                     "reservations": upcoming_earnings_rows
-                }
+                },
+                "ratingMetrics": rating_metrics
             })
