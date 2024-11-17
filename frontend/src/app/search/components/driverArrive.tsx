@@ -1,63 +1,65 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { awardPoints } from "@/features/parking-space/parkingSpaceSlice";
-import { RootState } from "@/store";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
+import React, { useState, useCallback, useRef, useEffect } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { awardPoints } from "@/features/parking-space/parkingSpaceSlice"
+import { RootState } from "@/store"
+import { useToast } from "@/hooks/use-toast"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import Webcam from "react-webcam";
+} from "@/components/ui/dialog"
+import Webcam from "react-webcam"
 
-//@ts-ignore
 const DriverArrive = ({
+  // @ts-ignore
   currentSpotId,
+  // @ts-ignore
   userLocation,
+  // @ts-ignore
   closeDriverArriveDialog,
 }) => {
-  const dispatch = useDispatch();
-  const { toast } = useToast();
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [photoTimestamp, setPhotoTimestamp] = useState<string | null>(null);
-  const [photoLocation, setPhotoLocation] = useState<string | null>(null);
-  const webcamRef = useRef<Webcam>(null);
-  const [isCameraActive, setIsCameraActive] = useState(true);
-  const [statusSelection, setStatusSelection] = useState("taken");
-  const user = useSelector((state: RootState) => state.user);
+  const dispatch = useDispatch()
+  const { toast } = useToast()
+  const [photo, setPhoto] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [photoTimestamp, setPhotoTimestamp] = useState<string | null>(null)
+  const [photoLocation, setPhotoLocation] = useState<string | null>(null)
+  const webcamRef = useRef<Webcam>(null)
+  const [isCameraActive, setIsCameraActive] = useState(true)
+  const [statusSelection, setStatusSelection] = useState("taken")
+  const user = useSelector((state: RootState) => state.user)
 
   useEffect(() => {
-    setIsCameraActive(true); // Ensure camera is active on mount
-  }, []);
+    setIsCameraActive(true) // Ensure camera is active on mount
+  }, [])
 
   // Capture photo using the webcam and store as file
   const handleCapture = useCallback(() => {
-    const imageSrc = webcamRef.current?.getScreenshot();
+    const imageSrc = webcamRef.current?.getScreenshot()
     if (imageSrc) {
       fetch(imageSrc)
         .then((res) => res.blob())
         .then((blob) => {
           const file = new File([blob], "camera_capture.jpg", {
             type: "image/jpeg",
-          });
-          setPhoto(file);
-          setPreviewUrl(imageSrc);
-          setIsCameraActive(false);
-          setPhotoTimestamp(new Date().toLocaleString());
+          })
+          setPhoto(file)
+          setPreviewUrl(imageSrc)
+          setIsCameraActive(false)
+          setPhotoTimestamp(new Date().toLocaleString())
           setPhotoLocation(
             `${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`,
-          );
+          )
         })
         .catch((error) => {
-          console.error("Error converting image to file:", error);
-        });
+          console.error("Error converting image to file:", error)
+        })
     } else {
-      console.error("Failed to capture image from webcam.");
+      console.error("Failed to capture image from webcam.")
     }
-  }, [userLocation]);
+  }, [userLocation])
 
   const handleStatusSubmit = async () => {
     if (!currentSpotId || !userLocation || !photo) {
@@ -65,52 +67,53 @@ const DriverArrive = ({
         title: "Missing Information",
         description: "Please upload a photo and ensure location is available.",
         variant: "destructive",
-      });
+      })
       console.warn(
         "Submission aborted: Missing currentSpotId, userLocation, or photo.",
-      );
-      return;
+      )
+      return
     }
 
     try {
-      const formData = new FormData();
-      formData.append("latitude", userLocation.lat.toString());
-      formData.append("longitude", userLocation.lng.toString());
-      formData.append("photo", photo);
-      formData.append("status", statusSelection);
+      const formData = new FormData()
+      formData.append("latitude", userLocation.lat.toString())
+      formData.append("longitude", userLocation.lng.toString())
+      formData.append("photo", photo)
+      formData.append("status", statusSelection)
 
-      console.log("Submitting form data:", formData);
+      console.log("Submitting form data:", formData)
 
       //@ts-ignore
       await dispatch(
+        //@ts-ignore
         awardPoints({ parkingSpaceId: currentSpotId, formData }),
-      ).unwrap();
+      ).unwrap()
       toast({
         title: "Thank you for updating the spot",
         description: "",
         variant: "success",
-      });
+      })
 
-      closeDriverArriveDialog();
+      closeDriverArriveDialog()
     } catch (error) {
-      console.error("Failed to update spot status:", error);
+      console.error("Failed to update spot status:", error)
       toast({
         title: "Spot Update Failed",
         description:
           "Failed to update the parking spot status. Please try again.",
         variant: "destructive",
-      });
+      })
     }
-  };
+  }
 
   const handleRetake = () => {
-    setPhoto(null);
-    setPreviewUrl(null);
-    setIsCameraActive(true);
-    setPhotoTimestamp(null);
-    setPhotoLocation(null);
-    console.log("Photo reset for retake.");
-  };
+    setPhoto(null)
+    setPreviewUrl(null)
+    setIsCameraActive(true)
+    setPhotoTimestamp(null)
+    setPhotoLocation(null)
+    console.log("Photo reset for retake.")
+  }
 
   return (
     <Dialog
@@ -209,7 +212,7 @@ const DriverArrive = ({
         </div>
       </DialogContent>
     </Dialog>
-  );
-};
+  )
+}
 
-export default DriverArrive;
+export default DriverArrive

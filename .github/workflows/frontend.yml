@@ -48,6 +48,7 @@ jobs:
       run: npm run build --if-present
     - name: Styling
       run: prettier -c **/*
+      working-directory: frontend/src
 
     - name: Backend Setup
       run: |

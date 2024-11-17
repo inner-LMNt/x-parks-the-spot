@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import React, { useState } from "react"
+import { motion } from "framer-motion"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardHeader,
@@ -10,65 +10,65 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useAppDispatch } from "@/store/hooks";
-import { reset_password } from "@/features/user/userSlice";
-import { zxcvbn } from "@zxcvbn-ts/core";
+} from "@/components/ui/card"
+import { Loader2 } from "lucide-react"
+import Link from "next/link"
+import { useParams, useRouter } from "next/navigation"
+import { useAppDispatch } from "@/store/hooks"
+import { reset_password } from "@/features/user/userSlice"
+import { zxcvbn } from "@zxcvbn-ts/core"
 
 export default function ConfirmResetPage() {
-  const [loading, setLoading] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [newPassword, setNewPassword] = useState<string>("");
-  const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [loading, setLoading] = useState(false)
+  const [confirmed, setConfirmed] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [newPassword, setNewPassword] = useState<string>("")
+  const [confirmPassword, setConfirmPassword] = useState<string>("")
 
-  const dispatch = useAppDispatch();
-  const params = useParams();
-  const token = (params?.["reset-token"] as string) ?? "invalid";
+  const dispatch = useAppDispatch()
+  const params = useParams()
+  const token = (params?.["reset-token"] as string) ?? "invalid"
 
   const handleConfirmReset = () => {
     if (!token) {
-      setError("Invalid or missing token");
-      return;
+      setError("Invalid or missing token")
+      return
     }
 
     if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters long");
-      return;
+      setError("Password must be at least 8 characters long")
+      return
     }
 
     if (zxcvbn(newPassword).score < 3) {
-      setError("Password is too weak");
-      return;
+      setError("Password is too weak")
+      return
     }
 
     if (newPassword !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
+      setError("Passwords do not match")
+      return
     }
 
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
 
     dispatch(reset_password({ token, newPassword }))
       .then((resultAction: any) => {
         if (reset_password.fulfilled.match(resultAction)) {
-          console.log("Password reset successfully");
-          setConfirmed(true);
+          console.log("Password reset successfully")
+          setConfirmed(true)
         } else if (reset_password.rejected.match(resultAction)) {
-          console.log("Reset failed", resultAction.payload);
-          setError(resultAction.payload || "Password reset failed");
+          console.log("Reset failed", resultAction.payload)
+          setError(resultAction.payload || "Password reset failed")
         }
       })
       .catch((err: any) => {
-        console.error("Reset failed:", err);
-        setError("Something went wrong");
+        console.error("Reset failed:", err)
+        setError("Something went wrong")
       })
-      .finally(() => setLoading(false));
-  };
+      .finally(() => setLoading(false))
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-4 overflow-hidden">
@@ -162,5 +162,5 @@ export default function ConfirmResetPage() {
         </Card>
       </motion.div>
     </div>
-  );
+  )
 }

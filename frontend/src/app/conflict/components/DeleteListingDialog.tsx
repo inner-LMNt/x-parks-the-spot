@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import React, { useState } from "react";
+import React, { useState } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,24 +10,24 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "@/hooks/use-toast";
-import { Trash2 } from "lucide-react";
-import { useAppDispatch } from "@/store/hooks";
-import { getAllConflicts } from "@/features/admin/adminSlice";
-import { deleteParkingSpace } from "@/features/admin/adminSlice";
+} from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { toast } from "@/hooks/use-toast"
+import { Trash2 } from "lucide-react"
+import { useAppDispatch } from "@/store/hooks"
+import { getAllConflicts } from "@/features/admin/adminSlice"
+import { deleteParkingSpace } from "@/features/admin/adminSlice"
 
 const DeleteListingDialog: React.FC<{
-  parkingSpaceId: string;
-  parkingSpaceName: string;
+  parkingSpaceId: string
+  parkingSpaceName: string
 }> = ({ parkingSpaceId, parkingSpaceName }) => {
-  const dispatch = useAppDispatch();
-  const [isOpen, setIsOpen] = useState(false);
-  const [deleteReason, setDeleteReason] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
+  const dispatch = useAppDispatch()
+  const [isOpen, setIsOpen] = useState(false)
+  const [deleteReason, setDeleteReason] = useState("")
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleDelete = async () => {
     if (!deleteReason.trim()) {
@@ -35,11 +35,11 @@ const DeleteListingDialog: React.FC<{
         title: "Error",
         description: "Please provide a reason for deletion",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
-    setIsDeleting(true);
+    setIsDeleting(true)
 
     // @ts-ignore
     const resultAction = await dispatch(
@@ -47,7 +47,7 @@ const DeleteListingDialog: React.FC<{
         parkingSpaceId,
         reason: deleteReason,
       }),
-    );
+    )
 
     if (deleteParkingSpace.fulfilled.match(resultAction)) {
       // Deletion successful
@@ -55,11 +55,11 @@ const DeleteListingDialog: React.FC<{
         title: "Success",
         description: "Parking space has been deleted successfully",
         variant: "success",
-      });
+      })
 
       // Refresh the reports list after successful deletion
-      dispatch(getAllConflicts());
-      setIsOpen(false);
+      dispatch(getAllConflicts())
+      setIsOpen(false)
     } else {
       // Deletion failed
       toast({
@@ -67,10 +67,10 @@ const DeleteListingDialog: React.FC<{
         description:
           resultAction.payload?.error || "Failed to delete parking space",
         variant: "destructive",
-      });
-      setIsDeleting(false);
+      })
+      setIsDeleting(false)
     }
-  };
+  }
 
   return (
     <>
@@ -121,7 +121,7 @@ const DeleteListingDialog: React.FC<{
         </AlertDialogContent>
       </AlertDialog>
     </>
-  );
-};
+  )
+}
 
-export default DeleteListingDialog;
+export default DeleteListingDialog

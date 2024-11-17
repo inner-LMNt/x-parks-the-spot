@@ -1,26 +1,26 @@
 // src/components/EditCarModal.tsx
 
-import React, { useState, useEffect } from "react";
-import { Trash } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import React, { useState, useEffect } from "react"
+import { Trash } from "lucide-react"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   updateCar,
   deleteCar,
   resetCarError,
   fetchUserCars,
-} from "@/features/cars/carSlice";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "@/hooks/use-toast";
-import { CarInfo } from "@/types/type";
+} from "@/features/cars/carSlice"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { toast } from "@/hooks/use-toast"
+import { CarInfo } from "@/types/type"
 
 interface EditCarModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  car: CarInfo;
+  isOpen: boolean
+  onClose: () => void
+  car: CarInfo
 }
 
 const EditCarModal: React.FC<EditCarModalProps> = ({
@@ -28,16 +28,16 @@ const EditCarModal: React.FC<EditCarModalProps> = ({
   onClose,
   car,
 }) => {
-  const dispatch = useAppDispatch();
-  const { loading, error } = useAppSelector((state) => state.cars);
+  const dispatch = useAppDispatch()
+  const { loading, error } = useAppSelector((state) => state.cars)
 
-  const [make, setMake] = useState<string>(car.make);
-  const [model, setModel] = useState<string>(car.model);
-  const [licensePlate, setLicensePlate] = useState(car.license_plate);
+  const [make, setMake] = useState<string>(car.make)
+  const [model, setModel] = useState<string>(car.model)
+  const [licensePlate, setLicensePlate] = useState(car.license_plate)
   const [licensePlateState, setLicensePlateState] = useState(
     car.license_plate_state,
-  );
-  const [color, setColor] = useState(car.color);
+  )
+  const [color, setColor] = useState(car.color)
 
   useEffect(() => {
     if (error) {
@@ -45,27 +45,27 @@ const EditCarModal: React.FC<EditCarModalProps> = ({
         title: "Failed to Add Car",
         description: error,
         variant: "destructive",
-      });
-      dispatch(resetCarError());
+      })
+      dispatch(resetCarError())
     }
-  }, [error, dispatch]);
+  }, [error, dispatch])
 
   const handleDelete = async (id: string) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this car?",
-    );
+    )
     if (confirmDelete) {
-      onClose();
+      onClose()
       // Await the deletion and then re-fetch the cars
       // @ts-ignore
-      await dispatch(deleteCar(id));
+      await dispatch(deleteCar(id))
       // @ts-ignore
-      dispatch(fetchUserCars()); // Re-fetch the cars
+      dispatch(fetchUserCars()) // Re-fetch the cars
     }
-  };
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
     // Basic validation
     if (!make || !model || !licensePlate || !licensePlateState) {
@@ -73,8 +73,8 @@ const EditCarModal: React.FC<EditCarModalProps> = ({
         title: "Missing Information",
         description: "Please fill out all required fields.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
     const updateData = {
@@ -83,23 +83,23 @@ const EditCarModal: React.FC<EditCarModalProps> = ({
       license_plate: licensePlate,
       license_plate_state: licensePlateState,
       color, // Optional
-    };
+    }
 
     try {
-      await dispatch(updateCar({ id: car.id, updateData })).unwrap();
+      await dispatch(updateCar({ id: car.id, updateData })).unwrap()
       toast({
         title: "Car Updated",
         description: "Your car has been updated successfully.",
         variant: "success",
-      });
-      onClose(); // Close the modal
+      })
+      onClose() // Close the modal
     } catch (err) {
       // Error handling is already managed in useEffect
-      console.error(err);
+      console.error(err)
     }
-  };
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
@@ -179,7 +179,7 @@ const EditCarModal: React.FC<EditCarModalProps> = ({
         </CardContent>
       </Card>
     </div>
-  );
-};
+  )
+}
 
-export default EditCarModal;
+export default EditCarModal

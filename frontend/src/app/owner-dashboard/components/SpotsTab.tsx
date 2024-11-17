@@ -1,16 +1,16 @@
-"use client";
+"use client"
 
-import React, { useMemo } from "react";
-import { motion } from "framer-motion";
+import React, { useMemo } from "react"
+import { motion } from "framer-motion"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ParkingSpace } from "@/types/type";
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { ParkingSpace } from "@/types/type"
 import {
   BarChart,
   Bar,
@@ -21,26 +21,26 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from "recharts";
-import { Clock, MapPin, ShieldCheck, Star } from "lucide-react";
+} from "recharts"
+import { Clock, MapPin, ShieldCheck, Star } from "lucide-react"
 
 interface SpotPerformance {
-  totalRevenue: number;
-  totalBookings: number;
-  occupancyRate: number;
-  averageBookingLength: number;
-  repeatBookers: number;
-  activeBookings: number;
-  completedBookings: number;
-  canceledBookings: number;
-  popularHours: Array<{ hour: number; bookings: number }>;
-  popularDays: Array<{ day: string; bookings: number }>;
+  totalRevenue: number
+  totalBookings: number
+  occupancyRate: number
+  averageBookingLength: number
+  repeatBookers: number
+  activeBookings: number
+  completedBookings: number
+  canceledBookings: number
+  popularHours: Array<{ hour: number; bookings: number }>
+  popularDays: Array<{ day: string; bookings: number }>
 }
 
 interface SpotsTabProps {
-  paidSpots: ParkingSpace[];
-  pendingSpots: ParkingSpace[];
-  spotPerformance: Record<string, SpotPerformance>;
+  paidSpots: ParkingSpace[]
+  pendingSpots: ParkingSpace[]
+  spotPerformance: Record<string, SpotPerformance>
 }
 
 export default function SpotsTab({
@@ -51,7 +51,7 @@ export default function SpotsTab({
   const verifiedSpots = useMemo(
     () => paidSpots.filter((spot) => spot.verification_status === "verified"),
     [paidSpots],
-  );
+  )
 
   const spotsWithPerformance = useMemo(
     () =>
@@ -62,7 +62,7 @@ export default function SpotsTab({
           performance: spotPerformance[spot.id],
         })),
     [paidSpots, spotPerformance],
-  );
+  )
 
   return (
     <motion.div
@@ -230,5 +230,5 @@ export default function SpotsTab({
         </Card>
       ))}
     </motion.div>
-  );
+  )
 }

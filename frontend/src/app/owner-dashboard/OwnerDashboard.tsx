@@ -1,194 +1,194 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchOwnerReservations } from "@/features/owner-reservations/ownerReservationsSlice";
-import { getOwnerSpots } from "@/features/owner/ownerSlice";
-import { fetchDashboardAnalytics } from "@/features/dashboard-analytics/dashboardAnalyticsSlice";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import MetricsTab from "./components/MetricsTab";
-import RevenueTab from "./components/RevenueTab";
-import BookingsTab from "./components/BookingsTab";
-import SpotsTab from "./components/SpotsTab";
-import RatingsTab from "./components/RatingsTab";
+import React, { useEffect, useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { fetchOwnerReservations } from "@/features/owner-reservations/ownerReservationsSlice"
+import { getOwnerSpots } from "@/features/owner/ownerSlice"
+import { fetchDashboardAnalytics } from "@/features/dashboard-analytics/dashboardAnalyticsSlice"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
+import { ArrowLeft, Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import MetricsTab from "./components/MetricsTab"
+import RevenueTab from "./components/RevenueTab"
+import BookingsTab from "./components/BookingsTab"
+import SpotsTab from "./components/SpotsTab"
+import RatingsTab from "./components/RatingsTab"
 
 export interface DashboardAnalytics {
   overallMetrics: {
     revenue: {
-      total: number;
-      perBooking: number;
+      total: number
+      perBooking: number
       trends: Array<{
-        date: string;
-        revenue: number;
-      }>;
-    };
+        date: string
+        revenue: number
+      }>
+    }
     occupancy: {
-      overallRate: number;
+      overallRate: number
       popularTimes: Array<{
-        day: string;
-        bookings: number;
-      }>;
-    };
+        day: string
+        bookings: number
+      }>
+    }
     bookings: {
-      active: number;
-      total: number;
-      percentageActive: number;
-    };
+      active: number
+      total: number
+      percentageActive: number
+    }
     ratings: {
-      average: number;
-      totalSpots: number;
-    };
-  };
+      average: number
+      totalSpots: number
+    }
+  }
   revenueMetrics: {
     monthlyRevenue: Array<{
-      month: string;
-      revenue: number;
-      bookings: number;
-    }>;
+      month: string
+      revenue: number
+      bookings: number
+    }>
     dailyRevenue: Array<{
-      date: string;
-      revenue: number;
-    }>;
+      date: string
+      revenue: number
+    }>
     hourlyRevenue: Array<{
-      hour: number;
-      revenue: number;
-    }>;
+      hour: number
+      revenue: number
+    }>
     revenueBySpot: Array<{
-      spotId: string;
-      spotName: string;
-      revenue: number;
-      bookings: number;
-      occupancyRate: number;
-      basePrice: number;
-    }>;
-  };
+      spotId: string
+      spotName: string
+      revenue: number
+      bookings: number
+      occupancyRate: number
+      basePrice: number
+    }>
+  }
   bookingMetrics: {
     stats: {
-      total: number;
-      active: number;
-      completed: number;
-      canceled: number;
-      avgDuration: number;
-      completionRate: number;
-    };
+      total: number
+      active: number
+      completed: number
+      canceled: number
+      avgDuration: number
+      completionRate: number
+    }
     recentBookings: Array<{
-      id: string;
-      spotId: string;
-      spotName: string;
-      renterName: string;
-      startTime: string;
-      endTime: string;
-      status: "active" | "completed" | "canceled";
-      price: number;
-      duration: number;
+      id: string
+      spotId: string
+      spotName: string
+      renterName: string
+      startTime: string
+      endTime: string
+      status: "active" | "completed" | "canceled"
+      price: number
+      duration: number
       carDetails: {
-        make: string;
-        model: string;
-        year: number;
-        color: string;
-      };
-    }>;
+        make: string
+        model: string
+        year: number
+        color: string
+      }
+    }>
     bookingsByStatus: {
-      active: Array<any>;
-      completed: Array<any>;
-      canceled: Array<any>;
-    };
-  };
+      active: Array<any>
+      completed: Array<any>
+      canceled: Array<any>
+    }
+  }
   spotPerformance: Record<
     string,
     {
-      totalRevenue: number;
-      totalBookings: number;
-      occupancyRate: number;
-      averageBookingLength: number;
-      repeatBookers: number;
-      activeBookings: number;
-      completedBookings: number;
-      canceledBookings: number;
-      popularHours: Array<{ hour: number; bookings: number }>;
-      popularDays: Array<{ day: string; bookings: number }>;
+      totalRevenue: number
+      totalBookings: number
+      occupancyRate: number
+      averageBookingLength: number
+      repeatBookers: number
+      activeBookings: number
+      completedBookings: number
+      canceledBookings: number
+      popularHours: Array<{ hour: number; bookings: number }>
+      popularDays: Array<{ day: string; bookings: number }>
     }
-  >;
+  >
   ratingMetrics: {
     averageRatings: {
-      availability: number;
-      cleanliness: number;
-      total: number;
-    };
-    totalRatings: number;
+      availability: number
+      cleanliness: number
+      total: number
+    }
+    totalRatings: number
     ratingsBySpot: Array<{
-      spotId: string;
-      spotName: string;
-      availabilityRating: number;
-      cleanlinessRating: number;
-      totalRating: number | "unrated";
-      ratingCount: number;
+      spotId: string
+      spotName: string
+      availabilityRating: number
+      cleanlinessRating: number
+      totalRating: number | "unrated"
+      ratingCount: number
       ratingDistribution: Array<{
-        stars: number;
-        count: number;
-        percentage: number;
-      }>;
+        stars: number
+        count: number
+        percentage: number
+      }>
       recentReviews: Array<{
-        rating: number;
-        daysAgo: number;
-        comment: string;
-        isVerified: boolean;
-      }>;
+        rating: number
+        daysAgo: number
+        comment: string
+        isVerified: boolean
+      }>
       responseMetrics: {
-        averageResponseTime: number;
-        issueResolutionRate: number;
-        ratingTrend: number;
-      };
-    }>;
+        averageResponseTime: number
+        issueResolutionRate: number
+        ratingTrend: number
+      }
+    }>
     performanceMetrics: {
-      responseRate: number;
-      ratingImprovement: number;
-      customerReturnRate: number;
-    };
-  };
+      responseRate: number
+      ratingImprovement: number
+      customerReturnRate: number
+    }
+  }
 }
 
 export default function OwnerDashboard() {
-  const dispatch = useAppDispatch();
-  const router = useRouter();
-  const [selectedTab, setSelectedTab] = useState("metrics");
+  const dispatch = useAppDispatch()
+  const router = useRouter()
+  const [selectedTab, setSelectedTab] = useState("metrics")
 
   const {
     paidSpots,
     pendingSpots,
     loading: spotsLoading,
     error: spotsError,
-  } = useAppSelector((state) => state.owner);
+  } = useAppSelector((state) => state.owner)
   const {
     ownerReservations,
     loading: reservationsLoading,
     error: reservationsError,
-  } = useAppSelector((state) => state.ownerReservations);
+  } = useAppSelector((state) => state.ownerReservations)
   const {
     analytics,
     loading: analyticsLoading,
     error: analyticsError,
-  } = useAppSelector((state) => state.dashboardAnalytics);
+  } = useAppSelector((state) => state.dashboardAnalytics)
 
   // Fetch initial data
   useEffect(() => {
-    dispatch(getOwnerSpots());
-    dispatch(fetchOwnerReservations());
-  }, [dispatch]);
+    dispatch(getOwnerSpots())
+    dispatch(fetchOwnerReservations())
+  }, [dispatch])
 
   // Fetch analytics when spots and reservations are loaded
   useEffect(() => {
     if (paidSpots.length > 0 && ownerReservations.length > 0) {
-      dispatch(fetchDashboardAnalytics(null));
+      dispatch(fetchDashboardAnalytics(null))
     }
-  }, [paidSpots, ownerReservations, dispatch]);
+  }, [paidSpots, ownerReservations, dispatch])
 
-  const loading = spotsLoading || reservationsLoading || analyticsLoading;
-  const error = spotsError || reservationsError || analyticsError;
+  const loading = spotsLoading || reservationsLoading || analyticsLoading
+  const error = spotsError || reservationsError || analyticsError
 
   if (loading) {
     return (
@@ -200,7 +200,7 @@ export default function OwnerDashboard() {
           </p>
         </div>
       </div>
-    );
+    )
   }
 
   if (error) {
@@ -210,16 +210,16 @@ export default function OwnerDashboard() {
           <p className="text-red-500">{error}</p>
           <Button
             onClick={() => {
-              dispatch(getOwnerSpots());
-              dispatch(fetchOwnerReservations());
-              dispatch(fetchDashboardAnalytics(null));
+              dispatch(getOwnerSpots())
+              dispatch(fetchOwnerReservations())
+              dispatch(fetchDashboardAnalytics(null))
             }}
           >
             Try Again
           </Button>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -303,5 +303,5 @@ export default function OwnerDashboard() {
         </Tabs>
       </div>
     </motion.div>
-  );
+  )
 }

@@ -1,61 +1,61 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import React, { useState, useEffect } from "react"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   updateReservation,
   getMaxExtensionTime,
   fetchReservationById,
-} from "@/features/reservations/reservationsSlice";
-import { useRouter, useParams } from "next/navigation";
-import { toast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/features/reservations/reservationsSlice"
+import { useRouter, useParams } from "next/navigation"
+import { toast } from "@/hooks/use-toast"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Calendar, Clock, ArrowLeft } from "lucide-react";
-import { format, parseISO, isValid, differenceInMinutes } from "date-fns";
-import { motion } from "framer-motion";
-import { fetchParkingSpace } from "@/features/parking-space/parkingSpaceSlice";
-import { Reservation } from "@/types/type";
+} from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
+import { MapPin, Calendar, Clock, ArrowLeft } from "lucide-react"
+import { format, parseISO, isValid, differenceInMinutes } from "date-fns"
+import { motion } from "framer-motion"
+import { fetchParkingSpace } from "@/features/parking-space/parkingSpaceSlice"
+import { Reservation } from "@/types/type"
 
 // Removed ShadCN Dialog Imports
 
 const ExtendReservationPage = () => {
-  const dispatch = useAppDispatch();
-  const router = useRouter();
-  const params = useParams();
-  const reservationId = (params?.["reservation-id"] ?? "") as string;
+  const dispatch = useAppDispatch()
+  const router = useRouter()
+  const params = useParams()
+  const reservationId = (params?.["reservation-id"] ?? "") as string
 
-  const [newEndTime, setNewEndTime] = useState("");
-  const [maxExtensionTime, setMaxExtensionTime] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [totalPrice, setTotalPrice] = useState(0); // State for total price
+  const [newEndTime, setNewEndTime] = useState("")
+  const [maxExtensionTime, setMaxExtensionTime] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [totalPrice, setTotalPrice] = useState(0) // State for total price
 
   // State to control the confirmation card visibility
-  const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
+  const [isConfirmationVisible, setIsConfirmationVisible] = useState(false)
 
   // Select current_spot from Redux store
   const current_spot = useAppSelector(
     (state) => state.parkingSpace.parkingSpace,
-  );
+  )
 
   // Select reservation from Redux store with normalized ID
   const reservation = useAppSelector((state) => {
     const foundReservation = state.reservations.reservations.find(
       (r: Reservation) => r.id === reservationId,
-    );
-    return foundReservation;
-  });
+    )
+    return foundReservation
+  })
 
   // Fetch reservation details if not in store
   useEffect(() => {
@@ -65,37 +65,35 @@ const ExtendReservationPage = () => {
           title: "Error",
           description: "Reservation ID not provided",
           variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+        })
+        setIsLoading(false)
+        return
       }
 
       if (!reservation) {
-        setIsLoading(true);
+        setIsLoading(true)
         // @ts-ignore
-        const resultAction = await dispatch(
-          fetchReservationById(reservationId),
-        );
+        const resultAction = await dispatch(fetchReservationById(reservationId))
         if (fetchReservationById.fulfilled.match(resultAction)) {
-          const fetchedReservation = resultAction.payload;
-          console.log("Fetched Reservation:", fetchedReservation);
+          const fetchedReservation = resultAction.payload
+          console.log("Fetched Reservation:", fetchedReservation)
           // @ts-ignore
-          dispatch(fetchParkingSpace(fetchedReservation.parking_space_id));
+          dispatch(fetchParkingSpace(fetchedReservation.parking_space_id))
         } else if (fetchReservationById.rejected.match(resultAction)) {
           toast({
             title: "Error",
             description:
               resultAction.payload || "Failed to fetch reservation details",
             variant: "destructive",
-          });
+          })
         }
-        setIsLoading(false);
+        setIsLoading(false)
       } else {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    };
-    fetchReservation();
-  }, [dispatch, reservationId, reservation]);
+    }
+    fetchReservation()
+  }, [dispatch, reservationId, reservation])
 
   // Initialize newEndTime when reservation is available
   useEffect(() => {
@@ -103,77 +101,75 @@ const ExtendReservationPage = () => {
       const formattedCurrentEnd = format(
         new Date(reservation.end_time),
         "yyyy-MM-dd'T'HH:mm",
-      );
-      setNewEndTime(formattedCurrentEnd);
-      console.log("Default newEndTime set to:", formattedCurrentEnd);
+      )
+      setNewEndTime(formattedCurrentEnd)
+      console.log("Default newEndTime set to:", formattedCurrentEnd)
     }
-  }, [reservation, newEndTime]);
+  }, [reservation, newEndTime])
 
   // Fetch maximum extension time
   useEffect(() => {
     const fetchMaxExtension = async () => {
       if (reservation) {
         // @ts-ignore
-        const resultAction = await dispatch(
-          getMaxExtensionTime(reservation.id),
-        );
+        const resultAction = await dispatch(getMaxExtensionTime(reservation.id))
         if (getMaxExtensionTime.fulfilled.match(resultAction)) {
-          const { maxExtensionTime } = resultAction.payload;
-          setMaxExtensionTime(maxExtensionTime);
-          console.log("Max Extension Time:", maxExtensionTime);
+          const { maxExtensionTime } = resultAction.payload
+          setMaxExtensionTime(maxExtensionTime)
+          console.log("Max Extension Time:", maxExtensionTime)
         } else if (getMaxExtensionTime.rejected.match(resultAction)) {
           toast({
             title: "Error",
             description: "There is no availability to extend this reservation",
             variant: "destructive",
-          });
-          router.push("/bookings");
+          })
+          router.push("/bookings")
         }
       }
-    };
-    fetchMaxExtension();
-  }, [dispatch, reservation, router]);
+    }
+    fetchMaxExtension()
+  }, [dispatch, reservation, router])
 
   // Calculate total price whenever newEndTime changes
   useEffect(() => {
     if (newEndTime && reservation && current_spot?.pricing_info?.base_price) {
-      const currentEnd = new Date(reservation.end_time);
-      const newEnd = new Date(newEndTime);
+      const currentEnd = new Date(reservation.end_time)
+      const newEnd = new Date(newEndTime)
 
-      console.log("New End Time:", newEndTime);
-      console.log("Parsed Current End Time:", currentEnd);
-      console.log("Parsed New End Time:", newEnd);
+      console.log("New End Time:", newEndTime)
+      console.log("Parsed Current End Time:", currentEnd)
+      console.log("Parsed New End Time:", newEnd)
       console.log(
         "Is New End Valid and After Current End:",
         isValid(currentEnd) && isValid(newEnd) && newEnd > currentEnd,
-      );
+      )
 
       if (isValid(currentEnd) && isValid(newEnd) && newEnd > currentEnd) {
-        const minutesDifference = differenceInMinutes(newEnd, currentEnd);
-        const hoursDifference = minutesDifference / 60;
+        const minutesDifference = differenceInMinutes(newEnd, currentEnd)
+        const hoursDifference = minutesDifference / 60
         const calculatedPrice =
           Math.round(
             hoursDifference * current_spot.pricing_info.base_price * 100,
-          ) / 100;
-        setTotalPrice(calculatedPrice);
-        console.log("Minutes Difference:", minutesDifference);
-        console.log("Hours Difference:", hoursDifference);
-        console.log("Calculated Price:", calculatedPrice);
+          ) / 100
+        setTotalPrice(calculatedPrice)
+        console.log("Minutes Difference:", minutesDifference)
+        console.log("Hours Difference:", hoursDifference)
+        console.log("Calculated Price:", calculatedPrice)
       } else {
-        setTotalPrice(0);
-        console.log("Invalid new end time. Total Price set to 0.");
+        setTotalPrice(0)
+        console.log("Invalid new end time. Total Price set to 0.")
       }
     } else {
-      setTotalPrice(0);
+      setTotalPrice(0)
       console.log(
         "New end time, reservation, or base price missing. Total Price set to 0.",
-      );
+      )
     }
-  }, [newEndTime, reservation, current_spot]);
+  }, [newEndTime, reservation, current_spot])
 
   // Handle actual reservation extension
   const handleConfirmExtend = async () => {
-    setIsSubmitting(true);
+    setIsSubmitting(true)
     // @ts-ignore
     const resultAction = await dispatch(
       updateReservation({
@@ -182,30 +178,30 @@ const ExtendReservationPage = () => {
           end_time: new Date(newEndTime).toISOString(),
         },
       }),
-    );
+    )
 
-    setIsSubmitting(false);
-    setIsConfirmationVisible(false); // Hide the confirmation card after submission
+    setIsSubmitting(false)
+    setIsConfirmationVisible(false) // Hide the confirmation card after submission
 
     if (updateReservation.fulfilled.match(resultAction)) {
       toast({
         title: "Success",
         description: "Reservation extended successfully",
         variant: "success",
-      });
-      router.push("/bookings");
+      })
+      router.push("/bookings")
     } else if (updateReservation.rejected.match(resultAction)) {
       toast({
         title: "Error",
         description: resultAction.payload || "Failed to extend reservation",
         variant: "destructive",
-      });
+      })
     }
-  };
+  }
 
   // Handle form submission: Open the confirmation card instead of a dialog
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
     // Input validation
     if (!newEndTime) {
@@ -213,12 +209,12 @@ const ExtendReservationPage = () => {
         title: "Error",
         description: "Please select a new end time.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
-    const currentEnd = new Date(reservation.end_time);
-    const selectedEnd = new Date(newEndTime);
+    const currentEnd = new Date(reservation.end_time)
+    const selectedEnd = new Date(newEndTime)
 
     if (!isValid(selectedEnd) || selectedEnd <= currentEnd) {
       toast({
@@ -226,8 +222,8 @@ const ExtendReservationPage = () => {
         description:
           "Please select a valid end time later than the current end time.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
     if (totalPrice === 0) {
@@ -235,13 +231,13 @@ const ExtendReservationPage = () => {
         title: "Error",
         description: "Total price cannot be zero.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
     // Open the confirmation card
-    setIsConfirmationVisible(true);
-  };
+    setIsConfirmationVisible(true)
+  }
 
   if (isLoading) {
     return (
@@ -252,7 +248,7 @@ const ExtendReservationPage = () => {
         <Skeleton className="h-4 w-full mb-2" />
         <Skeleton className="h-12 w-full" />
       </div>
-    );
+    )
   }
 
   if (!reservation) {
@@ -260,16 +256,16 @@ const ExtendReservationPage = () => {
       <div className="flex justify-center items-center h-screen">
         <p>Reservation not found.</p>
       </div>
-    );
+    )
   }
 
   // Log reservation and parking spot details for debugging
-  console.log("Reservation:", reservation);
-  console.log("Reservation end_time:", reservation.end_time);
-  console.log("Current Spot Pricing Info:", current_spot?.pricing_info);
-  console.log("Base Price:", current_spot?.pricing_info?.base_price);
-  console.log("newEndTime:", newEndTime);
-  console.log("totalPrice:", totalPrice);
+  console.log("Reservation:", reservation)
+  console.log("Reservation end_time:", reservation.end_time)
+  console.log("Current Spot Pricing Info:", current_spot?.pricing_info)
+  console.log("Base Price:", current_spot?.pricing_info?.base_price)
+  console.log("newEndTime:", newEndTime)
+  console.log("totalPrice:", totalPrice)
 
   return (
     <motion.div
@@ -428,7 +424,7 @@ const ExtendReservationPage = () => {
         </div>
       )}
     </motion.div>
-  );
-};
+  )
+}
 
-export default ExtendReservationPage;
+export default ExtendReservationPage

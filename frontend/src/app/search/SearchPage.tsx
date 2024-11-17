@@ -1,13 +1,13 @@
-"use client";
+"use client"
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
-import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
+import React, { useEffect, useRef, useState, useCallback } from "react"
+import { motion } from "framer-motion"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Slider } from "@/components/ui/slider"
 import {
   Dialog,
   DialogTrigger,
@@ -18,7 +18,7 @@ import {
   DialogClose,
   DialogPortal,
   DialogOverlay,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog"
 import {
   Autocomplete,
   GoogleMap,
@@ -26,10 +26,10 @@ import {
   Marker,
   DirectionsRenderer,
   InfoWindow,
-} from "@react-google-maps/api";
-import { markSpotTaken } from "@/features/parking-space/parkingSpaceSlice";
-import { searchSpots } from "@/features/search/searchSlice";
-import { usePathname, useRouter } from "next/navigation";
+} from "@react-google-maps/api"
+import { markSpotTaken } from "@/features/parking-space/parkingSpaceSlice"
+import { searchSpots } from "@/features/search/searchSlice"
+import { usePathname, useRouter } from "next/navigation"
 import {
   ArrowDown,
   ArrowUp,
@@ -42,135 +42,135 @@ import {
   ShieldCheck,
   ShieldEllipsis,
   ShieldX,
-} from "lucide-react";
-import { DaysOfWeek, ParkingSpace, TimeSlot } from "@/types/type";
-import axios from "axios";
-import Webcam from "react-webcam";
-import { useToast } from "@/hooks/use-toast";
+} from "lucide-react"
+import { DaysOfWeek, ParkingSpace, TimeSlot } from "@/types/type"
+import axios from "axios"
+import Webcam from "react-webcam"
+import { useToast } from "@/hooks/use-toast"
 
-import ImageWrapper from "@/components/custom/ImageWrapper";
-import { Badge } from "@/components/ui/badge";
-import { components } from "@/types/generated";
-import { RatingDisplay } from "@/components/custom/RatingDisplay";
-import DriverArrive from "@/app/search/components/driverArrive";
+import ImageWrapper from "@/components/custom/ImageWrapper"
+import { Badge } from "@/components/ui/badge"
+import { components } from "@/types/generated"
+import { RatingDisplay } from "@/components/custom/RatingDisplay"
+import DriverArrive from "@/app/search/components/driverArrive"
 
 const default_center = {
   // Purdue University coords
   lat: 40.4137,
   lng: -86.9112,
-};
+}
 
 export default function SearchPage() {
-  const { toast } = useToast();
-  const router = useRouter();
-  const dispatch = useAppDispatch();
+  const { toast } = useToast()
+  const router = useRouter()
+  const dispatch = useAppDispatch()
 
-  const parkingSpots = useAppSelector((state) => state.search.spots);
+  const parkingSpots = useAppSelector((state) => state.search.spots)
 
-  const [domLoaded, setDomLoaded] = useState(false);
+  const [domLoaded, setDomLoaded] = useState(false)
   const [userLocation, setUserLocation] =
-    useState<google.maps.LatLngLiteral | null>(null);
+    useState<google.maps.LatLngLiteral | null>(null)
   const [selectedLocation, setSelectedLocation] =
-    useState<google.maps.LatLngLiteral | null>(null);
-  const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null);
+    useState<google.maps.LatLngLiteral | null>(null)
+  const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null)
   const [directions, setDirections] =
-    useState<google.maps.DirectionsResult | null>(null);
-  const [searchRadius, setSearchRadius] = useState<number>(5);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+    useState<google.maps.DirectionsResult | null>(null)
+  const [searchRadius, setSearchRadius] = useState<number>(5)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [mapCenter, setMapCenter] =
-    useState<google.maps.LatLngLiteral>(default_center);
-  const [isListCollapsed, setIsListCollapsed] = useState(true);
-  const [geoEnabled, setGeoEnabled] = useState(false);
-  const [address, setAddress] = useState<string>("");
+    useState<google.maps.LatLngLiteral>(default_center)
+  const [isListCollapsed, setIsListCollapsed] = useState(true)
+  const [geoEnabled, setGeoEnabled] = useState(false)
+  const [address, setAddress] = useState<string>("")
   const [autocomplete, setAutocomplete] =
-    useState<google.maps.places.Autocomplete | null>(null);
-  const [useCurrentLocation, setUseCurrentLocation] = useState(true);
-  const [navigationMode, setNavigationMode] = useState(false);
-  const [reachedDestination, setReachedDestination] = useState(false);
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [iconScale, setIconScale] = useState<google.maps.Size | null>(null);
-  const [showImageModal, setShowImageModal] = useState(false);
-  const navigationCardRef = useRef<HTMLDivElement>(null);
+    useState<google.maps.places.Autocomplete | null>(null)
+  const [useCurrentLocation, setUseCurrentLocation] = useState(true)
+  const [navigationMode, setNavigationMode] = useState(false)
+  const [reachedDestination, setReachedDestination] = useState(false)
+  const [currentStepIndex, setCurrentStepIndex] = useState(0)
+  const [iconScale, setIconScale] = useState<google.maps.Size | null>(null)
+  const [showImageModal, setShowImageModal] = useState(false)
+  const navigationCardRef = useRef<HTMLDivElement>(null)
   const onLoadAutocomplete = (
     autocompleteInstance: google.maps.places.Autocomplete,
   ) => {
-    setAutocomplete(autocompleteInstance);
-  };
-  const [showLoginModal, setShowLoginModal] = useState(false); // Track login modal state
+    setAutocomplete(autocompleteInstance)
+  }
+  const [showLoginModal, setShowLoginModal] = useState(false) // Track login modal state
   // Filter States
-  const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
-  const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
-  const [startTime, setStartTime] = useState<string | undefined>(undefined);
-  const [endTime, setEndTime] = useState<string | undefined>(undefined);
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [minPrice, setMinPrice] = useState<number | undefined>(undefined)
+  const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined)
+  const [startTime, setStartTime] = useState<string | undefined>(undefined)
+  const [endTime, setEndTime] = useState<string | undefined>(undefined)
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([])
   const featuresOptions = [
     { value: "covered", label: "Covered Parking" },
     { value: "electric", label: "Electric Charging" },
     { value: "accessible", label: "Accessible" },
     // Add more options as needed
-  ];
+  ]
 
   // New States for Filter Selection
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
-  const [paidStatus, setPaidStatus] = useState<string[]>([]); // Array to hold 'paid' and/or 'unpaid'
-  const [isCameraActive, setIsCameraActive] = useState(true);
-  const mapRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
-  const currentUrl = usePathname();
-  const isLoggedIn = useAppSelector((state) => state.user.isLoggedIn);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [currentSpotId, setCurrentSpotId] = useState<string | null>(null);
-  const webcamRef = useRef<Webcam>(null);
-  const DISTANCE_THRESHOLD = 200; // Maximum distance in meters
-  const [includeTakenSpots, setIncludeTakenSpots] = useState(false); // Default to showing only available spots
-  const [photoTimestamp, setPhotoTimestamp] = useState<string | null>(null);
-  const [photoLocation, setPhotoLocation] = useState<string | null>(null);
-  const [driverArriveOpen, setDriverArriveOpen] = useState(false);
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([])
+  const [paidStatus, setPaidStatus] = useState<string[]>([]) // Array to hold 'paid' and/or 'unpaid'
+  const [isCameraActive, setIsCameraActive] = useState(true)
+  const mapRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+  const currentUrl = usePathname()
+  const isLoggedIn = useAppSelector((state) => state.user.isLoggedIn)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [photo, setPhoto] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [currentSpotId, setCurrentSpotId] = useState<string | null>(null)
+  const webcamRef = useRef<Webcam>(null)
+  const DISTANCE_THRESHOLD = 200 // Maximum distance in meters
+  const [includeTakenSpots, setIncludeTakenSpots] = useState(false) // Default to showing only available spots
+  const [photoTimestamp, setPhotoTimestamp] = useState<string | null>(null)
+  const [photoLocation, setPhotoLocation] = useState<string | null>(null)
+  const [driverArriveOpen, setDriverArriveOpen] = useState(false)
 
   const openDriverArriveDialog = () => {
-    setDriverArriveOpen(true);
-  };
+    setDriverArriveOpen(true)
+  }
 
   const closeDriverArriveDialog = () => {
-    setDriverArriveOpen(false);
-  };
+    setDriverArriveOpen(false)
+  }
 
   const openUpdateStatusDialog = (spotId: string) => {
-    setCurrentSpotId(spotId);
-    setIsDialogOpen(true);
-  };
+    setCurrentSpotId(spotId)
+    setIsDialogOpen(true)
+  }
 
   const closeUpdateStatusDialog = () => {
-    setIsDialogOpen(false);
-    setCurrentSpotId(null);
-    setPhoto(null);
-    setPreviewUrl(null); // Clear the preview
-    setIsCameraActive(true); // Reset camera to active
-  };
+    setIsDialogOpen(false)
+    setCurrentSpotId(null)
+    setPhoto(null)
+    setPreviewUrl(null) // Clear the preview
+    setIsCameraActive(true) // Reset camera to active
+  }
 
   const isWithinDistance = () => {
     if (!userLocation || !selectedSpot || !selectedSpot.location) {
-      return false;
+      return false
     }
 
     const spotLocation = {
       lat: selectedSpot.location.latitude,
       lng: selectedSpot.location.longitude,
-    };
+    }
 
-    const distance = calculateDistance(userLocation, spotLocation);
-    console.log("Distance: ", distance);
-    return distance <= DISTANCE_THRESHOLD;
-  };
+    const distance = calculateDistance(userLocation, spotLocation)
+    console.log("Distance: ", distance)
+    return distance <= DISTANCE_THRESHOLD
+  }
   /**
    * **Submit Spot Status Update**
    */
   const handleSubmit = async () => {
     if (!currentSpotId || !userLocation) {
-      console.error("No spot selected or user location unavailable.");
-      return;
+      console.error("No spot selected or user location unavailable.")
+      return
     }
 
     // Check if a photo is uploaded before submitting
@@ -179,105 +179,105 @@ export default function SearchPage() {
         title: "Photo Required",
         description: "Please upload a photo before submitting.",
         variant: "destructive",
-      });
-      return; // Exit if no photo is uploaded
+      })
+      return // Exit if no photo is uploaded
     }
 
     // Prepare form data for API submission
-    const formData = new FormData();
-    formData.append("latitude", userLocation.lat.toString());
-    formData.append("longitude", userLocation.lng.toString());
-    formData.append("photo", photo);
+    const formData = new FormData()
+    formData.append("latitude", userLocation.lat.toString())
+    formData.append("longitude", userLocation.lng.toString())
+    formData.append("photo", photo)
 
     // Wrap formData and currentSpotId in an object that matches markSpotTaken's expected parameter type
     const submissionData = {
       parkingSpaceId: currentSpotId,
       formData: formData,
-    };
+    }
 
     try {
-      await dispatch(markSpotTaken(submissionData)).unwrap();
-      console.log("Spot status updated successfully.");
+      await dispatch(markSpotTaken(submissionData)).unwrap()
+      console.log("Spot status updated successfully.")
       toast({
         title: "Spot Update Successful",
         description: "The parking spot status was updated successfully.",
         variant: "success",
-      });
-      setTimeout(closeUpdateStatusDialog, 500);
+      })
+      setTimeout(closeUpdateStatusDialog, 500)
     } catch (error) {
-      console.error("Failed to update spot status:", error);
+      console.error("Failed to update spot status:", error)
       toast({
         title: "Spot Update Failed",
         description:
           "Failed to update the parking spot status. Please try again.",
         variant: "destructive",
-      });
+      })
     }
-  };
+  }
 
   const handleCameraCapture = useCallback(async () => {
-    const imageSrc = webcamRef.current?.getScreenshot();
+    const imageSrc = webcamRef.current?.getScreenshot()
     if (imageSrc) {
-      setPreviewUrl(imageSrc);
+      setPreviewUrl(imageSrc)
       fetch(imageSrc)
         .then((res) => res.blob())
         .then((blob) => {
           const file = new File([blob], "camera_capture.jpg", {
             type: "image/jpeg",
-          });
-          setPhoto(file);
-          setIsCameraActive(false); // Switch to preview mode
-          setPhotoTimestamp(new Date().toLocaleString()); // Capture current timestamp
+          })
+          setPhoto(file)
+          setIsCameraActive(false) // Switch to preview mode
+          setPhotoTimestamp(new Date().toLocaleString()) // Capture current timestamp
           if (userLocation) {
             setPhotoLocation(
               `${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`,
-            );
+            )
           } else {
-            setPhotoLocation("Location unavailable"); // Fallback if location is not available
+            setPhotoLocation("Location unavailable") // Fallback if location is not available
           }
-        });
+        })
     }
-  }, [userLocation]);
+  }, [userLocation])
 
   const handleRetake = () => {
-    setPreviewUrl(null);
-    setPhoto(null);
-    setIsCameraActive(true); // Reactivate the camera
-  };
+    setPreviewUrl(null)
+    setPhoto(null)
+    setIsCameraActive(true) // Reactivate the camera
+  }
 
   useEffect(() => {
     // @ts-ignore
-    dispatch({ type: "search/resetSpots" });
-    setDomLoaded(true);
+    dispatch({ type: "search/resetSpots" })
+    setDomLoaded(true)
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const location = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-          };
-          setUserLocation(location);
-          setMapCenter(location);
-          setGeoEnabled(true);
+          }
+          setUserLocation(location)
+          setMapCenter(location)
+          setGeoEnabled(true)
 
-          fetchAddressFromLocation(location);
+          fetchAddressFromLocation(location)
         },
         () => {
-          console.error("Error: The Geolocation service failed.");
-          setGeoEnabled(false);
+          console.error("Error: The Geolocation service failed.")
+          setGeoEnabled(false)
         },
-      );
+      )
     } else {
-      console.error("Error: Your browser doesn't support geolocation.");
-      setGeoEnabled(false);
+      console.error("Error: Your browser doesn't support geolocation.")
+      setGeoEnabled(false)
     }
-  }, []);
+  }, [])
 
   useEffect(() => {
     if (useCurrentLocation && userLocation) {
-      setMapCenter(userLocation);
+      setMapCenter(userLocation)
     }
-  }, [useCurrentLocation]);
+  }, [useCurrentLocation])
 
   const fetchAddressFromLocation = async (
     location: google.maps.LatLngLiteral,
@@ -291,15 +291,15 @@ export default function SearchPage() {
             key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
           },
         },
-      );
+      )
 
       if (geocodeResult.data.results.length > 0) {
-        setAddress(geocodeResult.data.results[0].formatted_address);
+        setAddress(geocodeResult.data.results[0].formatted_address)
       }
     } catch (error) {
-      console.error("Error fetching address:", error);
+      console.error("Error fetching address:", error)
     }
-  };
+  }
 
   const enableGeolocation = (
     <div className="p-4 bg-gray-100 rounded-md">
@@ -313,7 +313,7 @@ export default function SearchPage() {
         <li className="mb-1">Reload the page after enabling it.</li>
       </ol>
     </div>
-  );
+  )
 
   const pulsatingCircleSVG = `
   <svg width="30" height="30" xmlns="http://www.w3.org/2000/svg">
@@ -340,12 +340,11 @@ export default function SearchPage() {
     <circle cx="15" cy="15" r="9" fill="#4285F4" stroke="white" stroke-width="1" />
     <circle cx="15" cy="15" r="9" fill="rgba(66, 133, 244, 0.5)" class="pulsating-circle" stroke="black" stroke-width="1" />
   </svg>
-  `;
+  `
   const encodedSVG =
-    "data:image/svg+xml;charset=UTF-8," +
-    encodeURIComponent(pulsatingCircleSVG);
+    "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(pulsatingCircleSVG)
   const onSearch = async () => {
-    let location = userLocation;
+    let location = userLocation
 
     if (address && !useCurrentLocation) {
       try {
@@ -357,24 +356,24 @@ export default function SearchPage() {
               key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
             },
           },
-        );
+        )
 
         if (geocodeResult.data.results.length > 0) {
-          location = geocodeResult.data.results[0].geometry.location;
-          setMapCenter(location ?? default_center);
+          location = geocodeResult.data.results[0].geometry.location
+          setMapCenter(location ?? default_center)
         } else {
-          console.error("No results found for the given address.");
-          return;
+          console.error("No results found for the given address.")
+          return
         }
       } catch (error) {
-        console.error("Error fetching geocode data:", error);
-        return;
+        console.error("Error fetching geocode data:", error)
+        return
       }
     }
 
     if (!location) {
-      console.error("User location is not available yet.");
-      return;
+      console.error("User location is not available yet.")
+      return
     }
 
     const request: any = {
@@ -382,85 +381,85 @@ export default function SearchPage() {
       longitude: location.lng,
       radius: searchRadius,
       paid_status: "ALL",
-    };
+    }
     if (includeTakenSpots) {
-      request.is_taken = true;
+      request.is_taken = true
     } else {
-      request.is_taken = false;
+      request.is_taken = false
     }
     if (selectedFilters.includes("minPrice") && minPrice !== undefined) {
-      request.min_price = minPrice;
+      request.min_price = minPrice
     }
 
     if (selectedFilters.includes("maxPrice") && maxPrice !== undefined) {
-      request.max_price = maxPrice;
+      request.max_price = maxPrice
     }
 
     if (selectedFilters.includes("startTime") && startTime) {
-      request.start_time = startTime;
+      request.start_time = startTime
     }
 
     if (selectedFilters.includes("endTime") && endTime) {
-      request.end_time = endTime;
+      request.end_time = endTime
     }
 
     if (selectedFilters.includes("features") && selectedFeatures.length > 0) {
-      request.features = selectedFeatures;
+      request.features = selectedFeatures
     }
 
     if (selectedFilters.includes("paidStatus")) {
       if (paidStatus.length === 1) {
         if (paidStatus.includes("paid")) {
-          request.paid_status = "PAID";
+          request.paid_status = "PAID"
         } else if (paidStatus.includes("unpaid")) {
-          request.paid_status = "UNPAID";
+          request.paid_status = "UNPAID"
         }
       }
       // If both are selected or none are selected, do not set paid_status (i.e., 'ALL')
     }
 
     try {
-      await dispatch(searchSpots(request));
-      setIsSearchOpen(false);
+      await dispatch(searchSpots(request))
+      setIsSearchOpen(false)
     } catch (error) {
-      console.error("Search failed:", error);
+      console.error("Search failed:", error)
     }
-  };
+  }
 
   const handleSpotSelect = (spot: ParkingSpace) => {
-    console.log("Spot clicked:", spot);
+    console.log("Spot clicked:", spot)
     if (selectedSpot && selectedSpot.id === spot.id) {
-      setSelectedSpot(null);
+      setSelectedSpot(null)
     } else {
-      setSelectedSpot(spot);
+      setSelectedSpot(spot)
       if (spot.location) {
         setMapCenter({
           lat: spot.location.latitude,
           lng: spot.location.longitude,
-        });
+        })
       }
     }
-    setDirections(null);
-  };
+    setDirections(null)
+  }
 
   const handlePlaceSelect = () => {
     if (autocomplete) {
-      const place = autocomplete.getPlace();
+      const place = autocomplete.getPlace()
       if (place.geometry && place.geometry.location) {
         const location = {
           lat: place.geometry.location.lat(),
           lng: place.geometry.location.lng(),
-        };
-        setMapCenter(location);
-        setSelectedLocation(location);
-        setAddress(place.formatted_address || ""); // Update the address state
+        }
+        setMapCenter(location)
+        setSelectedLocation(location)
+        setAddress(place.formatted_address || "") // Update the address state
       }
     }
-  };
+  }
 
   const getDirections = () => {
     if (selectedSpot && userLocation) {
-      const directionsService = new window.google.maps.DirectionsService();
+      const directionsService = new window.google.maps.DirectionsService()
       directionsService.route(
         {
           origin: userLocation,
@@ -472,28 +471,28 @@ export default function SearchPage() {
         },
         (result, status) => {
           if (status === window.google.maps.DirectionsStatus.OK) {
-            setDirections(result);
-            setNavigationMode(true);
-            setIsListCollapsed(true);
+            setDirections(result)
+            setNavigationMode(true)
+            setIsListCollapsed(true)
           } else {
-            console.error(`error fetching directions ${result}`);
+            console.error(`error fetching directions ${result}`)
           }
         },
-      );
+      )
     }
-  };
+  }
 
   const toggleSearch = () => {
-    setIsSearchOpen(!isSearchOpen);
-  };
+    setIsSearchOpen(!isSearchOpen)
+  }
 
   const handleArrowClick = () => {
-    setIsListCollapsed(!isListCollapsed);
-  };
+    setIsListCollapsed(!isListCollapsed)
+  }
 
   // Watch user location and check if within 50 feet of destination
   useEffect(() => {
-    let watchId: number;
+    let watchId: number
 
     if (navigationMode && selectedSpot) {
       watchId = navigator.geolocation.watchPosition(
@@ -501,50 +500,50 @@ export default function SearchPage() {
           const location = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-          };
+          }
           // add random int to differentiate console logs
-          console.log("User location updated:", location, Math.random());
+          console.log("User location updated:", location, Math.random())
 
-          setUserLocation(location);
-          updateCurrentStep(location);
+          setUserLocation(location)
+          updateCurrentStep(location)
 
           const distance = calculateDistance(location, {
             lat: selectedSpot.location.latitude,
             lng: selectedSpot.location.longitude,
-          });
+          })
 
-          console.log("Distance to destination:", distance);
+          console.log("Distance to destination:", distance)
 
           if (distance < 50) {
-            setReachedDestination(true);
-            setDirections(null);
+            setReachedDestination(true)
+            setDirections(null)
           } else {
-            setReachedDestination(false);
+            setReachedDestination(false)
           }
         },
         (error) => {
-          console.error("Error getting position:", error);
+          console.error("Error getting position:", error)
         },
         {
           enableHighAccuracy: false,
           maximumAge: 5000,
         },
-      );
+      )
     }
     return () => {
       if (watchId) {
-        navigator.geolocation.clearWatch(watchId);
+        navigator.geolocation.clearWatch(watchId)
       }
-    };
-  }, [navigationMode, selectedSpot]);
+    }
+  }, [navigationMode, selectedSpot])
 
   // Prevent list expansion with navigation mode
   useEffect(() => {
-    setIsListCollapsed(true);
-  }, [navigationMode]);
+    setIsListCollapsed(true)
+  }, [navigationMode])
 
   useEffect(() => {
-    let watchId: number;
+    let watchId: number
 
     if (!navigationMode) {
       watchId = navigator.geolocation.watchPosition(
@@ -552,119 +551,119 @@ export default function SearchPage() {
           const location = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-          };
+          }
           console.log(
             "User location updated (non-navigation mode):",
             location,
             Math.random(),
-          );
+          )
 
-          setUserLocation(location);
+          setUserLocation(location)
 
           // You can add any additional logic here if needed
         },
         (error) => {
-          console.error("Error getting position:", error);
+          console.error("Error getting position:", error)
         },
         {
           enableHighAccuracy: false,
           maximumAge: 5000,
         },
-      );
+      )
     }
 
     return () => {
       if (watchId) {
-        navigator.geolocation.clearWatch(watchId);
+        navigator.geolocation.clearWatch(watchId)
       }
-    };
-  }, [navigationMode]);
+    }
+  }, [navigationMode])
 
   const calculateDistance = (
     location1: google.maps.LatLngLiteral,
     location2: google.maps.LatLngLiteral,
   ) => {
-    const R = 6371e3; // meters
-    const a1 = (location1.lat * Math.PI) / 180; // a, b in radians
-    const a2 = (location2.lat * Math.PI) / 180;
-    const da = ((location2.lat - location1.lat) * Math.PI) / 180;
-    const db = ((location2.lng - location1.lng) * Math.PI) / 180;
+    const R = 6371e3 // meters
+    const a1 = (location1.lat * Math.PI) / 180 // a, b in radians
+    const a2 = (location2.lat * Math.PI) / 180
+    const da = ((location2.lat - location1.lat) * Math.PI) / 180
+    const db = ((location2.lng - location1.lng) * Math.PI) / 180
 
     const a =
       Math.sin(da / 2) * Math.sin(da / 2) +
-      Math.cos(a1) * Math.cos(a2) * Math.sin(db / 2) * Math.sin(db / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      Math.cos(a1) * Math.cos(a2) * Math.sin(db / 2) * Math.sin(db / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 
-    const distance = R * c; // in meters
-    return distance; // convert to feet by multiplying 3.28084
-  };
+    const distance = R * c // in meters
+    return distance // convert to feet by multiplying 3.28084
+  }
 
   const updateCurrentStep = (userLocation: google.maps.LatLngLiteral) => {
     if (directions) {
-      const steps = directions.routes[0].legs[0].steps;
-      let closestStepIndex = currentStepIndex; // Start with the current step
+      const steps = directions.routes[0].legs[0].steps
+      let closestStepIndex = currentStepIndex // Start with the current step
       let closestDistance = calculateDistance(userLocation, {
         lat: steps[currentStepIndex].start_location.lat(),
         lng: steps[currentStepIndex].start_location.lng(),
-      });
+      })
 
       // Iterate through steps to find the closest one
       for (let i = currentStepIndex; i < steps.length; i++) {
         const stepLocation = {
           lat: steps[i].start_location.lat(),
           lng: steps[i].start_location.lng(),
-        };
-        const distance = calculateDistance(userLocation, stepLocation);
+        }
+        const distance = calculateDistance(userLocation, stepLocation)
 
         // Only consider steps ahead or the current step
         if (distance < closestDistance && i >= currentStepIndex) {
-          closestStepIndex = i;
-          closestDistance = distance;
-          console.log("New closest step:", i, distance);
+          closestStepIndex = i
+          closestDistance = distance
+          console.log("New closest step:", i, distance)
         }
       }
 
       // Update the step index only if a closer step is found
       if (closestStepIndex > currentStepIndex) {
-        setCurrentStepIndex(closestStepIndex);
+        setCurrentStepIndex(closestStepIndex)
       }
     }
-  };
+  }
 
   const handleSliderChange = (value: number[]) => {
-    setSearchRadius(value[0]);
-  };
+    setSearchRadius(value[0])
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = parseInt(e.target.value, 10);
+    let value = parseInt(e.target.value, 10)
 
     if (isNaN(value)) {
-      value = 0;
+      value = 0
     } else if (value > 5) {
-      value = 5;
+      value = 5
     } else if (value < 0) {
-      value = 0;
+      value = 0
     }
 
-    setSearchRadius(value);
-  };
+    setSearchRadius(value)
+  }
 
   // Handle restricted actions and show modal if not logged in
   const reserveSpot = (parkingSpaceId: string | undefined) => {
     if (!parkingSpaceId) {
-      return;
+      return
     }
     if (!isLoggedIn) {
-      setShowLoginModal(true); // Show login modal if not logged in
-      return;
+      setShowLoginModal(true) // Show login modal if not logged in
+      return
     }
     if (!parkingSpaceId) {
-      return;
+      return
     }
     router.push(
       `/bookings/${parkingSpaceId}/reserve?previousUrl=${encodeURIComponent(currentUrl ?? "/search")}`,
-    );
-  };
+    )
+  }
 
   const renderSpots = (spots: ParkingSpace[]) => (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -686,25 +685,25 @@ export default function SearchPage() {
         </motion.div>
       ))}
     </div>
-  );
+  )
 
   useEffect(() => {
     const adjustMapHeight = () => {
       if (navigationCardRef.current) {
-        const navigationCardHeight = navigationCardRef.current.offsetHeight;
+        const navigationCardHeight = navigationCardRef.current.offsetHeight
         if (mapRef.current) {
-          mapRef.current.style.height = `calc(100vh - 64px - ${navigationCardHeight}px)`;
+          mapRef.current.style.height = `calc(100vh - 64px - ${navigationCardHeight}px)`
         }
       }
-    };
+    }
 
-    adjustMapHeight();
-    window.addEventListener("resize", adjustMapHeight);
+    adjustMapHeight()
+    window.addEventListener("resize", adjustMapHeight)
 
     return () => {
-      window.removeEventListener("resize", adjustMapHeight);
-    };
-  }, []);
+      window.removeEventListener("resize", adjustMapHeight)
+    }
+  }, [])
 
   // Define available filters
   const availableFilters = [
@@ -715,24 +714,24 @@ export default function SearchPage() {
     // { key: 'features', label: 'Features' },
     { key: "paidStatus", label: "Paid Status" }, // New Paid Status Filter
     //{key: 'allowTaken', label: 'Include Taken Spots'},
-  ];
+  ]
 
   // Handle Deselect All
   const handleDeselectAll = () => {
-    setSelectedFilters([]);
-    setMinPrice(undefined);
-    setMaxPrice(undefined);
-    setStartTime(undefined);
-    setEndTime(undefined);
+    setSelectedFilters([])
+    setMinPrice(undefined)
+    setMaxPrice(undefined)
+    setStartTime(undefined)
+    setEndTime(undefined)
     //setSelectedFeatures([]);
-    setPaidStatus([]);
-  };
+    setPaidStatus([])
+  }
 
   const getAvailableDays = (
     availabilitySchedule: components["schemas"]["TimeSlot"][] | undefined,
   ) => {
     if (!availabilitySchedule || availabilitySchedule.length === 0) {
-      return [];
+      return []
     }
     const daysOfWeekOrder = [
       "Monday",
@@ -742,49 +741,49 @@ export default function SearchPage() {
       "Friday",
       "Saturday",
       "Sunday",
-    ];
-    const days = availabilitySchedule.map(({ day_of_week }) => day_of_week);
+    ]
+    const days = availabilitySchedule.map(({ day_of_week }) => day_of_week)
     return days.sort(
       (a, b) => daysOfWeekOrder.indexOf(a) - daysOfWeekOrder.indexOf(b),
-    );
-  };
+    )
+  }
 
   // Helper function to determine the time range
   const getTimeRange = (availabilitySchedule: any) => {
     if (!availabilitySchedule || availabilitySchedule.length === 0) {
-      return "";
+      return ""
     }
 
     // Get all unique time ranges
     const timeRanges = new Set(
-      // @ts-ignore
       availabilitySchedule.map(
+        // @ts-ignore
         ({ start_time, end_time }) => `${start_time} - ${end_time}`,
       ),
-    );
+    )
 
     // If only one time range exists
     if (timeRanges.size === 1) {
-      const timeRange = timeRanges.values().next().value;
+      const timeRange = timeRanges.values().next().value
       // Check if time range is 00:00 - 23:59
       if (timeRange === "00:00 - 23:59") {
-        return "24 hours";
+        return "24 hours"
       } else {
-        return `${timeRange}`;
+        return `${timeRange}`
       }
     } else {
       // Multiple time ranges
-      return "Various times";
+      return "Various times"
     }
-  };
+  }
 
   // Helper function to check if the spot is available 24/7
   const isAvailable247 = (availabilitySchedule: any) => {
     if (!availabilitySchedule || availabilitySchedule.length === 0) {
-      return false;
+      return false
     }
     //@ts-ignore
-    const days = availabilitySchedule.map(({ day_of_week }) => day_of_week);
+    const days = availabilitySchedule.map(({ day_of_week }) => day_of_week)
     const daysOfWeek = [
       "Monday",
       "Tuesday",
@@ -793,31 +792,31 @@ export default function SearchPage() {
       "Friday",
       "Saturday",
       "Sunday",
-    ];
+    ]
 
     // Check if all days are included
-    const hasAllDays = daysOfWeek.every((day: any) => days.includes(day));
+    const hasAllDays = daysOfWeek.every((day: any) => days.includes(day))
 
     // Check if time is 00:00 - 23:59 for all entries
     const isAllTime247 = availabilitySchedule.every(
       //@ts-ignore
       ({ start_time, end_time }) =>
         start_time === "00:00" && end_time === "23:59",
-    );
+    )
 
-    return hasAllDays && isAllTime247;
-  };
+    return hasAllDays && isAllTime247
+  }
 
   // Function to close the modal
   const closeLoginModal = () => {
-    setShowLoginModal(false);
-    setMinPrice(undefined);
-    setMaxPrice(undefined);
-    setStartTime(undefined);
-    setEndTime(undefined);
+    setShowLoginModal(false)
+    setMinPrice(undefined)
+    setMaxPrice(undefined)
+    setStartTime(undefined)
+    setEndTime(undefined)
     //setSelectedFeatures([]);
-    setPaidStatus([]);
-  };
+    setPaidStatus([])
+  }
 
   return (
     domLoaded && (
@@ -970,38 +969,38 @@ export default function SearchPage() {
                               value={filter.key}
                               checked={selectedFilters.includes(filter.key)}
                               onChange={(e) => {
-                                const { value, checked } = e.target;
+                                const { value, checked } = e.target
                                 if (checked) {
                                   setSelectedFilters([
                                     ...selectedFilters,
                                     value,
-                                  ]);
+                                  ])
                                 } else {
                                   setSelectedFilters(
                                     selectedFilters.filter((f) => f !== value),
-                                  );
+                                  )
                                   // Reset the filter values when unselected
                                   switch (value) {
                                     case "minPrice":
-                                      setMinPrice(undefined);
-                                      break;
+                                      setMinPrice(undefined)
+                                      break
                                     case "maxPrice":
-                                      setMaxPrice(undefined);
-                                      break;
+                                      setMaxPrice(undefined)
+                                      break
                                     case "startTime":
-                                      setStartTime(undefined);
-                                      break;
+                                      setStartTime(undefined)
+                                      break
                                     case "endTime":
-                                      setEndTime(undefined);
-                                      break;
+                                      setEndTime(undefined)
+                                      break
                                     case "features":
                                       //setSelectedFeatures([]);
-                                      break;
+                                      break
                                     case "paidStatus":
-                                      setPaidStatus([]); // Reset to default (no selection)
-                                      break;
+                                      setPaidStatus([]) // Reset to default (no selection)
+                                      break
                                     default:
-                                      break;
+                                      break
                                   }
                                 }
                               }}
@@ -1128,15 +1127,15 @@ export default function SearchPage() {
                               value="paid"
                               checked={paidStatus.includes("paid")}
                               onChange={(e) => {
-                                const { value, checked } = e.target;
+                                const { value, checked } = e.target
                                 if (checked) {
-                                  setPaidStatus([...paidStatus, value]);
+                                  setPaidStatus([...paidStatus, value])
                                 } else {
                                   setPaidStatus(
                                     paidStatus.filter(
                                       (status) => status !== value,
                                     ),
-                                  );
+                                  )
                                 }
                               }}
                               className="mr-2"
@@ -1149,15 +1148,15 @@ export default function SearchPage() {
                               value="unpaid"
                               checked={paidStatus.includes("unpaid")}
                               onChange={(e) => {
-                                const { value, checked } = e.target;
+                                const { value, checked } = e.target
                                 if (checked) {
-                                  setPaidStatus([...paidStatus, value]);
+                                  setPaidStatus([...paidStatus, value])
                                 } else {
                                   setPaidStatus(
                                     paidStatus.filter(
                                       (status) => status !== value,
                                     ),
-                                  );
+                                  )
                                 }
                               }}
                               className="mr-2"
@@ -1648,9 +1647,9 @@ export default function SearchPage() {
               {navigationMode && (
                 <button
                   onClick={() => {
-                    setNavigationMode(false);
-                    setCurrentStepIndex(0);
-                    setDirections(null);
+                    setNavigationMode(false)
+                    setCurrentStepIndex(0)
+                    setDirections(null)
                   }}
                   className="mt-2 px-3 py-2 bg-red-500 text-white text-sm font-semibold rounded hover:bg-red-700 focus:outline-none"
                 >
@@ -1721,7 +1720,7 @@ export default function SearchPage() {
                                 prev + 1,
                                 directions.routes[0].legs[0].steps.length - 1,
                               ),
-                            );
+                            )
                           }
                         }}
                         className="px-3 py-2 bg-blue-500 text-white text-sm font-semibold rounded hover:bg-blue-700 focus:outline-none"
@@ -1747,5 +1746,5 @@ export default function SearchPage() {
         </div>
       </div>
     )
-  );
+  )
 }

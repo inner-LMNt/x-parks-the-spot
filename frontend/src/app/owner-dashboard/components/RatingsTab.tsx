@@ -1,60 +1,60 @@
-"use client";
+"use client"
 
-import React from "react";
-import { motion } from "framer-motion";
+import React from "react"
+import { motion } from "framer-motion"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { ParkingSpace } from "@/types/type";
-import { Star, Sparkles, ThumbsUp } from "lucide-react";
+} from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
+import { ParkingSpace } from "@/types/type"
+import { Star, Sparkles, ThumbsUp } from "lucide-react"
 
 interface RatingMetrics {
   averageRatings: {
-    availability: number;
-    cleanliness: number;
-    total: number;
-  };
-  totalRatings: number;
+    availability: number
+    cleanliness: number
+    total: number
+  }
+  totalRatings: number
   ratingsBySpot: Array<{
-    spotId: string;
-    spotName: string;
-    availabilityRating: number;
-    cleanlinessRating: number;
-    totalRating: number | "unrated";
-    ratingCount: number;
+    spotId: string
+    spotName: string
+    availabilityRating: number
+    cleanlinessRating: number
+    totalRating: number | "unrated"
+    ratingCount: number
     ratingDistribution: Array<{
-      stars: number;
-      count: number;
-      percentage: number;
-    }>;
+      stars: number
+      count: number
+      percentage: number
+    }>
     recentReviews: Array<{
-      rating: number;
-      daysAgo: number;
-      comment: string;
-      isVerified: boolean;
-    }>;
+      rating: number
+      daysAgo: number
+      comment: string
+      isVerified: boolean
+    }>
     responseMetrics: {
-      averageResponseTime: number;
-      issueResolutionRate: number;
-      ratingTrend: number;
-    };
-  }>;
+      averageResponseTime: number
+      issueResolutionRate: number
+      ratingTrend: number
+    }
+  }>
   performanceMetrics: {
-    responseRate: number;
-    ratingImprovement: number;
-    customerReturnRate: number;
-  };
+    responseRate: number
+    ratingImprovement: number
+    customerReturnRate: number
+  }
 }
 
 interface RatingsTabProps {
-  spots: ParkingSpace[];
-  ratingMetrics: RatingMetrics;
+  spots: ParkingSpace[]
+  ratingMetrics: RatingMetrics
 }
 
 export default function RatingsTab({ spots, ratingMetrics }: RatingsTabProps) {
@@ -387,5 +387,5 @@ export default function RatingsTab({ spots, ratingMetrics }: RatingsTabProps) {
         </CardContent>
       </Card>
     </motion.div>
-  );
+  )
 }

@@ -1,26 +1,26 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { format, parseISO } from "date-fns";
+import { useEffect, useState } from "react"
+import { format, parseISO } from "date-fns"
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { ImageUpload } from "./ImageUpload";
-import { ReservationsGroupSelect } from "./ReservationsGroupSelect";
-import { Reservation } from "@/types/type";
-import { Input } from "@/components/ui/input";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchReservationCar } from "@/features/cars/reservationCarSlice";
+} from "@/components/ui/form"
+import { ImageUpload } from "./ImageUpload"
+import { ReservationsGroupSelect } from "./ReservationsGroupSelect"
+import { Reservation } from "@/types/type"
+import { Input } from "@/components/ui/input"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { fetchReservationCar } from "@/features/cars/reservationCarSlice"
 
 interface RenterOverstayFieldsProps {
-  form: any;
-  handleReservationSelect: (value: string) => void;
-  imageUploadProps: any; // Adjust this according to your actual props
-  selectedReservation: Reservation | null;
+  form: any
+  handleReservationSelect: (value: string) => void
+  imageUploadProps: any // Adjust this according to your actual props
+  selectedReservation: Reservation | null
 }
 
 export const RenterOverstayFields = ({
@@ -29,56 +29,56 @@ export const RenterOverstayFields = ({
   imageUploadProps,
   selectedReservation,
 }: RenterOverstayFieldsProps) => {
-  const dispatch = useAppDispatch();
+  const dispatch = useAppDispatch()
 
   // Fetch car info when a reservation is selected
   useEffect(() => {
     if (selectedReservation && selectedReservation.car_info_id) {
-      dispatch(fetchReservationCar(selectedReservation.car_info_id));
+      dispatch(fetchReservationCar(selectedReservation.car_info_id))
     }
-  }, [dispatch, selectedReservation]);
+  }, [dispatch, selectedReservation])
 
   // Get car info from Redux store
   const { carInfo, loading: carInfoLoading } = useAppSelector(
     (state) => state.reservationCar,
-  );
+  )
 
-  const [overstayDuration, setOverstayDuration] = useState<number>(0);
-  const [overstayCharge, setOverstayCharge] = useState<number>(0);
+  const [overstayDuration, setOverstayDuration] = useState<number>(0)
+  const [overstayCharge, setOverstayCharge] = useState<number>(0)
 
   // Use form.watch to subscribe to changes in 'departure_time'
-  const departureTimeStr = form.watch("departure_time");
+  const departureTimeStr = form.watch("departure_time")
 
   useEffect(() => {
     if (selectedReservation && departureTimeStr) {
-      const departureTime = parseISO(departureTimeStr);
-      const endTime = new Date(selectedReservation.end_time);
+      const departureTime = parseISO(departureTimeStr)
+      const endTime = new Date(selectedReservation.end_time)
 
       // Ensure departureTime is not before reservation end time
       if (departureTime < endTime) {
-        setOverstayDuration(0);
-        setOverstayCharge(0);
+        setOverstayDuration(0)
+        setOverstayCharge(0)
         form.setError("departure_time", {
           type: "manual",
           message: "Departure time cannot be before reservation end time.",
-        });
+        })
       } else {
-        form.clearErrors("departure_time");
+        form.clearErrors("departure_time")
         const durationMinutes = Math.max(
           0,
           Math.round((departureTime.getTime() - endTime.getTime()) / 1000 / 60),
-        );
-        setOverstayDuration(durationMinutes);
+        )
+        setOverstayDuration(durationMinutes)
 
         // Calculate the hourly rate
         const reservationDurationHours =
           (new Date(selectedReservation.end_time).getTime() -
             new Date(selectedReservation.start_time).getTime()) /
-          (1000 * 60 * 60);
+          (1000 * 60 * 60)
 
-        const hourlyRate = selectedReservation.price / reservationDurationHours;
-        const charge = ((hourlyRate * 1.5) / 60) * durationMinutes; // Charge per minute
-        setOverstayCharge(charge);
+        const hourlyRate = selectedReservation.price / reservationDurationHours
+        const charge = ((hourlyRate * 1.5) / 60) * durationMinutes // Charge per minute
+        setOverstayCharge(charge)
 
         // Update the description field
         form.setValue(
@@ -87,14 +87,14 @@ export const RenterOverstayFields = ({
             endTime,
             "MMM d, yyyy h:mm a",
           )}.`,
-        );
+        )
       }
     } else {
       // If departure time is not set, reset values
-      setOverstayDuration(0);
-      setOverstayCharge(0);
+      setOverstayDuration(0)
+      setOverstayCharge(0)
     }
-  }, [selectedReservation, departureTimeStr, form]);
+  }, [selectedReservation, departureTimeStr, form])
 
   return (
     <>
@@ -107,8 +107,8 @@ export const RenterOverstayFields = ({
             <FormControl>
               <ReservationsGroupSelect
                 onChange={(value) => {
-                  field.onChange(value);
-                  handleReservationSelect(value);
+                  field.onChange(value)
+                  handleReservationSelect(value)
                 }}
                 value={field.value}
                 title="Reported Reservation"
@@ -143,7 +143,7 @@ export const RenterOverstayFields = ({
                 type="datetime-local"
                 {...field}
                 onChange={(e) => {
-                  field.onChange(e);
+                  field.onChange(e)
                   // No need to handle calculation here since useEffect will handle it
                 }}
               />
@@ -189,5 +189,5 @@ export const RenterOverstayFields = ({
         )}
       />
     </>
-  );
-};
+  )
+}

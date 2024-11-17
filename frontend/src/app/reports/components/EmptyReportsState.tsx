@@ -1,10 +1,10 @@
-import { AlertCircle, Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { AlertCircle, Search } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 interface EmptyReportsStateProps {
-  hasReports?: boolean;
-  onClearFilters: () => void;
-  onCreateReport: () => void;
+  hasReports?: boolean
+  onClearFilters: () => void
+  onCreateReport: () => void
 }
 
 const EmptyReportsState = ({
@@ -46,7 +46,7 @@ const EmptyReportsState = ({
         </Button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default EmptyReportsState;
+export default EmptyReportsState

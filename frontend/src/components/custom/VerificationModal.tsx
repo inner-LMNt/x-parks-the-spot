@@ -1,19 +1,19 @@
-"use client";
+"use client"
 
-import React, { useState, useRef, useCallback } from "react";
-import { Dialog, Transition } from "@headlessui/react";
-import { Fragment } from "react";
-import { Button } from "@/components/ui/button";
-import { Upload, X, Camera } from "lucide-react";
-import { useDispatch } from "react-redux";
-import { submitVerification } from "@/features/owner/ownerSlice";
-import { useToast } from "@/hooks/use-toast";
-import Webcam from "react-webcam";
+import React, { useState, useRef, useCallback } from "react"
+import { Dialog, Transition } from "@headlessui/react"
+import { Fragment } from "react"
+import { Button } from "@/components/ui/button"
+import { Upload, X, Camera } from "lucide-react"
+import { useDispatch } from "react-redux"
+import { submitVerification } from "@/features/owner/ownerSlice"
+import { useToast } from "@/hooks/use-toast"
+import Webcam from "react-webcam"
 
 interface VerificationModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  spotId: string;
+  isOpen: boolean
+  onClose: () => void
+  spotId: string
 }
 
 const VerificationModal: React.FC<VerificationModalProps> = ({
@@ -21,67 +21,68 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
   onClose,
   spotId,
 }) => {
-  const dispatch = useDispatch();
-  const { toast } = useToast();
-  const [verificationFile, setVerificationFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const webcamRef = useRef<Webcam>(null);
-  const [showCamera, setShowCamera] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const dispatch = useDispatch()
+  const { toast } = useToast()
+  const [verificationFile, setVerificationFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const webcamRef = useRef<Webcam>(null)
+  const [showCamera, setShowCamera] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   // Handle image upload
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const file = event.target.files?.[0]
     if (file) {
-      setVerificationFile(file);
+      setVerificationFile(file)
     }
-  };
+  }
 
   // Capture image from webcam
   const handleCameraCapture = useCallback(() => {
-    const imageSrc = webcamRef.current?.getScreenshot();
+    const imageSrc = webcamRef.current?.getScreenshot()
     if (imageSrc) {
       fetch(imageSrc)
         .then((res) => res.blob())
         .then((blob) => {
           const file = new File([blob], "camera_capture.jpg", {
             type: "image/jpeg",
-          });
-          setVerificationFile(file);
-          setPreviewUrl(imageSrc);
-          setShowCamera(false);
-        });
+          })
+          setVerificationFile(file)
+          setPreviewUrl(imageSrc)
+          setShowCamera(false)
+        })
     }
-  }, []);
+  }, [])
 
   // Submit verification
   const handleSubmit = async () => {
     if (verificationFile) {
-      const formData = new FormData();
-      formData.append("image", verificationFile);
+      const formData = new FormData()
+      formData.append("image", verificationFile)
       try {
         // @ts-ignore
         const resultAction = await dispatch(
+          // @ts-ignore
           submitVerification({ spotId, formData }),
-        ).unwrap();
+        ).unwrap()
 
         if (resultAction) {
           toast({
             title: "Verification Submitted",
             description: "Your verification is now pending approval.",
-          });
+          })
 
-          window.location.reload(); // Reload the page
+          window.location.reload() // Reload the page
         }
       } catch (error) {
         toast({
           title: "Error",
           description: "Failed to submit verification. Please try again later.",
           variant: "destructive",
-        });
+        })
       }
     }
-  };
+  }
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -212,7 +213,7 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
         </div>
       </Dialog>
     </Transition>
-  );
-};
+  )
+}
 
-export default VerificationModal;
+export default VerificationModal

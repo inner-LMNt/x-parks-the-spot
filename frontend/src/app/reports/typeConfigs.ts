@@ -42,4 +42,4 @@ export const REPORT_TYPE_CONFIGS: Record<string, (data: any) => any> = {
     title: "Other Issue",
     fields: [{ label: "Description", value: data.description }],
   }),
-};
+}

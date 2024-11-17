@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import React from "react";
-import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React from "react"
+import { motion } from "framer-motion"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   BarChart,
   LineChart,
@@ -13,38 +13,38 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from "recharts";
-import { DollarSign, Users, Clock, TrendingUp } from "lucide-react";
+} from "recharts"
+import { DollarSign, Users, Clock, TrendingUp } from "lucide-react"
 
 interface OverallMetrics {
   revenue: {
-    total: number;
-    perBooking: number;
+    total: number
+    perBooking: number
     trends: Array<{
-      date: string;
-      revenue: number;
-    }>;
-  };
+      date: string
+      revenue: number
+    }>
+  }
   occupancy: {
-    overallRate: number;
+    overallRate: number
     popularTimes: Array<{
-      day: string;
-      bookings: number;
-    }>;
-  };
+      day: string
+      bookings: number
+    }>
+  }
   bookings: {
-    active: number;
-    total: number;
-    percentageActive: number;
-  };
+    active: number
+    total: number
+    percentageActive: number
+  }
   ratings: {
-    average: number;
-    totalSpots: number;
-  };
+    average: number
+    totalSpots: number
+  }
 }
 
 interface MetricsTabProps {
-  overallMetrics: OverallMetrics;
+  overallMetrics: OverallMetrics
 }
 
 export default function MetricsTab({ overallMetrics }: MetricsTabProps) {
@@ -173,5 +173,5 @@ export default function MetricsTab({ overallMetrics }: MetricsTabProps) {
         </Card>
       </div>
     </motion.div>
-  );
+  )
 }

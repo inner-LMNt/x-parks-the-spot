@@ -1,35 +1,35 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Form } from "@/components/ui/form";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { toast } from "@/hooks/use-toast";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchUserReservations } from "@/features/reservations/reservationsSlice";
-import { fetchOwnerReservations } from "@/features/owner-reservations/ownerReservationsSlice";
+import React, { useEffect, useState } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Form } from "@/components/ui/form"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { toast } from "@/hooks/use-toast"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { fetchUserReservations } from "@/features/reservations/reservationsSlice"
+import { fetchOwnerReservations } from "@/features/owner-reservations/ownerReservationsSlice"
 import {
   submitReservationIssueReport,
   submitRenterOverstayReport,
   submitDamageReport,
   submitOtherIssueReport,
-} from "@/features/reports/reportSlice";
+} from "@/features/reports/reportSlice"
 
-import { ReportTypeSelect } from "./ReportTypeSelect";
-import { RenterOverstayFields } from "./RenterOverstayFields";
-import { DamageReportFields } from "./DamageReportFields";
-import { ReservationIssueFields } from "./ReservationIssueFields";
-import { DescriptionField } from "./DescriptionField";
-import { FormActions } from "./FormActions";
-import { useReportForm } from "./useReportForm";
-import { FormSchema } from "./schema";
-import { Reservation } from "@/types/type"; // Assuming you have a Reservation type defined
+import { ReportTypeSelect } from "./ReportTypeSelect"
+import { RenterOverstayFields } from "./RenterOverstayFields"
+import { DamageReportFields } from "./DamageReportFields"
+import { ReservationIssueFields } from "./ReservationIssueFields"
+import { DescriptionField } from "./DescriptionField"
+import { FormActions } from "./FormActions"
+import { useReportForm } from "./useReportForm"
+import { FormSchema } from "./schema"
+import { Reservation } from "@/types/type" // Assuming you have a Reservation type defined
 
 interface ReportFormProps {
-  onClose: () => void;
-  preselectedReservation?: any;
-  preselectedType: string | null;
+  onClose: () => void
+  preselectedReservation?: any
+  preselectedType: string | null
 }
 
 export const ReportForm = ({
@@ -37,19 +37,19 @@ export const ReportForm = ({
   preselectedReservation,
   preselectedType,
 }: ReportFormProps) => {
-  const dispatch = useAppDispatch();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const dispatch = useAppDispatch()
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const { imageSource, setImageSource, videoRef, handleCapturePhoto } =
-    useReportForm();
+    useReportForm()
 
   const { reservations, loading: reservationsLoading } = useAppSelector(
     (state) => state.reservations,
-  );
+  )
   const { ownerReservations, loading: ownerReservationsLoading } =
-    useAppSelector((state) => state.ownerReservations);
+    useAppSelector((state) => state.ownerReservations)
 
   const [selectedReservation, setSelectedReservation] =
-    useState<Reservation | null>(preselectedReservation || null);
+    useState<Reservation | null>(preselectedReservation || null)
 
   // Initialize form
   const form = useForm({
@@ -62,7 +62,7 @@ export const ReportForm = ({
       departure_time: "", // Add this
       image: undefined,
     },
-  });
+  })
 
   // Fetch reservations on mount
   useEffect(() => {
@@ -71,61 +71,61 @@ export const ReportForm = ({
         await Promise.all([
           dispatch(fetchUserReservations()),
           dispatch(fetchOwnerReservations()),
-        ]);
+        ])
       } catch (error) {
         toast({
           title: "Error",
           description: "Failed to load reservations",
           variant: "destructive",
-        });
+        })
       }
-    };
-    fetchData();
-  }, [dispatch]);
+    }
+    fetchData()
+  }, [dispatch])
 
   const handleReservationSelect = (reservationId: string) => {
     const selectedRes = ownerReservations.find(
       (r: Reservation) => r.id === reservationId,
-    );
+    )
     if (selectedRes) {
-      setSelectedReservation(selectedRes);
+      setSelectedReservation(selectedRes)
       // Optionally set default departure_time to now
-      form.setValue("departure_time", new Date().toISOString().slice(0, 16));
+      form.setValue("departure_time", new Date().toISOString().slice(0, 16))
     } else {
-      setSelectedReservation(null);
-      form.setValue("departure_time", "");
+      setSelectedReservation(null)
+      form.setValue("departure_time", "")
     }
-  };
+  }
 
   const handleSubmit = async (data: any) => {
-    setIsSubmitting(true);
-    const formData = new FormData();
+    setIsSubmitting(true)
+    const formData = new FormData()
 
     Object.keys(data).forEach((key) => {
       if (data[key] !== undefined && data[key] !== "") {
-        formData.append(key, data[key]);
+        formData.append(key, data[key])
       }
-    });
+    })
 
     if (data.image) {
-      formData.append("image_source", imageSource);
+      formData.append("image_source", imageSource)
     }
 
     try {
-      let resultAction;
+      let resultAction
       switch (data.type) {
         case "Reservation Issue":
-          resultAction = await dispatch(submitReservationIssueReport(formData));
-          break;
+          resultAction = await dispatch(submitReservationIssueReport(formData))
+          break
         case "Renter Overstay":
-          resultAction = await dispatch(submitRenterOverstayReport(formData));
-          break;
+          resultAction = await dispatch(submitRenterOverstayReport(formData))
+          break
         case "Damage Report":
-          resultAction = await dispatch(submitDamageReport(formData));
-          break;
+          resultAction = await dispatch(submitDamageReport(formData))
+          break
         case "Other":
-          resultAction = await dispatch(submitOtherIssueReport(formData));
-          break;
+          resultAction = await dispatch(submitOtherIssueReport(formData))
+          break
       }
 
       if (resultAction.meta.requestStatus === "fulfilled") {
@@ -133,30 +133,30 @@ export const ReportForm = ({
           title: "Success",
           description: "Report submitted successfully",
           variant: "success",
-        });
-        onClose();
-        form.reset();
+        })
+        onClose()
+        form.reset()
       } else {
-        throw new Error(resultAction.payload);
+        throw new Error(resultAction.payload)
       }
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.message || "Failed to submit report",
         variant: "destructive",
-      });
+      })
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
-  const selectedReportType = form.watch("type");
+  const selectedReportType = form.watch("type")
   const imageUploadProps = {
     imageSource,
     setImageSource,
     videoRef,
     handleCapturePhoto,
-  };
+  }
 
   return (
     <Form {...form}>
@@ -195,7 +195,7 @@ export const ReportForm = ({
         </form>
       </ScrollArea>
     </Form>
-  );
-};
+  )
+}
 
-export default ReportForm;
+export default ReportForm

@@ -1,21 +1,21 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import React, { useEffect, useState } from "react"
+import { useForm } from "react-hook-form"
+import { motion } from "framer-motion"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Loader2, ArrowLeft } from "lucide-react";
-import { Logo } from "@/components/custom/TopLeftLogo";
+} from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Loader2, ArrowLeft } from "lucide-react"
+import { Logo } from "@/components/custom/TopLeftLogo"
 import {
   AlertDialog,
   AlertDialogContent,
@@ -24,17 +24,17 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogAction,
-} from "@/components/ui/alert-dialog";
-import { reset_request } from "@/features/user/userSlice";
-import { PasswordResetRequest } from "@/types/type";
-import { useAppDispatch } from "@/store/hooks";
-import { useAppSelector } from "@/store/hooks";
-import { zxcvbn } from "@zxcvbn-ts/core";
-import Link from "next/link"; // Adjust the path if needed
+} from "@/components/ui/alert-dialog"
+import { reset_request } from "@/features/user/userSlice"
+import { PasswordResetRequest } from "@/types/type"
+import { useAppDispatch } from "@/store/hooks"
+import { useAppSelector } from "@/store/hooks"
+import { zxcvbn } from "@zxcvbn-ts/core"
+import Link from "next/link" // Adjust the path if needed
 
 type ForgotPasswordInputs = {
-  email: string;
-};
+  email: string
+}
 
 const formVariants = {
   hidden: { opacity: 0, y: 50, scale: 0.9 },
@@ -50,7 +50,7 @@ const formVariants = {
       staggerChildren: 0.1,
     },
   },
-};
+}
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -59,47 +59,47 @@ const itemVariants = {
     y: 0,
     transition: { type: "spring", stiffness: 100 },
   },
-};
+}
 
 export default function ForgotPasswordPage() {
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<ForgotPasswordInputs>();
+  } = useForm<ForgotPasswordInputs>()
 
-  const dispatch = useAppDispatch();
-  const [isDialogOpen, setIsDialogOpen] = useState(false); // Initially false
-  const { loading, error } = useAppSelector((state) => state.user);
-  const router = useRouter();
+  const dispatch = useAppDispatch()
+  const [isDialogOpen, setIsDialogOpen] = useState(false) // Initially false
+  const { loading, error } = useAppSelector((state) => state.user)
+  const router = useRouter()
   // Reset the error state when the component mounts
   useEffect(() => {
-    dispatch({ type: "user/errorReset" });
-  }, []);
+    dispatch({ type: "user/errorReset" })
+  }, [])
   const onSubmit = async (data: PasswordResetRequest) => {
     try {
       // @ts-ignore
-      const resultAction = await dispatch(reset_request(data.email));
+      const resultAction = await dispatch(reset_request(data.email))
 
       if (reset_request.fulfilled.match(resultAction)) {
         // Password reset email sent successfully
-        console.log("Password reset email sent:", data);
-        setIsDialogOpen(true);
+        console.log("Password reset email sent:", data)
+        setIsDialogOpen(true)
       } else if (reset_request.rejected.match(resultAction)) {
         // Password reset failed
-        console.error("Password reset failed:", resultAction.payload);
+        console.error("Password reset failed:", resultAction.payload)
         // Optionally, display the error to the user
       }
     } catch (error) {
-      console.error("An unexpected error occurred:", error);
+      console.error("An unexpected error occurred:", error)
     }
-  };
+  }
 
   const handleDialogConfirm = () => {
     // Close the dialog and redirect to the sign-in page
-    setIsDialogOpen(false);
-    router.push("/login"); // Redirect to login page
-  };
+    setIsDialogOpen(false)
+    router.push("/login") // Redirect to login page
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-4">
@@ -206,5 +206,5 @@ export default function ForgotPasswordPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
+  )
 }

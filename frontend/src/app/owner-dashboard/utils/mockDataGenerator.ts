@@ -1,23 +1,23 @@
 // src/components/dashboard/utils/mockDataGenerator.ts
 
-import { ParkingSpace, Reservation } from "@/types/type";
-import { format, subDays, addDays, startOfMonth, endOfMonth } from "date-fns";
+import { ParkingSpace, Reservation } from "@/types/type"
+import { format, subDays, addDays, startOfMonth, endOfMonth } from "date-fns"
 
 export interface ExtendedParkingSpaceStats extends ParkingSpace {
-  historicalOccupancy: number[];
-  peakHours: { hour: number; count: number }[];
-  repeatBookers: number;
-  averageBookingLength: number;
-  totalRevenue: number;
-  revenueByMonth: { month: string; revenue: number }[];
+  historicalOccupancy: number[]
+  peakHours: { hour: number; count: number }[]
+  repeatBookers: number
+  averageBookingLength: number
+  totalRevenue: number
+  revenueByMonth: { month: string; revenue: number }[]
 }
 
 export const formatDate = (
   dateString: string | undefined | null,
   formatStr: string,
 ): string => {
-  return format(new Date(dateString ?? new Date()), formatStr);
-};
+  return format(new Date(dateString ?? new Date()), formatStr)
+}
 
 export const generateSpotStats = (spot: ParkingSpace) => ({
   id: spot.id,
@@ -40,12 +40,12 @@ export const generateSpotStats = (spot: ParkingSpace) => ({
     day,
     bookings: Math.floor(Math.random() * 50),
   })),
-});
+})
 
 export const generateReservationStats = (reservation: Reservation) => {
-  const carBrands = ["Toyota", "Honda", "Ford", "BMW", "Tesla"];
-  const carModels = ["Camry", "Civic", "F-150", "3 Series", "Model 3"];
-  const colors = ["Black", "White", "Silver", "Blue", "Red"];
+  const carBrands = ["Toyota", "Honda", "Ford", "BMW", "Tesla"]
+  const carModels = ["Camry", "Civic", "F-150", "3 Series", "Model 3"]
+  const colors = ["Black", "White", "Silver", "Blue", "Red"]
 
   return {
     id: reservation.id,
@@ -62,16 +62,16 @@ export const generateReservationStats = (reservation: Reservation) => {
       end: formatDate(reservation.end_time, "MMM d, yyyy h:mm a"),
       created: formatDate(reservation.created_at, "MMM yyyy"),
     },
-  };
-};
+  }
+}
 
 export const generateAggregateStats = (
   spots: ParkingSpace[],
   reservations: Reservation[],
 ) => {
-  const now = new Date();
-  const monthStart = startOfMonth(now);
-  const monthEnd = endOfMonth(now);
+  const now = new Date()
+  const monthStart = startOfMonth(now)
+  const monthEnd = endOfMonth(now)
 
   return {
     totalSpots: spots.length,
@@ -81,10 +81,8 @@ export const generateAggregateStats = (
     averageRating:
       spots.reduce((acc, s) => {
         const rating =
-          s.avg_total_rating === "unrated"
-            ? 0
-            : Number(s.avg_total_rating || 0);
-        return acc + rating;
+          s.avg_total_rating === "unrated" ? 0 : Number(s.avg_total_rating || 0)
+        return acc + rating
       }, 0) / (spots.length || 1),
     occupancyRate: Math.round(Math.random() * 100),
     popularTimeSlots: Array.from({ length: 7 }, (_, i) => ({
@@ -99,8 +97,8 @@ export const generateAggregateStats = (
       hour: i,
       revenue: Math.floor(Math.random() * 200),
     })),
-  };
-};
+  }
+}
 
 export const generatePerformanceMetrics = (spot: ParkingSpace) => {
   return {
@@ -115,5 +113,5 @@ export const generatePerformanceMetrics = (spot: ParkingSpace) => {
       day: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][day],
       bookings: Math.floor(Math.random() * 50),
     })),
-  };
-};
+  }
+}

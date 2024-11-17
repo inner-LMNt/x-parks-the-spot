@@ -1,5 +1,5 @@
-import React from "react";
-import { MapPin } from "lucide-react";
+import React from "react"
+import { MapPin } from "lucide-react"
 
 export const Logo = () => (
   <div className="absolute top-4 left-4 font-bold text-4xl">
@@ -35,6 +35,6 @@ export const Logo = () => (
       </svg>
     </div>
   </div>
-);
+)
 
-export default Logo;
+export default Logo

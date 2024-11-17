@@ -1,12 +1,12 @@
-import React, { useState } from "react";
-import { Star, ChevronDown, X } from "lucide-react";
-import { ParkingSpace } from "@/types/type";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import React, { useState } from "react"
+import { Star, ChevronDown, X } from "lucide-react"
+import { ParkingSpace } from "@/types/type"
+import { Button } from "@/components/ui/button"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 
 interface RatingStarsProps {
-  rating: number;
+  rating: number
 }
 
 export const RatingStars = ({ rating }: RatingStarsProps) => (
@@ -21,14 +21,14 @@ export const RatingStars = ({ rating }: RatingStarsProps) => (
       />
     ))}
   </div>
-);
+)
 
 export const RatingDisplay = ({
   parkingSpace,
 }: {
-  parkingSpace: ParkingSpace;
+  parkingSpace: ParkingSpace
 }): React.JSX.Element => {
-  const [showDetails, setShowDetails] = useState(false);
+  const [showDetails, setShowDetails] = useState(false)
 
   // If no ratings or unrated
   if (parkingSpace.avg_total_rating === "unrated") {
@@ -37,13 +37,13 @@ export const RatingDisplay = ({
         <Star className="w-5 h-5 mr-1" />
         <span>Not yet rated</span>
       </div>
-    );
+    )
   }
 
   const totalRatings = Math.max(
     parkingSpace.ratings_count_availability || 0,
     parkingSpace.ratings_count_cleanliness || 0,
-  );
+  )
 
   return (
     <>
@@ -125,5 +125,5 @@ export const RatingDisplay = ({
         </div>
       )}
     </>
-  );
-};
+  )
+}

@@ -4,13 +4,13 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { ReservationsGroupSelect } from "./ReservationsGroupSelect";
+} from "@/components/ui/form"
+import { ReservationsGroupSelect } from "./ReservationsGroupSelect"
 
 interface ReservationIssueFieldsProps {
-  form: any;
-  reservations: any[];
-  reservationsLoading: boolean;
+  form: any
+  reservations: any[]
+  reservationsLoading: boolean
 }
 
 export const ReservationIssueFields = ({
@@ -32,4 +32,4 @@ export const ReservationIssueFields = ({
       </FormItem>
     )}
   />
-);
+)

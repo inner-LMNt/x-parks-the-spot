@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from "react";
-import { Star } from "lucide-react";
-import { useDispatch } from "react-redux";
+import React, { useState, useEffect } from "react"
+import { Star } from "lucide-react"
+import { useDispatch } from "react-redux"
 import {
   submitRating,
   fetchParkingSpace,
   fetchUserRating,
-} from "@/features/parking-space/parkingSpaceSlice";
-import { toast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/store/hooks";
+} from "@/features/parking-space/parkingSpaceSlice"
+import { toast } from "@/hooks/use-toast"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { useAppSelector } from "@/store/hooks"
 
 const StarRatingInput = ({
   value,
@@ -17,23 +17,23 @@ const StarRatingInput = ({
   disabled,
   originalValue,
 }: {
-  value: number;
-  onChange: (rating: number) => void;
-  disabled?: boolean;
-  originalValue: number;
+  value: number
+  onChange: (rating: number) => void
+  disabled?: boolean
+  originalValue: number
 }) => {
-  const [hoverValue, setHoverValue] = useState<number | null>(null);
+  const [hoverValue, setHoverValue] = useState<number | null>(null)
 
   const handleStarClick = (rating: number) => {
     if (!disabled) {
       // If clicking the same star that's currently selected, revert to original value
       if (value === rating) {
-        onChange(originalValue);
+        onChange(originalValue)
       } else {
-        onChange(rating);
+        onChange(rating)
       }
     }
-  };
+  }
 
   return (
     <div className="flex items-center gap-1">
@@ -54,101 +54,102 @@ const StarRatingInput = ({
         />
       ))}
     </div>
-  );
-};
+  )
+}
 
 const RatingSelector = ({ parkingSpaceId }: { parkingSpaceId: string }) => {
-  const dispatch = useDispatch();
-  const userRating = useAppSelector((state) => state.parkingSpace.userRating);
-  const [availabilityRating, setAvailabilityRating] = useState(0);
-  const [cleanlinessRating, setCleanlinessRating] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasChanges, setHasChanges] = useState(false);
+  const dispatch = useDispatch()
+  const userRating = useAppSelector((state) => state.parkingSpace.userRating)
+  const [availabilityRating, setAvailabilityRating] = useState(0)
+  const [cleanlinessRating, setCleanlinessRating] = useState(0)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [hasChanges, setHasChanges] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
       // @ts-ignore
-      const result = await dispatch(fetchParkingSpace(parkingSpaceId));
+      const result = await dispatch(fetchParkingSpace(parkingSpaceId))
 
       if (fetchParkingSpace.rejected.match(result)) {
         toast({
           title: "Error",
           description: "Failed to load parking space.",
           variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+        })
+        setIsLoading(false)
+        return
       }
       // @ts-ignore
-      const result2 = await dispatch(fetchUserRating(parkingSpaceId));
+      const result2 = await dispatch(fetchUserRating(parkingSpaceId))
       if (fetchUserRating.rejected.match(result2)) {
         toast({
           title: "Error",
           description: "Failed to load user rating.",
           variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+        })
+        setIsLoading(false)
+        return
       }
-      setIsLoading(false);
-    };
+      setIsLoading(false)
+    }
 
-    fetchData();
-  }, [dispatch, parkingSpaceId]);
+    fetchData()
+  }, [dispatch, parkingSpaceId])
 
   // Update local state when userRating changes
   useEffect(() => {
     if (userRating) {
-      setAvailabilityRating(userRating.availabilityRating ?? 0);
-      setCleanlinessRating(userRating.cleanlinessRating ?? 0);
+      setAvailabilityRating(userRating.availabilityRating ?? 0)
+      setCleanlinessRating(userRating.cleanlinessRating ?? 0)
     }
-  }, [userRating]);
+  }, [userRating])
 
   // Check for changes whenever ratings are updated
   useEffect(() => {
     const hasRatingChanges =
       availabilityRating !== (userRating?.availabilityRating ?? 0) ||
-      cleanlinessRating !== (userRating?.cleanlinessRating ?? 0);
-    setHasChanges(hasRatingChanges);
-  }, [availabilityRating, cleanlinessRating, userRating]);
+      cleanlinessRating !== (userRating?.cleanlinessRating ?? 0)
+    setHasChanges(hasRatingChanges)
+  }, [availabilityRating, cleanlinessRating, userRating])
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
+    setIsSubmitting(true)
     // @ts-ignore
-    const result = await dispatch(
+    const result = dispatch(
+      //@ts-ignore
       submitRating({
         parkingSpaceId,
         availabilityRating: availabilityRating || undefined,
         cleanlinessRating: cleanlinessRating || undefined,
       }),
-    );
+    )
 
     if (submitRating.fulfilled.match(result)) {
       toast({
         title: "Rating Submitted",
         description: "Thank you for your feedback!",
         variant: "success",
-      });
+      })
       // @ts-ignore
-      dispatch(fetchParkingSpace(parkingSpaceId));
+      dispatch(fetchParkingSpace(parkingSpaceId))
     } else {
       toast({
         title: "Error",
         description: "Failed to submit rating. Please try again.",
         variant: "destructive",
-      });
+      })
     }
-    setIsSubmitting(false);
-  };
+    setIsSubmitting(false)
+  }
 
   const handleReset = () => {
-    setAvailabilityRating(userRating?.availabilityRating ?? 0);
-    setCleanlinessRating(userRating?.cleanlinessRating ?? 0);
-  };
+    setAvailabilityRating(userRating?.availabilityRating ?? 0)
+    setCleanlinessRating(userRating?.cleanlinessRating ?? 0)
+  }
 
   if (isLoading) {
-    return <div className="mt-4 text-sm text-gray-600">Loading ratings...</div>;
+    return <div className="mt-4 text-sm text-gray-600">Loading ratings...</div>
   }
 
   return (
@@ -206,7 +207,7 @@ const RatingSelector = ({ parkingSpaceId }: { parkingSpaceId: string }) => {
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default RatingSelector;
+export default RatingSelector

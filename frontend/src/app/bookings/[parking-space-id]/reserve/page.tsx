@@ -1,2 +1,2 @@
-import ParkingSpaceBooking from "./ParkingSpaceBooking";
-export default ParkingSpaceBooking;
+import ParkingSpaceBooking from "./ParkingSpaceBooking"
+export default ParkingSpaceBooking

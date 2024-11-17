@@ -1,6 +1,6 @@
 // src/mocks/data/reservations/reservationsData.ts
 
-import { Reservation } from "@/types/type";
+import { Reservation } from "@/types/type"
 
 export const reservations: Reservation[] = [
   {
@@ -23,4 +23,4 @@ export const reservations: Reservation[] = [
     },
   },
   // Add more reservations as needed
-];
+]

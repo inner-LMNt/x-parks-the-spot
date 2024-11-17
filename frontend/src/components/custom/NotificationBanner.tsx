@@ -1,134 +1,134 @@
 // src/components/custom/NotificationBanner.tsx
 
-"use client";
+"use client"
 
-import React, { useEffect, useState, useRef } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchUserReservationsTimes } from "@/features/reservations/reservationsSlice";
-import { get_notification_time } from "@/features/user/userSlice";
-import { Reservation } from "@/types/type";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useState, useRef } from "react"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { fetchUserReservationsTimes } from "@/features/reservations/reservationsSlice"
+import { get_notification_time } from "@/features/user/userSlice"
+import { Reservation } from "@/types/type"
+import { useRouter } from "next/navigation"
 
 const NotificationBanner = () => {
-  const dispatch = useAppDispatch();
-  const router = useRouter();
+  const dispatch = useAppDispatch()
+  const router = useRouter()
   const reservations = useAppSelector(
     (state) => state.reservations.reservationsTimes,
-  );
+  )
   const notificationTime = useAppSelector(
     (state) => state.user.notificationTime,
-  );
+  )
   const [upcomingReservation, setUpcomingReservation] =
-    useState<Reservation | null>(null);
+    useState<Reservation | null>(null)
   const [endingReservation, setEndingReservation] =
-    useState<Reservation | null>(null);
-  const [domLoaded, setDomLoaded] = useState(false);
-  const [visible, setVisible] = useState(true);
-  const [fadeOut, setFadeOut] = useState(false);
-  const [extendable, setExtendable] = useState(false);
-  const isLoggedIn = useAppSelector((state) => state.user.isLoggedIn);
-  const [refreshKey, setRefreshKey] = useState(0); // State to force re-render
-  const firstRender = useRef(true);
+    useState<Reservation | null>(null)
+  const [domLoaded, setDomLoaded] = useState(false)
+  const [visible, setVisible] = useState(true)
+  const [fadeOut, setFadeOut] = useState(false)
+  const [extendable, setExtendable] = useState(false)
+  const isLoggedIn = useAppSelector((state) => state.user.isLoggedIn)
+  const [refreshKey, setRefreshKey] = useState(0) // State to force re-render
+  const firstRender = useRef(true)
 
   useEffect(() => {
-    setDomLoaded(true);
-  }, []);
+    setDomLoaded(true)
+  }, [])
 
   const checkNotifications = () => {
-    const now = new Date();
-    const notificationMinutes = parseInt(notificationTime, 10);
+    const now = new Date()
+    const notificationMinutes = parseInt(notificationTime, 10)
     const notificationWindow = new Date(
       now.getTime() + notificationMinutes * 60 * 1000,
-    );
+    )
     const upcoming = reservations.find((reservation: Reservation) => {
       const startTime = reservation.start_time
         ? new Date(reservation.start_time)
-        : null;
+        : null
       const minutesUntilStart = startTime
         ? (startTime.getTime() - now.getTime()) / (60 * 1000)
-        : null;
+        : null
       return (
         startTime !== null &&
         startTime > now &&
         startTime <= notificationWindow &&
         reservation.status === "booked"
-      );
-    });
+      )
+    })
 
     const ending = reservations.find((reservation: Reservation) => {
       const endTime = reservation.end_time
         ? new Date(reservation.end_time)
-        : null;
+        : null
       const minutesUntilEnd = endTime
         ? (endTime.getTime() - now.getTime()) / (60 * 1000)
-        : null;
+        : null
       return (
         endTime !== null &&
         endTime > now &&
         endTime <= notificationWindow &&
         reservation.status === "booked"
-      );
-    });
+      )
+    })
 
-    setUpcomingReservation(upcoming || null);
-    setEndingReservation(ending || null);
+    setUpcomingReservation(upcoming || null)
+    setEndingReservation(ending || null)
 
     if (ending) {
       const oneHourAfterEnd = new Date(
         new Date(ending.end_time).getTime() + 60 * 60 * 1000,
-      );
+      )
       const isExtendable = !reservations.some((reservation: Reservation) => {
         const startTime = reservation.start_time
           ? new Date(reservation.start_time)
-          : null;
+          : null
         return (
           startTime !== null &&
           startTime <= oneHourAfterEnd &&
           startTime > new Date(ending.end_time)
-        );
-      });
-      setExtendable(isExtendable);
+        )
+      })
+      setExtendable(isExtendable)
     } else {
-      setExtendable(false);
+      setExtendable(false)
     }
-  };
+  }
 
   useEffect(() => {
     const intervalId = setInterval(() => {
       if (isLoggedIn) {
-        dispatch(get_notification_time());
+        dispatch(get_notification_time())
         dispatch(fetchUserReservationsTimes()).then(() => {
-          setRefreshKey((prevKey) => prevKey + 1); // Force re-render
-        });
+          setRefreshKey((prevKey) => prevKey + 1) // Force re-render
+        })
       }
-    }, 10000);
+    }, 10000)
 
-    return () => clearInterval(intervalId);
-  }, [isLoggedIn, dispatch]);
+    return () => clearInterval(intervalId)
+  }, [isLoggedIn, dispatch])
 
   useEffect(() => {
     if (firstRender.current) {
       // Otherwise, cache is used which may be outdated
-      firstRender.current = false;
-      return;
+      firstRender.current = false
+      return
     }
-    checkNotifications();
-  }, [reservations]);
+    checkNotifications()
+  }, [reservations])
 
   if ((!upcomingReservation && !endingReservation) || !visible) {
-    return null;
+    return null
   }
 
   const handleClose = () => {
-    setFadeOut(true);
+    setFadeOut(true)
     setTimeout(() => {
-      setVisible(false);
-    }, 500);
-  };
+      setVisible(false)
+    }, 500)
+  }
 
   const handleExtend = () => {
-    router.push(`/reservations/${endingReservation?.id}/reserve`);
-  };
+    router.push(`/reservations/${endingReservation?.id}/reserve`)
+  }
 
   return (
     domLoaded && (
@@ -176,7 +176,7 @@ const NotificationBanner = () => {
         </div>
       </div>
     )
-  );
-};
+  )
+}
 
-export default NotificationBanner;
+export default NotificationBanner

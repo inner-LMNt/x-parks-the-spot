@@ -1,15 +1,15 @@
-"use client";
+"use client"
 
-import React from "react";
-import { motion } from "framer-motion";
+import React from "react"
+import { motion } from "framer-motion"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { ParkingSpace } from "@/types/type";
+} from "@/components/ui/card"
+import { ParkingSpace } from "@/types/type"
 import {
   BarChart,
   LineChart,
@@ -20,35 +20,35 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from "recharts";
+} from "recharts"
 
 interface RevenueMetrics {
   monthlyRevenue: Array<{
-    month: string;
-    revenue: number;
-    bookings: number;
-  }>;
+    month: string
+    revenue: number
+    bookings: number
+  }>
   dailyRevenue: Array<{
-    date: string;
-    revenue: number;
-  }>;
+    date: string
+    revenue: number
+  }>
   hourlyRevenue: Array<{
-    hour: number;
-    revenue: number;
-  }>;
+    hour: number
+    revenue: number
+  }>
   revenueBySpot: Array<{
-    spotId: string;
-    spotName: string;
-    revenue: number;
-    bookings: number;
-    occupancyRate: number;
-    basePrice: number;
-  }>;
+    spotId: string
+    spotName: string
+    revenue: number
+    bookings: number
+    occupancyRate: number
+    basePrice: number
+  }>
 }
 
 interface RevenueTabProps {
   // spots: ParkingSpace[];
-  revenueMetrics: RevenueMetrics;
+  revenueMetrics: RevenueMetrics
 }
 
 export default function RevenueTab({
@@ -187,5 +187,5 @@ export default function RevenueTab({
         </CardContent>
       </Card>
     </motion.div>
-  );
+  )
 }

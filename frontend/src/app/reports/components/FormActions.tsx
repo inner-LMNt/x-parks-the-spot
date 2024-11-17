@@ -1,10 +1,10 @@
-"use client";
+"use client"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 
 interface FormActionsProps {
-  onClose: () => void;
-  isSubmitting: boolean;
+  onClose: () => void
+  isSubmitting: boolean
 }
 
 export const FormActions = ({ onClose, isSubmitting }: FormActionsProps) => (
@@ -16,4 +16,4 @@ export const FormActions = ({ onClose, isSubmitting }: FormActionsProps) => (
       {isSubmitting ? "Submitting..." : "Submit"}
     </Button>
   </div>
-);
+)

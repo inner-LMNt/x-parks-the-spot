@@ -4,11 +4,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
+} from "@/components/ui/form"
+import { Textarea } from "@/components/ui/textarea"
 
 interface DescriptionFieldProps {
-  form: any;
+  form: any
 }
 
 export const DescriptionField = ({ form }: DescriptionFieldProps) => (
@@ -29,4 +29,4 @@ export const DescriptionField = ({ form }: DescriptionFieldProps) => (
       </FormItem>
     )}
   />
-);
+)
