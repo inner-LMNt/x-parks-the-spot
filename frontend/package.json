@@ -13,7 +13,6 @@
   },
   "prettier": {
     "semi": false,
-    "trailingComma": "all"
   },
   "dependencies": {
     "@headlessui/react": "^2.1.9",
