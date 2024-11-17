@@ -1,11 +1,14 @@
 import uuid
 
 from flask.testing import FlaskClient
-from typing import Dict, Any, List, Union, Optional
+from typing import Dict, Any, List, Union, Optional, Tuple
 from datetime import datetime, timedelta, timezone
 import json
 import io
 from werkzeug.datastructures import FileStorage
+
+from xpark.utils.db import DB
+
 
 def create_points_transaction(client: FlaskClient, token: str, transaction_type: str, parking_space_id: uuid.UUID) -> Any:
     """Create a test points transaction."""
@@ -383,3 +386,208 @@ def create_test_image(filename: str = "test.jpg", content_type: str = "image/jpe
         filename=filename,
         content_type=content_type
     )
+
+
+def setup_analytics_scenario(
+        client: FlaskClient,
+        num_spots: int = 3,
+        reservations_per_spot: int = 5,
+        days_of_history: int = 30
+) -> Tuple[str, str, Dict[str, List[str]]]:
+    """
+    Creates a complete analytics testing scenario with:
+    - One owner with multiple spots
+    - One renter making multiple reservations
+    - Varied reservation patterns over time
+
+    Returns:
+    - owner_token: Token for the spot owner
+    - renter_token: Token for the renter
+    - scenario_data: Dict containing spot_ids and reservation_ids
+    """
+    # Create owner and renter
+    owner_token = create_test_user(client, "owner@example.com")
+    renter_token = create_test_user(client, "renter@example.com")
+
+    car_id = create_test_car(client, renter_token)
+
+    spot_ids = []
+    reservation_ids: Dict[str, List[str]] = {}
+    base_time = datetime.now(timezone.utc) - timedelta(days=days_of_history)
+
+    # Create spots with different prices
+    for i in range(num_spots):
+        spot_id = create_test_parking_space(
+            client,
+            owner_token,
+            price=10.0 * (i + 1),  # Different prices for different spots
+            name=f"Test Spot {i + 1}"
+        )
+        spot_ids.append(spot_id)
+        reservation_ids[spot_id] = []
+
+        # Create reservations with varied patterns
+        for j in range(reservations_per_spot):
+            # Vary reservation times and durations
+            start_time = base_time + timedelta(
+                days=j * (days_of_history // reservations_per_spot),
+                hours=i * 2  # Stagger reservations across spots
+            )
+            duration = timedelta(hours=2 + (j % 3))  # Vary duration between 2-4 hours
+
+            reservation_id = create_test_reservation_at_time(
+                client,
+                renter_token,
+                spot_id,
+                start_time=start_time,
+                end_time=start_time + duration,
+                car_id=car_id
+            )
+            reservation_ids[spot_id].append(reservation_id)
+
+    return owner_token, renter_token, {"spot_ids": spot_ids, "reservation_ids": reservation_ids}
+
+
+
+def submit_test_ratings(
+        client: FlaskClient,
+        token: str,
+        spot_id: str,
+        num_ratings: int = 3
+) -> None:
+    """Submit multiple test ratings for a spot"""
+    ratings = [
+        (5, 4), (4, 5), (3, 4), (4, 3), (5, 5)  # Availability, Cleanliness pairs
+    ]
+
+    for i in range(min(num_ratings, len(ratings))):
+        response = client.post(
+            f"/api/unstable/parking-spaces/{spot_id}/rate",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "availability_rating": ratings[i][0],
+                "cleanliness_rating": ratings[i][1]
+            }
+        )
+        assert response.status_code == 200
+
+
+def generate_varied_reservation_pattern(
+        client: FlaskClient,
+        token: str,
+        spot_id: str,
+        pattern_type: str,
+        base_time: datetime,
+        num_reservations: int
+) -> List[str]:
+    """
+    Generate reservations following specific patterns:
+    - "peak_hours": Concentrated during business hours
+    - "weekend_heavy": More reservations on weekends
+    - "random": Randomly distributed
+    """
+    reservation_ids = []
+    car_id = create_test_car(client, token)
+    if pattern_type == "peak_hours":
+        for i in range(num_reservations):
+            day_offset = i // 3  # 3 reservations per day
+            hour = 9 + (i % 8)  # Reservations between 9 AM and 5 PM
+            start_time = base_time + timedelta(days=day_offset, hours=hour)
+
+            reservation_id = create_test_reservation_at_time(
+                client,
+                token,
+                spot_id,
+                start_time=start_time,
+                end_time=start_time + timedelta(hours=2),
+                car_id=car_id
+            )
+            reservation_ids.append(reservation_id)
+
+    elif pattern_type == "weekend_heavy":
+        current_time = base_time
+        while len(reservation_ids) < num_reservations:
+            if current_time.weekday() >= 5:  # Weekend
+                for hour in [10, 14, 18]:  # Multiple reservations on weekends
+                    if len(reservation_ids) < num_reservations:
+                        start_time = current_time.replace(hour=hour)
+                        reservation_id = create_test_reservation_at_time(
+                            client,
+                            token,
+                            spot_id,
+                            start_time=start_time,
+                            end_time=start_time + timedelta(hours=3)
+                        )
+                        reservation_ids.append(reservation_id)
+            else:  # Weekday
+                if len(reservation_ids) < num_reservations:
+                    start_time = current_time.replace(hour=14)  # One reservation per weekday
+                    reservation_id = create_test_reservation_at_time(
+                        client,
+                        token,
+                        spot_id,
+                        start_time=start_time,
+                        end_time=start_time + timedelta(hours=2)
+                    )
+                    reservation_ids.append(reservation_id)
+            current_time += timedelta(days=1)
+
+    return reservation_ids
+
+def insert_reservation_directly(
+    renter_id: str,
+    space_id: str,
+    car_id: str,
+    start_time: datetime,
+    end_time: datetime
+):
+    """Inserts a reservation directly into the database for testing purposes."""
+    reservation_id = str(uuid.uuid4())
+    duration_hours = (end_time - start_time).total_seconds() / 3600
+
+    # Retrieve the price of the parking space
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT price FROM parking_spaces WHERE id = %s", (space_id,))
+            result = cur.fetchone()
+            if not result:
+                raise ValueError(f"Parking space with id {space_id} not found.")
+            space_price_per_hour = result[0]
+
+    # Calculate the total price
+    total_price = duration_hours * space_price_per_hour
+
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO reservations (
+                    id,
+                    parking_space_id,
+                    renter_id,
+                    car_info_id,
+                    time,
+                    status,
+                    price
+                ) VALUES (%s, %s, %s, %s, tstzrange(%s, %s), %s, %s)
+            """, (
+                reservation_id,
+                space_id,
+                renter_id,
+                car_id,
+                start_time,
+                end_time,
+                'completed',  # Assuming past reservations are completed
+                total_price
+            ))
+
+def get_user_id_from_token(client: FlaskClient, token: str) -> str:
+    """Retrieves the user ID associated with the given token."""
+    response = client.get(
+        "/api/unstable/auth/me",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 200, f"Failed to get user ID: {response.get_json()}"
+    data = response.get_json()
+    user_id = data.get("id")
+    assert user_id is not None, "User ID not found in response"
+    return user_id
