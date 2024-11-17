@@ -1,6 +1,6 @@
 // mocks/data/cars/carInfoData.ts
 
-import { CarInfo } from "@/types/type";
+import { CarInfo } from "@/types/type"
 
 export const carInfos: CarInfo[] = [
   {
@@ -22,4 +22,4 @@ export const carInfos: CarInfo[] = [
     license_plate_state: "NY",
   },
   // Add more car infos as needed
-];
+]

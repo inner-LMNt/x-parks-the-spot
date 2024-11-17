@@ -932,3 +932,10 @@ components:
       type: http
       scheme: bearer
 
+DaysOfWeek:
+  - Monday
+  - Tuesday
+  - Wednesday
+  - Thursday
+  - Friday
+  - Saturday

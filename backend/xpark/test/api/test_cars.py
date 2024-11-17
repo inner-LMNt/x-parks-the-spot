@@ -135,11 +135,10 @@ def test_cars_with_color(client: FlaskClient) -> None:
     assert response.status_code == 200
 
     # Verify that no cars remain
-    response = client.get(
-        "/api/unstable/cars", headers=headers
-    )
+    response = client.get("/api/unstable/cars", headers=headers)
     assert response.status_code == 200
     assert response.json == []
+
 
 def test_cars(client: FlaskClient) -> None:
     # Register a new user
@@ -274,8 +273,6 @@ def test_cars(client: FlaskClient) -> None:
     assert response.status_code == 200
 
     # Verify that no cars remain
-    response = client.get(
-        "/api/unstable/cars", headers=headers
-    )
+    response = client.get("/api/unstable/cars", headers=headers)
     assert response.status_code == 200
     assert response.json == []
