@@ -1,21 +1,21 @@
-"use client";
+"use client"
 
-import React, { useState, useMemo } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useMemo } from "react"
+import { motion } from "framer-motion"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -23,60 +23,60 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { format, parseISO } from "date-fns";
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { format, parseISO } from "date-fns"
 
 interface BookingStats {
-  total: number;
-  active: number;
-  completed: number;
-  canceled: number;
-  avgDuration: number;
-  completionRate: number;
+  total: number
+  active: number
+  completed: number
+  canceled: number
+  avgDuration: number
+  completionRate: number
 }
 
 interface CarDetails {
-  make: string;
-  model: string;
-  color: string;
+  make: string
+  model: string
+  color: string
 }
 
 interface BookingDetails {
-  id: string;
-  spotId: string;
-  spotName: string;
-  renterName: string;
-  startTime: string;
-  endTime: string;
-  status: "active" | "completed" | "canceled";
-  price: number;
-  duration: number;
-  carDetails: CarDetails;
+  id: string
+  spotId: string
+  spotName: string
+  renterName: string
+  startTime: string
+  endTime: string
+  status: "active" | "completed" | "canceled"
+  price: number
+  duration: number
+  carDetails: CarDetails
 }
 
 interface BookingMetrics {
-  stats: BookingStats;
-  recentBookings: BookingDetails[];
+  stats: BookingStats
+  recentBookings: BookingDetails[]
 }
 
 interface BookingsTabProps {
-  bookingMetrics: BookingMetrics;
+  bookingMetrics: BookingMetrics
 }
 
 export default function BookingsTab({ bookingMetrics }: BookingsTabProps) {
   const [statusFilter, setStatusFilter] = useState<
     "all" | "active" | "completed" | "canceled"
-  >("all");
+  >("all")
 
   const filteredBookings = useMemo(() => {
     if (statusFilter === "all") {
-      return bookingMetrics.recentBookings;
+      return bookingMetrics.recentBookings
     }
     return bookingMetrics.recentBookings.filter(
       (booking) => booking.status === statusFilter,
-    );
-  }, [statusFilter, bookingMetrics.recentBookings]);
+    )
+  }, [statusFilter, bookingMetrics.recentBookings])
 
   return (
     <motion.div
@@ -217,5 +217,5 @@ export default function BookingsTab({ bookingMetrics }: BookingsTabProps) {
         </CardContent>
       </Card>
     </motion.div>
-  );
+  )
 }

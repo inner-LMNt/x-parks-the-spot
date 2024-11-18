@@ -70,7 +70,7 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
           toast({
             title: "Verification Submitted",
             description: "Your verification is now pending approval.",
-            variant: "success"
+            variant: "success",
           })
 
           window.location.reload() // Reload the page

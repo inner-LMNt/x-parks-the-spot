@@ -1,72 +1,72 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchOwnerReservations } from "@/features/owner-reservations/ownerReservationsSlice";
-import { getOwnerSpots } from "@/features/owner/ownerSlice";
-import { fetchDashboardAnalytics } from "@/features/dashboard-analytics/dashboardAnalyticsSlice";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react"
+import { motion } from "framer-motion"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { fetchOwnerReservations } from "@/features/owner-reservations/ownerReservationsSlice"
+import { getOwnerSpots } from "@/features/owner/ownerSlice"
+import { fetchDashboardAnalytics } from "@/features/dashboard-analytics/dashboardAnalyticsSlice"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
+import { ArrowLeft, Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import RevenueTab from "./components/RevenueTab";
-import BookingsTab from "./components/BookingsTab";
-import SpotsTab from "./components/SpotsTab";
-import RatingsTab from "./components/RatingsTab";
+} from "@/components/ui/select"
+import RevenueTab from "./components/RevenueTab"
+import BookingsTab from "./components/BookingsTab"
+import SpotsTab from "./components/SpotsTab"
+import RatingsTab from "./components/RatingsTab"
 
 const TIME_FILTERS = {
   "7_days": "Last 7 Days",
   "30_days": "Last 30 Days",
   "1_year": "Last Year",
-} as const;
+} as const
 
 export default function OwnerDashboard() {
-  const dispatch = useAppDispatch();
-  const router = useRouter();
-  const [selectedTab, setSelectedTab] = useState("revenue");
+  const dispatch = useAppDispatch()
+  const router = useRouter()
+  const [selectedTab, setSelectedTab] = useState("revenue")
   const [timeFilter, setTimeFilter] =
-    useState<keyof typeof TIME_FILTERS>("30_days");
-  const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
+    useState<keyof typeof TIME_FILTERS>("30_days")
+  const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null)
 
   const {
     paidSpots,
     pendingSpots,
     loading: spotsLoading,
     error: spotsError,
-  } = useAppSelector((state) => state.owner);
+  } = useAppSelector((state) => state.owner)
   const {
     ownerReservations,
     loading: reservationsLoading,
     error: reservationsError,
-  } = useAppSelector((state) => state.ownerReservations);
+  } = useAppSelector((state) => state.ownerReservations)
   const {
     analytics,
     loading: analyticsLoading,
     error: analyticsError,
-  } = useAppSelector((state) => state.dashboardAnalytics);
+  } = useAppSelector((state) => state.dashboardAnalytics)
 
   // Fetch initial data with filters
   useEffect(() => {
-    dispatch(getOwnerSpots());
-    dispatch(fetchOwnerReservations());
+    dispatch(getOwnerSpots())
+    dispatch(fetchOwnerReservations())
     dispatch(
       fetchDashboardAnalytics({
         timeFilter,
         spotId: selectedSpotId,
       }),
-    );
-  }, [dispatch, timeFilter, selectedSpotId]);
+    )
+  }, [dispatch, timeFilter, selectedSpotId])
 
-  const loading = spotsLoading || reservationsLoading || analyticsLoading;
-  const error = spotsError || reservationsError || analyticsError;
+  const loading = spotsLoading || reservationsLoading || analyticsLoading
+  const error = spotsError || reservationsError || analyticsError
 
   const FilterControls = () => (
     <div className="mb-2 flex gap-4 mt-4 justify-center items-center text-slate-950">
@@ -111,7 +111,7 @@ export default function OwnerDashboard() {
         </Select>
       </div>
     </div>
-  );
+  )
 
   if (loading) {
     return (
@@ -123,7 +123,7 @@ export default function OwnerDashboard() {
           </p>
         </div>
       </div>
-    );
+    )
   }
 
   if (error) {
@@ -133,21 +133,21 @@ export default function OwnerDashboard() {
           <p className="text-red-500">{error}</p>
           <Button
             onClick={() => {
-              dispatch(getOwnerSpots());
-              dispatch(fetchOwnerReservations());
+              dispatch(getOwnerSpots())
+              dispatch(fetchOwnerReservations())
               dispatch(
                 fetchDashboardAnalytics({
                   timeFilter,
                   spotId: selectedSpotId,
                 }),
-              );
+              )
             }}
           >
             Try Again
           </Button>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -224,5 +224,5 @@ export default function OwnerDashboard() {
         </Tabs>
       </div>
     </motion.div>
-  );
+  )
 }

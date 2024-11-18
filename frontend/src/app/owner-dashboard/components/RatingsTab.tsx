@@ -1,50 +1,50 @@
-"use client";
+"use client"
 
-import React, { useState } from "react";
-import { Star } from "lucide-react";
-import { motion } from "framer-motion";
+import React, { useState } from "react"
+import { Star } from "lucide-react"
+import { motion } from "framer-motion"
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from "@/components/ui/Card"; // Adjust the import path
-import { MapPin } from "lucide-react";
+} from "@/components/ui/Card" // Adjust the import path
+import { MapPin } from "lucide-react"
 
 interface RatingDistribution {
-  stars: number;
-  count: number;
-  percentage: number;
+  stars: number
+  count: number
+  percentage: number
 }
 
 interface RatingsBySpot {
-  spotId: string;
-  spotName: string;
-  availabilityRating: number;
-  cleanlinessRating: number;
-  totalRating: number;
-  ratingCount: number;
-  ratingDistribution: RatingDistribution[];
-  recentReviews: any[];
+  spotId: string
+  spotName: string
+  availabilityRating: number
+  cleanlinessRating: number
+  totalRating: number
+  ratingCount: number
+  ratingDistribution: RatingDistribution[]
+  recentReviews: any[]
 }
 
 interface RatingMetrics {
   averageRatings: {
-    availability: number;
-    cleanliness: number;
-    total: number;
-  };
-  totalRatings: number;
-  ratingsBySpot: RatingsBySpot[];
+    availability: number
+    cleanliness: number
+    total: number
+  }
+  totalRatings: number
+  ratingsBySpot: RatingsBySpot[]
 }
 
 interface RatingsTabProps {
-  ratingMetrics?: RatingMetrics; // Made optional
+  ratingMetrics?: RatingMetrics // Made optional
 }
 interface ParkingSpotCardProps {
-  spotName: string;
-  onClose: () => void;
+  spotName: string
+  onClose: () => void
 }
 
 const ParkingSpotCard: React.FC<ParkingSpotCardProps> = ({
@@ -68,20 +68,20 @@ const ParkingSpotCard: React.FC<ParkingSpotCardProps> = ({
         <h2 className="text-lg font-semibold text-slate-950">{spotName}</h2>
       </div>
     </motion.div>
-  );
-};
+  )
+}
 
 const RatingsTab: React.FC<RatingsTabProps> = ({ ratingMetrics }) => {
-  const [isCardOpen, setCardOpen] = useState(false);
+  const [isCardOpen, setCardOpen] = useState(false)
 
-  const openCard = () => setCardOpen(true);
-  const closeCard = () => setCardOpen(false);
+  const openCard = () => setCardOpen(true)
+  const closeCard = () => setCardOpen(false)
 
   if (!ratingMetrics) {
-    return <p className="text-gray-500">No rating metrics available.</p>;
+    return <p className="text-gray-500">No rating metrics available.</p>
   }
 
-  const { averageRatings, totalRatings, ratingsBySpot } = ratingMetrics;
+  const { averageRatings, totalRatings, ratingsBySpot } = ratingMetrics
 
   return (
     <div className="space-y-6">
@@ -203,7 +203,7 @@ const RatingsTab: React.FC<RatingsTabProps> = ({ ratingMetrics }) => {
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default RatingsTab;
+export default RatingsTab

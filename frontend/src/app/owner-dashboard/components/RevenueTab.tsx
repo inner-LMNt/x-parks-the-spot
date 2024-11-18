@@ -1,16 +1,16 @@
 // components/RevenueTab.tsx
 
-"use client";
+"use client"
 
-import React from "react";
-import { motion } from "framer-motion";
+import React from "react"
+import { motion } from "framer-motion"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
 import {
   BarChart,
   LineChart,
@@ -21,36 +21,36 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from "recharts";
+} from "recharts"
 
 interface RevenueSpot {
-  spotId: string;
-  spotName: string;
-  revenue: number;
-  bookings: number;
-  occupancyRate: number;
-  basePrice: number;
+  spotId: string
+  spotName: string
+  revenue: number
+  bookings: number
+  occupancyRate: number
+  basePrice: number
 }
 
 interface RevenueMetrics {
   monthlyRevenue: Array<{
-    month: string;
-    revenue: number;
-    bookings: number;
-  }>;
+    month: string
+    revenue: number
+    bookings: number
+  }>
   dailyRevenue: Array<{
-    date: string;
-    revenue: number;
-  }>;
+    date: string
+    revenue: number
+  }>
   hourlyRevenue: Array<{
-    hour: number;
-    revenue: number;
-  }>;
-  revenueBySpot: RevenueSpot[];
+    hour: number
+    revenue: number
+  }>
+  revenueBySpot: RevenueSpot[]
 }
 
 interface RevenueTabProps {
-  revenueMetrics: RevenueMetrics;
+  revenueMetrics: RevenueMetrics
 }
 
 const RevenueTab: React.FC<RevenueTabProps> = ({ revenueMetrics }) => {
@@ -206,7 +206,7 @@ const RevenueTab: React.FC<RevenueTabProps> = ({ revenueMetrics }) => {
         </CardContent>
       </Card>
     </motion.div>
-  );
-};
+  )
+}
 
-export default RevenueTab;
+export default RevenueTab
