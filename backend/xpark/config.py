@@ -36,7 +36,7 @@ class Config:
     MAX_SEARCH_RADIUS_KM = 5
 
     S3_ENABLED = os.environ.get("S3_ENABLED") or "no"
-    S3_ENDPOINT = os.environ.get("S3_ENDPOINT")
-    S3_BUCKET = os.environ.get("S3_BUCKET")
-    S3_ACCESS_KEY = os.environ.get("S3_ACCESS_KEY")
-    S3_SECRET_KEY = os.environ.get("S3_SECRET_KEY")
+    S3_ENDPOINT = os.environ.get("S3_ENDPOINT") or ""
+    S3_BUCKET = os.environ.get("S3_BUCKET") or ""
+    S3_ACCESS_KEY = os.environ.get("S3_ACCESS_KEY") or ""
+    S3_SECRET_KEY = os.environ.get("S3_SECRET_KEY") or ""
