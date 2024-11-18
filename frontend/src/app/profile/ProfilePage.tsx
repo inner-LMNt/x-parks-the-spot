@@ -293,6 +293,14 @@ export default function ProfilePage() {
               </Button>
             </Link>
           </div>
+          <div className="text-left mb-6">
+            <h2 className="text-lg font-semibold mb-4">Bookmarks</h2>
+            <Link href="/bookmarks" passHref>
+              <Button variant="outline">
+                <Car className="mr-2" /> View Your Bookmarks
+              </Button>
+            </Link>
+          </div>
         </div>
         <div className="flex h-16"></div>
       </div>

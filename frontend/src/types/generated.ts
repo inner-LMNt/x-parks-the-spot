@@ -912,6 +912,108 @@ export type paths = {
         };
         trace?: never;
     };
+    "/parking-spaces/{id}/bookmark": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bookmark parking space */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Bookmark Set */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bookmark Already Set */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        /** Remove bookmarked parking space */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Bookmark Deleted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bookmark Doesn't Exist */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookmarks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get all bookmarked spots */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of bookmarks */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Bookmark"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/reservations": {
         parameters: {
             query?: never;
@@ -1894,6 +1996,7 @@ export type components = {
             id: string;
             is_paid: boolean;
             is_taken?: boolean;
+            is_bookmarked?: boolean | null;
             /** Format: uuid */
             owner_id?: string;
             name?: string;
@@ -2003,6 +2106,12 @@ export type components = {
             pricing_info?: components["schemas"]["PricingInfo"];
             dynamic_pricing_enabled?: boolean;
             cancellation_policy?: string;
+        };
+        Bookmark: {
+            /** Format: uuid */
+            parking_spot_id: string;
+            name: string;
+            location: components["schemas"]["Location"];
         };
         Reservation: {
             /** Format: uuid */
@@ -2210,6 +2319,7 @@ export type SchemaCarInfoList = components['schemas']['CarInfoList'];
 export type SchemaParkingSpaceSummary = components['schemas']['ParkingSpaceSummary'];
 export type SchemaParkingSpaceCreateRequest = components['schemas']['ParkingSpaceCreateRequest'];
 export type SchemaParkingSpaceUpdateRequest = components['schemas']['ParkingSpaceUpdateRequest'];
+export type SchemaBookmark = components['schemas']['Bookmark'];
 export type SchemaReservation = components['schemas']['Reservation'];
 export type SchemaReservationCreateRequest = components['schemas']['ReservationCreateRequest'];
 export type SchemaReservationUpdateRequest = components['schemas']['ReservationUpdateRequest'];
