@@ -3,6 +3,7 @@ import magic
 from xpark.config import Config
 import uuid
 from werkzeug.datastructures import FileStorage
+import boto3
 
 
 class S3:
@@ -27,3 +28,12 @@ class S3:
             return image_uri
         else:
             raise ValueError("Invalid image file type")
+
+    @staticmethod
+    def connect() -> None:
+        S3.conn = boto3.resource(
+            "s3",
+            endpoint_url=Config.S3_ENDPOINT,
+            aws_access_key_id=Config.S3_ACCESS_KEY,
+            aws_secret_access_key=Config.S3_SECRET_KEY,
+        )

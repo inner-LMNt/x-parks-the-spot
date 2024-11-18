@@ -2,7 +2,6 @@ from flask import Flask
 from .config import Config
 from psycopg_pool import ConnectionPool
 import smtplib
-import boto3
 
 
 def create_app(config_class: type[Config] = Config) -> Flask:
@@ -26,15 +25,11 @@ def create_app(config_class: type[Config] = Config) -> Flask:
 
         mailer_connect()
 
-    if Config.S3_ENABLED == "yes":
-        from .utils.s3 import S3
+    # Initialize S3 uploads
+    from .utils.s3 import S3
 
-        S3.conn = boto3.resource(
-            "s3",
-            endpoint_url=Config.S3_ENDPOINT,
-            aws_access_key_id=Config.S3_ACCESS_KEY,
-            aws_secret_access_key=Config.S3_SECRET_KEY,
-        )
+    if Config.S3_ENABLED == "yes":
+        S3.connect()
 
     # Run SQL migrations in one transaction. Any failures will not modify the database
     with DB.pool.connection() as conn:
