@@ -1,14 +1,14 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import React, { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   fetchUserReports,
   resetReportsError,
-} from "@/features/reports/reportSlice";
-import { fetchUserReservations } from "@/features/reservations/reservationsSlice";
-import { fetchOwnerReservations } from "@/features/owner-reservations/ownerReservationsSlice";
+} from "@/features/reports/reportSlice"
+import { fetchUserReservations } from "@/features/reservations/reservationsSlice"
+import { fetchOwnerReservations } from "@/features/owner-reservations/ownerReservationsSlice"
 import {
   ArrowLeft,
   Layers,
@@ -19,51 +19,51 @@ import {
   CheckCircle2,
   Circle,
   CircleDot,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from "@/components/ui/select";
-import { toast } from "@/hooks/use-toast";
-import { AnimatePresence } from "framer-motion";
-import { ReportDialog } from "./components/ReportDialog";
-import { BookingsReports } from "./components/BookingsReports";
-import { Report } from "@/types/type";
+} from "@/components/ui/select"
+import { toast } from "@/hooks/use-toast"
+import { AnimatePresence } from "framer-motion"
+import { ReportDialog } from "./components/ReportDialog"
+import { BookingsReports } from "./components/BookingsReports"
+import { Report } from "@/types/type"
 
 export default function ReportsPage() {
-  const dispatch = useAppDispatch();
-  const router = useRouter();
+  const dispatch = useAppDispatch()
+  const router = useRouter()
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string | null>("active");
-  const [selectedReservation, setSelectedReservation] = useState(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [typeFilter, setTypeFilter] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<string | null>("active")
+  const [selectedReservation, setSelectedReservation] = useState(null)
   const [selectedReportType, setSelectedReportType] = useState<string | null>(
     null,
-  );
+  )
 
   const {
     reports,
     loading: reportsLoading,
     error: reportsError,
-  } = useAppSelector((state) => state.reports);
+  } = useAppSelector((state) => state.reports)
   const { loading: reservationsLoading, error: reservationsError } =
-    useAppSelector((state) => state.reservations);
+    useAppSelector((state) => state.reservations)
   const { loading: ownerReservationsLoading, error: ownerReservationsError } =
-    useAppSelector((state) => state.ownerReservations);
+    useAppSelector((state) => state.ownerReservations)
 
   const handleClearFilters = () => {
-    setTypeFilter(null);
-    setStatusFilter(null);
-  };
+    setTypeFilter(null)
+    setStatusFilter(null)
+  }
 
   const handleCreateReport = () => {
-    handleReportClick();
-  };
+    handleReportClick()
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -71,50 +71,50 @@ export default function ReportsPage() {
         dispatch(fetchUserReports()),
         dispatch(fetchUserReservations()),
         dispatch(fetchOwnerReservations()),
-      ]);
-    };
-    fetchData();
+      ])
+    }
+    fetchData()
 
     return () => {
-      dispatch(resetReportsError());
-    };
-  }, [dispatch]);
+      dispatch(resetReportsError())
+    }
+  }, [dispatch])
 
   useEffect(() => {
     const errors = [
       reportsError,
       reservationsError,
       ownerReservationsError,
-    ].filter(Boolean);
+    ].filter(Boolean)
     errors.forEach((error) => {
       if (error) {
         toast({
           title: "Error",
           description: error,
           variant: "destructive",
-        });
+        })
       }
-    });
-  }, [reportsError, reservationsError, ownerReservationsError]);
+    })
+  }, [reportsError, reservationsError, ownerReservationsError])
 
   const handleReportClick = (reservation = null, type = null) => {
-    setSelectedReservation(reservation);
-    setSelectedReportType(type);
-    setIsDialogOpen(true);
-  };
+    setSelectedReservation(reservation)
+    setSelectedReportType(type)
+    setIsDialogOpen(true)
+  }
 
   const filteredReports = reports.filter((report: Report) => {
-    const matchesType = !typeFilter || report.type === typeFilter;
+    const matchesType = !typeFilter || report.type === typeFilter
     const matchesStatus =
       !statusFilter ||
       (statusFilter === "active" &&
         ["open", "in_progress"].includes(report.status)) ||
-      (statusFilter === "resolved" && report.status === "resolved");
-    return matchesType && matchesStatus;
-  });
+      (statusFilter === "resolved" && report.status === "resolved")
+    return matchesType && matchesStatus
+  })
 
   const isLoading =
-    reportsLoading || reservationsLoading || ownerReservationsLoading;
+    reportsLoading || reservationsLoading || ownerReservationsLoading
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -233,14 +233,14 @@ export default function ReportsPage() {
         <ReportDialog
           isOpen={isDialogOpen}
           onClose={() => {
-            setIsDialogOpen(false);
-            setSelectedReservation(null);
-            setSelectedReportType(null);
+            setIsDialogOpen(false)
+            setSelectedReservation(null)
+            setSelectedReportType(null)
           }}
           preselectedReservation={selectedReservation}
           preselectedType={selectedReportType}
         />
       </div>
     </div>
-  );
+  )
 }

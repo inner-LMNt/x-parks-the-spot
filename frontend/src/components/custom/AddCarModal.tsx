@@ -1,29 +1,29 @@
 // src/components/AddCarModal.tsx
 
-import React, { useState, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addCar, resetCarError } from "@/features/cars/carSlice";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "@/hooks/use-toast";
+import React, { useState, useEffect } from "react"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { addCar, resetCarError } from "@/features/cars/carSlice"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { toast } from "@/hooks/use-toast"
 
 interface AddCarModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen: boolean
+  onClose: () => void
 }
 
 const AddCarModal: React.FC<AddCarModalProps> = ({ isOpen, onClose }) => {
-  const dispatch = useAppDispatch();
-  const { loading, error } = useAppSelector((state) => state.cars);
+  const dispatch = useAppDispatch()
+  const { loading, error } = useAppSelector((state) => state.cars)
 
-  const [make, setMake] = useState("");
-  const [model, setModel] = useState("");
-  const [licensePlate, setLicensePlate] = useState("");
-  const [licensePlateState, setLicensePlateState] = useState("");
-  const [color, setColor] = useState("");
+  const [make, setMake] = useState("")
+  const [model, setModel] = useState("")
+  const [licensePlate, setLicensePlate] = useState("")
+  const [licensePlateState, setLicensePlateState] = useState("")
+  const [color, setColor] = useState("")
 
   useEffect(() => {
     if (error) {
@@ -31,13 +31,13 @@ const AddCarModal: React.FC<AddCarModalProps> = ({ isOpen, onClose }) => {
         title: "Failed to Add Car",
         description: error,
         variant: "destructive",
-      });
-      dispatch(resetCarError());
+      })
+      dispatch(resetCarError())
     }
-  }, [error, dispatch]);
+  }, [error, dispatch])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
     // Basic validation
     if (!make || !model || !licensePlate || !licensePlateState) {
@@ -45,8 +45,8 @@ const AddCarModal: React.FC<AddCarModalProps> = ({ isOpen, onClose }) => {
         title: "Missing Information",
         description: "Please fill out all required fields.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
     const newCar = {
@@ -55,23 +55,23 @@ const AddCarModal: React.FC<AddCarModalProps> = ({ isOpen, onClose }) => {
       license_plate: licensePlate,
       license_plate_state: licensePlateState,
       color, // Optional
-    };
+    }
 
     try {
-      await dispatch(addCar(newCar)).unwrap();
+      await dispatch(addCar(newCar)).unwrap()
       toast({
         title: "Car Added",
         description: "Your car has been added successfully.",
         variant: "success",
-      });
-      onClose(); // Close the modal
+      })
+      onClose() // Close the modal
     } catch (err) {
       // Error handling is already managed in useEffect
-      console.error(err);
+      console.error(err)
     }
-  };
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
@@ -143,7 +143,7 @@ const AddCarModal: React.FC<AddCarModalProps> = ({ isOpen, onClose }) => {
         </CardContent>
       </Card>
     </div>
-  );
-};
+  )
+}
 
-export default AddCarModal;
+export default AddCarModal

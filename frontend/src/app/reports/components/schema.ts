@@ -1,12 +1,12 @@
-import { z } from "zod";
+import { z } from "zod"
 
-const MAX_FILE_SIZE = 5000000; // 5MB
+const MAX_FILE_SIZE = 5000000 // 5MB
 const ACCEPTED_IMAGE_TYPES = [
   "image/jpeg",
   "image/jpg",
   "image/png",
   "image/webp",
-];
+]
 
 const ImageSchema = z
   .any()
@@ -15,7 +15,7 @@ const ImageSchema = z
   .refine(
     (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
     "Only .jpg, .jpeg, .png and .webp files are accepted",
-  );
+  )
 
 export const FormSchema = z.discriminatedUnion("type", [
   z.object({
@@ -52,4 +52,4 @@ export const FormSchema = z.discriminatedUnion("type", [
       .string()
       .min(10, "Description must be at least 10 characters long."),
   }),
-]);
+])

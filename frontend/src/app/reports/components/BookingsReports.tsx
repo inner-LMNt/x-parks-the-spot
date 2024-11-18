@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect } from "react";
-import { Report } from "@/types/type";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import React, { useState, useEffect } from "react"
+import { Report } from "@/types/type"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import {
   ChevronDown,
   ChevronUp,
@@ -17,49 +17,49 @@ import {
   Car,
   DollarSign,
   Loader,
-} from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
-import { format, isValid } from "date-fns";
-import { Skeleton } from "@/components/ui/skeleton";
-import ImageWrapper from "@/components/custom/ImageWrapper";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchReportDetails } from "@/features/reports/reportDetailsSlice";
-import { fetchReservationCar } from "@/features/cars/reservationCarSlice";
-import { RootState } from "@/store";
-import EmptyReportsState from "@/app/reports/components/EmptyReportsState";
+} from "lucide-react"
+import { AnimatePresence, motion } from "framer-motion"
+import { format, isValid } from "date-fns"
+import { Skeleton } from "@/components/ui/skeleton"
+import ImageWrapper from "@/components/custom/ImageWrapper"
+import { useDispatch, useSelector } from "react-redux"
+import { fetchReportDetails } from "@/features/reports/reportDetailsSlice"
+import { fetchReservationCar } from "@/features/cars/reservationCarSlice"
+import { RootState } from "@/store"
+import EmptyReportsState from "@/app/reports/components/EmptyReportsState"
 
 const safeFormatDate = (
   dateString: string | undefined,
   dateFormat: string,
 ): string => {
-  if (!dateString) return "N/A";
-  const date = new Date(dateString);
-  return isValid(date) ? format(date, dateFormat) : "Invalid date";
-};
+  if (!dateString) return "N/A"
+  const date = new Date(dateString)
+  return isValid(date) ? format(date, dateFormat) : "Invalid date"
+}
 
 function getStatusClass(status: string): string {
   switch (status) {
     case "open":
-      return "bg-blue-100 text-blue-800";
+      return "bg-blue-100 text-blue-800"
     case "in_progress":
-      return "bg-yellow-100 text-yellow-800";
+      return "bg-yellow-100 text-yellow-800"
     case "resolved":
-      return "bg-green-100 text-green-800";
+      return "bg-green-100 text-green-800"
     default:
-      return "bg-gray-100 text-gray-800";
+      return "bg-gray-100 text-gray-800"
   }
 }
 
 function formatStatus(status: string): string {
   switch (status) {
     case "open":
-      return "Open";
+      return "Open"
     case "in_progress":
-      return "In Progress";
+      return "In Progress"
     case "resolved":
-      return "Resolved";
+      return "Resolved"
     default:
-      return "Unknown";
+      return "Unknown"
   }
 }
 
@@ -89,14 +89,14 @@ const ReportSkeleton = () => (
       </div>
     </CardHeader>
   </Card>
-);
+)
 
 export const BookingsReports: React.FC<{
-  reports: Report[];
-  isLoading?: boolean;
-  totalReportsCount: number;
-  onClearFilters: () => void;
-  onCreateReport: () => void;
+  reports: Report[]
+  isLoading?: boolean
+  totalReportsCount: number
+  onClearFilters: () => void
+  onCreateReport: () => void
 }> = ({
   reports,
   isLoading = false,
@@ -104,24 +104,22 @@ export const BookingsReports: React.FC<{
   onClearFilters,
   onCreateReport,
 }) => {
-  const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
-  const dispatch = useDispatch();
+  const [expandedReportId, setExpandedReportId] = useState<string | null>(null)
+  const dispatch = useDispatch()
 
   // Selectors for report details and car info
-  const reportDetails = useSelector((state: RootState) => state.reportDetails);
-  const reservationCar = useSelector(
-    (state: RootState) => state.reservationCar,
-  );
+  const reportDetails = useSelector((state: RootState) => state.reportDetails)
+  const reservationCar = useSelector((state: RootState) => state.reservationCar)
 
   const toggleReport = (report: Report) => {
     if (expandedReportId === report.id) {
-      setExpandedReportId(null);
+      setExpandedReportId(null)
     } else {
-      setExpandedReportId(report.id);
+      setExpandedReportId(report.id)
       // @ts-ignore
-      dispatch(fetchReportDetails(report.id));
+      dispatch(fetchReportDetails(report.id))
     }
-  };
+  }
 
   if (isLoading) {
     return (
@@ -130,7 +128,7 @@ export const BookingsReports: React.FC<{
           <ReportSkeleton key={i} />
         ))}
       </div>
-    );
+    )
   }
 
   return (
@@ -411,5 +409,5 @@ export const BookingsReports: React.FC<{
           </Card>
         ))}
     </div>
-  );
-};
+  )
+}

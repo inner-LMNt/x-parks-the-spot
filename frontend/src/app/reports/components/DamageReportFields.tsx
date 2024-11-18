@@ -1,31 +1,31 @@
-"use client";
+"use client"
 
-import { useEffect } from "react";
+import { useEffect } from "react"
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from "@/components/ui/form"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { ImageUpload } from "./ImageUpload";
-import { ReservationsGroupSelect } from "./ReservationsGroupSelect";
-import { Reservation } from "@/types/type";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchReservationCar } from "@/features/cars/reservationCarSlice";
+} from "@/components/ui/select"
+import { ImageUpload } from "./ImageUpload"
+import { ReservationsGroupSelect } from "./ReservationsGroupSelect"
+import { Reservation } from "@/types/type"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { fetchReservationCar } from "@/features/cars/reservationCarSlice"
 
 interface DamageReportFieldsProps {
-  form: any;
-  handleReservationSelect: (value: string) => void;
-  selectedReservation: Reservation | null;
-  imageUploadProps: any; // Adjust this according to your actual props
+  form: any
+  handleReservationSelect: (value: string) => void
+  selectedReservation: Reservation | null
+  imageUploadProps: any // Adjust this according to your actual props
 }
 
 export const DamageReportFields = ({
@@ -34,19 +34,19 @@ export const DamageReportFields = ({
   imageUploadProps,
   selectedReservation,
 }: DamageReportFieldsProps) => {
-  const dispatch = useAppDispatch();
+  const dispatch = useAppDispatch()
 
   // Fetch car info when a reservation is selected
   useEffect(() => {
     if (selectedReservation && selectedReservation.car_info_id) {
-      dispatch(fetchReservationCar(selectedReservation.car_info_id));
+      dispatch(fetchReservationCar(selectedReservation.car_info_id))
     }
-  }, [dispatch, selectedReservation]);
+  }, [dispatch, selectedReservation])
 
   // Get car info from Redux store
   const { carInfo, loading: carInfoLoading } = useAppSelector(
     (state) => state.reservationCar,
-  );
+  )
 
   return (
     <>
@@ -59,8 +59,8 @@ export const DamageReportFields = ({
             <FormControl>
               <ReservationsGroupSelect
                 onChange={(value) => {
-                  field.onChange(value);
-                  handleReservationSelect(value);
+                  field.onChange(value)
+                  handleReservationSelect(value)
                 }}
                 value={field.value}
                 title="Reported Reservation"
@@ -143,5 +143,5 @@ export const DamageReportFields = ({
         )}
       />
     </>
-  );
-};
+  )
+}

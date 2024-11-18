@@ -1,3 +1,3 @@
-import BookingsPage from "@/app/bookings/BookingsPage";
+import BookingsPage from "@/app/bookings/BookingsPage"
 
-export default BookingsPage;
+export default BookingsPage

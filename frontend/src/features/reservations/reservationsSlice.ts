@@ -1,22 +1,22 @@
 // src/features/reservations/reservationsSlice.ts
 
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "@/api/axiosInstance";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
+import axios from "@/api/axiosInstance"
 import {
   Reservation,
   ReservationCreateRequest,
   ReservationUpdateRequest,
-} from "@/types/type";
+} from "@/types/type"
 
 /**
  * **Reservations State Interface**
  */
 interface ReservationsState {
-  loading: boolean;
-  error: string | null;
-  reservations: Reservation[];
-  reservationsTimes: Reservation[];
-  loadingReservationTimes: boolean;
+  loading: boolean
+  error: string | null
+  reservations: Reservation[]
+  reservationsTimes: Reservation[]
+  loadingReservationTimes: boolean
 }
 
 /**
@@ -28,7 +28,7 @@ const initialState: ReservationsState = {
   reservations: [],
   reservationsTimes: [], // Added an extra copy of reservations for use in notifications component
   loadingReservationTimes: false,
-};
+}
 
 /**
  * **Async Thunks**
@@ -44,21 +44,21 @@ export const fetchUserReservations = createAsyncThunk<
   { rejectValue: string }
 >("reservations/fetchUserReservations", async (_, { rejectWithValue }) => {
   try {
-    const response = await axios.get<Reservation[]>("/reservations");
-    return response.data;
+    const response = await axios.get<Reservation[]>("/reservations")
+    return response.data
   } catch (error: any) {
     if (error.response?.status === 401) {
-      return rejectWithValue("Unauthorized");
+      return rejectWithValue("Unauthorized")
     }
     if (error.response?.status === 403) {
-      return rejectWithValue("Forbidden");
+      return rejectWithValue("Forbidden")
     }
     if (error.response?.status === 404) {
-      return rejectWithValue("Not found");
+      return rejectWithValue("Not found")
     }
-    return rejectWithValue("Failed to fetch reservations");
+    return rejectWithValue("Failed to fetch reservations")
   }
-});
+})
 
 /**
  * Fetch Current User's Reservations
@@ -72,21 +72,21 @@ export const fetchUserReservationsTimes = createAsyncThunk<
   { rejectValue: string }
 >("reservations/fetchUserReservationsTimes", async (_, { rejectWithValue }) => {
   try {
-    const response = await axios.get<Reservation[]>("/reservations");
-    return response.data;
+    const response = await axios.get<Reservation[]>("/reservations")
+    return response.data
   } catch (error: any) {
     if (error.response?.status === 401) {
-      return rejectWithValue("Unauthorized");
+      return rejectWithValue("Unauthorized")
     }
     if (error.response?.status === 403) {
-      return rejectWithValue("Forbidden");
+      return rejectWithValue("Forbidden")
     }
     if (error.response?.status === 404) {
-      return rejectWithValue("Not found");
+      return rejectWithValue("Not found")
     }
-    return rejectWithValue("Failed to fetch reservations");
+    return rejectWithValue("Failed to fetch reservations")
   }
-});
+})
 
 /**
  * Fetch Reservation Details by ID
@@ -102,22 +102,22 @@ export const fetchReservationById = createAsyncThunk<
     try {
       const response = await axios.get<Reservation>(
         `/reservations/${reservationId}`,
-      );
-      return response.data;
+      )
+      return response.data
     } catch (error: any) {
       if (error.response?.status === 401) {
-        return rejectWithValue("Unauthorized");
+        return rejectWithValue("Unauthorized")
       }
       if (error.response?.status === 403) {
-        return rejectWithValue("Forbidden");
+        return rejectWithValue("Forbidden")
       }
       if (error.response?.status === 404) {
-        return rejectWithValue("Reservation not found");
+        return rejectWithValue("Reservation not found")
       }
-      return rejectWithValue("Failed to fetch reservation details");
+      return rejectWithValue("Failed to fetch reservation details")
     }
   },
-);
+)
 
 /**
  * Create a New Reservation
@@ -134,25 +134,25 @@ export const bookParkingSpace = createAsyncThunk<
       const response = await axios.post<Reservation>(
         "/reservations",
         reservationRequest,
-      );
-      return response.data;
+      )
+      return response.data
     } catch (error: any) {
       if (error.response?.status === 400) {
-        return rejectWithValue("Invalid input");
+        return rejectWithValue("Invalid input")
       }
       if (error.response?.status === 401) {
-        return rejectWithValue("Unauthorized");
+        return rejectWithValue("Unauthorized")
       }
       if (error.response?.status === 403) {
-        return rejectWithValue("Forbidden");
+        return rejectWithValue("Forbidden")
       }
       if (error.response?.status === 409) {
-        return rejectWithValue("Parking space is already locked or reserved");
+        return rejectWithValue("Parking space is already locked or reserved")
       }
-      return rejectWithValue("Failed to book parking space");
+      return rejectWithValue("Failed to book parking space")
     }
   },
-);
+)
 
 /**
  * Update an Existing Reservation
@@ -169,25 +169,25 @@ export const updateReservation = createAsyncThunk<
       const response = await axios.put<Reservation>(
         `/reservations/${id}`,
         updateData,
-      );
-      return response.data;
+      )
+      return response.data
     } catch (error: any) {
       if (error.response?.status === 400) {
-        return rejectWithValue("Invalid input");
+        return rejectWithValue("Invalid input")
       }
       if (error.response?.status === 401) {
-        return rejectWithValue("Unauthorized");
+        return rejectWithValue("Unauthorized")
       }
       if (error.response?.status === 403) {
-        return rejectWithValue("Forbidden");
+        return rejectWithValue("Forbidden")
       }
       if (error.response?.status === 404) {
-        return rejectWithValue("Reservation not found");
+        return rejectWithValue("Reservation not found")
       }
-      return rejectWithValue("Failed to update reservation");
+      return rejectWithValue("Failed to update reservation")
     }
   },
-);
+)
 
 /**
  * Get Maximum Extension Time for a Reservation
@@ -203,25 +203,25 @@ export const getMaxExtensionTime = createAsyncThunk<
     try {
       const response = await axios.get<{ maxExtensionTime: string }>(
         `/reservations/${reservationId}/max-extension`,
-      );
-      return response.data;
+      )
+      return response.data
     } catch (error: any) {
       if (error.response?.status === 400) {
-        return rejectWithValue("Invalid input");
+        return rejectWithValue("Invalid input")
       }
       if (error.response?.status === 401) {
-        return rejectWithValue("Unauthorized");
+        return rejectWithValue("Unauthorized")
       }
       if (error.response?.status === 403) {
-        return rejectWithValue("Forbidden");
+        return rejectWithValue("Forbidden")
       }
       if (error.response?.status === 404) {
-        return rejectWithValue("Reservation not found");
+        return rejectWithValue("Reservation not found")
       }
-      return rejectWithValue("Failed to get maximum extension time");
+      return rejectWithValue("Failed to get maximum extension time")
     }
   },
-);
+)
 
 /**
  * Cancel a Reservation
@@ -235,24 +235,24 @@ export const cancelReservation = createAsyncThunk<
   "reservations/cancelReservation",
   async (reservationId, { rejectWithValue }) => {
     try {
-      await axios.delete(`/reservations/${reservationId}`);
+      await axios.delete(`/reservations/${reservationId}`)
     } catch (error: any) {
       if (error.response?.status === 400) {
-        return rejectWithValue("Invalid input");
+        return rejectWithValue("Invalid input")
       }
       if (error.response?.status === 401) {
-        return rejectWithValue("Unauthorized");
+        return rejectWithValue("Unauthorized")
       }
       if (error.response?.status === 403) {
-        return rejectWithValue("Forbidden");
+        return rejectWithValue("Forbidden")
       }
       if (error.response?.status === 404) {
-        return rejectWithValue("Reservation not found");
+        return rejectWithValue("Reservation not found")
       }
-      return rejectWithValue("Failed to cancel reservation");
+      return rejectWithValue("Failed to cancel reservation")
     }
   },
-);
+)
 
 /**
  * **Reservations Slice**
@@ -265,7 +265,7 @@ const reservationsSlice = createSlice({
      * Reset error state
      */
     resetError(state) {
-      state.error = null;
+      state.error = null
     },
   },
   extraReducers: (builder) => {
@@ -274,23 +274,23 @@ const reservationsSlice = createSlice({
      */
     builder
       .addCase(fetchUserReservations.pending, (state: ReservationsState) => {
-        state.loading = true;
-        state.error = null;
+        state.loading = true
+        state.error = null
       })
       .addCase(
         fetchUserReservations.fulfilled,
         (state: ReservationsState, action) => {
-          state.loading = false;
-          state.reservations = action.payload;
+          state.loading = false
+          state.reservations = action.payload
         },
       )
       .addCase(
         fetchUserReservations.rejected,
         (state: ReservationsState, action) => {
-          state.loading = false;
-          state.error = action.payload || "Failed to fetch reservations";
+          state.loading = false
+          state.error = action.payload || "Failed to fetch reservations"
         },
-      );
+      )
 
     /**
      * Handle fetchUserReservationsTimes actions
@@ -299,161 +299,160 @@ const reservationsSlice = createSlice({
       .addCase(
         fetchUserReservationsTimes.pending,
         (state: ReservationsState) => {
-          state.loadingReservationTimes = true;
-          state.error = null;
+          state.loadingReservationTimes = true
+          state.error = null
         },
       )
       .addCase(
         fetchUserReservationsTimes.fulfilled,
         (state: ReservationsState, action) => {
-          state.loadingReservationTimes = false;
-          state.reservationsTimes = action.payload;
+          state.loadingReservationTimes = false
+          state.reservationsTimes = action.payload
         },
       )
       .addCase(
         fetchUserReservationsTimes.rejected,
         (state: ReservationsState, action) => {
-          state.loadingReservationTimes = false;
-          state.error = action.payload || "Failed to fetch reservationsTimes";
+          state.loadingReservationTimes = false
+          state.error = action.payload || "Failed to fetch reservationsTimes"
         },
-      );
+      )
 
     /**
      * Handle fetchReservationById actions
      */
     builder
       .addCase(fetchReservationById.pending, (state: ReservationsState) => {
-        state.loading = true;
-        state.error = null;
+        state.loading = true
+        state.error = null
       })
       .addCase(
         fetchReservationById.fulfilled,
         (state: ReservationsState, action) => {
-          state.loading = false;
+          state.loading = false
           const index = state.reservations.findIndex(
             (r) => r.id === action.payload.id,
-          );
+          )
           if (index !== -1) {
-            state.reservations[index] = action.payload;
+            state.reservations[index] = action.payload
           } else {
-            state.reservations.push(action.payload);
+            state.reservations.push(action.payload)
           }
         },
       )
       .addCase(
         fetchReservationById.rejected,
         (state: ReservationsState, action) => {
-          state.loading = false;
-          state.error = action.payload || "Failed to fetch reservation details";
+          state.loading = false
+          state.error = action.payload || "Failed to fetch reservation details"
         },
-      );
+      )
 
     /**
      * Handle bookParkingSpace actions
      */
     builder
       .addCase(bookParkingSpace.pending, (state: ReservationsState) => {
-        state.loading = true;
-        state.error = null;
+        state.loading = true
+        state.error = null
       })
       .addCase(
         bookParkingSpace.fulfilled,
         (state: ReservationsState, action) => {
-          state.loading = false;
-          state.reservations.push(action.payload);
+          state.loading = false
+          state.reservations.push(action.payload)
         },
       )
       .addCase(
         bookParkingSpace.rejected,
         (state: ReservationsState, action) => {
-          state.loading = false;
-          state.error = action.payload || "Failed to book parking space";
+          state.loading = false
+          state.error = action.payload || "Failed to book parking space"
         },
-      );
+      )
 
     /**
      * Handle updateReservation actions
      */
     builder
       .addCase(updateReservation.pending, (state: ReservationsState) => {
-        state.loading = true;
-        state.error = null;
+        state.loading = true
+        state.error = null
       })
       .addCase(
         updateReservation.fulfilled,
         (state: ReservationsState, action) => {
-          state.loading = false;
+          state.loading = false
           const index = state.reservations.findIndex(
             (r) => r.id === action.payload.id,
-          );
+          )
           if (index !== -1) {
-            state.reservations[index] = action.payload;
+            state.reservations[index] = action.payload
           }
         },
       )
       .addCase(
         updateReservation.rejected,
         (state: ReservationsState, action) => {
-          state.loading = false;
-          state.error = action.payload || "Failed to update reservation";
+          state.loading = false
+          state.error = action.payload || "Failed to update reservation"
         },
-      );
+      )
 
     /**
      * Handle getMaxExtensionTime actions
      */
     builder
       .addCase(getMaxExtensionTime.pending, (state: ReservationsState) => {
-        state.loading = true;
-        state.error = null;
+        state.loading = true
+        state.error = null
       })
       .addCase(
         getMaxExtensionTime.fulfilled,
         (state: ReservationsState, action) => {
-          state.loading = false;
+          state.loading = false
           // Handle maxExtensionTime if needed
         },
       )
       .addCase(
         getMaxExtensionTime.rejected,
         (state: ReservationsState, action) => {
-          state.loading = false;
-          state.error =
-            action.payload || "Failed to get maximum extension time";
+          state.loading = false
+          state.error = action.payload || "Failed to get maximum extension time"
         },
-      );
+      )
 
     /**
      * Handle cancelReservation actions
      */
     builder
       .addCase(cancelReservation.pending, (state: ReservationsState) => {
-        state.loading = true;
-        state.error = null;
+        state.loading = true
+        state.error = null
       })
       .addCase(
         cancelReservation.fulfilled,
         (state: ReservationsState, action) => {
-          state.loading = false;
-          const reservationId = action.meta.arg;
+          state.loading = false
+          const reservationId = action.meta.arg
           state.reservations = state.reservations.filter(
             (r) => r.id !== reservationId,
-          );
+          )
         },
       )
       .addCase(
         cancelReservation.rejected,
         (state: ReservationsState, action) => {
-          state.loading = false;
-          state.error = action.payload || "Failed to cancel reservation";
+          state.loading = false
+          state.error = action.payload || "Failed to cancel reservation"
         },
-      );
+      )
   },
-});
+})
 
 /**
  * **Export Actions and Reducer**
  */
-export const { resetError } = reservationsSlice.actions;
+export const { resetError } = reservationsSlice.actions
 
-export default reservationsSlice.reducer;
+export default reservationsSlice.reducer

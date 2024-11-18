@@ -1,18 +1,18 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { Search, Calendar, User, Plus, Car } from "lucide-react";
-import { cn } from "@/lib/utils";
-import Link from "next/link";
-import { useAppSelector } from "@/store/hooks";
+import { useEffect, useState } from "react"
+import { Search, Calendar, User, Plus, Car } from "lucide-react"
+import { cn } from "@/lib/utils"
+import Link from "next/link"
+import { useAppSelector } from "@/store/hooks"
 
 export function BottomNavBar() {
-  const [activeIcon, setActiveIcon] = useState<string | null>(null);
-  const isLoggedIn = useAppSelector((state) => state.user.isLoggedIn);
-  const [domLoaded, setDomLoaded] = useState(false);
+  const [activeIcon, setActiveIcon] = useState<string | null>(null)
+  const isLoggedIn = useAppSelector((state) => state.user.isLoggedIn)
+  const [domLoaded, setDomLoaded] = useState(false)
 
   if (!isLoggedIn) {
-    return null; // Don't render the navbar if the user is not logged in
+    return null // Don't render the navbar if the user is not logged in
   }
 
   const navItems = [
@@ -21,11 +21,11 @@ export function BottomNavBar() {
     { icon: Plus, label: "Add", href: "/add", isCenter: true },
     { icon: Calendar, label: "Bookings", href: "/bookings", isCenter: false },
     { icon: User, label: "Profile", href: "/profile", isCenter: false },
-  ];
+  ]
 
   useEffect(() => {
-    setDomLoaded(true);
-  }, []);
+    setDomLoaded(true)
+  }, [])
 
   return (
     domLoaded && (
@@ -61,5 +61,5 @@ export function BottomNavBar() {
         </div>
       </nav>
     )
-  );
+  )
 }

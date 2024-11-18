@@ -1,53 +1,53 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState, useRef } from "react";
-import Link from "next/link";
-import { CarInfo } from "@/types/type";
-import { motion } from "framer-motion";
+import React, { useEffect, useState, useRef } from "react"
+import Link from "next/link"
+import { CarInfo } from "@/types/type"
+import { motion } from "framer-motion"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { useDispatch, useSelector } from "react-redux";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchUserCars, deleteCar } from "@/features/cars/carSlice";
-import { Car } from "lucide-react"; // Imported FileWarning
-import { Button } from "@/components/ui/button";
-import AddCarModal from "@/components/custom/AddCarModal";
-import EditCarModal from "@/components/custom/EditCarModal";
-import { useRouter } from "next/navigation";
+} from "@/components/ui/card"
+import { useDispatch, useSelector } from "react-redux"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { fetchUserCars, deleteCar } from "@/features/cars/carSlice"
+import { Car } from "lucide-react" // Imported FileWarning
+import { Button } from "@/components/ui/button"
+import AddCarModal from "@/components/custom/AddCarModal"
+import EditCarModal from "@/components/custom/EditCarModal"
+import { useRouter } from "next/navigation"
 
 export default function CarsPage() {
-  const dispatch = useDispatch();
-  const isLoggedIn = useSelector((state: any) => state.user.isLoggedIn);
-  const router = useRouter();
+  const dispatch = useDispatch()
+  const isLoggedIn = useSelector((state: any) => state.user.isLoggedIn)
+  const router = useRouter()
 
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [selectedCar, setSelectedCar] = useState<CarInfo | null>(null);
-  const { cars, loading, error } = useAppSelector((state) => state.cars);
-  const [isAddCarModalOpen, setIsAddCarModalOpen] = useState(false); // State to control modal
-  const [isEditCarModalOpen, setIsEditCarModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
+  const [selectedCar, setSelectedCar] = useState<CarInfo | null>(null)
+  const { cars, loading, error } = useAppSelector((state) => state.cars)
+  const [isAddCarModalOpen, setIsAddCarModalOpen] = useState(false) // State to control modal
+  const [isEditCarModalOpen, setIsEditCarModalOpen] = useState(false)
   const [currentlyEditingCar, setCurrentlyEditingCar] =
-    useState<CarInfo | null>(null);
+    useState<CarInfo | null>(null)
 
   const openAddCarModal = () => {
-    setIsAddCarModalOpen(true);
-  };
+    setIsAddCarModalOpen(true)
+  }
 
   const openEditCarModal = (car: CarInfo) => {
-    setCurrentlyEditingCar(car);
-    setIsEditCarModalOpen(true);
-  };
+    setCurrentlyEditingCar(car)
+    setIsEditCarModalOpen(true)
+  }
 
   useEffect(() => {
     if (isLoggedIn) {
       //@ts-ignore
-      dispatch(fetchUserCars());
+      dispatch(fetchUserCars())
     }
-  }, [dispatch, isLoggedIn]);
+  }, [dispatch, isLoggedIn])
 
   if (!isLoggedIn) {
     return (
@@ -60,7 +60,7 @@ export default function CarsPage() {
           to modify your cars.
         </p>
       </div>
-    );
+    )
   }
 
   const renderCars = (cars: CarInfo[]) => (
@@ -76,7 +76,7 @@ export default function CarsPage() {
             className="overflow-hidden hover:shadow-lg transition-shadow duration-300"
             onClick={() => {
               // @ts-ignore
-              dispatch(openEditCarModal(car));
+              dispatch(openEditCarModal(car))
             }}
           >
             <CardHeader className="bg-gray-50">
@@ -92,7 +92,7 @@ export default function CarsPage() {
         </motion.div>
       ))}
     </div>
-  );
+  )
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-between bg-gray-50 p-4 md:p-8 text-gray-900">
@@ -118,7 +118,7 @@ export default function CarsPage() {
             variant="outline"
             onClick={() => {
               // @ts-ignore
-              dispatch(setIsAddCarModalOpen(true));
+              dispatch(setIsAddCarModalOpen(true))
             }}
           >
             <Car className="mr-2" /> Add Car
@@ -142,5 +142,5 @@ export default function CarsPage() {
         />
       )}
     </div>
-  );
+  )
 }

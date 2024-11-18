@@ -1,29 +1,29 @@
-"use client";
+"use client"
 
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Upload, X } from "lucide-react";
+import React, { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Upload, X } from "lucide-react"
 
 interface ImageUploadProps {
-  onFileSelect: (file: File | undefined) => void;
+  onFileSelect: (file: File | undefined) => void
 }
 
 export const ImageUpload = ({ onFileSelect }: ImageUploadProps) => {
-  const [savedImage, setSavedImage] = useState<string | null>(null);
+  const [savedImage, setSavedImage] = useState<string | null>(null)
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?.[0]
     if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setSavedImage(imageUrl);
-      onFileSelect(file);
+      const imageUrl = URL.createObjectURL(file)
+      setSavedImage(imageUrl)
+      onFileSelect(file)
     }
-  };
+  }
 
   const handleRemoveImage = () => {
-    setSavedImage(null);
-    onFileSelect(undefined);
-  };
+    setSavedImage(null)
+    onFileSelect(undefined)
+  }
 
   return (
     <div className="space-y-4">
@@ -60,5 +60,5 @@ export const ImageUpload = ({ onFileSelect }: ImageUploadProps) => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}

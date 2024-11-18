@@ -1,11 +1,11 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import React, { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -16,7 +16,7 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
   AlertDialogOverlay,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog"
 import {
   Dialog,
   DialogContent,
@@ -25,51 +25,51 @@ import {
   DialogFooter,
   DialogDescription,
   DialogOverlay,
-} from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useAppDispatch, useAppSelector } from "@/store/hooks"; // Use typed hooks
+} from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useAppDispatch, useAppSelector } from "@/store/hooks" // Use typed hooks
 import {
   request_delete_account,
   get_notification_time,
   update_notification_time,
   set_user_location,
-} from "@/features/user/userSlice";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
-import { useToast } from "@/hooks/use-toast";
+} from "@/features/user/userSlice"
+import { ArrowLeft } from "lucide-react"
+import Link from "next/link"
+import { useToast } from "@/hooks/use-toast"
 
 interface FormData {
-  password: string;
-  confirmPassword: string;
+  password: string
+  confirmPassword: string
 }
 
 interface LocationFormData {
-  state: string;
-  city: string;
+  state: string
+  city: string
 }
 
 export default function SettingsPage() {
-  const dispatch = useAppDispatch(); // Use the typed dispatch
-  const router = useRouter();
-  const [accountDeleted, setAccountDeleted] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [notificationTime, setNotificationTime] = useState("");
+  const dispatch = useAppDispatch() // Use the typed dispatch
+  const router = useRouter()
+  const [accountDeleted, setAccountDeleted] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
+  const [notificationTime, setNotificationTime] = useState("")
   const [isNotificationDialogOpen, setIsNotificationDialogOpen] =
-    useState(false);
-  const { toast } = useToast();
+    useState(false)
+  const { toast } = useToast()
   const userNotificationTime = useAppSelector(
     (state) => state.user.notificationTime,
-  );
-  const userLocation = useAppSelector((state) => state.user.userLocation);
-  const [domLoaded, setDomLoaded] = useState(false);
+  )
+  const userLocation = useAppSelector((state) => state.user.userLocation)
+  const [domLoaded, setDomLoaded] = useState(false)
 
   useEffect(() => {
-    setDomLoaded(true);
-  }, []);
+    setDomLoaded(true)
+  }, [])
 
   useEffect(() => {
-    dispatch(get_notification_time());
-  }, [dispatch]);
+    dispatch(get_notification_time())
+  }, [dispatch])
 
   // Initialize React Hook Form for delete account
   const {
@@ -77,7 +77,7 @@ export default function SettingsPage() {
     register,
     formState: { errors },
     handleSubmit,
-  } = useForm<FormData>();
+  } = useForm<FormData>()
 
   // Initialize React Hook Form for location
   const {
@@ -85,36 +85,36 @@ export default function SettingsPage() {
     register: locationRegister,
     formState: { errors: locationErrors },
     handleSubmit: locationHandleSubmit,
-  } = useForm<LocationFormData>();
+  } = useForm<LocationFormData>()
 
   // Handle delete account
   const handleDeleteAccount = async (data: {
-    password: string;
-    confirmPassword: string;
+    password: string
+    confirmPassword: string
   }) => {
     try {
       // Dispatch the deleteAccount thunk with the password from the form
       //@ts-ignore
       const resultAction = await dispatch(
         request_delete_account({ password: data.password }),
-      ); // Use `data.password`
+      ) // Use `data.password`
 
       if (request_delete_account.fulfilled.match(resultAction)) {
         // Account successfully deleted
-        setAccountDeleted(true); // Show account deleted dialog
+        setAccountDeleted(true) // Show account deleted dialog
       } else if (request_delete_account.rejected.match(resultAction)) {
         // Account deletion failed
-        setErrorMessage(resultAction.payload as string); // Show error message
+        setErrorMessage(resultAction.payload as string) // Show error message
       }
     } catch (error) {
-      console.error("Account deletion failed:", error);
-      setErrorMessage("An unexpected error occurred.");
+      console.error("Account deletion failed:", error)
+      setErrorMessage("An unexpected error occurred.")
     }
-  };
+  }
 
   // Handle save notification time
   const handleSaveNotificationTime = (event: React.FormEvent) => {
-    event.preventDefault();
+    event.preventDefault()
     dispatch(update_notification_time({ notificationTime }))
       .then((resultAction: any) => {
         if (update_notification_time.fulfilled.match(resultAction)) {
@@ -122,20 +122,20 @@ export default function SettingsPage() {
             title: "Notification time updated!",
             description: "Your new notification time has been saved.",
             variant: "success",
-          });
+          })
         } else if (update_notification_time.rejected.match(resultAction)) {
           toast({
             title: "Failed to update notification time",
             description: resultAction.payload as string,
             variant: "destructive",
-          });
+          })
         }
       })
       .catch((err: any) => {
-        console.error("Reset failed:", err);
+        console.error("Reset failed:", err)
       })
-      .finally(() => setIsNotificationDialogOpen(false));
-  };
+      .finally(() => setIsNotificationDialogOpen(false))
+  }
 
   // save state and city
   const handleSaveLocation = (data: { state: string; city: string }) => {
@@ -146,17 +146,17 @@ export default function SettingsPage() {
             title: "Location updated!",
             description: "Your new location has been saved.",
             variant: "success",
-          });
+          })
         } else if (set_user_location.rejected.match(resultAction)) {
           toast({
             title: "Failed to update location",
             description: resultAction.payload as string,
             variant: "destructive",
-          });
+          })
         }
       },
-    );
-  };
+    )
+  }
 
   const states = [
     { value: "AL", label: "Alabama" },
@@ -209,7 +209,7 @@ export default function SettingsPage() {
     { value: "WV", label: "West Virginia" },
     { value: "WI", label: "Wisconsin" },
     { value: "WY", label: "Wyoming" },
-  ];
+  ]
 
   return (
     domLoaded && (
@@ -380,7 +380,7 @@ export default function SettingsPage() {
                         required: "Confirm your password",
                         validate: (val: string) => {
                           if (watch("password") != val) {
-                            return "Your passwords do not match";
+                            return "Your passwords do not match"
                           }
                         },
                       })}
@@ -415,7 +415,7 @@ export default function SettingsPage() {
           open={accountDeleted}
           onOpenChange={(open) => {
             if (!open) {
-              router.push("/login");
+              router.push("/login")
             }
           }}
         >
@@ -495,5 +495,5 @@ export default function SettingsPage() {
         </Dialog>
       </div>
     )
-  );
+  )
 }

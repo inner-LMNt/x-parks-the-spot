@@ -1,22 +1,22 @@
-"use client";
+"use client"
 
-import { format } from "date-fns";
+import { format } from "date-fns"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Calendar, Loader2 } from "lucide-react";
-import { useAppSelector } from "@/store/hooks";
-import { Reservation } from "@/types/type";
+} from "@/components/ui/select"
+import { Calendar, Loader2 } from "lucide-react"
+import { useAppSelector } from "@/store/hooks"
+import { Reservation } from "@/types/type"
 
 interface ReservationsGroupSelectProps {
-  onChange: (value: string) => void;
-  value?: string;
-  title?: string;
-  isOwnerReservations?: boolean;
+  onChange: (value: string) => void
+  value?: string
+  title?: string
+  isOwnerReservations?: boolean
 }
 
 export const ReservationsGroupSelect = ({
@@ -27,17 +27,17 @@ export const ReservationsGroupSelect = ({
 }: ReservationsGroupSelectProps) => {
   const { reservations, loading: reservationsLoading } = useAppSelector(
     (state) => state.reservations,
-  );
+  )
 
   const { ownerReservations, loading: ownerReservationsLoading } =
-    useAppSelector((state) => state.ownerReservations);
+    useAppSelector((state) => state.ownerReservations)
 
   const isLoading = isOwnerReservations
     ? ownerReservationsLoading
-    : reservationsLoading;
+    : reservationsLoading
   const reservationsArray = isOwnerReservations
     ? ownerReservations || []
-    : reservations || [];
+    : reservations || []
 
   if (isLoading) {
     return (
@@ -45,7 +45,7 @@ export const ReservationsGroupSelect = ({
         <Loader2 className="h-4 w-4 animate-spin" />
         <span>Loading reservations...</span>
       </div>
-    );
+    )
   }
 
   return (
@@ -78,5 +78,5 @@ export const ReservationsGroupSelect = ({
         )}
       </SelectContent>
     </Select>
-  );
-};
+  )
+}

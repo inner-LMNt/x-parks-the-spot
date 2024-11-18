@@ -11,6 +11,9 @@
     "test:coverage": "jest --coverage --silent --no-watchman",
     "test:watch": "jest --watch"
   },
+  "prettier": {
+    "semi": false
+  },
   "dependencies": {
     "@headlessui/react": "^2.1.9",
     "@hookform/resolvers": "^3.9.0",

@@ -1,4 +1,4 @@
-import React from "react";
+import React from "react"
 import {
   Dialog,
   DialogContent,
@@ -6,18 +6,18 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { REPORT_TYPE_CONFIGS } from "../typeConfigs";
+} from "@/components/ui/dialog"
+import { AlertCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { REPORT_TYPE_CONFIGS } from "../typeConfigs"
 
 interface ConfirmSubmitDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  reportType: string;
-  reportData: any;
-  isSubmitting: boolean;
+  isOpen: boolean
+  onClose: () => void
+  onConfirm: () => void
+  reportType: string
+  reportData: any
+  isSubmitting: boolean
 }
 
 export const ConfirmSubmitDialog: React.FC<ConfirmSubmitDialogProps> = ({
@@ -31,22 +31,22 @@ export const ConfirmSubmitDialog: React.FC<ConfirmSubmitDialogProps> = ({
   // Get the report configuration based on type
   const getReportConfig = (type: string, data: any) => {
     // Normalize the type string to match our config keys
-    const normalizedType = type.toString().trim();
+    const normalizedType = type.toString().trim()
 
     // Get the config generator or fall back to OTHER
     const configGenerator =
-      REPORT_TYPE_CONFIGS[normalizedType] || REPORT_TYPE_CONFIGS["OTHER"];
+      REPORT_TYPE_CONFIGS[normalizedType] || REPORT_TYPE_CONFIGS["OTHER"]
 
     if (typeof configGenerator !== "function") {
-      console.error("Invalid config generator for type:", normalizedType);
-      return REPORT_TYPE_CONFIGS["OTHER"](data);
+      console.error("Invalid config generator for type:", normalizedType)
+      return REPORT_TYPE_CONFIGS["OTHER"](data)
     }
 
-    return configGenerator(data);
-  };
+    return configGenerator(data)
+  }
 
-  const actualReportData = reportData.pendingSubmission || reportData;
-  const reportConfig = getReportConfig(reportType, actualReportData);
+  const actualReportData = reportData.pendingSubmission || reportData
+  const reportConfig = getReportConfig(reportType, actualReportData)
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -93,5 +93,5 @@ export const ConfirmSubmitDialog: React.FC<ConfirmSubmitDialogProps> = ({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-};
+  )
+}

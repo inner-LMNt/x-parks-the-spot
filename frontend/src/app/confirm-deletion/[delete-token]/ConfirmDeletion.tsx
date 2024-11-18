@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import React, { useState } from "react"
+import { motion } from "framer-motion"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardHeader,
@@ -10,48 +10,48 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
-import Link from "next/link";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useAppDispatch } from "@/store/hooks";
-import { deleteAccount } from "@/features/user/userSlice";
+} from "@/components/ui/card"
+import { Loader2 } from "lucide-react"
+import Link from "next/link"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
+import { useAppDispatch } from "@/store/hooks"
+import { deleteAccount } from "@/features/user/userSlice"
 
 export default function ConfirmDeletePage() {
-  const [loading, setLoading] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false)
+  const [confirmed, setConfirmed] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const dispatch = useAppDispatch();
+  const dispatch = useAppDispatch()
 
-  const params = useParams();
-  const token = (params?.["delete-token"] as string) ?? "invalid";
+  const params = useParams()
+  const token = (params?.["delete-token"] as string) ?? "invalid"
 
   const handleConfirmDelete = async () => {
     if (!token) {
-      setError("Invalid or missing token");
-      return;
+      setError("Invalid or missing token")
+      return
     }
 
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
     try {
-      const resultAction = await dispatch(deleteAccount(token)); // Ensure this is called correctly
+      const resultAction = await dispatch(deleteAccount(token)) // Ensure this is called correctly
 
       if (deleteAccount.fulfilled.match(resultAction)) {
-        console.log("Account deleted successfully");
-        setConfirmed(true); // Set confirmation state
+        console.log("Account deleted successfully")
+        setConfirmed(true) // Set confirmation state
       } else if (deleteAccount.rejected.match(resultAction)) {
-        console.log("Deletion failed", resultAction.payload);
-        setError(resultAction.payload || "Account deletion failed");
+        console.log("Deletion failed", resultAction.payload)
+        setError(resultAction.payload || "Account deletion failed")
       }
     } catch (err) {
-      console.error("Deletion failed:", err);
-      setError("Something went wrong"); // Handle unexpected errors
+      console.error("Deletion failed:", err)
+      setError("Something went wrong") // Handle unexpected errors
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-4 overflow-hidden">
@@ -130,5 +130,5 @@ export default function ConfirmDeletePage() {
         </Card>
       </motion.div>
     </div>
-  );
+  )
 }

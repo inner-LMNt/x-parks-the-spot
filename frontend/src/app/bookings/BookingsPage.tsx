@@ -1,19 +1,19 @@
 // src/app/bookings/BookingsPage.tsx
 
-"use client";
+"use client"
 
-import React, { useEffect, useState, useMemo } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import React, { useEffect, useState, useMemo } from "react"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   fetchUserReservations,
   cancelReservation,
-} from "@/features/reservations/reservationsSlice";
-import { CarInfo, Reservation } from "@/types/type";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Toggle } from "@/components/ui/toggle";
-import { format } from "date-fns";
-import { useRouter } from "next/navigation";
+} from "@/features/reservations/reservationsSlice"
+import { CarInfo, Reservation } from "@/types/type"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Toggle } from "@/components/ui/toggle"
+import { format } from "date-fns"
+import { useRouter } from "next/navigation"
 import {
   MapPin,
   Clock,
@@ -21,14 +21,14 @@ import {
   ArrowRightCircle,
   Loader2,
   FileWarning,
-} from "lucide-react";
-import { Avatar } from "@/components/ui/avatar";
-import Link from "next/link";
-import { fetchUserCars, resetCarError } from "@/features/cars/carSlice";
-import { Button } from "@/components/ui/button";
-import DeleteReservationModal from "@/components/custom/DeleteReservationModal";
-import RatingSelector from "@/components/custom/RatingSelector";
-import parkingSpaceSlice from "@/features/parking-space/parkingSpaceSlice";
+} from "lucide-react"
+import { Avatar } from "@/components/ui/avatar"
+import Link from "next/link"
+import { fetchUserCars, resetCarError } from "@/features/cars/carSlice"
+import { Button } from "@/components/ui/button"
+import DeleteReservationModal from "@/components/custom/DeleteReservationModal"
+import RatingSelector from "@/components/custom/RatingSelector"
+import parkingSpaceSlice from "@/features/parking-space/parkingSpaceSlice"
 
 // SectionHeader Component
 function SectionHeader({ title }: { title: string }) {
@@ -36,7 +36,7 @@ function SectionHeader({ title }: { title: string }) {
     <h2 className="text-2xl font-semibold mb-4 border-b border-gray-200 pb-2 text-gray-800">
       {title}
     </h2>
-  );
+  )
 }
 
 // StatCard Component
@@ -46,7 +46,7 @@ function StatCard({ label, value }: { label: string; value: number }) {
       <p className="text-2xl font-bold text-gray-800">{value}</p>
       <p className="text-sm text-gray-600">{label}</p>
     </div>
-  );
+  )
 }
 
 // ReservationCard Component
@@ -56,45 +56,45 @@ function ReservationCard({
   carMap,
   onCancel,
 }: {
-  reservation: Reservation;
-  isPast?: boolean;
-  carMap: { [key: string]: CarInfo };
-  onCancel: (reservation: Reservation) => void;
+  reservation: Reservation
+  isPast?: boolean
+  carMap: { [key: string]: CarInfo }
+  onCancel: (reservation: Reservation) => void
 }) {
-  const router = useRouter();
+  const router = useRouter()
 
   const handleClick = () => {
-    router.push(`/bookings/${reservation.parking_space_id}`);
-  };
+    router.push(`/bookings/${reservation.parking_space_id}`)
+  }
 
   const handleCancelClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onCancel(reservation);
-  };
+    e.stopPropagation()
+    onCancel(reservation)
+  }
 
   // Retrieve the car information using car_id
-  const car = carMap[reservation.car_info_id as string];
+  const car = carMap[reservation.car_info_id as string]
 
   // Log for debugging
   useEffect(() => {
     console.log(
       `Reservation ID: ${reservation.name}, Car ID: ${reservation.car_info_id}, Car Info:`,
       car,
-    );
-  }, [reservation, car]);
+    )
+  }, [reservation, car])
 
-  const now = new Date();
-  const startTime = new Date(reservation.start_time ?? now);
-  const isUpcoming = startTime > now && reservation.status !== "canceled";
+  const now = new Date()
+  const startTime = new Date(reservation.start_time ?? now)
+  const isUpcoming = startTime > now && reservation.status !== "canceled"
   const timeTillCancel =
-    startTime.getTime() - now.getTime() - 2 * 60 * 60 * 1000; // 2 hours in milliseconds
-  const isCancellable = timeTillCancel > 0;
+    startTime.getTime() - now.getTime() - 2 * 60 * 60 * 1000 // 2 hours in milliseconds
+  const isCancellable = timeTillCancel > 0
 
   const formattimeTillCancel = (time: number) => {
-    const hours = Math.floor(time / (1000 * 60 * 60));
-    const minutes = Math.floor((time % (1000 * 60 * 60)) / (1000 * 60));
-    return `${hours}h ${minutes}m`;
-  };
+    const hours = Math.floor(time / (1000 * 60 * 60))
+    const minutes = Math.floor((time % (1000 * 60 * 60)) / (1000 * 60))
+    return `${hours}h ${minutes}m`
+  }
 
   return (
     <Card>
@@ -152,9 +152,7 @@ function ReservationCard({
           <div className="space-y-2">
             <Button
               onClick={() => {
-                router.push(
-                  `/bookings/${reservation.parking_space_id}/reserve`,
-                );
+                router.push(`/bookings/${reservation.parking_space_id}/reserve`)
               }}
               className="w-full"
             >
@@ -194,15 +192,15 @@ function ReservationCard({
         )}
       </CardContent>
     </Card>
-  );
+  )
 }
 
 export default function BookingsPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedReservation, setSelectedReservation] =
-    useState<Reservation | null>(null);
+    useState<Reservation | null>(null)
 
-  const isLoggedIn = useAppSelector((state) => state.user.isLoggedIn);
+  const isLoggedIn = useAppSelector((state) => state.user.isLoggedIn)
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 text-slate-900">
@@ -214,98 +212,98 @@ export default function BookingsPage() {
           to view your spots.
         </p>
       </div>
-    );
+    )
   }
-  const dispatch = useAppDispatch();
-  const router = useRouter();
+  const dispatch = useAppDispatch()
+  const router = useRouter()
   const reservations = useAppSelector(
     (state) => state.reservations.reservations,
-  );
-  const loading = useAppSelector((state) => state.reservations.loading);
-  const error = useAppSelector((state) => state.reservations.error);
-  const [domLoaded, setDomLoaded] = useState(false);
+  )
+  const loading = useAppSelector((state) => state.reservations.loading)
+  const error = useAppSelector((state) => state.reservations.error)
+  const [domLoaded, setDomLoaded] = useState(false)
 
   useEffect(() => {
-    setDomLoaded(true);
-  }, []);
+    setDomLoaded(true)
+  }, [])
 
   // Selectors from the carSlice
-  const cars = useAppSelector((state) => state.cars.cars);
-  const carsLoading = useAppSelector((state) => state.cars.loading);
-  const carsError = useAppSelector((state) => state.cars.error);
-  const userName = useAppSelector((state) => state.user.name);
-  const [showCancelledSpots, setShowCancelledSpots] = useState<boolean>(false);
-  const [sortByPrice, setSortByPrice] = useState<boolean>(false);
+  const cars = useAppSelector((state) => state.cars.cars)
+  const carsLoading = useAppSelector((state) => state.cars.loading)
+  const carsError = useAppSelector((state) => state.cars.error)
+  const userName = useAppSelector((state) => state.user.name)
+  const [showCancelledSpots, setShowCancelledSpots] = useState<boolean>(false)
+  const [sortByPrice, setSortByPrice] = useState<boolean>(false)
 
   // Create a carMap for efficient lookup
   const carMap = useMemo(() => {
-    const map: { [key: string]: CarInfo } = {};
+    const map: { [key: string]: CarInfo } = {}
     cars.forEach((car: CarInfo) => {
-      map[car.id as string] = car;
-    });
-    console.log("Car Map:", map);
-    return map;
-  }, [cars]);
+      map[car.id as string] = car
+    })
+    console.log("Car Map:", map)
+    return map
+  }, [cars])
 
   // Log reservations and cars for debugging
   useEffect(() => {
-    console.log("Reservations:", reservations);
-    console.log("Cars:", cars);
-  }, [reservations, cars]);
+    console.log("Reservations:", reservations)
+    console.log("Cars:", cars)
+  }, [reservations, cars])
 
   useEffect(() => {
     // Dispatch action to fetch user's reservations
     // @ts-ignore
-    dispatch(fetchUserReservations());
+    dispatch(fetchUserReservations())
 
     // Dispatch action to fetch user's cars
-    dispatch(fetchUserCars());
-  }, [dispatch]);
+    dispatch(fetchUserCars())
+  }, [dispatch])
 
-  const now = new Date();
+  const now = new Date()
 
   const upcomingReservations = reservations.filter(
     (reservation: Reservation) =>
       new Date(reservation.start_time ?? now) > now &&
       reservation.status !== "canceled",
-  );
+  )
 
   const currentReservations = reservations.filter(
     (reservation: Reservation) =>
       new Date(reservation.start_time ?? now) <= now &&
       new Date(reservation.end_time ?? now) >= now &&
       reservation.status !== "canceled",
-  );
+  )
 
   const pastReservations = reservations.filter(
     (reservation: Reservation) => new Date(reservation.end_time ?? now) < now,
-  );
+  )
 
   const pastOrCancelledReservations = reservations.filter(
     (reservation: Reservation) =>
       new Date(reservation.end_time ?? now) < now ||
       reservation.status === "canceled",
-  );
+  )
 
   const cancelledReservations = reservations.filter(
     (reservation: Reservation) => reservation.status === "canceled",
-  );
+  )
 
   // Combined Loading State
-  const isLoading = loading || carsLoading;
+  const isLoading = loading || carsLoading
 
   const handleCancel = (reservation: Reservation) => {
-    setSelectedReservation(reservation);
-    setIsModalOpen(true);
-  };
+    setSelectedReservation(reservation)
+    setIsModalOpen(true)
+  }
 
   const handleConfirmCancel = () => {
     if (selectedReservation) {
-      setIsModalOpen(false);
-      setSelectedReservation(null);
+      setIsModalOpen(false)
+      setSelectedReservation(null)
     }
-    dispatch(fetchUserReservations());
-  };
+    dispatch(fetchUserReservations())
+  }
 
   return (
     domLoaded && (
@@ -433,7 +431,7 @@ export default function BookingsPage() {
                   id="showCancelled"
                   // pressed={showCancelledSpots}
                   onPressedChange={(pressed: boolean) => {
-                    setShowCancelledSpots(pressed);
+                    setShowCancelledSpots(pressed)
                   }}
                 >
                   <span>Show cancelled reservations</span>
@@ -442,7 +440,7 @@ export default function BookingsPage() {
                   id="sortByPrice"
                   // pressed={showCancelledSpots}
                   onPressedChange={(pressed: boolean) => {
-                    setSortByPrice(pressed);
+                    setSortByPrice(pressed)
                   }}
                 >
                   <span>Sort by price</span>
@@ -500,5 +498,5 @@ export default function BookingsPage() {
         />
       </div>
     )
-  );
+  )
 }

@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   FormControl,
@@ -6,19 +6,19 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from "@/components/ui/form"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { AlertCircle, Clock, Settings, ShieldX } from "lucide-react";
+} from "@/components/ui/select"
+import { AlertCircle, Clock, Settings, ShieldX } from "lucide-react"
 
 interface ReportTypeSelectProps {
-  form: any;
-  disabled?: boolean;
+  form: any
+  disabled?: boolean
 }
 
 export const ReportTypeSelect = ({ form, disabled }: ReportTypeSelectProps) => (
@@ -69,4 +69,4 @@ export const ReportTypeSelect = ({ form, disabled }: ReportTypeSelectProps) => (
       </FormItem>
     )}
   />
-);
+)

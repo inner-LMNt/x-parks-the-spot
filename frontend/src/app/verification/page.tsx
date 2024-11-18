@@ -1,2 +1,2 @@
-import VerificationPage from "./VerificationPage";
-export default VerificationPage;
+import VerificationPage from "./VerificationPage"
+export default VerificationPage

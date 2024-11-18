@@ -1,13 +1,13 @@
-"use client";
+"use client"
 
-import React, { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { motion } from "framer-motion";
-import { useDispatch } from "react-redux";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import React, { useEffect } from "react"
+import { useForm } from "react-hook-form"
+import { motion } from "framer-motion"
+import { useDispatch } from "react-redux"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Card,
   CardHeader,
@@ -15,20 +15,20 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
-import { register_acc } from "@/features/user/userSlice";
-import { Logo } from "@/components/custom/TopLeftLogo";
-import { RegisterRequest } from "@/types/type";
-import { useAppSelector } from "@/store/hooks";
-import { zxcvbn } from "@zxcvbn-ts/core";
+} from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Loader2 } from "lucide-react"
+import { register_acc } from "@/features/user/userSlice"
+import { Logo } from "@/components/custom/TopLeftLogo"
+import { RegisterRequest } from "@/types/type"
+import { useAppSelector } from "@/store/hooks"
+import { zxcvbn } from "@zxcvbn-ts/core"
 type SignUpFormInputs = {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-};
+  name: string
+  email: string
+  password: string
+  confirmPassword: string
+}
 
 const formVariants = {
   hidden: { opacity: 0, y: 50, scale: 0.9 },
@@ -44,7 +44,7 @@ const formVariants = {
       staggerChildren: 0.1,
     },
   },
-};
+}
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -53,7 +53,7 @@ const itemVariants = {
     y: 0,
     transition: { type: "spring", stiffness: 100 },
   },
-};
+}
 
 export default function SignUpPage() {
   const {
@@ -61,39 +61,39 @@ export default function SignUpPage() {
     handleSubmit,
     formState: { errors, isSubmitting },
     watch,
-  } = useForm<SignUpFormInputs>();
+  } = useForm<SignUpFormInputs>()
 
-  const dispatch = useDispatch();
-  const router = useRouter();
-  const { loading, error } = useAppSelector((state) => state.user); // Access loading and error states
+  const dispatch = useDispatch()
+  const router = useRouter()
+  const { loading, error } = useAppSelector((state) => state.user) // Access loading and error states
 
   // Reset the error state when the component mounts
   useEffect(() => {
-    dispatch({ type: "user/errorReset" });
-  }, []);
+    dispatch({ type: "user/errorReset" })
+  }, [])
   const onSubmit = async (data: SignUpFormInputs) => {
     try {
-      console.log(data);
+      console.log(data)
       const final_data: RegisterRequest = {
         email: data.email,
         password: data.password,
         full_name: data.name,
-      };
+      }
       // @ts-ignore
-      const resultAction = await dispatch(register_acc(final_data));
+      const resultAction = await dispatch(register_acc(final_data))
 
       if (register_acc.fulfilled.match(resultAction)) {
         // Sign up successful
-        router.push("/profile");
+        router.push("/profile")
       } else if (register_acc.rejected.match(resultAction)) {
         // Sign up failed
-        console.error("Signup failed:", resultAction.payload);
+        console.error("Signup failed:", resultAction.payload)
         // Optionally, display the error to the user
       }
     } catch (error) {
-      console.error("An unexpected error occurred:", error);
+      console.error("An unexpected error occurred:", error)
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-4">
@@ -169,7 +169,7 @@ export default function SignUpPage() {
                     },
                     validate: (val: string) => {
                       if (zxcvbn(val).score < 3) {
-                        return "Password is too weak";
+                        return "Password is too weak"
                       }
                     },
                   })}
@@ -194,7 +194,7 @@ export default function SignUpPage() {
                     required: "Please confirm your password",
                     validate: (val: string) => {
                       if (watch("password") != val) {
-                        return "Your passwords do not match";
+                        return "Your passwords do not match"
                       }
                     },
                   })}
@@ -253,5 +253,5 @@ export default function SignUpPage() {
         </Card>
       </motion.div>
     </div>
-  );
+  )
 }
