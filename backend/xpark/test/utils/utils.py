@@ -166,7 +166,6 @@ def create_test_reservation_at_time(
             "car_info_id": car_id,
         },
     )
-    print(response.get_json())
     assert response.status_code == 201
     data = response.get_json()
     assert data is not None
