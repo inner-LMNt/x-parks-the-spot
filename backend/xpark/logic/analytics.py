@@ -11,6 +11,7 @@ def get_dashboard_analytics(
     time_filter: str = "30_days",
     spot_id: Optional[uuid.UUID] = None,
 ) -> Result[Dict[str, Any], str]:
+    # Define time deltas
     time_deltas = {
         "7_days": timedelta(days=7),
         "30_days": timedelta(days=30),
@@ -26,12 +27,14 @@ def get_dashboard_analytics(
 
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            # Prepare spot filter
+            # ==== Prepare spot filter ====
+            # Added leading space to ensure correct SQL syntax
             spot_filter_sql = ""
             if spot_id:
-                spot_filter_sql = "AND ps.id = %s"
+                spot_filter_sql = " AND ps.id = %s"
 
             # ==== Overall Revenue Metrics ====
+            # Corrected parameter ordering: [user_id, start_date, end_date, spot_id (if any)]
             overall_params = [user_id, start_date, end_date]
             if spot_id:
                 overall_params.append(spot_id)
@@ -85,6 +88,7 @@ def get_dashboard_analytics(
                 overall.setdefault(key, default)
 
             # ==== Revenue Trends (Monthly) ====
+            # Corrected parameter ordering: [user_id, start_date, end_date, spot_id (if any)]
             monthly_params = [user_id, start_date, end_date]
             if spot_id:
                 monthly_params.append(spot_id)
@@ -108,6 +112,7 @@ def get_dashboard_analytics(
             monthly_revenue = cur.fetchall()
 
             # ==== Revenue Trends (Daily) ====
+            # Corrected parameter ordering: [user_id, start_date, end_date, spot_id (if any)]
             daily_params = [user_id, start_date, end_date]
             if spot_id:
                 daily_params.append(spot_id)
@@ -130,37 +135,39 @@ def get_dashboard_analytics(
             daily_revenue = cur.fetchall()
 
             # ==== Revenue Trends (Hourly) ====
+            # Corrected parameter ordering: [user_id, start_date, end_date, spot_id (if any)]
             hourly_params = [user_id, start_date, end_date]
             if spot_id:
                 hourly_params.append(spot_id)
             cur.execute(
                 f"""
-                    WITH hours AS (
-                        SELECT generate_series(0, 23) AS hour
-                    )
-                    SELECT 
-                        h.hour,
-                        COALESCE(SUM(r.price), 0) AS revenue,
-                        COALESCE(COUNT(r.id), 0) AS bookings
-                    FROM hours h
-                    LEFT JOIN reservations r 
-                        ON h.hour = EXTRACT(HOUR FROM LOWER(r.time))::integer
-                    JOIN parking_spaces ps 
-                        ON r.parking_space_id = ps.id
-                    WHERE ps.owner = %s 
-                      AND ps.is_paid = TRUE 
-                      AND LOWER(r.time) BETWEEN %s AND %s
-                      {spot_filter_sql}
-                    GROUP BY h.hour
-                    ORDER BY h.hour
+                WITH hours AS (
+                    SELECT generate_series(0, 23) AS hour
+                )
+                SELECT 
+                    h.hour,
+                    COALESCE(SUM(r.price), 0) AS revenue,
+                    COALESCE(COUNT(r.id), 0) AS bookings
+                FROM hours h
+                LEFT JOIN reservations r 
+                    ON h.hour = EXTRACT(HOUR FROM LOWER(r.time))::integer
+                JOIN parking_spaces ps 
+                    ON r.parking_space_id = ps.id
+                WHERE ps.owner = %s 
+                  AND ps.is_paid = TRUE 
+                  AND LOWER(r.time) BETWEEN %s AND %s
+                  {spot_filter_sql}
+                GROUP BY h.hour
+                ORDER BY h.hour
                 """,
                 hourly_params,
             )
             hourly_revenue = cur.fetchall()
 
             # ==== Spot Performance and Revenue by Spot ====
-            # Adjusted parameters to include end_date
             spot_params = [start_date, end_date, start_date, end_date, user_id]
+            if spot_id:
+                spot_params.append(spot_id)
             cur.execute(
                 f"""
                 SELECT 
@@ -240,6 +247,7 @@ def get_dashboard_analytics(
             )
 
             # ==== Recent Bookings ====
+            # Corrected parameter ordering: [user_id, start_date, end_date, spot_id (if any)]
             recent_params = [user_id, start_date, end_date]
             if spot_id:
                 recent_params.append(spot_id)
@@ -276,26 +284,28 @@ def get_dashboard_analytics(
             recent_bookings_rows = cur.fetchall()
 
             # ==== Upcoming Earnings (next 7 days) ====
+            # Corrected parameter ordering: [user_id, spot_id (if any)]
+            upcoming_query = f"""
+            SELECT 
+                ps.name AS spot_name,
+                LOWER(r.time) AS start_time,
+                UPPER(r.time) AS end_time,
+                r.price AS earnings
+            FROM reservations r
+            JOIN parking_spaces ps ON r.parking_space_id = ps.id
+            WHERE ps.owner = %s 
+              AND ps.is_paid = TRUE 
+              AND r.status NOT IN ('canceled') 
+              AND LOWER(r.time) >= NOW() 
+              AND LOWER(r.time) <= NOW() + INTERVAL '7 days'
+              {spot_filter_sql}
+            ORDER BY LOWER(r.time)
+            """
             upcoming_params = [user_id]
             if spot_id:
                 upcoming_params.append(spot_id)
             cur.execute(
-                f"""
-                SELECT 
-                    ps.name AS spot_name,
-                    LOWER(r.time) AS start_time,
-                    UPPER(r.time) AS end_time,
-                    r.price AS earnings
-                FROM reservations r
-                JOIN parking_spaces ps ON r.parking_space_id = ps.id
-                WHERE ps.owner = %s 
-                  AND ps.is_paid = TRUE 
-                  AND r.status NOT IN ('canceled') 
-                  AND LOWER(r.time) >= NOW() 
-                  AND LOWER(r.time) <= NOW() + INTERVAL '7 days'
-                  {spot_filter_sql}
-                ORDER BY LOWER(r.time)
-                """,
+                upcoming_query,
                 upcoming_params,
             )
             upcoming_earnings_rows = cur.fetchall()
@@ -305,6 +315,7 @@ def get_dashboard_analytics(
             )
 
             # ==== Overall Average Ratings ====
+            # Corrected parameter ordering: [user_id, start_date, end_date, spot_id (if any)]
             rating_params = [user_id, start_date, end_date]
             if spot_id:
                 rating_params.append(spot_id)
@@ -328,6 +339,7 @@ def get_dashboard_analytics(
             overall_ratings = cur.fetchone() or {}
 
             # ==== Ratings By Spot ====
+            # Corrected parameter ordering: [start_date, end_date, user_id, spot_id (if any)]
             ratings_by_spot_params = [start_date, end_date, user_id]
             if spot_id:
                 ratings_by_spot_params.append(spot_id)
@@ -343,8 +355,8 @@ def get_dashboard_analytics(
                 FROM parking_spaces ps
                 LEFT JOIN ratings r 
                     ON ps.id = r.parking_space_id 
-                AND r.updated_at > %s 
-                AND r.updated_at < %s
+                    AND r.updated_at > %s 
+                    AND r.updated_at < %s
                 WHERE ps.owner = %s 
                   AND ps.is_paid = TRUE 
                   {spot_filter_sql}
@@ -354,11 +366,11 @@ def get_dashboard_analytics(
             )
             ratings_by_spot_rows = cur.fetchall()
 
-            # Rating Distribution and Recent Reviews per Spot
+            # ==== Rating Distribution and Recent Reviews per Spot ====
             ratings_by_spot = []
             for spot_row in ratings_by_spot_rows:
                 spot_id_str = str(spot_row["spot_id"])
-                # Rating Distribution
+                # ==== Rating Distribution ====
                 cur.execute(
                     """
                     SELECT 
@@ -366,8 +378,8 @@ def get_dashboard_analytics(
                         COUNT(*) AS count
                     FROM ratings r
                     WHERE r.parking_space_id = %s 
-                    AND r.updated_at > %s 
-                    AND r.updated_at < %s
+                      AND r.updated_at > %s 
+                      AND r.updated_at < %s
                     GROUP BY stars
                     ORDER BY stars DESC
                     """,
@@ -386,18 +398,18 @@ def get_dashboard_analytics(
                         {"stars": stars, "count": count, "percentage": percentage}
                     )
 
-                # Recent Reviews
+                # ==== Recent Reviews ====
                 cur.execute(
                     """
                     SELECT 
                         r.total_rating AS rating,
-                        EXTRACT(DAY FROM NOW() - r.created_at) AS days_ago,
+                        EXTRACT(DAY FROM NOW() - r.updated_at) AS days_ago,
                         TRUE AS is_verified
                     FROM ratings r
                     WHERE r.parking_space_id = %s 
-                    AND r.updated_at > %s 
-                    AND r.updated_at < %s
-                    ORDER BY r.created_at DESC
+                      AND r.updated_at > %s 
+                      AND r.updated_at < %s
+                    ORDER BY r.updated_at DESC
                     LIMIT 5
                     """,
                     [spot_row["spot_id"], start_date, end_date],
@@ -418,7 +430,7 @@ def get_dashboard_analytics(
                         "recentReviews": [
                             {
                                 "rating": review["rating"],
-                                "daysAgo": review["days_ago"],
+                                "daysAgo": int(review["days_ago"]),
                                 "isVerified": review["is_verified"],
                             }
                             for review in recent_reviews

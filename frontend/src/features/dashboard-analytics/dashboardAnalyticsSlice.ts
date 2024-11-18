@@ -168,7 +168,7 @@ export const fetchDashboardAnalytics = createAsyncThunk(
       if (data.upcomingEarnings && data.upcomingEarnings.reservations) {
         data.upcomingEarnings.reservations =
           data.upcomingEarnings.reservations.map((reservation) => ({
-            spotName: reservation.spotName, // Assuming backend sends 'spotName' in camelCase
+            spotName: reservation.spotName,
             startTime: reservation.startTime,
             endTime: reservation.endTime,
             earnings: reservation.earnings,
