@@ -408,7 +408,9 @@ def get_dashboard_analytics(
                     {
                         "spotId": spot_id_str,
                         "spotName": spot_row["spot_name"],
-                        "availabilityRating": float(spot_row["avg_availability_rating"]),
+                        "availabilityRating": float(
+                            spot_row["avg_availability_rating"]
+                        ),
                         "cleanlinessRating": float(spot_row["avg_cleanliness_rating"]),
                         "totalRating": float(spot_row["avg_total_rating"]),
                         "ratingCount": spot_row["rating_count"],
