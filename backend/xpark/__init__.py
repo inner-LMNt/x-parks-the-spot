@@ -26,9 +26,10 @@ def create_app(config_class: type[Config] = Config) -> Flask:
             SMTPConn.conn = smtplib.SMTP()
 
         mailer_connect()
-    
+
     if Config.S3_ENABLED == "yes":
         from .utils.s3 import S3
+
         S3.conn = boto3.resource(
             "s3",
             endpoint_url=Config.S3_ENDPOINT,
