@@ -178,7 +178,7 @@ const RevenueTab: React.FC<RevenueTabProps> = ({ revenueMetrics }) => {
             </p>
           ) : (
             <div className="space-y-4">
-              {revenueMetrics.revenueBySpot
+              {[...revenueMetrics.revenueBySpot]
                 .sort((a, b) => b.revenue - a.revenue)
                 .map((spot) => (
                   <div

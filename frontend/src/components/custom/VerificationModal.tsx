@@ -70,6 +70,7 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
           toast({
             title: "Verification Submitted",
             description: "Your verification is now pending approval.",
+            variant: "success"
           })
 
           window.location.reload() // Reload the page
@@ -86,7 +87,7 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-10" onClose={onClose}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
         {/* Overlay */}
         <Transition.Child
           as={Fragment}

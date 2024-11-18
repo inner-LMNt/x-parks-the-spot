@@ -19,7 +19,10 @@ def get_dashboard_analytics(
     if time_filter not in time_deltas:
         return Err("Invalid time filter. Use '7_days', '30_days', or '1_year'.")
 
-    start_date = datetime.now(timezone.utc) - time_deltas[time_filter]
+    # Calculate start_date and end_date
+    now = datetime.now(timezone.utc)
+    start_date = now - time_deltas[time_filter]
+    end_date = now
 
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -28,8 +31,8 @@ def get_dashboard_analytics(
             if spot_id:
                 spot_filter_sql = "AND ps.id = %s"
 
-            # Overall Revenue Metrics
-            overall_params = [user_id, start_date]
+            # ==== Overall Revenue Metrics ====
+            overall_params = [user_id, start_date, end_date]
             if spot_id:
                 overall_params.append(spot_id)
             cur.execute(
@@ -57,8 +60,11 @@ def get_dashboard_analytics(
                     END AS completion_rate
                 FROM reservations r
                 JOIN parking_spaces ps ON r.parking_space_id = ps.id
-                WHERE ps.owner = %s AND ps.is_paid = TRUE AND LOWER(r.time) >= %s {spot_filter_sql}
-            """,
+                WHERE ps.owner = %s 
+                  AND ps.is_paid = TRUE 
+                  AND LOWER(r.time) BETWEEN %s AND %s
+                  {spot_filter_sql}
+                """,
                 overall_params,
             )
             overall = cur.fetchone() or {}
@@ -78,8 +84,8 @@ def get_dashboard_analytics(
             for key, default in overall_defaults.items():
                 overall.setdefault(key, default)
 
-            # Revenue Trends (Monthly)
-            monthly_params = [user_id, start_date]
+            # ==== Revenue Trends (Monthly) ====
+            monthly_params = [user_id, start_date, end_date]
             if spot_id:
                 monthly_params.append(spot_id)
             cur.execute(
@@ -90,57 +96,71 @@ def get_dashboard_analytics(
                     COUNT(*) AS bookings
                 FROM reservations r
                 JOIN parking_spaces ps ON r.parking_space_id = ps.id
-                WHERE ps.owner = %s AND ps.is_paid = TRUE AND LOWER(r.time) >= %s {spot_filter_sql}
+                WHERE ps.owner = %s 
+                  AND ps.is_paid = TRUE 
+                  AND LOWER(r.time) BETWEEN %s AND %s
+                  {spot_filter_sql}
                 GROUP BY DATE_TRUNC('month', LOWER(r.time))
                 ORDER BY DATE_TRUNC('month', LOWER(r.time))
-            """,
+                """,
                 monthly_params,
             )
             monthly_revenue = cur.fetchall()
 
-            # Revenue Trends (Daily)
-            daily_params = [user_id, start_date]
+            # ==== Revenue Trends (Daily) ====
+            daily_params = [user_id, start_date, end_date]
             if spot_id:
                 daily_params.append(spot_id)
             cur.execute(
                 f"""
                 SELECT 
                     TO_CHAR(DATE_TRUNC('day', LOWER(r.time)), 'YYYY-MM-DD') AS date,
-                    COALESCE(SUM(r.price), 0)  AS revenue
+                    COALESCE(SUM(r.price), 0) AS revenue
                 FROM reservations r
                 JOIN parking_spaces ps ON r.parking_space_id = ps.id
-                WHERE ps.owner = %s AND ps.is_paid = TRUE AND LOWER(r.time) >= %s {spot_filter_sql}
+                WHERE ps.owner = %s 
+                  AND ps.is_paid = TRUE 
+                  AND LOWER(r.time) BETWEEN %s AND %s
+                  {spot_filter_sql}
                 GROUP BY DATE_TRUNC('day', LOWER(r.time))
                 ORDER BY DATE_TRUNC('day', LOWER(r.time))
-            """,
+                """,
                 daily_params,
             )
             daily_revenue = cur.fetchall()
 
-            # Revenue Trends (Hourly)
-            hourly_params = [user_id, start_date]
+            # ==== Revenue Trends (Hourly) ====
+            hourly_params = [user_id, start_date, end_date]
             if spot_id:
                 hourly_params.append(spot_id)
             cur.execute(
                 f"""
-                SELECT 
-                    EXTRACT(HOUR FROM LOWER(r.time))::integer AS hour,
-                    COALESCE(SUM(r.price), 0) AS revenue,
-                    COUNT(*) AS bookings
-                FROM reservations r
-                JOIN parking_spaces ps ON r.parking_space_id = ps.id
-                WHERE ps.owner = %s AND ps.is_paid = TRUE AND LOWER(r.time) >= %s {spot_filter_sql}
-                GROUP BY EXTRACT(HOUR FROM LOWER(r.time))
-                ORDER BY EXTRACT(HOUR FROM LOWER(r.time))
-            """,
+                    WITH hours AS (
+                        SELECT generate_series(0, 23) AS hour
+                    )
+                    SELECT 
+                        h.hour,
+                        COALESCE(SUM(r.price), 0) AS revenue,
+                        COALESCE(COUNT(r.id), 0) AS bookings
+                    FROM hours h
+                    LEFT JOIN reservations r 
+                        ON h.hour = EXTRACT(HOUR FROM LOWER(r.time))::integer
+                    JOIN parking_spaces ps 
+                        ON r.parking_space_id = ps.id
+                    WHERE ps.owner = %s 
+                      AND ps.is_paid = TRUE 
+                      AND LOWER(r.time) BETWEEN %s AND %s
+                      {spot_filter_sql}
+                    GROUP BY h.hour
+                    ORDER BY h.hour
+                """,
                 hourly_params,
             )
             hourly_revenue = cur.fetchall()
 
-            # Spot Performance and Revenue by Spot
-            spot_params = [datetime.now(timezone.utc), start_date, start_date, user_id]
-            if spot_id:
-                spot_params.append(spot_id)
+            # ==== Spot Performance and Revenue by Spot ====
+            # Adjusted parameters to include end_date
+            spot_params = [start_date, end_date, start_date, end_date, user_id]
             cur.execute(
                 f"""
                 SELECT 
@@ -157,10 +177,14 @@ def get_dashboard_analytics(
                     ARRAY_AGG(TO_CHAR(LOWER(r.time), 'Day')) FILTER (WHERE r.id IS NOT NULL) AS popular_days,
                     (COALESCE(COUNT(r.id), 0)::float / NULLIF(EXTRACT(DAYS FROM %s - %s), 0)) * 100 AS occupancy_rate
                 FROM parking_spaces ps
-                LEFT JOIN reservations r ON ps.id = r.parking_space_id AND LOWER(r.time) >= %s
-                WHERE ps.owner = %s AND ps.is_paid = TRUE {spot_filter_sql}
+                LEFT JOIN reservations r 
+                    ON ps.id = r.parking_space_id 
+                    AND LOWER(r.time) BETWEEN %s AND %s
+                WHERE ps.owner = %s 
+                  AND ps.is_paid = TRUE 
+                  {spot_filter_sql}
                 GROUP BY ps.id, ps.name, ps.price
-            """,
+                """,
                 spot_params,
             )
             spot_metrics_rows = cur.fetchall()
@@ -215,8 +239,8 @@ def get_dashboard_analytics(
                 else 0
             )
 
-            # Recent Bookings
-            recent_params = [user_id, start_date]
+            # ==== Recent Bookings ====
+            recent_params = [user_id, start_date, end_date]
             if spot_id:
                 recent_params.append(spot_id)
             cur.execute(
@@ -240,15 +264,18 @@ def get_dashboard_analytics(
                 JOIN parking_spaces ps ON r.parking_space_id = ps.id
                 LEFT JOIN users u ON r.renter_id = u.id
                 LEFT JOIN cars c ON r.car_info_id = c.id
-                WHERE ps.owner = %s AND ps.is_paid = TRUE AND LOWER(r.time) >= %s {spot_filter_sql}
+                WHERE ps.owner = %s 
+                  AND ps.is_paid = TRUE 
+                  AND LOWER(r.time) BETWEEN %s AND %s
+                  {spot_filter_sql}
                 ORDER BY LOWER(r.time) DESC
                 LIMIT 10
-            """,
+                """,
                 recent_params,
             )
             recent_bookings_rows = cur.fetchall()
 
-            # Upcoming Earnings (next 7 days)
+            # ==== Upcoming Earnings (next 7 days) ====
             upcoming_params = [user_id]
             if spot_id:
                 upcoming_params.append(spot_id)
@@ -261,9 +288,14 @@ def get_dashboard_analytics(
                     r.price AS earnings
                 FROM reservations r
                 JOIN parking_spaces ps ON r.parking_space_id = ps.id
-                WHERE ps.owner = %s AND ps.is_paid = TRUE AND r.status NOT IN ('canceled') AND LOWER(r.time) >= NOW() AND LOWER(r.time) <= NOW() + INTERVAL '7 days' {spot_filter_sql}
+                WHERE ps.owner = %s 
+                  AND ps.is_paid = TRUE 
+                  AND r.status NOT IN ('canceled') 
+                  AND LOWER(r.time) >= NOW() 
+                  AND LOWER(r.time) <= NOW() + INTERVAL '7 days'
+                  {spot_filter_sql}
                 ORDER BY LOWER(r.time)
-            """,
+                """,
                 upcoming_params,
             )
             upcoming_earnings_rows = cur.fetchall()
@@ -272,43 +304,52 @@ def get_dashboard_analytics(
                 [row["earnings"] for row in upcoming_earnings_rows]
             )
 
-            # Overall Average Ratings
-            rating_params = [user_id]
+            # ==== Overall Average Ratings ====
+            rating_params = [user_id, start_date, end_date]
             if spot_id:
                 rating_params.append(spot_id)
             cur.execute(
                 f"""
-                            SELECT 
-                                COALESCE(AVG(r.availability_rating), 0) AS avg_availability_rating,
-                                COALESCE(AVG(r.cleanliness_rating), 0) AS avg_cleanliness_rating,
-                                COALESCE(AVG(r.total_rating), 0) AS avg_total_rating,
-                                COUNT(*) AS total_ratings
-                            FROM ratings r
-                            JOIN parking_spaces ps ON r.parking_space_id = ps.id
-                            WHERE ps.owner = %s AND ps.is_paid = TRUE {spot_filter_sql}
-                        """,
+                SELECT 
+                    COALESCE(AVG(r.availability_rating), 0) AS avg_availability_rating,
+                    COALESCE(AVG(r.cleanliness_rating), 0) AS avg_cleanliness_rating,
+                    COALESCE(AVG(r.total_rating), 0) AS avg_total_rating,
+                    COUNT(*) AS total_ratings
+                FROM ratings r
+                JOIN parking_spaces ps ON r.parking_space_id = ps.id
+                WHERE ps.owner = %s 
+                  AND ps.is_paid = TRUE 
+                  AND r.updated_at > %s 
+                  AND r.updated_at < %s
+                  {spot_filter_sql}
+                """,
                 rating_params,
             )
             overall_ratings = cur.fetchone() or {}
 
-            # Ratings By Spot
-            ratings_by_spot_params = [user_id]
+            # ==== Ratings By Spot ====
+            ratings_by_spot_params = [start_date, end_date, user_id]
             if spot_id:
                 ratings_by_spot_params.append(spot_id)
             cur.execute(
                 f"""
-                            SELECT 
-                                ps.id AS spot_id,
-                                ps.name AS spot_name,
-                                COALESCE(AVG(r.availability_rating), 0) AS avg_availability_rating,
-                                COALESCE(AVG(r.cleanliness_rating), 0) AS avg_cleanliness_rating,
-                                COALESCE(AVG(r.total_rating), 0) AS avg_total_rating,
-                                COUNT(r.id) AS rating_count
-                            FROM parking_spaces ps
-                            LEFT JOIN ratings r ON ps.id = r.parking_space_id
-                            WHERE ps.owner = %s AND ps.is_paid = TRUE {spot_filter_sql}
-                            GROUP BY ps.id, ps.name
-                        """,
+                SELECT 
+                    ps.id AS spot_id,
+                    ps.name AS spot_name,
+                    COALESCE(AVG(r.availability_rating), 0) AS avg_availability_rating,
+                    COALESCE(AVG(r.cleanliness_rating), 0) AS avg_cleanliness_rating,
+                    COALESCE(AVG(r.total_rating), 0) AS avg_total_rating,
+                    COUNT(r.id) AS rating_count
+                FROM parking_spaces ps
+                LEFT JOIN ratings r 
+                    ON ps.id = r.parking_space_id 
+                AND r.updated_at > %s 
+                AND r.updated_at < %s
+                WHERE ps.owner = %s 
+                  AND ps.is_paid = TRUE 
+                  {spot_filter_sql}
+                GROUP BY ps.id, ps.name
+                """,
                 ratings_by_spot_params,
             )
             ratings_by_spot_rows = cur.fetchall()
@@ -320,15 +361,17 @@ def get_dashboard_analytics(
                 # Rating Distribution
                 cur.execute(
                     """
-                                SELECT 
-                                    FLOOR(r.total_rating)::int AS stars,
-                                    COUNT(*) AS count
-                                FROM ratings r
-                                WHERE r.parking_space_id = %s
-                                GROUP BY stars
-                                ORDER BY stars DESC
-                            """,
-                    [spot_row["spot_id"]],
+                    SELECT 
+                        FLOOR(r.total_rating)::int AS stars,
+                        COUNT(*) AS count
+                    FROM ratings r
+                    WHERE r.parking_space_id = %s 
+                    AND r.updated_at > %s 
+                    AND r.updated_at < %s
+                    GROUP BY stars
+                    ORDER BY stars DESC
+                    """,
+                    [spot_row["spot_id"], start_date, end_date],
                 )
                 rating_distribution_rows = cur.fetchall()
                 total_ratings = sum([row["count"] for row in rating_distribution_rows])
@@ -346,16 +389,18 @@ def get_dashboard_analytics(
                 # Recent Reviews
                 cur.execute(
                     """
-                                SELECT 
-                                    r.total_rating AS rating,
-                                    EXTRACT(DAY FROM NOW() - r.created_at) AS days_ago,
-                                    TRUE AS is_verified
-                                FROM ratings r
-                                WHERE r.parking_space_id = %s
-                                ORDER BY r.created_at DESC
-                                LIMIT 5
-                            """,
-                    [spot_row["spot_id"]],
+                    SELECT 
+                        r.total_rating AS rating,
+                        EXTRACT(DAY FROM NOW() - r.created_at) AS days_ago,
+                        TRUE AS is_verified
+                    FROM ratings r
+                    WHERE r.parking_space_id = %s 
+                    AND r.updated_at > %s 
+                    AND r.updated_at < %s
+                    ORDER BY r.created_at DESC
+                    LIMIT 5
+                    """,
+                    [spot_row["spot_id"], start_date, end_date],
                 )
                 recent_reviews = cur.fetchall()
 
@@ -363,12 +408,19 @@ def get_dashboard_analytics(
                     {
                         "spotId": spot_id_str,
                         "spotName": spot_row["spot_name"],
-                        "availabilityRating": spot_row["avg_availability_rating"],
-                        "cleanlinessRating": spot_row["avg_cleanliness_rating"],
-                        "totalRating": spot_row["avg_total_rating"],
+                        "availabilityRating": float(spot_row["avg_availability_rating"]),
+                        "cleanlinessRating": float(spot_row["avg_cleanliness_rating"]),
+                        "totalRating": float(spot_row["avg_total_rating"]),
                         "ratingCount": spot_row["rating_count"],
                         "ratingDistribution": rating_distribution,
-                        "recentReviews": recent_reviews,
+                        "recentReviews": [
+                            {
+                                "rating": review["rating"],
+                                "daysAgo": review["days_ago"],
+                                "isVerified": review["is_verified"],
+                            }
+                            for review in recent_reviews
+                        ],
                     }
                 )
 
@@ -386,7 +438,7 @@ def get_dashboard_analytics(
                 "ratingsBySpot": ratings_by_spot,
             }
 
-            # Construct the final response
+            # ==== Construct the Final Response ====
             return Ok(
                 {
                     "overallMetrics": {
@@ -396,7 +448,8 @@ def get_dashboard_analytics(
                             "trends": [
                                 {
                                     "date": item.get("month", ""),
-                                    "revenue": item.get("revenue", 0),
+                                    "revenue": float(item.get("revenue", 0)),
+                                    "bookings": item.get("bookings", 0),
                                 }
                                 for item in monthly_revenue
                             ],
@@ -421,7 +474,7 @@ def get_dashboard_analytics(
                         "monthlyRevenue": [
                             {
                                 "month": item.get("month", ""),
-                                "revenue": item.get("revenue", 0),
+                                "revenue": float(item.get("revenue", 0)),
                                 "bookings": item.get("bookings", 0),
                             }
                             for item in monthly_revenue
@@ -429,14 +482,15 @@ def get_dashboard_analytics(
                         "dailyRevenue": [
                             {
                                 "date": item.get("date", ""),
-                                "revenue": item.get("revenue", 0),
+                                "revenue": float(item.get("revenue", 0)),
                             }
                             for item in daily_revenue
                         ],
                         "hourlyRevenue": [
                             {
                                 "hour": item.get("hour", 0),
-                                "revenue": item.get("revenue", 0),
+                                "revenue": float(item.get("revenue", 0)),
+                                "bookings": item.get("bookings", 0),
                             }
                             for item in hourly_revenue
                         ],
@@ -449,14 +503,36 @@ def get_dashboard_analytics(
                             "completed": overall["completed_bookings"],
                             "canceled": overall["canceled_bookings"],
                             "avgDuration": float(overall["avg_duration"]),
-                            "completionRate": overall["completion_rate"],
+                            "completionRate": float(overall["completion_rate"]),
                         },
-                        "recentBookings": recent_bookings_rows,
+                        "recentBookings": [
+                            {
+                                "id": booking["id"],
+                                "spotId": str(booking["spotId"]),
+                                "spotName": booking["spotName"],
+                                "renterName": booking["renterName"],
+                                "startTime": booking["startTime"].isoformat(),
+                                "endTime": booking["endTime"].isoformat(),
+                                "status": booking["status"],
+                                "price": float(booking["price"]),
+                                "duration": float(booking["duration"]),
+                                "carDetails": booking["carDetails"],
+                            }
+                            for booking in recent_bookings_rows
+                        ],
                     },
                     "spotPerformance": spot_performance,
                     "upcomingEarnings": {
-                        "total": total_upcoming_earnings,
-                        "reservations": upcoming_earnings_rows,
+                        "total": float(total_upcoming_earnings),
+                        "reservations": [
+                            {
+                                "spotName": earning["spot_name"],
+                                "startTime": earning["start_time"].isoformat(),
+                                "endTime": earning["end_time"].isoformat(),
+                                "earnings": float(earning["earnings"]),
+                            }
+                            for earning in upcoming_earnings_rows
+                        ],
                     },
                     "ratingMetrics": rating_metrics,
                 }

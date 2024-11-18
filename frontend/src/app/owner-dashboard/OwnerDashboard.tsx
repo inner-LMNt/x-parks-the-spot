@@ -211,6 +211,8 @@ export default function OwnerDashboard() {
                   paidSpots={paidSpots}
                   pendingSpots={pendingSpots}
                   spotPerformance={analytics.spotPerformance}
+                  avgRating={analytics.ratingMetrics.averageRatings.total}
+                  numReviews={analytics.ratingMetrics.totalRatings}
                 />
               </TabsContent>
 
