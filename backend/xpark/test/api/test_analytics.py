@@ -270,7 +270,7 @@ def test_analytics_with_reservations(client: FlaskClient) -> None:
         reservation_ids.append(reservation_id)
 
     # Mark reservations as completed
-    mark_reservations_completed(client, reservation_ids)
+    mark_reservations_completed(reservation_ids)
 
     # Make a GET request to the analytics endpoint
     response = client.get(

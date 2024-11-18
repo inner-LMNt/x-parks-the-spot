@@ -542,7 +542,7 @@ def insert_reservation_directly(
     car_id: str,
     start_time: datetime,
     end_time: datetime
-):
+) -> None:
     """Inserts a reservation directly into the database for testing purposes."""
     reservation_id = str(uuid.uuid4())
     duration_hours = (end_time - start_time).total_seconds() / 3600
