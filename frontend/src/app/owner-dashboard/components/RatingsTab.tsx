@@ -187,7 +187,7 @@ const RatingsTab: React.FC<RatingsTabProps> = ({ ratingMetrics }) => {
                         >
                           <span className="mr-2">
                             {dist.stars}
-                            <Star />:
+                            <Star />
                           </span>
                           <span>
                             {dist.count} ({dist.percentage}%)
