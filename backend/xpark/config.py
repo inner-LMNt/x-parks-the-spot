@@ -34,3 +34,9 @@ class Config:
     SMTP_ENABLED = os.environ.get("SMTP_ENABLED") or "no"
 
     MAX_SEARCH_RADIUS_KM = 5
+
+    S3_ENABLED = os.environ.get("S3_ENABLED") or "no"
+    S3_ENDPOINT = os.environ["S3_ENDPOINT"]
+    S3_BUCKET = os.environ["S3_BUCKET"]
+    S3_ACCESS_KEY = os.environ["S3_ACCESS_KEY"]
+    S3_SECRET_KEY = os.environ["S3_SECRET_KEY"]

@@ -1,15 +1,16 @@
 import os
+import magic
 import json
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
 
 from werkzeug.datastructures import FileStorage
-from werkzeug.utils import secure_filename
 
 from psycopg.rows import dict_row
 
 from xpark.config import Config
 from xpark.utils.db import DB
+from xpark.utils.s3 import S3
 from result import Result, Ok, Err
 import uuid
 from .timeslots import days_of_week_to_slots, recalculate_coalesce
@@ -394,18 +395,20 @@ def create_free_parking_space(
             return Ok(parking_space)
 
 
-# TODO: Review
 def save_image(image_file: FileStorage) -> str:
-    allowed_extensions = {"png", "jpg", "jpeg", "gif"}
-    filename = secure_filename(image_file.filename or "")
-    extension = filename.rsplit(".", 1)[1].lower()
-    if "." in filename and extension in allowed_extensions:
-        images_dir = os.path.join(Config.STATIC_FOLDER, "images")
-        os.makedirs(images_dir, exist_ok=True)
-        unique_filename = f"{uuid.uuid4()}.{extension}"
-        filepath = os.path.join(images_dir, unique_filename)
-        image_file.save(filepath)
-        image_uri = f"/static/images/{unique_filename}"
+    # Check extension with magic
+    mime = magic.from_buffer(image_file.read(2048), mime=True)
+    # Reset seek before uploading stream
+    image_file.seek(0)
+    if mime.split("/")[0] == "image":
+        unique_filename = f"{uuid.uuid4()}"
+        image_uri = f"{Config.S3_ENDPOINT}/{Config.S3_BUCKET}/{unique_filename}"
+        # Upload file with correct file type
+        S3.conn.Bucket(Config.S3_BUCKET).upload_fileobj(
+            image_file.stream,
+            unique_filename,
+            ExtraArgs={"ContentType": mime},
+        )
         return image_uri
     else:
         raise ValueError("Invalid image file type")
