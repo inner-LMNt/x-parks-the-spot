@@ -34,39 +34,106 @@ def get_dashboard_analytics(
                 spot_filter_sql = " AND ps.id = %s"
 
             # ==== Overall Revenue Metrics ====
-            # Corrected parameter ordering: [user_id, start_date, end_date, spot_id (if any)]
-            overall_params = [user_id, start_date, end_date]
+            overall_params = [
+                start_date,  # For total_possible_completions
+                start_date,  # For first condition of total_relevant_bookings
+                end_date + timedelta(days=7),  # For cancellation check
+                start_date,  # For successful_completions
+                user_id,  # For CTE WHERE clause
+                start_date, end_date + timedelta(days=7),  # For CTE date range
+                user_id,  # For main query
+                start_date, end_date + timedelta(days=7)  # For main query
+            ]
             if spot_id:
                 overall_params.append(spot_id)
             cur.execute(
                 f"""
-                SELECT 
-                    COALESCE(SUM(r.price), 0) AS total_revenue,
-                    COUNT(*) AS total_bookings,
-                    CASE 
-                        WHEN COUNT(*) > 0 THEN SUM(r.price) / COUNT(*)
-                        ELSE 0 
-                    END AS revenue_per_booking,
-                    COALESCE(SUM(CASE WHEN r.status = 'active' THEN 1 ELSE 0 END), 0) AS active_bookings,
-                    COALESCE(AVG(EXTRACT(EPOCH FROM UPPER(r.time) - LOWER(r.time))/3600), 0) AS avg_duration,
-                    COALESCE(SUM(CASE WHEN r.status = 'completed' THEN 1 ELSE 0 END), 0) AS completed_bookings,
-                    COALESCE(SUM(CASE WHEN r.status = 'canceled' THEN 1 ELSE 0 END), 0) AS canceled_bookings,
-                    CASE 
-                        WHEN COUNT(*) > 0 
-                        THEN (COALESCE(SUM(CASE WHEN r.status = 'active' THEN 1 ELSE 0 END), 0)::float / COUNT(*)) * 100 
-                        ELSE 0 
-                    END AS percentage_active,
-                    CASE 
-                        WHEN COUNT(*) > 0 
-                        THEN (COALESCE(SUM(CASE WHEN r.status = 'completed' THEN 1 ELSE 0 END), 0)::float / COUNT(*)) * 100 
-                        ELSE 0 
-                    END AS completion_rate
-                FROM reservations r
-                JOIN parking_spaces ps ON r.parking_space_id = ps.id
-                WHERE ps.owner = %s 
-                  AND ps.is_paid = TRUE 
-                  AND LOWER(r.time) BETWEEN %s AND %s
-                  {spot_filter_sql}
+                    WITH time_metrics AS (
+                        SELECT 
+                            -- Total reservations that could have been completed in period
+                            COUNT(*) FILTER (
+                                WHERE UPPER(r.time) < NOW() 
+                                AND UPPER(r.time) > %s
+                            ) as total_possible_completions,
+                            -- Actually completed (including early cancellations as failures)
+                            COUNT(*) FILTER (
+                                WHERE (
+                                    -- Completed normally
+                                    (UPPER(r.time) < NOW() AND UPPER(r.time) > %s AND r.status != 'canceled')
+                                    OR
+                                    -- Or was cancelled during this period
+                                    (r.status = 'canceled' AND LOWER(r.time) < %s)
+                                )
+                            ) as total_relevant_bookings,
+                            -- Successfully completed (not canceled)
+                            COUNT(*) FILTER (
+                                WHERE UPPER(r.time) < NOW() 
+                                AND UPPER(r.time) > %s
+                                AND r.status != 'canceled'
+                            ) as successful_completions
+                        FROM reservations r
+                        JOIN parking_spaces ps ON r.parking_space_id = ps.id
+                        WHERE ps.owner = %s 
+                          AND ps.is_paid = TRUE 
+                          AND LOWER(r.time) BETWEEN %s AND %s
+                          {spot_filter_sql}
+                    )
+                    SELECT 
+                        COALESCE(SUM(r.price), 0) AS total_revenue,
+                        COUNT(*) AS total_bookings,
+                        CASE 
+                            WHEN COUNT(*) > 0 THEN SUM(r.price) / COUNT(*)
+                            ELSE 0 
+                        END AS revenue_per_booking,
+                        -- Active bookings: currently ongoing
+                        COALESCE(SUM(
+                            CASE WHEN r.status != 'canceled' 
+                                 AND LOWER(r.time) <= NOW() 
+                                 AND UPPER(r.time) > NOW() 
+                            THEN 1 ELSE 0 END
+                        ), 0) AS active_bookings,
+                        -- Average duration
+                        COALESCE(AVG(
+                            EXTRACT(EPOCH FROM UPPER(r.time) - LOWER(r.time))/3600
+                        ), 0) AS avg_duration,
+                        -- Completed: past bookings that weren't canceled
+                        COALESCE(SUM(
+                            CASE WHEN r.status != 'canceled' 
+                                 AND UPPER(r.time) < NOW() 
+                            THEN 1 ELSE 0 END
+                        ), 0) AS completed_bookings,
+                        -- Canceled bookings
+                        COALESCE(SUM(
+                            CASE WHEN r.status = 'canceled' 
+                            THEN 1 ELSE 0 END
+                        ), 0) AS canceled_bookings,
+                        -- Percentage active (of non-canceled)
+                        CASE WHEN COUNT(*) > 0 THEN
+                            (COALESCE(SUM(
+                                CASE WHEN r.status != 'canceled' 
+                                     AND LOWER(r.time) <= NOW() 
+                                     AND UPPER(r.time) > NOW() 
+                                THEN 1 ELSE 0 END
+                            ), 0)::float / 
+                            NULLIF(COUNT(*) - COALESCE(SUM(
+                                CASE WHEN r.status = 'canceled' 
+                                THEN 1 ELSE 0 END
+                            ), 0), 0)) * 100
+                        ELSE 0 END AS percentage_active,
+                        -- Completion rate: successful completions / (completed + relevant cancellations)
+                        CASE 
+                            WHEN tm.total_relevant_bookings > 0 
+                            THEN (tm.successful_completions::float / tm.total_relevant_bookings) * 100
+                            ELSE 0 
+                        END AS completion_rate
+                    FROM reservations r
+                    JOIN parking_spaces ps ON r.parking_space_id = ps.id
+                    CROSS JOIN time_metrics tm
+                    WHERE ps.owner = %s 
+                      AND ps.is_paid = TRUE 
+                      AND LOWER(r.time) BETWEEN %s AND %s
+                      {spot_filter_sql}
+                    GROUP BY tm.total_relevant_bookings, tm.successful_completions
                 """,
                 overall_params,
             )
@@ -361,36 +428,96 @@ def get_dashboard_analytics(
 
             # ==== Recent Bookings ====
             # Corrected parameter ordering: [user_id, start_date, end_date, spot_id (if any)]
-            recent_params = [user_id, start_date, end_date]
+            recent_params = [
+                user_id,
+                start_date, end_date + timedelta(days=7),  # First period check
+                start_date, end_date + timedelta(days=7),  # Second period check
+                end_date + timedelta(days=7), start_date  # Third period check (for overlapping)
+            ]
             if spot_id:
                 recent_params.append(spot_id)
             cur.execute(
                 f"""
-                SELECT 
-                    r.id,
-                    r.parking_space_id AS "spotId",
-                    ps.name AS "spotName",
-                    u.name AS "renterName",
-                    LOWER(r.time) AS "startTime",
-                    UPPER(r.time) AS "endTime",
-                    r.status,
-                    r.price,
-                    EXTRACT(EPOCH FROM UPPER(r.time) - LOWER(r.time))/3600 AS duration,
-                    json_build_object(
-                        'make', c.make,
-                        'model', c.model,
-                        'color', c.color
-                    ) AS "carDetails"
-                FROM reservations r
-                JOIN parking_spaces ps ON r.parking_space_id = ps.id
-                LEFT JOIN users u ON r.renter_id = u.id
-                LEFT JOIN cars c ON r.car_info_id = c.id
-                WHERE ps.owner = %s 
-                  AND ps.is_paid = TRUE 
-                  AND LOWER(r.time) BETWEEN %s AND %s
-                  {spot_filter_sql}
-                ORDER BY LOWER(r.time) DESC
-                LIMIT 10
+                    WITH reservation_details AS (
+                        -- Get all reservations within the time period with their status counts
+                        SELECT 
+                            r.id,
+                            r.parking_space_id,
+                            ps.name AS spot_name,
+                            u.name AS renter_name,
+                            u.email AS renter_email,
+                            LOWER(r.time) AS start_time,
+                            UPPER(r.time) AS end_time,
+                            r.status,
+                            r.price,
+                            EXTRACT(EPOCH FROM UPPER(r.time) - LOWER(r.time))/3600 AS duration,
+                            c.make AS car_make,
+                            c.model AS car_model,
+                            c.color AS car_color,
+                            c.license_plate_state AS car_state,
+                            c.license_plate AS car_plate,
+                            -- Add row number to ensure we get the most recent bookings first
+                            ROW_NUMBER() OVER (
+                                PARTITION BY r.parking_space_id 
+                                ORDER BY LOWER(r.time) DESC
+                            ) as spot_booking_rank,
+                            -- Add time-based flags
+                            CASE 
+                                WHEN LOWER(r.time) > NOW() THEN 'upcoming'
+                                WHEN UPPER(r.time) < NOW() THEN 'past'
+                                ELSE 'current'
+                            END as time_status,
+                            -- Calculate if the booking spans multiple days
+                            CASE 
+                                WHEN DATE_TRUNC('day', UPPER(r.time)) > DATE_TRUNC('day', LOWER(r.time))
+                                THEN true
+                                ELSE false
+                            END as is_multi_day,
+                            -- Calculate the total duration in days (for multi-day bookings)
+                            EXTRACT(DAY FROM UPPER(r.time) - LOWER(r.time)) as days_duration,
+                            -- Track if this is a repeat renter
+                            COUNT(*) OVER (PARTITION BY r.renter_id) as rental_count_by_user
+                        FROM reservations r
+                        JOIN parking_spaces ps 
+                            ON r.parking_space_id = ps.id
+                        LEFT JOIN users u 
+                            ON r.renter_id = u.id
+                        LEFT JOIN cars c 
+                            ON r.car_info_id = c.id
+                        WHERE ps.owner = %s
+                            -- Include bookings that overlap with the time period
+                            AND (
+                                LOWER(r.time) BETWEEN %s AND %s
+                                OR UPPER(r.time) BETWEEN %s AND %s
+                                OR (LOWER(r.time) <= %s AND UPPER(r.time) >= %s)
+                            )
+                            {spot_filter_sql}
+                    )
+                    SELECT 
+                        id,
+                        parking_space_id AS "spotId",
+                        spot_name AS "spotName",
+                        renter_name AS "renterName",
+                        renter_email AS "renterEmail",
+                        start_time AS "startTime",
+                        end_time AS "endTime",
+                        status,
+                        price,
+                        duration,
+                        time_status AS "timeStatus",
+                        is_multi_day AS "isMultiDay",
+                        days_duration AS "daysDuration",
+                        rental_count_by_user AS "rentalCount",
+                        jsonb_build_object(
+                            'make', car_make,
+                            'model', car_model,
+                            'color', car_color,
+                            'plate', car_plate,
+                            'state', car_state
+                        ) AS "carDetails"
+                    FROM reservation_details
+                    WHERE spot_booking_rank <= 10  -- Get the 10 most recent bookings per spot
+                    ORDER BY start_time DESC
                 """,
                 recent_params,
             )
@@ -641,6 +768,7 @@ def get_dashboard_analytics(
                                 "startTime": booking["startTime"].isoformat(),
                                 "endTime": booking["endTime"].isoformat(),
                                 "status": booking["status"],
+                                "time_status": booking["timeStatus"],
                                 "price": float(booking["price"]),
                                 "duration": float(booking["duration"]),
                                 "carDetails": booking["carDetails"],

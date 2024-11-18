@@ -102,7 +102,9 @@ export default function OwnerDashboard() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Spots</SelectItem>
-            {paidSpots.map((spot) => (
+            {[...pendingSpots, ...paidSpots]
+                .sort((a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0))
+                .map((spot) => (
               <SelectItem key={spot.id} value={spot.id}>
                 {spot.name}
               </SelectItem>

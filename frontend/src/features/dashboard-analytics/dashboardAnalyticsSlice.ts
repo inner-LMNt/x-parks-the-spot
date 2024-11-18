@@ -66,15 +66,21 @@ export interface DashboardAnalytics {
       spotId: string
       spotName: string
       renterName: string
+      renterEmail: string
       startTime: string
       endTime: string
-      status: "active" | "completed" | "canceled"
+      status: "booked" | "current" | "completed" | "canceled"
       price: number
       duration: number
+      time_status: "upcoming" | "current" | "past"
+      isMultiDay: boolean
+      daysDuration: number
+      rentalCount: number
       carDetails: {
         make: string
         model: string
         color: string
+        plate: string
       }
     }>
   }
