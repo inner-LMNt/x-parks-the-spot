@@ -68,7 +68,7 @@ export default function SpotsTab({
 
   const spotsWithPerformance = useMemo(
     () =>
-      paidSpots
+      [...pendingSpots, ...paidSpots]
         .filter((spot) => spotPerformance[spot.id])
         .map((spot) => ({
           ...spot,
@@ -94,7 +94,7 @@ export default function SpotsTab({
       Saturday: 6,
       Sunday: 7,
     }
-    return days.sort((a, b) => (dayMap[a.day] || 8) - (dayMap[b.day] || 8))
+    return [...days].sort((a, b) => (dayMap[a.day] || 8) - (dayMap[b.day] || 8))
   }
 
   return (

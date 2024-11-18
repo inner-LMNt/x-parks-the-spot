@@ -175,7 +175,7 @@ export default function OwnerDashboard() {
               Dashboard
             </h1>
             <p className="text-sm text-gray-500">
-              {paidSpots.length} active spots • {ownerReservations.length} total
+              {paidSpots.length + pendingSpots.length} active spots • {ownerReservations.length} total
               bookings
             </p>
           </div>

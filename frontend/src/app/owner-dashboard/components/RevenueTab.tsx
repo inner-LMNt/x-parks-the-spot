@@ -196,7 +196,7 @@ const RevenueTab: React.FC<RevenueTabProps> = ({ revenueMetrics }) => {
                         ${spot.revenue.toFixed(2)}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {spot.occupancyRate.toFixed(1)}%
+                        {Number(spot.occupancyRate).toFixed(1)}%
                       </p>
                     </div>
                   </div>
