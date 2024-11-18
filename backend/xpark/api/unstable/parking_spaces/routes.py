@@ -9,8 +9,9 @@ from xpark.logic.parkingspace import (
     get_all_user_parking_spaces,
     handle_submit_verification,
     update_taken,
-    submit_rating, get_user_rating,
-    award_points
+    submit_rating,
+    get_user_rating,
+    award_points,
 )
 from flask import request
 from result import Ok, Err
@@ -23,22 +24,29 @@ from typing import cast, Dict
 
 @bp.get("")
 @require_logged_in_user
-def get_all_user_parking_spaces_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+def get_all_user_parking_spaces_route(
+    token: str, user_id: uuid.UUID
+) -> Tuple[Any, int]:
     match get_all_user_parking_spaces(user_id):
         case Ok(data):
             return {"spaces": data}, 200
         case Err(e):
             return {"err": e}, 500
 
+
 @bp.post("<parking_space_id>/award-points")
 @require_logged_in_user
-def award_points_route(parking_space_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+def award_points_route(
+    parking_space_id: str, token: str, user_id: uuid.UUID
+) -> Tuple[Any, int]:
     data = request.form.to_dict()
     status = data.get("status")  # Expect "taken" or "parked"
     if not status:
-          return {"err": "Invalid status provided. Use 'taken' or 'parked'."}, 400  # Handle missing status
+        return {
+            "err": "Invalid status provided. Use 'taken' or 'parked'."
+        }, 400  # Handle missing status
     points_amount = int(data.get("points_amount", 10))
-    image_file = request.files.get("photo") if status == 'taken' else None
+    image_file = request.files.get("photo") if status == "taken" else None
 
     parking_space_uuid = uuid.UUID(parking_space_id)
 
@@ -47,7 +55,7 @@ def award_points_route(parking_space_id: str, token: str, user_id: uuid.UUID) ->
         parking_space_id=parking_space_uuid,
         status=status,
         points_amount=points_amount,
-        image_file=image_file
+        image_file=image_file,
     )
     print("Award points result:", result)  # Debugging output
 
@@ -59,6 +67,7 @@ def award_points_route(parking_space_id: str, token: str, user_id: uuid.UUID) ->
             print("Error occurred:", error_message)  # Print detailed error in backend
             return {"err": error_message}, 400
     return {"err": "Unexpected error occurred"}, 500
+
 
 @bp.post("")
 @require_logged_in_user
@@ -179,6 +188,7 @@ def delete_parking_space_route(
             status_code = 403 if "not authorized" in e else 404
             return {"err": e}, status_code
 
+
 @bp.post("<parking_space_id>/verify")
 @require_logged_in_user
 def verify_spot_route(
@@ -186,25 +196,33 @@ def verify_spot_route(
 ) -> Tuple[Any, int]:
     spot_id = uuid.UUID(parking_space_id)
     image_file = request.files.get("image")
-    match handle_submit_verification(user_id=user_id, parking_space_id=spot_id, image_file=image_file):
+    match handle_submit_verification(
+        user_id=user_id, parking_space_id=spot_id, image_file=image_file
+    ):
         case Ok():
             return {}, 200
         case Err(_):
             return {}, 400
 
+
 @bp.post("<parking_space_id>/taken")
 @require_logged_in_user
-def update_parking_space_taken(parking_space_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+def update_parking_space_taken(
+    parking_space_id: str, token: str, user_id: uuid.UUID
+) -> Tuple[Any, int]:
     # Retrieve the image file from form data
     image_file = request.files.get("photo")
     parking_space_uuid = uuid.UUID(parking_space_id)
 
     # Call helper function to perform the update
-    match update_taken(user_id=user_id, parking_space_id=parking_space_uuid, image_file=image_file):
+    match update_taken(
+        user_id=user_id, parking_space_id=parking_space_uuid, image_file=image_file
+    ):
         case Ok(_):
             return {}, 200
         case Err(e):
             return {"err": e}, 400
+
 
 @bp.post("<parking_space_id>/rate")
 @require_logged_in_user
@@ -226,6 +244,7 @@ def rate_parking_space_route(
         return {}, 200
     else:
         return {"err": result.unwrap_err()}, 400
+
 
 @bp.get("<parking_space_id>/user-rating")
 @require_logged_in_user

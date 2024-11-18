@@ -18,6 +18,7 @@ class ReservationStatus(Enum):
     cancel = "canceled"
     complete = "completed"
 
+
 def check_if_available(
     conn: psycopg.Connection,
     parking_spot_id: uuid.UUID,
@@ -216,7 +217,6 @@ def update_reservation(
     end_time: Optional[datetime.datetime] = None,
     car_info_id: Optional[uuid.UUID] = None,
 ) -> Result[Dict[str, Any] | None, str]:
-
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
@@ -531,6 +531,7 @@ def get_max_extension_time_logic(
                 )
 
             return Ok(last_valid_time.isoformat())
+
 
 def get_owner_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], str]:
     with DB.pool.connection() as conn:

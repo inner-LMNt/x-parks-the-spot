@@ -1,2 +1,2 @@
-import ResetPage from './ResetPage'
-export default ResetPage
+import ResetPage from "./ResetPage";
+export default ResetPage;

@@ -1,2 +1,2 @@
-import ExtendReservationPage from './ExtendReservationPage';
+import ExtendReservationPage from "./ExtendReservationPage";
 export default ExtendReservationPage;

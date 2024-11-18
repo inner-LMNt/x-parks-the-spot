@@ -46,16 +46,14 @@ def get_user_reports_logic(user_id: UUID) -> Result[List[Dict[str, Any]], str]:
                 WHERE reports.user_id = %(user_id)s
                 ORDER BY reports.created_at DESC
                 """,
-                {"user_id": user_id}
+                {"user_id": user_id},
             )
             reports = cur.fetchall()
             return Ok(reports)
 
+
 def create_reservation_issue_report_logic(
-    user_id: UUID,
-    reservation_id: UUID,
-    report_type: str,
-    description: str
+    user_id: UUID, reservation_id: UUID, report_type: str, description: str
 ) -> Result[Dict[str, Any], str]:
     """
     Logic for creating a reservation issue report.
@@ -73,7 +71,7 @@ def create_reservation_issue_report_logic(
                 JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
                 WHERE reservations.id = %(reservation_id)s
                 """,
-                {"reservation_id": reservation_id}
+                {"reservation_id": reservation_id},
             )
             result = cur.fetchone()
             if not result:
@@ -114,11 +112,12 @@ def create_reservation_issue_report_logic(
                     "description": description,
                     "type": report_type,
                     "status": "open",
-                    "image_url": result['photos'][0]
+                    "image_url": result["photos"][0],
                 },
             )
             new_report = cur.fetchone()
             return Ok(new_report) if new_report else Err("Failed to create report")
+
 
 def create_renter_overstay_report_logic(
     user_id: UUID,
@@ -126,7 +125,7 @@ def create_renter_overstay_report_logic(
     report_type: str,
     description: str,
     departure_time: datetime,
-    image_url: Optional[str]
+    image_url: Optional[str],
 ) -> Result[Dict[str, Any], str]:
     """
     Logic for creating a renter overstay report.
@@ -143,15 +142,15 @@ def create_renter_overstay_report_logic(
                 FROM reservations
                 WHERE id = %(reservation_id)s
                 """,
-                {"reservation_id": reservation_id}
+                {"reservation_id": reservation_id},
             )
             reservation = cur.fetchone()
             if not reservation:
                 return Err("Reservation not found.")
 
-            reservation_end_time = reservation['end_time']
-            reservation_start_time = reservation['start_time']
-            reservation_price = reservation['price']
+            reservation_end_time = reservation["end_time"]
+            reservation_start_time = reservation["start_time"]
+            reservation_price = reservation["price"]
 
             # Convert both times to UTC
             departure_time = departure_time.astimezone(timezone.utc)
@@ -159,14 +158,20 @@ def create_renter_overstay_report_logic(
             reservation_start_time = reservation_start_time.astimezone(timezone.utc)
 
             # Calculate overstay_duration in minutes
-            overstay_duration = int((departure_time - reservation_end_time).total_seconds() / 60)
+            overstay_duration = int(
+                (departure_time - reservation_end_time).total_seconds() / 60
+            )
 
             # Calculate hourly rate
-            reservation_duration_hours = (reservation_end_time - reservation_start_time).total_seconds() / 3600
+            reservation_duration_hours = (
+                reservation_end_time - reservation_start_time
+            ).total_seconds() / 3600
             hourly_rate = reservation_price / reservation_duration_hours
 
             # Calculate overstay charge
-            overstay_charge = (hourly_rate * 1.5 / 60) * overstay_duration  # Charge per minute
+            overstay_charge = (
+                hourly_rate * 1.5 / 60
+            ) * overstay_duration  # Charge per minute
 
             # Insert into reports and return specific fields
             cur.execute(
@@ -216,11 +221,12 @@ def create_renter_overstay_report_logic(
                     "departure_time": departure_time,
                     "overstay_duration": overstay_duration,
                     "overstay_charge": overstay_charge,
-                    "image_url": image_url
-                }
+                    "image_url": image_url,
+                },
             )
             new_report = cur.fetchone()
             return Ok(new_report) if new_report else Err("Failed to create report")
+
 
 def create_damage_report_logic(
     user_id: UUID,
@@ -229,7 +235,7 @@ def create_damage_report_logic(
     description: str,
     damage_type: str,
     damage_severity: str,
-    image_url: Optional[str]
+    image_url: Optional[str],
 ) -> Result[Dict[str, Any], str]:
     """
     Logic for creating a damage report.
@@ -242,7 +248,7 @@ def create_damage_report_logic(
                 FROM reservations
                 WHERE id = %(reservation_id)s
                 """,
-                {"reservation_id": reservation_id}
+                {"reservation_id": reservation_id},
             )
             if not cur.fetchone():
                 return Err("Reservation not found.")
@@ -290,24 +296,21 @@ def create_damage_report_logic(
                     "status": "open",
                     "damage_type": damage_type,
                     "damage_severity": damage_severity,
-                    "image_url": image_url
-                }
+                    "image_url": image_url,
+                },
             )
             new_report = cur.fetchone()
             return Ok(new_report) if new_report else Err("Failed to create report")
 
 
 def create_other_issue_report_logic(
-    user_id: UUID,
-    report_type: str,
-    description: str
+    user_id: UUID, report_type: str, description: str
 ) -> Result[Dict[str, Any], str]:
     """
     Logic for creating an 'Other' issue report without a reservation ID.
     """
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-
             cur.execute(
                 """
                 INSERT INTO reports (
@@ -335,14 +338,16 @@ def create_other_issue_report_logic(
                     "user_id": user_id,
                     "description": description,
                     "type": report_type,
-                    "status": "open"
-                }
+                    "status": "open",
+                },
             )
             new_report = cur.fetchone()
             return Ok(new_report) if new_report else Err("Failed to create report")
 
 
-def get_report_by_id_logic(report_id: UUID, user_id: UUID) -> Result[Dict[str, Any], str]:
+def get_report_by_id_logic(
+    report_id: UUID, user_id: UUID
+) -> Result[Dict[str, Any], str]:
     """
     Fetch a specific report by ID for a user.
     """
@@ -380,7 +385,7 @@ def get_report_by_id_logic(report_id: UUID, user_id: UUID) -> Result[Dict[str, A
                 LEFT JOIN users AS renters ON reservations.renter_id = renters.id
                 WHERE reports.id = %(report_id)s AND reports.user_id = %(user_id)s
                 """,
-                {"report_id": report_id, "user_id": user_id}
+                {"report_id": report_id, "user_id": user_id},
             )
             report = cur.fetchone()
             if not report:
@@ -388,7 +393,9 @@ def get_report_by_id_logic(report_id: UUID, user_id: UUID) -> Result[Dict[str, A
             return Ok(report)
 
 
-def update_report_admin_response_logic(report_id: UUID, admin_response: str, user_id: UUID) -> Result[Dict[str, Any], str]:
+def update_report_admin_response_logic(
+    report_id: UUID, admin_response: str, user_id: UUID
+) -> Result[Dict[str, Any], str]:
     """
     Update the admin response for a specific report.
     """
@@ -421,8 +428,12 @@ def update_report_admin_response_logic(report_id: UUID, admin_response: str, use
                 {
                     "admin_response": admin_response,
                     "report_id": report_id,
-                    "user_id": user_id
-                }
+                    "user_id": user_id,
+                },
             )
             updated_report = cur.fetchone()
-            return Ok(updated_report) if updated_report else Err("Report not found or not authorized to update.")
+            return (
+                Ok(updated_report)
+                if updated_report
+                else Err("Report not found or not authorized to update.")
+            )

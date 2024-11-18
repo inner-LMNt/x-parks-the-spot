@@ -1,29 +1,37 @@
 // src/pages/add.tsx
 
-'use client';
+"use client";
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '@/store';
-import { addParkingSpot, resetState } from '@/features/add/addSlice';
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/store";
+import { addParkingSpot, resetState } from "@/features/add/addSlice";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/hooks/use-toast';
-import { Camera, X, Upload, ArrowLeft, MapPin, CameraOff, MapPinOff } from 'lucide-react';
-import Webcam from 'react-webcam';
-import { DaysOfWeek } from '@/types/type'; // Ensure DaysOfWeek enum is imported
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Camera,
+  X,
+  Upload,
+  ArrowLeft,
+  MapPin,
+  CameraOff,
+  MapPinOff,
+} from "lucide-react";
+import Webcam from "react-webcam";
+import { DaysOfWeek } from "@/types/type"; // Ensure DaysOfWeek enum is imported
 import {
   Dialog,
   DialogContent,
@@ -31,17 +39,19 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog'; // ShadCN Dialog components
-import { LoadScriptNext, Autocomplete } from '@react-google-maps/api';
+} from "@/components/ui/dialog"; // ShadCN Dialog components
+import { LoadScriptNext, Autocomplete } from "@react-google-maps/api";
 
 const formatTime = (time: string): string => {
   return time; // Keeping time as "HH:mm" since backend expects time-only strings
 };
 
 // Utility function to check permission status
-const checkPermissionStatus = async (permissionName: PermissionName): Promise<PermissionState> => {
+const checkPermissionStatus = async (
+  permissionName: PermissionName,
+): Promise<PermissionState> => {
   if (!navigator.permissions) {
-    return 'prompt'; // Fallback if Permissions API is not supported
+    return "prompt"; // Fallback if Permissions API is not supported
   }
   try {
     //@ts-ignore
@@ -49,12 +59,12 @@ const checkPermissionStatus = async (permissionName: PermissionName): Promise<Pe
     return result.state;
   } catch (error) {
     console.error(`Error checking ${permissionName} permission:`, error);
-    return 'prompt';
+    return "prompt";
   }
 };
 
 // Define types for permissions
-type PermissionName = 'camera' | 'geolocation';
+type PermissionName = "camera" | "geolocation";
 
 export default function AddPage() {
   const router = useRouter();
@@ -62,7 +72,7 @@ export default function AddPage() {
   const { toast } = useToast();
   const { loading, error } = useSelector((state: RootState) => state.add);
 
-  const [spotType, setSpotType] = useState<'free' | 'rental'>('free');
+  const [spotType, setSpotType] = useState<"free" | "rental">("free");
   const [domLoaded, setDomLoaded] = useState(false);
   const [image, setImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -74,29 +84,38 @@ export default function AddPage() {
   const [showCamera, setShowCamera] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [autoComplete, setAutoComplete] = useState<google.maps.places.Autocomplete | null>(null);
-  const onLoadAutocomplete = (autocompleteInstance: google.maps.places.Autocomplete) => {
+  const [autoComplete, setAutoComplete] =
+    useState<google.maps.places.Autocomplete | null>(null);
+  const onLoadAutocomplete = (
+    autocompleteInstance: google.maps.places.Autocomplete,
+  ) => {
     setAutoComplete(autocompleteInstance);
-  }
+  };
 
   // Separate TimeSlot and is24Seven
   const [timeSlot, setTimeSlot] = useState<any>({
     day_of_week: [],
-    start_time: '',
-    end_time: '',
+    start_time: "",
+    end_time: "",
   });
 
   const [is24Seven, setIs24Seven] = useState<boolean>(false);
 
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [geoEnabled, setGeoEnabled] = useState(true);
   const [locationLoading, setLocationLoading] = useState(false);
-  const [availabilityError, setAvailabilityError] = useState<string>('');
+  const [availabilityError, setAvailabilityError] = useState<string>("");
 
   // States for Modals
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showReRequestModal, setShowReRequestModal] = useState<{ camera: boolean; location: boolean }>({
+  const [showReRequestModal, setShowReRequestModal] = useState<{
+    camera: boolean;
+    location: boolean;
+  }>({
     camera: false,
     location: false,
   });
@@ -107,8 +126,10 @@ export default function AddPage() {
   const [cameraLoaded, setCameraLoaded] = useState(false);
 
   // Initialize permission states
-  const [cameraPermission, setCameraPermission] = useState<PermissionState>('prompt');
-  const [locationPermission, setLocationPermission] = useState<PermissionState>('prompt');
+  const [cameraPermission, setCameraPermission] =
+    useState<PermissionState>("prompt");
+  const [locationPermission, setLocationPermission] =
+    useState<PermissionState>("prompt");
 
   // Track if errors have been handled to prevent repetitive actions
   const [hasLocationError, setHasLocationError] = useState<boolean>(false);
@@ -117,16 +138,16 @@ export default function AddPage() {
   // Check permissions on component mount
   useEffect(() => {
     const fetchPermissions = async () => {
-      const camStatus = await checkPermissionStatus('camera');
-      const locStatus = await checkPermissionStatus('geolocation');
+      const camStatus = await checkPermissionStatus("camera");
+      const locStatus = await checkPermissionStatus("geolocation");
       setCameraPermission(camStatus);
       setLocationPermission(locStatus);
       // If permissions are denied initially
-      if (camStatus === 'denied') {
+      if (camStatus === "denied") {
         setCameraDenied(true);
         setHasCameraError(true); // Prevent repetitive handling
       }
-      if (locStatus === 'denied') {
+      if (locStatus === "denied") {
         setLocationDenied(true);
         setHasLocationError(true); // Prevent repetitive handling
       }
@@ -146,7 +167,7 @@ export default function AddPage() {
         setPreviewUrl(reader.result as string);
         setPhotoTimestamp(new Date());
         setPhotoTaken(true);
-        if (spotType === 'free') {
+        if (spotType === "free") {
           captureLocation();
         }
       };
@@ -158,7 +179,7 @@ export default function AddPage() {
    * **Trigger File Input Click**
    */
   const handleImageClick = () => {
-    console.log('Image upload area clicked.');
+    console.log("Image upload area clicked.");
     fileInputRef.current?.click();
   };
 
@@ -171,9 +192,9 @@ export default function AddPage() {
     setPhotoTimestamp(null);
     setPhotoTaken(false);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
-    if (spotType === 'free') {
+    if (spotType === "free") {
       setUserLocation(null);
     }
   };
@@ -190,24 +211,34 @@ export default function AddPage() {
       fetch(imageSrc)
         .then((res) => res.blob())
         .then((blob) => {
-          const file = new File([blob], 'camera_capture.jpg', { type: 'image/jpeg' });
+          const file = new File([blob], "camera_capture.jpg", {
+            type: "image/jpeg",
+          });
           setImage(file);
-          if (spotType === 'free') {
+          if (spotType === "free") {
             captureLocation();
           }
         })
         .catch((err) => {
-          console.error('Error processing captured image:', err);
+          console.error("Error processing captured image:", err);
           toast({
-            title: 'Image Capture Error',
-            description: 'There was an error processing your captured image. Please try again.',
-            variant: 'destructive',
+            title: "Image Capture Error",
+            description:
+              "There was an error processing your captured image. Please try again.",
+            variant: "destructive",
           });
         });
       setShowCamera(false);
     }
-  }, [spotType, setImage, setPreviewUrl, setPhotoTimestamp, setPhotoTaken, setShowCamera, toast]);
-
+  }, [
+    spotType,
+    setImage,
+    setPreviewUrl,
+    setPhotoTimestamp,
+    setPhotoTaken,
+    setShowCamera,
+    toast,
+  ]);
 
   const captureLocation = useCallback(() => {
     setLocationLoading(true);
@@ -219,7 +250,7 @@ export default function AddPage() {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           };
-          console.log('Location captured:', location);
+          console.log("Location captured:", location);
 
           setUserLocation(location);
           setLocationTimestamp(new Date()); // Store location timestamp
@@ -229,7 +260,7 @@ export default function AddPage() {
           setHasLocationError(false); // Reset error state on successful capture
         },
         (error) => {
-          console.error('Error: The Geolocation service failed.', error);
+          console.error("Error: The Geolocation service failed.", error);
           setGeoEnabled(false);
           setLocationLoading(false);
           setLocationDenied(true); // Set denial state
@@ -237,23 +268,24 @@ export default function AddPage() {
           // Only handle the error once
           if (!hasLocationError) {
             toast({
-              title: 'Location Access Denied',
-              description: 'Please allow location access to proceed.',
-              variant: 'destructive',
+              title: "Location Access Denied",
+              description: "Please allow location access to proceed.",
+              variant: "destructive",
             });
 
-            if (spotType === 'free') {
+            if (spotType === "free") {
               handleRemoveImage();
               toast({
-                title: 'Image Removed',
-                description: 'Image was removed because location access was denied.',
-                variant: 'destructive',
+                title: "Image Removed",
+                description:
+                  "Image was removed because location access was denied.",
+                variant: "destructive",
               });
             }
 
             setHasLocationError(true); // Mark that the error has been handled
           }
-        }
+        },
       );
     } else {
       console.error("Error: Your browser doesn't support geolocation.");
@@ -264,17 +296,18 @@ export default function AddPage() {
       // Only handle the error once
       if (!hasLocationError) {
         toast({
-          title: 'Geolocation Not Supported',
+          title: "Geolocation Not Supported",
           description: "Your browser doesn't support geolocation.",
-          variant: 'destructive',
+          variant: "destructive",
         });
 
-        if (spotType === 'free') {
+        if (spotType === "free") {
           handleRemoveImage();
           toast({
-            title: 'Image Removed',
-            description: 'Image was removed because geolocation is not supported.',
-            variant: 'destructive',
+            title: "Image Removed",
+            description:
+              "Image was removed because geolocation is not supported.",
+            variant: "destructive",
           });
         }
 
@@ -300,14 +333,14 @@ export default function AddPage() {
     if (checked) {
       setTimeSlot({
         day_of_week: [],
-        start_time: '00:00',
-        end_time: '23:59',
+        start_time: "00:00",
+        end_time: "23:59",
       });
     } else {
       setTimeSlot({
         day_of_week: [],
-        start_time: '',
-        end_time: '',
+        start_time: "",
+        end_time: "",
       });
     }
   };
@@ -337,7 +370,9 @@ export default function AddPage() {
     if (!photoTimestamp) return Infinity;
     if (!locationTimestamp) return Infinity;
 
-    return Math.abs(locationTimestamp.getTime() - photoTimestamp.getTime()) / 1000;
+    return (
+      Math.abs(locationTimestamp.getTime() - photoTimestamp.getTime()) / 1000
+    );
   };
 
   /**
@@ -345,8 +380,8 @@ export default function AddPage() {
    * Returns the difference between end and start times in minutes.
    */
   const calculateTimeDifference = (start: string, end: string): number => {
-    const [startHour, startMinute] = start.split(':').map(Number);
-    const [endHour, endMinute] = end.split(':').map(Number);
+    const [startHour, startMinute] = start.split(":").map(Number);
+    const [endHour, endMinute] = end.split(":").map(Number);
 
     const startTotalMinutes = startHour * 60 + startMinute;
     const endTotalMinutes = endHour * 60 + endMinute;
@@ -363,37 +398,41 @@ export default function AddPage() {
    */
   const validateAvailability = (): boolean => {
     let isValid = true;
-    let errorMsg = '';
+    let errorMsg = "";
 
     if (is24Seven) {
       // For 24/7, ensure start_time and end_time are '00:00' and '23:59'
-      if (timeSlot.start_time !== '00:00' || timeSlot.end_time !== '23:59') {
+      if (timeSlot.start_time !== "00:00" || timeSlot.end_time !== "23:59") {
         isValid = false;
-        errorMsg = '24/7 slots must start at 00:00 and end at 23:59.';
+        errorMsg = "24/7 slots must start at 00:00 and end at 23:59.";
       }
     } else {
       // Check if at least one day is selected
       if (timeSlot.day_of_week.length === 0) {
         isValid = false;
-        errorMsg = 'Please select at least one day of the week.';
+        errorMsg = "Please select at least one day of the week.";
       }
 
       // Validate time durations
       if (timeSlot.start_time && timeSlot.end_time) {
-        const diffMinutes = calculateTimeDifference(timeSlot.start_time, timeSlot.end_time);
+        const diffMinutes = calculateTimeDifference(
+          timeSlot.start_time,
+          timeSlot.end_time,
+        );
 
         if (diffMinutes !== 0 && diffMinutes < 60) {
           isValid = false;
-          errorMsg = 'Each time slot must allow for at least one hour of parking.';
+          errorMsg =
+            "Each time slot must allow for at least one hour of parking.";
         }
       } else {
         isValid = false;
-        errorMsg = 'Please provide both start and end times.';
+        errorMsg = "Please provide both start and end times.";
       }
     }
 
     if (isValid) {
-      setAvailabilityError('');
+      setAvailabilityError("");
     } else {
       setAvailabilityError(errorMsg);
     }
@@ -407,7 +446,7 @@ export default function AddPage() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    console.log('Form submitted. Showing confirmation modal.');
+    console.log("Form submitted. Showing confirmation modal.");
     // Show confirmation modal before submission
     setShowConfirmationModal(true);
   };
@@ -416,19 +455,21 @@ export default function AddPage() {
    * **Confirm Submission After Modal**
    */
   const confirmSubmission = async () => {
-    console.log('Confirm submission clicked.');
+    console.log("Confirm submission clicked.");
     setShowConfirmationModal(false);
     setIsSubmitting(true);
 
     try {
       // Validate availability only for rental spots
-      if (spotType === 'rental') {
+      if (spotType === "rental") {
         if (!validateAvailability()) {
-          console.log('Availability validation failed:', availabilityError);
+          console.log("Availability validation failed:", availabilityError);
           toast({
-            title: 'Validation Error',
-            description: availabilityError || 'Please fix the errors in your availability schedule.',
-            variant: 'destructive',
+            title: "Validation Error",
+            description:
+              availabilityError ||
+              "Please fix the errors in your availability schedule.",
+            variant: "destructive",
           });
           setIsSubmitting(false);
           return;
@@ -436,36 +477,43 @@ export default function AddPage() {
       }
 
       // Ensure image and location are present for free spots
-      if (spotType === 'free') {
-        if (cameraPermission === 'denied' || cameraDenied) {
-          console.log('Camera access denied for free spot.');
+      if (spotType === "free") {
+        if (cameraPermission === "denied" || cameraDenied) {
+          console.log("Camera access denied for free spot.");
           toast({
-            title: 'Camera Access Required',
-            description: 'Please allow camera access to upload a photo.',
-            variant: 'destructive',
+            title: "Camera Access Required",
+            description: "Please allow camera access to upload a photo.",
+            variant: "destructive",
           });
           setIsSubmitting(false);
           return;
         }
 
         if (!image || !userLocation || !photoTimestamp) {
-          console.log('Missing required fields for free spot.');
+          console.log("Missing required fields for free spot.");
           toast({
-            title: 'Missing Information',
-            description: 'Please ensure you have uploaded a photo, captured your location, and the timestamp.',
-            variant: 'destructive',
+            title: "Missing Information",
+            description:
+              "Please ensure you have uploaded a photo, captured your location, and the timestamp.",
+            variant: "destructive",
           });
           setIsSubmitting(false);
           return;
         }
         const timeDiffSeconds = calculateTimeDifferenceSeconds();
-        console.log('Time difference (seconds):', timeDiffSeconds);
-        if (timeDiffSeconds > 30) { // **Increased from 15 to 30**
-          console.log('Timestamp is beyond the allowed time frame:', timeDiffSeconds, 'seconds.');
+        console.log("Time difference (seconds):", timeDiffSeconds);
+        if (timeDiffSeconds > 30) {
+          // **Increased from 15 to 30**
+          console.log(
+            "Timestamp is beyond the allowed time frame:",
+            timeDiffSeconds,
+            "seconds.",
+          );
           toast({
-            title: 'Timestamp Error',
-            description: 'Your photo and location must be captured less than 30 seconds apart. Please try again.',
-            variant: 'destructive',
+            title: "Timestamp Error",
+            description:
+              "Your photo and location must be captured less than 30 seconds apart. Please try again.",
+            variant: "destructive",
           });
           handleRemoveImage(); // Remove image if timestamp is invalid
           setIsSubmitting(false);
@@ -474,35 +522,36 @@ export default function AddPage() {
       }
 
       // Ensure image and location are present for rental spots
-      if (spotType === 'rental') {
+      if (spotType === "rental") {
         if (!image) {
-          console.log('Image not uploaded for rental spot.');
+          console.log("Image not uploaded for rental spot.");
           toast({
-            title: 'Image Required',
-            description: 'Please capture or upload an image of the rental parking spot.',
-            variant: 'destructive',
+            title: "Image Required",
+            description:
+              "Please capture or upload an image of the rental parking spot.",
+            variant: "destructive",
           });
           setIsSubmitting(false);
           return;
         }
 
         if (!userLocation) {
-          console.log('Location not captured for rental spot.');
+          console.log("Location not captured for rental spot.");
           toast({
-            title: 'Location Required',
-            description: 'Please capture your location.',
-            variant: 'destructive',
+            title: "Location Required",
+            description: "Please capture your location.",
+            variant: "destructive",
           });
           setIsSubmitting(false);
           return;
         }
 
         if (!photoTimestamp) {
-          console.log('Timestamp missing for rental spot.');
+          console.log("Timestamp missing for rental spot.");
           toast({
-            title: 'Timestamp Missing',
-            description: 'Please ensure the photo timestamp is captured.',
-            variant: 'destructive',
+            title: "Timestamp Missing",
+            description: "Please ensure the photo timestamp is captured.",
+            variant: "destructive",
           });
           setIsSubmitting(false);
           return;
@@ -512,28 +561,34 @@ export default function AddPage() {
       // Prepare FormData
       const formData = new FormData();
 
-      let name = spotType === 'free' ? 'Free Spot' : (document.getElementById('name') as HTMLInputElement)?.value || '';
+      let name =
+        spotType === "free"
+          ? "Free Spot"
+          : (document.getElementById("name") as HTMLInputElement)?.value || "";
       let latitude: number | undefined;
       let longitude: number | undefined;
       let price: number | null = null;
-      let address = '';
+      let address = "";
 
-      if (spotType === 'rental') {
-        name = (document.getElementById('name') as HTMLInputElement).value;
-        address = (document.getElementById('address') as HTMLInputElement).value;
+      if (spotType === "rental") {
+        name = (document.getElementById("name") as HTMLInputElement).value;
+        address = (document.getElementById("address") as HTMLInputElement)
+          .value;
 
         latitude = userLocation?.lat;
         longitude = userLocation?.lng;
 
-        const priceValue = (document.getElementById('price') as HTMLInputElement).value;
+        const priceValue = (
+          document.getElementById("price") as HTMLInputElement
+        ).value;
         if (priceValue) {
           price = parseFloat(priceValue);
           if (isNaN(price) || price < 0) {
-            console.log('Invalid price entered:', priceValue);
+            console.log("Invalid price entered:", priceValue);
             toast({
-              title: 'Invalid Price',
-              description: 'Please enter a valid price.',
-              variant: 'destructive',
+              title: "Invalid Price",
+              description: "Please enter a valid price.",
+              variant: "destructive",
             });
             setIsSubmitting(false);
             return;
@@ -546,35 +601,37 @@ export default function AddPage() {
 
       // Build the availability_schedule array based on the single slot
       let availability_schedule: any[] = [];
-      if (spotType === 'rental') {
+      if (spotType === "rental") {
         if (is24Seven) {
           availability_schedule = Object.values(DaysOfWeek).map((day) => ({
             day_of_week: day,
-            start_time: formatTime('00:00'),
-            end_time: formatTime('23:59'),
+            start_time: formatTime("00:00"),
+            end_time: formatTime("23:59"),
           }));
         } else {
-          availability_schedule = timeSlot.day_of_week.map((day: DaysOfWeek) => ({
-            day_of_week: day,
-            start_time: formatTime(timeSlot.start_time),
-            end_time: formatTime(timeSlot.end_time),
-          }));
+          availability_schedule = timeSlot.day_of_week.map(
+            (day: DaysOfWeek) => ({
+              day_of_week: day,
+              start_time: formatTime(timeSlot.start_time),
+              end_time: formatTime(timeSlot.end_time),
+            }),
+          );
         }
       }
 
       const data: any = {
-        is_paid: spotType === 'rental',
+        is_paid: spotType === "rental",
         location: {
           latitude,
           longitude,
-          address: spotType === 'rental' ? address : undefined,
+          address: spotType === "rental" ? address : undefined,
         },
         features: [], // Assuming features are handled elsewhere
         photos: [], // Will be handled via 'image' upload
         photo_timestamp: photoTimestamp ? photoTimestamp.toISOString() : null, // **Attach Timestamp**
       };
 
-      if (spotType === 'rental') {
+      if (spotType === "rental") {
         data.name = name;
         data.availability_schedule = availability_schedule;
         data.pricing_info = {
@@ -583,40 +640,39 @@ export default function AddPage() {
         };
       }
 
-      formData.append('data', JSON.stringify(data));
+      formData.append("data", JSON.stringify(data));
 
       if (image) {
-        formData.append('image', image);
+        formData.append("image", image);
       }
 
-      console.log('Dispatching addParkingSpot with FormData:', data);
+      console.log("Dispatching addParkingSpot with FormData:", data);
 
       const result = await dispatch(addParkingSpot(formData));
       if (addParkingSpot.fulfilled.match(result)) {
-        console.log('Parking spot added successfully.');
+        console.log("Parking spot added successfully.");
         toast({
-          title: 'Spot Added Successfully!',
-          description: 'Your parking spot has been added.',
-          variant: 'success',
+          title: "Spot Added Successfully!",
+          description: "Your parking spot has been added.",
+          variant: "success",
         });
         dispatch(resetState());
         setShowSuccessModal(true);
-      }
-      else {
-        console.error('Error adding parking spot:', error);
+      } else {
+        console.error("Error adding parking spot:", error);
         toast({
-          title: 'Error',
-          description: error?.message || 'Failed to add parking spot.',
-          variant: 'destructive',
+          title: "Error",
+          description: error?.message || "Failed to add parking spot.",
+          variant: "destructive",
         });
       }
       setIsSubmitting(false);
     } catch (outerError) {
-      console.error('Unexpected error during submission:', outerError);
+      console.error("Unexpected error during submission:", outerError);
       toast({
-        title: 'Unexpected Error',
-        description: 'An unexpected error occurred. Please try again later.',
-        variant: 'destructive',
+        title: "Unexpected Error",
+        description: "An unexpected error occurred. Please try again later.",
+        variant: "destructive",
       });
       setIsSubmitting(false);
     }
@@ -690,9 +746,10 @@ export default function AddPage() {
    */
   const openBrowserSettings = () => {
     toast({
-      title: 'Permission Required',
-      description: 'Please enable camera or location access in your browser settings.',
-      variant: 'destructive',
+      title: "Permission Required",
+      description:
+        "Please enable camera or location access in your browser settings.",
+      variant: "destructive",
     });
     // Optionally, provide more detailed instructions or links based on the browser
   };
@@ -717,14 +774,16 @@ export default function AddPage() {
                     <ArrowLeft className="w-4 h-4" />
                   </Button>
                   <div className="text-center">
-                    <CardTitle className="text-2xl">Add a Parking Spot</CardTitle>
+                    <CardTitle className="text-2xl">
+                      Add a Parking Spot
+                    </CardTitle>
                     <CardDescription>
                       Fill in the details to list your parking spot
                     </CardDescription>
                   </div>
                   {/* **Permission Denial Buttons with Guidance** */}
                   <div className="absolute right-4 top-4 flex space-x-2">
-                    {cameraPermission === 'denied' && (
+                    {cameraPermission === "denied" && (
                       <Button
                         variant="ghost"
                         onClick={reRequestCameraAccess}
@@ -734,7 +793,7 @@ export default function AddPage() {
                         <CameraOff className="w-5 h-5 text-red-500" />
                       </Button>
                     )}
-                    {locationPermission === 'denied' && (
+                    {locationPermission === "denied" && (
                       <Button
                         variant="ghost"
                         onClick={reRequestLocationAccess}
@@ -747,27 +806,31 @@ export default function AddPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+                  <form
+                    onSubmit={handleSubmit}
+                    className="space-y-6"
+                    noValidate
+                  >
                     {/* Spot Type Selection */}
                     <div className="space-y-2">
                       <Label>Spot Type</Label>
                       <RadioGroup
                         defaultValue="free"
                         onValueChange={(value) => {
-                          console.log('Spot type changed to:', value);
-                          setSpotType(value as 'free' | 'rental');
-                          setShowCamera(value === 'free');
+                          console.log("Spot type changed to:", value);
+                          setSpotType(value as "free" | "rental");
+                          setShowCamera(value === "free");
                           setUserLocation(null);
                           setImage(null); // Reset image when spot type changes
                           setPreviewUrl(null); // Reset preview
-                          setAvailabilityError(''); // Reset local availability error
+                          setAvailabilityError(""); // Reset local availability error
                           setPhotoTimestamp(null); // Reset timestamp
                           dispatch(resetState()); // Reset Redux error state
-                          if (value !== 'rental') {
+                          if (value !== "rental") {
                             setTimeSlot({
                               day_of_week: [],
-                              start_time: '',
-                              end_time: '',
+                              start_time: "",
+                              end_time: "",
                             });
                             setIs24Seven(false);
                           }
@@ -789,7 +852,7 @@ export default function AddPage() {
                     </div>
 
                     {/* Spot Name (Only for Rental) */}
-                    {spotType === 'rental' && (
+                    {spotType === "rental" && (
                       <div className="space-y-2">
                         <Label htmlFor="name">Spot Name</Label>
                         <Input
@@ -802,11 +865,20 @@ export default function AddPage() {
                     )}
 
                     {/* Address (Only for Rental) */}
-                    {spotType === 'rental' && (
+                    {spotType === "rental" && (
                       <div className="space-y-2">
                         <Label htmlFor="address">Address</Label>
-                        <LoadScriptNext googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string} libraries={['places']}>
-                          <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={onPlaceChanged}>
+                        <LoadScriptNext
+                          googleMapsApiKey={
+                            process.env
+                              .NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string
+                          }
+                          libraries={["places"]}
+                        >
+                          <Autocomplete
+                            onLoad={onLoadAutocomplete}
+                            onPlaceChanged={onPlaceChanged}
+                          >
                             <Input
                               id="address"
                               name="address"
@@ -819,7 +891,7 @@ export default function AddPage() {
                     )}
 
                     {/* Location Section (Only for Rental) */}
-                    {spotType === 'rental' && photoTimestamp && (
+                    {spotType === "rental" && photoTimestamp && (
                       <div className="space-y-2">
                         <Label>Location</Label>
                         {!userLocation && (
@@ -831,7 +903,11 @@ export default function AddPage() {
                             className="flex items-center space-x-2"
                           >
                             <MapPin className="w-4 h-4" />
-                            <span>{locationLoading ? 'Locating...' : 'Use My Location'}</span>
+                            <span>
+                              {locationLoading
+                                ? "Locating..."
+                                : "Use My Location"}
+                            </span>
                           </Button>
                         )}
                         {locationLoading && <p>Capturing location...</p>}
@@ -839,13 +915,23 @@ export default function AddPage() {
                           <>
                             {userLocation ? (
                               <div className="mt-2">
-                                <p><strong>Latitude:</strong> {userLocation.lat}</p>
-                                <p><strong>Longitude:</strong> {userLocation.lng}</p>
+                                <p>
+                                  <strong>Latitude:</strong> {userLocation.lat}
+                                </p>
+                                <p>
+                                  <strong>Longitude:</strong> {userLocation.lng}
+                                </p>
                               </div>
                             ) : geoEnabled ? (
-                              <p>Click 'Use My Location' to capture your current location for the spot.</p>
+                              <p>
+                                Click 'Use My Location' to capture your current
+                                location for the spot.
+                              </p>
                             ) : (
-                              <p>Geolocation is not enabled. Please enable location services.</p>
+                              <p>
+                                Geolocation is not enabled. Please enable
+                                location services.
+                              </p>
                             )}
                           </>
                         )}
@@ -853,7 +939,7 @@ export default function AddPage() {
                     )}
 
                     {/* Availability Schedule (Only for Rental) */}
-                    {spotType === 'rental' && (
+                    {spotType === "rental" && (
                       <>
                         <div className="space-y-4">
                           <Label>Availability Schedule</Label>
@@ -880,7 +966,9 @@ export default function AddPage() {
                               <>
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-2">
-                                    <Label htmlFor={`start_time`}>Start Time</Label>
+                                    <Label htmlFor={`start_time`}>
+                                      Start Time
+                                    </Label>
                                     <Input
                                       id={`start_time`}
                                       type="time"
@@ -916,12 +1004,20 @@ export default function AddPage() {
                                   <Label>Days of the Week</Label>
                                   <div className="grid grid-cols-2 gap-2">
                                     {Object.values(DaysOfWeek).map((day) => (
-                                      <div key={day} className="flex items-center space-x-2">
+                                      <div
+                                        key={day}
+                                        className="flex items-center space-x-2"
+                                      >
                                         <Checkbox
                                           id={`${day}`}
-                                          checked={timeSlot.day_of_week.includes(day)}
+                                          checked={timeSlot.day_of_week.includes(
+                                            day,
+                                          )}
                                           onCheckedChange={(checked) => {
-                                            handleDaySelection(day as DaysOfWeek, checked as boolean);
+                                            handleDaySelection(
+                                              day as DaysOfWeek,
+                                              checked as boolean,
+                                            );
                                           }}
                                         />
                                         <Label htmlFor={`${day}`}>{day}</Label>
@@ -934,7 +1030,9 @@ export default function AddPage() {
 
                             {/* Display error message if any */}
                             {availabilityError && (
-                              <p className="text-red-500 text-sm">{availabilityError}</p>
+                              <p className="text-red-500 text-sm">
+                                {availabilityError}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -967,29 +1065,32 @@ export default function AddPage() {
                             className="w-full rounded-lg"
                             onUserMedia={() => setCameraLoaded(true)}
                             onUserMediaError={() => {
-                              console.error('Camera access denied.');
+                              console.error("Camera access denied.");
                               setCameraDenied(true);
                               setHasCameraError(true); // Prevent repetitive handling
                               toast({
-                                title: 'Camera Access Denied',
-                                description: 'Please allow camera access to capture photos.',
-                                variant: 'destructive',
+                                title: "Camera Access Denied",
+                                description:
+                                  "Please allow camera access to capture photos.",
+                                variant: "destructive",
                               });
                             }}
                           />
-                          {cameraLoaded && <Button
-                            type="button"
-                            onClick={handleCameraCapture}
-                            className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
-                            disabled={cameraDenied}
-                          >
-                            <Camera className="w-4 h-4 mr-2" />
-                            Capture Photo
-                          </Button>}
+                          {cameraLoaded && (
+                            <Button
+                              type="button"
+                              onClick={handleCameraCapture}
+                              className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
+                              disabled={cameraDenied}
+                            >
+                              <Camera className="w-4 h-4 mr-2" />
+                              Capture Photo
+                            </Button>
+                          )}
                         </div>
                       ) : (
                         <>
-                          {spotType === 'rental' && (
+                          {spotType === "rental" && (
                             <div
                               className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-gray-400 transition-colors"
                               onClick={handleImageClick}
@@ -1014,7 +1115,10 @@ export default function AddPage() {
                                 </div>
                               ) : (
                                 <div className="flex flex-col items-center py-8">
-                                  <Upload size={48} className="text-gray-400 mb-2" />
+                                  <Upload
+                                    size={48}
+                                    className="text-gray-400 mb-2"
+                                  />
                                   <p className="text-sm text-gray-500">
                                     Click to upload an image or use camera
                                   </p>
@@ -1022,7 +1126,7 @@ export default function AddPage() {
                               )}
                             </div>
                           )}
-                          {spotType === 'free' && previewUrl && (
+                          {spotType === "free" && previewUrl && (
                             <div className="relative">
                               <img
                                 src={previewUrl}
@@ -1041,7 +1145,7 @@ export default function AddPage() {
                         </>
                       )}
                       {/* File Input */}
-                      {spotType === 'rental' && (
+                      {spotType === "rental" && (
                         <input
                           type="file"
                           name="image"
@@ -1062,23 +1166,30 @@ export default function AddPage() {
                           disabled={false} // Allow toggling camera for both types
                         >
                           <Camera className="w-4 h-4 mr-2" />
-                          {showCamera ? 'Hide Camera' : 'Use Camera'}
+                          {showCamera ? "Hide Camera" : "Use Camera"}
                         </Button>
                       </div>
 
                       {/* Display Location and Timestamp for Free Spots */}
-                      {spotType === 'free' && photoTaken && photoTimestamp && (
+                      {spotType === "free" && photoTaken && photoTimestamp && (
                         <div className="mt-4 p-4 border rounded-md bg-white">
                           {userLocation ? (
                             <>
-                              <p><strong>Latitude:</strong> {userLocation.lat}</p>
-                              <p><strong>Longitude:</strong> {userLocation.lng}</p>
+                              <p>
+                                <strong>Latitude:</strong> {userLocation.lat}
+                              </p>
+                              <p>
+                                <strong>Longitude:</strong> {userLocation.lng}
+                              </p>
                             </>
                           ) : (
                             <p>Capturing location...</p>
                           )}
                           {photoTimestamp && (
-                            <p><strong>Timestamp:</strong> {photoTimestamp.toLocaleString()}</p>
+                            <p>
+                              <strong>Timestamp:</strong>{" "}
+                              {photoTimestamp.toLocaleString()}
+                            </p>
                           )}
                         </div>
                       )}
@@ -1091,11 +1202,14 @@ export default function AddPage() {
                       disabled={
                         isSubmitting ||
                         loading ||
-                        (spotType === 'free' && (!image || !userLocation || cameraDenied)) ||
-                        (spotType === 'rental' && !image)
+                        (spotType === "free" &&
+                          (!image || !userLocation || cameraDenied)) ||
+                        (spotType === "rental" && !image)
                       }
                     >
-                      {isSubmitting || loading ? 'Adding Spot...' : 'Add Parking Spot'}
+                      {isSubmitting || loading
+                        ? "Adding Spot..."
+                        : "Add Parking Spot"}
                     </Button>
 
                     {/* Display Error Message if Any */}
@@ -1105,8 +1219,13 @@ export default function AddPage() {
                   </form>
 
                   {/* Confirmation Modal */}
-                  <Dialog open={showConfirmationModal} onOpenChange={setShowConfirmationModal}>
-                    <DialogContent className="w-96"> {/* Added w-96 class here */}
+                  <Dialog
+                    open={showConfirmationModal}
+                    onOpenChange={setShowConfirmationModal}
+                  >
+                    <DialogContent className="w-96">
+                      {" "}
+                      {/* Added w-96 class here */}
                       <DialogHeader>
                         <DialogTitle>Confirm Submission</DialogTitle>
                         <DialogDescription>
@@ -1114,7 +1233,10 @@ export default function AddPage() {
                         </DialogDescription>
                       </DialogHeader>
                       <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowConfirmationModal(false)}>
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowConfirmationModal(false)}
+                        >
                           Cancel
                         </Button>
                         <Button
@@ -1129,8 +1251,13 @@ export default function AddPage() {
                   </Dialog>
 
                   {/* Success Modal */}
-                  <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-                    <DialogContent className="w-96"> {/* Added w-96 class here */}
+                  <Dialog
+                    open={showSuccessModal}
+                    onOpenChange={setShowSuccessModal}
+                  >
+                    <DialogContent className="w-96">
+                      {" "}
+                      {/* Added w-96 class here */}
                       <DialogHeader>
                         <DialogTitle>Success!</DialogTitle>
                         <DialogDescription>
@@ -1138,16 +1265,25 @@ export default function AddPage() {
                         </DialogDescription>
                       </DialogHeader>
                       <DialogFooter>
-                        <Button onClick={() => {
-                          setShowSuccessModal(false);
-                          router.push('/myspots');
-                        }}>Close</Button>
+                        <Button
+                          onClick={() => {
+                            setShowSuccessModal(false);
+                            router.push("/myspots");
+                          }}
+                        >
+                          Close
+                        </Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
 
                   {/* Re-request Permission Modal with Instructions */}
-                  <Dialog open={showReRequestModal.camera || showReRequestModal.location} onOpenChange={() => { }}>
+                  <Dialog
+                    open={
+                      showReRequestModal.camera || showReRequestModal.location
+                    }
+                    onOpenChange={() => {}}
+                  >
                     <DialogContent className="w-96">
                       <DialogHeader>
                         <DialogTitle>Enable Permissions</DialogTitle>
@@ -1159,8 +1295,14 @@ export default function AddPage() {
                               </p>
                               <ol className="list-decimal list-inside mt-2">
                                 <li>Go to your browser's settings.</li>
-                                <li>Navigate to the 'Privacy and Security' section.</li>
-                                <li>Find 'Site Settings' and locate your site's permissions.</li>
+                                <li>
+                                  Navigate to the 'Privacy and Security'
+                                  section.
+                                </li>
+                                <li>
+                                  Find 'Site Settings' and locate your site's
+                                  permissions.
+                                </li>
                                 <li>Enable camera access for this site.</li>
                               </ol>
                             </div>
@@ -1168,12 +1310,19 @@ export default function AddPage() {
                           {showReRequestModal.location && (
                             <div>
                               <p>
-                                To capture your location, please allow location access:
+                                To capture your location, please allow location
+                                access:
                               </p>
                               <ol className="list-decimal list-inside mt-2">
                                 <li>Go to your browser's settings.</li>
-                                <li>Navigate to the 'Privacy and Security' section.</li>
-                                <li>Find 'Site Settings' and locate your site's permissions.</li>
+                                <li>
+                                  Navigate to the 'Privacy and Security'
+                                  section.
+                                </li>
+                                <li>
+                                  Find 'Site Settings' and locate your site's
+                                  permissions.
+                                </li>
                                 <li>Enable location access for this site.</li>
                               </ol>
                             </div>
@@ -1181,7 +1330,10 @@ export default function AddPage() {
                         </DialogDescription>
                       </DialogHeader>
                       <DialogFooter>
-                        <Button variant="outline" onClick={handleReRequestCancel}>
+                        <Button
+                          variant="outline"
+                          onClick={handleReRequestCancel}
+                        >
                           Cancel
                         </Button>
                         <Button
@@ -1201,4 +1353,4 @@ export default function AddPage() {
       </div>
     )
   );
-};
+}

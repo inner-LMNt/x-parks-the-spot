@@ -19,6 +19,7 @@ from xpark.logic.reports import (
 )
 from xpark.middleware.token_auth_middleware import require_logged_in_user
 
+
 @bp.route("", methods=["GET"])
 @require_logged_in_user
 def get_user_reports(token: str, user_id: UUID) -> Tuple[Any, int]:
@@ -29,10 +30,12 @@ def get_user_reports(token: str, user_id: UUID) -> Tuple[Any, int]:
         case Ok(reports):
             return jsonify(reports), 200
         case _:
-            return jsonify({"error": "Unknown error"}), 400  # Added return for missing case
+            return jsonify(
+                {"error": "Unknown error"}
+            ), 400  # Added return for missing case
 
 
-@bp.route('reservation-issue', methods=['POST'])
+@bp.route("reservation-issue", methods=["POST"])
 @require_logged_in_user
 def create_reservation_issue_report(token: str, user_id: UUID) -> Tuple[Any, int]:
     """
@@ -56,7 +59,7 @@ def create_reservation_issue_report(token: str, user_id: UUID) -> Tuple[Any, int
             return jsonify({"error": e}), 400
 
 
-@bp.route('renter-overstay', methods=['POST'])
+@bp.route("renter-overstay", methods=["POST"])
 @require_logged_in_user
 def create_renter_overstay_report(token: str, user_id: UUID) -> Tuple[Any, int]:
     """
@@ -68,7 +71,7 @@ def create_renter_overstay_report(token: str, user_id: UUID) -> Tuple[Any, int]:
     image = request.files.get("image")
     report_type = "Renter Overstay"
 
-    assert isinstance(image, FileStorage) 
+    assert isinstance(image, FileStorage)
     assert description is not None
     assert departure_time_str is not None
 
@@ -85,7 +88,7 @@ def create_renter_overstay_report(token: str, user_id: UUID) -> Tuple[Any, int]:
         report_type,
         description,
         departure_time,
-        image_url
+        image_url,
     ):
         case Ok(report):
             return jsonify(report), 201
@@ -95,7 +98,7 @@ def create_renter_overstay_report(token: str, user_id: UUID) -> Tuple[Any, int]:
             return jsonify({"error": e}), 400
 
 
-@bp.route('damage-report', methods=['POST'])
+@bp.route("damage-report", methods=["POST"])
 @require_logged_in_user
 def create_damage_report(token: str, user_id: UUID) -> Tuple[Any, int]:
     """
@@ -123,7 +126,7 @@ def create_damage_report(token: str, user_id: UUID) -> Tuple[Any, int]:
         description,
         damage_type,
         damage_severity,
-        image_url
+        image_url,
     ):
         case Ok(report):
             return jsonify(report), 201
@@ -133,7 +136,7 @@ def create_damage_report(token: str, user_id: UUID) -> Tuple[Any, int]:
             return jsonify({"error": e}), 400
 
 
-@bp.route('other-issue', methods=['POST'])
+@bp.route("other-issue", methods=["POST"])
 @require_logged_in_user
 def create_other_issue_report(token: str, user_id: UUID) -> Tuple[Any, int]:
     """
@@ -169,7 +172,9 @@ def get_report(report_id: str, token: str, user_id: UUID) -> Tuple[Any, int]:
 
 @bp.route("/<report_id>", methods=["PUT"])
 @require_logged_in_user
-def update_report_admin_response(report_id: str, token: str, user_id: UUID) -> Tuple[Any, int]:
+def update_report_admin_response(
+    report_id: str, token: str, user_id: UUID
+) -> Tuple[Any, int]:
     """
     Update a report's admin response.
     """

@@ -1,6 +1,7 @@
 from flask.testing import FlaskClient
 from typing import Dict, cast, Any
 
+
 def create_test_user(client: FlaskClient) -> str:
     response = client.post(
         "/api/unstable/auth/register",
@@ -13,6 +14,7 @@ def create_test_user(client: FlaskClient) -> str:
     assert response.status_code == 201
     response_json = cast(Dict[str, Any], response.json)
     return str(response_json["access_token"])
+
 
 def test_set_user_location(client: FlaskClient) -> None:
     token = create_test_user(client)
@@ -40,6 +42,7 @@ def test_set_user_location(client: FlaskClient) -> None:
     assert response_json["state"] == "CA"
     assert response_json["city"] == "Los Angeles"
 
+
 def test_set_user_location_with_none_city(client: FlaskClient) -> None:
     token = create_test_user(client)
 
@@ -65,6 +68,7 @@ def test_set_user_location_with_none_city(client: FlaskClient) -> None:
     response_json = cast(Dict[str, Any], response.json)
     assert response_json["state"] == "CA"
     assert response_json["city"] == "None"
+
 
 def test_set_user_location_invalid_city(client: FlaskClient) -> None:
     token = create_test_user(client)

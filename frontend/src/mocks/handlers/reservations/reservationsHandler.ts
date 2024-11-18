@@ -25,11 +25,11 @@ export const getUserReservationsHandler = http.get<never, never, Reservation[]>(
   "/v1/reservations",
   async ({ request }) => {
     let userReservations = reservations.filter(
-      (a) => a.renter_id === authenticatedUserId
+      (a) => a.renter_id === authenticatedUserId,
     );
 
     return HttpResponse.json(userReservations, { status: 200 });
-  }
+  },
 );
 
 /**
@@ -49,7 +49,7 @@ export const getReservationByIdHandler = http.get<
   } else {
     return HttpResponse.json(
       { message: "Reservation not found" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 });
@@ -97,16 +97,15 @@ export const createReservationHandler = http.post<
   if (!parkingSpace) {
     return HttpResponse.json(
       { message: "Parking space not found" },
-      { status: 404 }
+      { status: 404 },
     );
   }
-
 
   // Check if the parking space is locked by the user
   if (parkingSpace.locked && parkingSpace.locked_by !== renter_id) {
     return HttpResponse.json(
       { message: "Parking space is locked by another user" },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -115,7 +114,7 @@ export const createReservationHandler = http.post<
     (reservation) =>
       reservation.parking_space_id === parking_space_id &&
       (reservation.start_time ?? end_time) < end_time &&
-      (reservation.end_time ?? start_time) > start_time
+      (reservation.end_time ?? start_time) > start_time,
   );
 
   if (overlappingReservation) {
@@ -123,7 +122,7 @@ export const createReservationHandler = http.post<
       {
         message: "Parking space is already reserved for the selected time slot",
       },
-      { status: 409 }
+      { status: 409 },
     );
   }
 
@@ -135,15 +134,15 @@ export const createReservationHandler = http.post<
     owner_id: parkingSpace.owner_id,
     start_time,
     end_time,
-	name: "a",
+    name: "a",
     status: "booked",
-	location: {
-		address: "a",
-		latitude: 0,
-		longitude: 0,
-	},
-	price: 0,
-    car_info_id: 'car_id',
+    location: {
+      address: "a",
+      latitude: 0,
+      longitude: 0,
+    },
+    price: 0,
+    car_info_id: "car_id",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -181,7 +180,7 @@ export const updateReservationHandler = http.put<
   if (reservationIndex === -1) {
     return HttpResponse.json(
       { message: "Reservation not found" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -192,7 +191,7 @@ export const updateReservationHandler = http.put<
   if (!parkingSpace) {
     return HttpResponse.json(
       { message: "Associated parking space not found" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -206,7 +205,7 @@ export const updateReservationHandler = http.put<
         reservation.parking_space_id === existingReservation.parking_space_id &&
         reservation.id !== id &&
         (reservation.start_time ?? newEndTime) < newEndTime &&
-        (reservation.end_time ?? newStartTime) > newStartTime
+        (reservation.end_time ?? newStartTime) > newStartTime,
     );
 
     if (overlappingReservation) {
@@ -215,7 +214,7 @@ export const updateReservationHandler = http.put<
           message:
             "Parking space is already reserved for the selected time slot",
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
   }
@@ -243,7 +242,7 @@ export const getUserCarInfosHandler = http.get<never, never, CarInfo[]>(
   async () => {
     // Assuming all carInfos belong to the authenticated user
     return HttpResponse.json(carInfos, { status: 200 });
-  }
+  },
 );
 
 /**

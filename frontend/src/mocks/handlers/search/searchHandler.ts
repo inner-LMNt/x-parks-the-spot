@@ -27,9 +27,9 @@ export const searchHandler = http.get<never, SearchRequest, SearchResponse>(
 
     return HttpResponse.json<SearchResponse>(
       { spots: result },
-      { status: 200 }
+      { status: 200 },
     );
-  }
+  },
 );
 
 export const searchSpots = http.post<
