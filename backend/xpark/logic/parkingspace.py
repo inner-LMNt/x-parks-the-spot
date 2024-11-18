@@ -1,5 +1,4 @@
 import os
-import magic
 import json
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
@@ -44,7 +43,7 @@ def award_points(
                 new_photo_url = []
                 if image_file:
                     try:
-                        photo_url = save_image(image_file)
+                        photo_url = S3.save_image(image_file)
                         new_photo_url = [photo_url]
                     except ValueError as e:
                         return Err(f"Image upload failed: {str(e)}")
@@ -263,7 +262,7 @@ def create_paid_parking_space(
 ) -> Result[Dict[str, Any], str]:
     # Save image
     if image_file:
-        image_uri = save_image(image_file)
+        image_uri = S3.save_image(image_file)
         photos = [image_uri]
     else:
         photos = []
@@ -345,7 +344,7 @@ def create_free_parking_space(
 ) -> Result[Dict[str, Any], str]:
     # Save image
     if image_file:
-        image_uri = save_image(image_file)
+        image_uri = S3.save_image(image_file)
         photos = [image_uri]
     else:
         photos = []
@@ -393,26 +392,6 @@ def create_free_parking_space(
                 return Err("Error creating parking space")
 
             return Ok(parking_space)
-
-
-def save_image(image_file: FileStorage) -> str:
-    # Check extension with magic
-    mime = magic.from_buffer(image_file.read(2048), mime=True)
-    # Reset seek before uploading stream
-    image_file.seek(0)
-    if mime.split("/")[0] == "image":
-        unique_filename = f"{uuid.uuid4()}"
-        image_uri = f"{Config.S3_ENDPOINT}/{Config.S3_BUCKET}/{unique_filename}"
-        # Upload file with correct file type
-        if Config.S3_ENABLED == "yes":
-            S3.conn.Bucket(Config.S3_BUCKET).upload_fileobj(
-                image_file.stream,
-                unique_filename,
-                ExtraArgs={"ContentType": mime},
-            )
-        return image_uri
-    else:
-        raise ValueError("Invalid image file type")
 
 
 def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str]:
@@ -506,7 +485,7 @@ def update_taken(
             new_photo_url = []
             if image_file:
                 try:
-                    photo_url = save_image(image_file)
+                    photo_url = S3.save_image(image_file)
                     new_photo_url = [photo_url]
                 except ValueError as e:
                     return Err(f"Image upload failed: {str(e)}")
@@ -707,7 +686,7 @@ def handle_submit_verification(
         return Err("No image provided for verification")
 
     # Save the image
-    image_uri = save_image(image_file)
+    image_uri = S3.save_image(image_file)
 
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
