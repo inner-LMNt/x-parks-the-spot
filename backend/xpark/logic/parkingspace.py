@@ -404,11 +404,12 @@ def save_image(image_file: FileStorage) -> str:
         unique_filename = f"{uuid.uuid4()}"
         image_uri = f"{Config.S3_ENDPOINT}/{Config.S3_BUCKET}/{unique_filename}"
         # Upload file with correct file type
-        S3.conn.Bucket(Config.S3_BUCKET).upload_fileobj(
-            image_file.stream,
-            unique_filename,
-            ExtraArgs={"ContentType": mime},
-        )
+        if Config.S3_ENABLED == "yes":
+            S3.conn.Bucket(Config.S3_BUCKET).upload_fileobj(
+                image_file.stream,
+                unique_filename,
+                ExtraArgs={"ContentType": mime},
+            )
         return image_uri
     else:
         raise ValueError("Invalid image file type")
