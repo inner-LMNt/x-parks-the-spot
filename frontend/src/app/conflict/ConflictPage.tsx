@@ -18,8 +18,12 @@ import { Report } from '@/types/type';
 import { format, isValid } from 'date-fns';
 import { Skeleton } from "@/components/ui/skeleton";
 import DeleteListingDialog from "@/app/conflict/components/DeleteListingDialog";
+import UserInfo from "./components/[user-id]/UserInfo";
+
 
 const MAX_ITEMS = 4;
+
+
 
 const safeFormatDate = (dateString: string | undefined, dateFormat: string): string => {
     if (!dateString) return 'N/A';
@@ -55,7 +59,18 @@ const ReportSkeleton = () => (
     </Card>
 );
 
-const ReportCard = ({ report, expandedReportId, toggleReport, handleResponseSubmit, responseText, setResponseText, handleImageClick, parkingSpaceData }: any) => {
+const ReportCard = ({
+                        report,
+                        expandedReportId,
+                        toggleReport,
+                        handleResponseSubmit,
+                        responseText,
+                        setResponseText,
+                        handleImageClick,
+                        parkingSpaceData,
+                        handleUserClick, // Add this prop
+                    }: any) => {
+
     const getReportIcon = (type: Report['type']) => {
         switch (type) {
             case 'Reservation Issue':
@@ -108,23 +123,45 @@ const ReportCard = ({ report, expandedReportId, toggleReport, handleResponseSubm
                             {/* Report Details */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    {/* Basic Information */}
-                                    {report.owner_name && (
-                                        <div className="flex items-center gap-2 text-slate-950">
-                                            <User className="w-4 h-4 text-slate-600" />
-                                            <span><strong>Owner:</strong> {report.owner_name}</span>
-                                        </div>
-                                    )}
-                                    {report.renter_name && (
-                                        <div className="flex items-center gap-2 text-slate-950">
-                                            <User className="w-4 h-4 text-slate-600" />
-                                            <span><strong>Renter:</strong> {report.renter_name}</span>
-                                        </div>
-                                    )}
+                                    <div className="space-y-2 text-slate-950">
+                                        {report.owner_name && (
+                                            <div className="flex items-center gap-2">
+                                                <strong>Owner:</strong>
+                                                <button
+                                                    className="text-blue-500 underline hover:text-blue-700 transition-colors"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        console.log("Owner ID:", report.owner_id); // Debug log
+                                                        handleUserClick(report.owner_id);
+                                                    }}
+                                                >
+                                                    {report.owner_name}
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {report.renter_name && (
+                                            <div className="flex items-center gap-2">
+                                                <strong>Renter:</strong>
+                                                <button
+                                                    className="text-blue-500 underline hover:text-blue-700 transition-colors"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        console.log("Renter ID:", report); // Debug log
+                                                        handleUserClick(report.user_id);
+                                                    }}
+                                                >
+                                                    {report.renter_name}
+                                                </button>
+                                            </div>
+                                        )}
+
+                                    </div>
+
                                     {/* Reservation Period */}
                                     {report.start_time && report.end_time && (
                                         <div className="flex items-center gap-2 text-slate-950">
-                                            <Calendar className="w-4 h-4 text-slate-600" />
+                                            <Calendar className="w-4 h-4 text-slate-600"/>
                                             <span>
                                                 <strong>Reservation:</strong>{' '}
                                                 {safeFormatDate(report.start_time, 'MMM dd, yyyy, hh:mm a')} -{' '}
@@ -135,7 +172,7 @@ const ReportCard = ({ report, expandedReportId, toggleReport, handleResponseSubm
                                     {/* Parking Space */}
                                     {report.parking_space_name && (
                                         <div className="flex items-center gap-2 text-slate-950">
-                                            <MapPin className="w-4 h-4 text-slate-600" />
+                                            <MapPin className="w-4 h-4 text-slate-600"/>
                                             <span><strong>Rented Parking Space:</strong> {report.parking_space_name}</span>
                                             <DeleteListingDialog
                                                 parkingSpaceId={report.parking_space_id}
@@ -150,7 +187,7 @@ const ReportCard = ({ report, expandedReportId, toggleReport, handleResponseSubm
                                     {report.type === 'Renter Overstay' && (
                                         <>
                                             <div className="flex items-center gap-2 text-slate-950">
-                                                <Clock className="w-4 h-4 text-slate-600" />
+                                                <Clock className="w-4 h-4 text-slate-600"/>
                                                 <span>
                                                     <strong>Departure:</strong>{' '}
                                                     {safeFormatDate(report.departure_time, 'MMM dd, yyyy, hh:mm a')}
@@ -212,6 +249,7 @@ const ReportCard = ({ report, expandedReportId, toggleReport, handleResponseSubm
                                     Submit Response
                                 </Button>
                             </div>
+
                         </CardContent>
                     </motion.div>
                 )}
@@ -253,6 +291,15 @@ const AdminReportsPage = () => {
     const [responseText, setResponseText] = useState<{ [key: string]: string }>({});
     const [parkingSpaceData, setParkingSpaceData] = useState<{ [key: string]: any }>({});
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+
+    const handleUserClick = (userId: string) => {
+        setSelectedUserId(userId); // Open the modal with the selected user ID
+    };
+
+    const closeModal = () => {
+        setSelectedUserId(null); // Close the modal
+    };
 
     useEffect(() => {
         dispatch(getAllConflicts());
@@ -358,7 +405,7 @@ const AdminReportsPage = () => {
                     <p className="text-center text-gray-800">No reports or cancellations available.</p>
                 ) : (
                     <div className="space-y-4">
-                        {visibleReports.map((report : Report) => (
+                        {visibleReports.map((report: Report) => (
                             <ReportCard
                                 key={report.id}
                                 report={report}
@@ -369,8 +416,10 @@ const AdminReportsPage = () => {
                                 setResponseText={setResponseText}
                                 handleImageClick={handleImageClick}
                                 parkingSpaceData={parkingSpaceData}
+                                handleUserClick={handleUserClick} // Pass the function here
                             />
                         ))}
+
                         {visibleCancellations.map((cancellation : any) => (
                             <CancellationCard
                                 key={cancellation.id}
@@ -381,6 +430,19 @@ const AdminReportsPage = () => {
                     </div>
                 )}
             </div>
+
+
+            {/* Modal */}
+            <Dialog open={!!selectedUserId} onOpenChange={closeModal}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>User Information</DialogTitle>
+                    </DialogHeader>
+                    {selectedUserId && (
+                        <UserInfo userId={selectedUserId} onClose={closeModal} />
+                    )}
+                </DialogContent>
+            </Dialog>
 
             {/* Image Modal */}
             <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>

@@ -8,6 +8,54 @@ from xpark.utils.db import DB
 from result import Result, Ok, Err
 import uuid
 
+def fetch_user_details(user_uuid: uuid.UUID) -> Result[Dict[str, Any], str]:
+    """
+    Fetch only the basic profile information of a user.
+    """
+    try:
+        with DB.pool.connection() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                # Fetch basic user details
+                cur.execute(
+                    """
+                    SELECT id, name, email
+                    FROM users
+                    WHERE id = %s
+                    """,
+                    (str(user_uuid),)
+                )
+                user_data = cur.fetchone()
+
+                if not user_data:
+                    return Err("User not found")
+
+                # Return basic user details
+                user_profile = {
+                    "id": user_data["id"],
+                    "name": user_data["name"],
+                    "email": user_data["email"],
+                }
+
+                return Ok(user_profile)
+    except Exception as e:
+        return Err(f"Failed to fetch user profile: {str(e)}")
+
+
+
+def handle_ban_user(user_id: uuid.UUID, rationale: str):
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return Err("User not found")
+
+        # Logic to ban the user
+        user.is_banned = True
+        user.ban_rationale = rationale
+        db.session.commit()
+
+        return Ok("User banned successfully")
+    except Exception as e:
+        return Err(str(e))
 
 
 def get_all_cancellations() -> Result[List[Dict[str, Any]], str]:

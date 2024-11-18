@@ -3,15 +3,37 @@ from xpark.logic.admin import (
     get_all_pending_parking_spaces,
     handle_verify_parking,
     get_all_conflicts,
-    update_conflict_response,  # Import the new logic function
+    update_conflict_response,
     get_all_cancellations,
-    handle_acknowledge_cancellation, admin_delete_paid_parking_space
+    handle_acknowledge_cancellation,
+    admin_delete_paid_parking_space,
+    handle_ban_user,
+    fetch_user_details,
 )
 from flask import request, jsonify
 from result import Ok, Err
 from typing import Any, Tuple
 from xpark.middleware.token_auth_middleware import require_admin
 import uuid
+
+@bp.get("users/<user_id>")
+def fetch_user_details_route(user_id: str) -> Tuple[Any, int]:
+    """
+    Fetch details for a specific user
+    """
+    try:
+        # Fetch user details
+        result = fetch_user_details(user_uuid)
+        if result.is_ok():
+            return jsonify(result.unwrap()), 200
+        else:
+            error_message = result.unwrap_err()
+            print(f"[Error] Fetching user details failed for user_id: {user_id}. Reason: {error_message}")
+            return jsonify({"error": error_message}), 404
+    except Exception as e:
+        print(f"[Server Error] Unexpected error occurred: {e}")
+        return {"error": "An unexpected error occurred while fetching user details"}, 500
+
 
 @bp.get("get-conflicts")
 @require_admin

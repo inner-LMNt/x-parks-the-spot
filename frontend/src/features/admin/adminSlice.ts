@@ -17,11 +17,19 @@ interface Conflict {
     start_time: string;
     end_time: string;
 }
-
+interface UserDetails {
+    id: string;
+    name: string;
+    email: string;
+    pastBookings: any[];
+    parkingSpaces: any[];
+    reports: any[];
+}
 interface AdminState {
     pendingSpots: ParkingSpace[];
     conflicts: Conflict[];
     cancellations: Conflict[];
+    userDetails: UserDetails | null;
     loading: boolean;
     error: string | null;
 }
@@ -30,9 +38,42 @@ const initialState: AdminState = {
     pendingSpots: [],
     conflicts: [],
     cancellations: [],
+    userDetails: null,
     loading: false,
     error: null,
 };
+
+// Fetch user details
+export const fetchUserDetails = createAsyncThunk<
+    UserDetails,
+    string,
+    { rejectValue: string }
+>("admin/fetchUserDetails", async (userId, { rejectWithValue }) => {
+    try {
+        console.log("Calling fetchUserDetails with ID:", userId);
+        const response = await axios.get(`/admin/users/${userId}`);
+        console.log("Response data:", response.data); // Debugging
+        return response.data;
+    } catch (error: any) {
+        console.error("Error in fetchUserDetails:", error); // Log the full error object
+        const errorMessage = error.response?.data?.error || "Failed to fetch user details.";
+        return rejectWithValue(errorMessage); // Provide fallback error message
+    }
+});
+
+
+// Ban user
+export const banUser = createAsyncThunk<
+    void,
+    { userId: string; rationale: string },
+    { rejectValue: string }
+>("admin/banUser", async ({ userId, rationale }, { rejectWithValue }) => {
+    try {
+        await axios.post(`/admin/ban-user`, { userId, rationale });
+    } catch (error: any) {
+        return rejectWithValue(error.response?.data?.error || "Failed to ban user");
+    }
+});
 
 // Async thunk to update a conflict response
 export const updateConflictResponse = createAsyncThunk<
@@ -156,6 +197,34 @@ const adminSlice = createSlice({
     reducers: {},
     extraReducers: (builder) => {
         builder
+            // Fetch user details
+            .addCase(fetchUserDetails.pending, (state: AdminState) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchUserDetails.fulfilled, (state: AdminState, action: any) => {
+                state.loading = false;
+                state.userDetails = action.payload;
+            })
+            .addCase(fetchUserDetails.rejected, (state: AdminState, action: any) => {
+                state.loading = false;
+                state.error = action.payload as string;
+            })
+
+
+            // Ban user
+            .addCase(banUser.pending, (state: AdminState) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(banUser.fulfilled, (state: AdminState) => {
+                state.loading = false;
+            })
+            .addCase(banUser.rejected, (state: AdminState, action: any) => {
+                state.loading = false;
+                state.error = action.payload as string;
+            })
+
             // Handle updateConflictResponse
             .addCase(updateConflictResponse.pending, (state: AdminState) => {
                 state.loading = true;
