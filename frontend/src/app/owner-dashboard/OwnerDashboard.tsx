@@ -201,7 +201,7 @@ export default function OwnerDashboard() {
           {analytics && (
             <>
               <TabsContent value="revenue">
-                <RevenueTab revenueMetrics={analytics.revenueMetrics} />
+                <RevenueTab revenueMetrics={analytics.revenueMetrics} timeFilter={timeFilter} />
               </TabsContent>
 
               <TabsContent value="bookings">

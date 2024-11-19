@@ -25,6 +25,16 @@ def get_dashboard_analytics(
     start_date = now - time_deltas[time_filter]
     end_date = now
 
+    params = {
+        "user_id": user_id,
+        "start_date": start_date,
+        "end_date": end_date,
+        "spot_id": spot_id,
+        "now": now,
+        "next_7_days": now + timedelta(days=7),
+        "time_delta": time_deltas[time_filter],
+        "time_filter": time_filter  # Added this for the CASE statements
+    }
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             # ==== Prepare spot filter ====
@@ -154,82 +164,184 @@ def get_dashboard_analytics(
             for key, default in overall_defaults.items():
                 overall.setdefault(key, default)
 
-            # ==== Revenue Trends (Monthly) ====
-            # Corrected parameter ordering: [user_id, start_date, end_date, spot_id (if any)]
-            monthly_params = [user_id, start_date, end_date]
-            if spot_id:
-                monthly_params.append(spot_id)
-            cur.execute(
-                f"""
+            cur.execute("""
+            WITH time_series AS (
+                SELECT generate_series(
+                    DATE_TRUNC(
+                        CASE %(time_filter)s 
+                            WHEN '7_days' THEN 'hour'
+                            WHEN '30_days' THEN 'day'
+                            ELSE 'month'
+                        END,
+                        %(start_date)s
+                    ),
+                    DATE_TRUNC(
+                        CASE %(time_filter)s 
+                            WHEN '7_days' THEN 'hour'
+                            WHEN '30_days' THEN 'day'
+                            ELSE 'month'
+                        END,
+                        %(end_date)s
+                    ),
+                    CASE %(time_filter)s 
+                        WHEN '7_days' THEN '1 hour'::interval
+                        WHEN '30_days' THEN '1 day'::interval
+                        ELSE '1 month'::interval
+                    END
+                ) AS timestamp
+            ),
+            actual_revenue AS (
                 SELECT 
-                    TO_CHAR(DATE_TRUNC('month', LOWER(r.time)), 'Mon YYYY') AS month,
-                    COALESCE(SUM(r.price), 0) AS revenue,
-                    COUNT(*) AS bookings
+                    DATE_TRUNC(
+                        CASE %(time_filter)s 
+                            WHEN '7_days' THEN 'hour'
+                            WHEN '30_days' THEN 'day'
+                            ELSE 'month'
+                        END,
+                        LOWER(r.time)
+                    ) as timestamp,
+                    SUM(r.price) as actual,
+                    COUNT(*) as booking_count,
+                    AVG(r.price) as avg_booking_value
                 FROM reservations r
                 JOIN parking_spaces ps ON r.parking_space_id = ps.id
-                WHERE ps.owner = %s 
-                  AND ps.is_paid = TRUE 
-                  AND LOWER(r.time) BETWEEN %s AND %s
-                  {spot_filter_sql}
-                GROUP BY DATE_TRUNC('month', LOWER(r.time))
-                ORDER BY DATE_TRUNC('month', LOWER(r.time))
-                """,
-                monthly_params,
-            )
-            monthly_revenue = cur.fetchall()
-
-            # ==== Revenue Trends (Daily) ====
-            # Corrected parameter ordering: [user_id, start_date, end_date, spot_id (if any)]
-            daily_params = [user_id, start_date, end_date]
-            if spot_id:
-                daily_params.append(spot_id)
-            cur.execute(
-                f"""
+                WHERE ps.owner = %(user_id)s 
+                    AND ps.is_paid = TRUE
+                    AND r.status != 'canceled'
+                    AND LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
+                    {spot_filter_sql}
+                GROUP BY 1
+            ),
+            previous_period AS (
                 SELECT 
-                    TO_CHAR(DATE_TRUNC('day', LOWER(r.time)), 'YYYY-MM-DD') AS date,
-                    COALESCE(SUM(r.price), 0) AS revenue
+                    DATE_TRUNC(
+                        CASE %(time_filter)s 
+                            WHEN '7_days' THEN 'hour'
+                            WHEN '30_days' THEN 'day'
+                            ELSE 'month'
+                        END,
+                        LOWER(r.time) + %(time_delta)s
+                    ) as timestamp,
+                    SUM(r.price) as previous_revenue
                 FROM reservations r
                 JOIN parking_spaces ps ON r.parking_space_id = ps.id
-                WHERE ps.owner = %s 
-                  AND ps.is_paid = TRUE 
-                  AND LOWER(r.time) BETWEEN %s AND %s
-                  {spot_filter_sql}
-                GROUP BY DATE_TRUNC('day', LOWER(r.time))
-                ORDER BY DATE_TRUNC('day', LOWER(r.time))
-                """,
-                daily_params,
+                WHERE ps.owner = %(user_id)s 
+                    AND ps.is_paid = TRUE
+                    AND r.status != 'canceled'
+                    AND LOWER(r.time) BETWEEN 
+                        %(start_date)s - %(time_delta)s 
+                        AND %(end_date)s - %(time_delta)s
+                    {spot_filter_sql}
+                GROUP BY 1
+            ),
+            running_totals AS (
+                SELECT 
+                    timestamp,
+                    SUM(COALESCE(actual, 0)) OVER (ORDER BY timestamp) as cumulative_revenue
+                FROM time_series
+                LEFT JOIN actual_revenue USING (timestamp)
             )
-            daily_revenue = cur.fetchall()
+            SELECT 
+                ts.timestamp,
+                COALESCE(ar.actual, 0) as actual,
+                CASE 
+                    WHEN ts.timestamp > %(now)s
+                    THEN COALESCE(
+                        (
+                            SELECT AVG(actual) 
+                            FROM actual_revenue 
+                            WHERE EXTRACT(DOW FROM timestamp) = EXTRACT(DOW FROM ts.timestamp)
+                        ),
+                        0
+                    )
+                    ELSE 0
+                END as projected,
+                COALESCE(ar.booking_count, 0) as booking_count,
+                COALESCE(ar.avg_booking_value, 0) as avg_booking_value,
+                COALESCE(rt.cumulative_revenue, 0) as cumulative_revenue,
+                CASE 
+                    WHEN COALESCE(pp.previous_revenue, 0) > 0
+                    THEN ((COALESCE(ar.actual, 0) - pp.previous_revenue) / pp.previous_revenue) * 100
+                    ELSE 0
+                END as period_over_period_growth
+            FROM time_series ts
+            LEFT JOIN actual_revenue ar USING (timestamp)
+            LEFT JOIN previous_period pp USING (timestamp)
+            LEFT JOIN running_totals rt USING (timestamp)
+            ORDER BY timestamp;
+            """.format(spot_filter_sql=spot_filter_sql), params)
+            historical_revenue = cur.fetchall()
 
-            # ==== Revenue Trends (Hourly) ====
-            # Corrected parameter ordering: [user_id, start_date, end_date, spot_id (if any)]
-            hourly_params = [user_id, start_date, end_date]
-            if spot_id:
-                hourly_params.append(spot_id)
+            # ==== Enhanced Upcoming Revenue Query ====
             cur.execute(
                 f"""
-                WITH hours AS (
-                    SELECT generate_series(0, 23) AS hour
-                )
-                SELECT 
-                    h.hour,
-                    COALESCE(SUM(r.price), 0) AS revenue,
-                    COALESCE(COUNT(r.id), 0) AS bookings
-                FROM hours h
-                LEFT JOIN reservations r 
-                    ON h.hour = EXTRACT(HOUR FROM LOWER(r.time))::integer
-                JOIN parking_spaces ps 
-                    ON r.parking_space_id = ps.id
-                WHERE ps.owner = %s 
-                  AND ps.is_paid = TRUE 
-                  AND LOWER(r.time) BETWEEN %s AND %s
-                  {spot_filter_sql}
-                GROUP BY h.hour
-                ORDER BY h.hour
-                """,
-                hourly_params,
+                    WITH spot_counts AS (
+                        SELECT COUNT(*) as total_spots
+                        FROM parking_spaces
+                        WHERE owner = %(user_id)s AND is_paid = TRUE
+                        {spot_filter_sql}
+                    ),
+                    hourly_series AS (
+                        SELECT generate_series(
+                            DATE_TRUNC('hour', %(now)s),
+                            DATE_TRUNC('hour', %(next_7_days)s),
+                            '1 hour'::interval
+                        ) AS timestamp
+                    ),
+                    confirmed_bookings AS (
+                        SELECT 
+                            DATE_TRUNC('hour', LOWER(r.time)) as timestamp,
+                            SUM(r.price) as confirmed_revenue,
+                            COUNT(*) as booking_count,
+                            COUNT(*) * 100.0 / sc.total_spots as utilization_rate
+                        FROM reservations r
+                        JOIN parking_spaces ps ON r.parking_space_id = ps.id
+                        CROSS JOIN spot_counts sc
+                        WHERE ps.owner = %(user_id)s 
+                            AND ps.is_paid = TRUE
+                            AND r.status != 'canceled'
+                            AND LOWER(r.time) >= %(now)s
+                            AND LOWER(r.time) < %(next_7_days)s
+                            {spot_filter_sql}
+                        GROUP BY 1, sc.total_spots
+                    ),
+                    historical_patterns AS (
+                        SELECT 
+                            EXTRACT(DOW FROM LOWER(r.time)) as day_of_week,
+                            EXTRACT(HOUR FROM LOWER(r.time)) as hour,
+                            AVG(r.price) as avg_historical_revenue,
+                            COUNT(*) * 100.0 / 
+                                NULLIF(COUNT(DISTINCT DATE_TRUNC('day', LOWER(r.time))), 0) as avg_utilization
+                        FROM reservations r
+                        JOIN parking_spaces ps ON r.parking_space_id = ps.id
+                        WHERE ps.owner = %(user_id)s 
+                            AND ps.is_paid = TRUE
+                            AND r.status != 'canceled'
+                            AND LOWER(r.time) >= %(start_date)s - %(time_delta)s
+                            {spot_filter_sql}
+                        GROUP BY 1, 2
+                    )
+                    SELECT 
+                        hs.timestamp,
+                        COALESCE(cb.confirmed_revenue, 0) as confirmed_revenue,
+                        COALESCE(
+                            (SELECT avg_historical_revenue 
+                             FROM historical_patterns 
+                             WHERE day_of_week = EXTRACT(DOW FROM hs.timestamp)
+                             AND hour = EXTRACT(HOUR FROM hs.timestamp)
+                            ), 0
+                        ) * (sc.total_spots - COALESCE(cb.booking_count, 0)) as potential_revenue,
+                        COALESCE(cb.booking_count, 0) as booking_count,
+                        COALESCE(cb.utilization_rate, 0) as spot_utilization,
+                        sc.total_spots as available_spots
+                    FROM hourly_series hs
+                    CROSS JOIN spot_counts sc
+                    LEFT JOIN confirmed_bookings cb USING (timestamp)
+                    ORDER BY timestamp;
+                            """,
+                params
             )
-            hourly_revenue = cur.fetchall()
+            upcoming_revenue = cur.fetchall()
 
             # ==== Spot Performance and Revenue by Spot ====
             spot_params = [
@@ -697,26 +809,23 @@ def get_dashboard_analytics(
                 {
                     "overallMetrics": {
                         "revenue": {
-                            "total": overall["total_revenue"],
-                            "perBooking": overall["revenue_per_booking"],
-                            "trends": [
-                                {
-                                    "date": item.get("month", ""),
-                                    "revenue": float(item.get("revenue", 0)),
-                                    "bookings": item.get("bookings", 0),
-                                }
-                                for item in monthly_revenue
-                            ],
+                            "total": sum(row["actual"] for row in historical_revenue),
+                            "perBooking": (
+                                sum(row["actual"] for row in historical_revenue) /
+                                sum(row["booking_count"] for row in historical_revenue)
+                                if sum(row["booking_count"] for row in historical_revenue) > 0
+                                else 0
+                            ),
+                            "projectedNext7Days": sum(
+                                row["confirmed_revenue"] + row["potential_revenue"]
+                                for row in upcoming_revenue
+                            ),
+                            "periodOverPeriodGrowth": sum(
+                                row["period_over_period_growth"] for row in historical_revenue
+                            ) / len(historical_revenue) if historical_revenue else 0
                         },
                         "occupancy": {
-                            "overallRate": overall_occupancy_rate,
-                            "popularTimes": [
-                                {
-                                    "hour": item.get("hour", 0),
-                                    "bookings": item.get("bookings", 0),
-                                }
-                                for item in hourly_revenue
-                            ],
+                            "overallRate": overall_occupancy_rate
                         },
                         "bookings": {
                             "active": overall["active_bookings"],
@@ -725,30 +834,29 @@ def get_dashboard_analytics(
                         },
                     },
                     "revenueMetrics": {
-                        "monthlyRevenue": [
+                        "historicalRevenue": [
                             {
-                                "month": item.get("month", ""),
-                                "revenue": float(item.get("revenue", 0)),
-                                "bookings": item.get("bookings", 0),
+                                "timestamp": row["timestamp"].isoformat(),
+                                "actual": float(row["actual"]),
+                                "projected": float(row["projected"]),
+                                "bookingCount": row["booking_count"],
+                                "avgBookingValue": float(row["avg_booking_value"]),
+                                "cumulativeRevenue": float(row["cumulative_revenue"]),
+                                "periodOverPeriodGrowth": float(row["period_over_period_growth"])
                             }
-                            for item in monthly_revenue
+                            for row in historical_revenue
                         ],
-                        "dailyRevenue": [
+                        "upcomingRevenue": [
                             {
-                                "date": item.get("date", ""),
-                                "revenue": float(item.get("revenue", 0)),
+                                "timestamp": row["timestamp"].isoformat(),
+                                "confirmed": float(row["confirmed_revenue"]),
+                                "potential": float(row["potential_revenue"]),
+                                "bookingCount": row["booking_count"],
+                                "spotUtilization": float(row["spot_utilization"]),
+                                "availableSpots": row["available_spots"]
                             }
-                            for item in daily_revenue
-                        ],
-                        "hourlyRevenue": [
-                            {
-                                "hour": item.get("hour", 0),
-                                "revenue": float(item.get("revenue", 0)),
-                                "bookings": item.get("bookings", 0),
-                            }
-                            for item in hourly_revenue
-                        ],
-                        "revenueBySpot": revenue_by_spot,
+                            for row in upcoming_revenue
+                        ]
                     },
                     "bookingMetrics": {
                         "stats": {

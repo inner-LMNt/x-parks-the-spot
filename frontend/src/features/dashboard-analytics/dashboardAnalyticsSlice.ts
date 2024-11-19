@@ -11,17 +11,11 @@ export interface DashboardAnalytics {
     revenue: {
       total: number
       perBooking: number
-      trends: Array<{
-        date: string
-        revenue: number
-      }>
+      projectedNext7Days: number
+      periodOverPeriodGrowth: number
     }
     occupancy: {
       overallRate: number
-      popularTimes: Array<{
-        hour: number
-        bookings: number
-      }>
     }
     bookings: {
       total: number
@@ -30,26 +24,22 @@ export interface DashboardAnalytics {
     }
   }
   revenueMetrics: {
-    monthlyRevenue: Array<{
-      month: string
-      revenue: number
-      bookings: number
+    historicalRevenue: Array<{
+      timestamp: string
+      actual: number
+      projected: number
+      bookingCount: number
+      avgBookingValue: number
+      cumulativeRevenue: number
+      periodOverPeriodGrowth: number
     }>
-    dailyRevenue: Array<{
-      date: string
-      revenue: number
-    }>
-    hourlyRevenue: Array<{
-      hour: number
-      revenue: number
-    }>
-    revenueBySpot: Array<{
-      spotId: string
-      spotName: string
-      revenue: number
-      bookings: number
-      occupancyRate: number
-      basePrice: number
+    upcomingRevenue: Array<{
+      timestamp: string
+      confirmed: number
+      potential: number
+      bookingCount: number
+      spotUtilization: number
+      availableSpots: number
     }>
   }
   bookingMetrics: {
@@ -66,37 +56,34 @@ export interface DashboardAnalytics {
       spotId: string
       spotName: string
       renterName: string
-      renterEmail: string
       startTime: string
       endTime: string
-      status: "booked" | "current" | "completed" | "canceled"
+      status: string
+      time_status: "upcoming" | "current" | "past"
       price: number
       duration: number
-      time_status: "upcoming" | "current" | "past"
-      isMultiDay: boolean
-      daysDuration: number
-      rentalCount: number
       carDetails: {
         make: string
         model: string
         color: string
         plate: string
+        state: string
       }
     }>
   }
   spotPerformance: Record<
-    string,
-    {
-      totalRevenue: number
-      totalBookings: number
-      occupancyRate: number
-      averageBookingLength: number
-      activeBookings: number
-      completedBookings: number
-      canceledBookings: number
-      popularHours: Array<{ hour: number; bookings: number }>
-      popularDays: Array<{ day: string; bookings: number }>
-    }
+      string,
+      {
+        totalRevenue: number
+        totalBookings: number
+        occupancyRate: number
+        averageBookingLength: number
+        activeBookings: number
+        completedBookings: number
+        canceledBookings: number
+        popularHours: Array<{ hour: number; bookings: number }>
+        popularDays: Array<{ day: string; bookings: number }>
+      }
   >
   upcomingEarnings: {
     total: number
