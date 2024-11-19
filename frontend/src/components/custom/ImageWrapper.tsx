@@ -6,11 +6,9 @@ import React from "react"
 interface ImageWrapperProps extends ImageProps {}
 
 const ImageWrapper: React.FC<ImageWrapperProps> = ({ src, alt, ...props }) => {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
-  const absSrc = `${baseUrl}${src}`
   return (
     <Image
-      src={absSrc}
+      src={src}
       alt={alt}
       {...props}
       unoptimized // Disable optimization

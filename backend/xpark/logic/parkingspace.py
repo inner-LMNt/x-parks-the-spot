@@ -4,13 +4,13 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
 
 from werkzeug.datastructures import FileStorage
-from werkzeug.utils import secure_filename
 
 from psycopg.rows import dict_row
 from psycopg.errors import UniqueViolation
 
 from xpark.config import Config
 from xpark.utils.db import DB
+from xpark.utils.s3 import S3
 from result import Result, Ok, Err
 import uuid
 from .timeslots import days_of_week_to_slots, recalculate_coalesce
@@ -44,7 +44,7 @@ def award_points(
                 new_photo_url = []
                 if image_file:
                     try:
-                        photo_url = save_image(image_file)
+                        photo_url = S3.save_image(image_file)
                         new_photo_url = [photo_url]
                     except ValueError as e:
                         return Err(f"Image upload failed: {str(e)}")
@@ -263,7 +263,7 @@ def create_paid_parking_space(
 ) -> Result[Dict[str, Any], str]:
     # Save image
     if image_file:
-        image_uri = save_image(image_file)
+        image_uri = S3.save_image(image_file)
         photos = [image_uri]
     else:
         photos = []
@@ -345,7 +345,7 @@ def create_free_parking_space(
 ) -> Result[Dict[str, Any], str]:
     # Save image
     if image_file:
-        image_uri = save_image(image_file)
+        image_uri = S3.save_image(image_file)
         photos = [image_uri]
     else:
         photos = []
@@ -393,23 +393,6 @@ def create_free_parking_space(
                 return Err("Error creating parking space")
 
             return Ok(parking_space)
-
-
-# TODO: Review
-def save_image(image_file: FileStorage) -> str:
-    allowed_extensions = {"png", "jpg", "jpeg", "gif"}
-    filename = secure_filename(image_file.filename or "")
-    extension = filename.rsplit(".", 1)[1].lower()
-    if "." in filename and extension in allowed_extensions:
-        images_dir = os.path.join(Config.STATIC_FOLDER, "images")
-        os.makedirs(images_dir, exist_ok=True)
-        unique_filename = f"{uuid.uuid4()}.{extension}"
-        filepath = os.path.join(images_dir, unique_filename)
-        image_file.save(filepath)
-        image_uri = f"/static/images/{unique_filename}"
-        return image_uri
-    else:
-        raise ValueError("Invalid image file type")
 
 
 def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str]:
@@ -503,7 +486,7 @@ def update_taken(
             new_photo_url = []
             if image_file:
                 try:
-                    photo_url = save_image(image_file)
+                    photo_url = S3.save_image(image_file)
                     new_photo_url = [photo_url]
                 except ValueError as e:
                     return Err(f"Image upload failed: {str(e)}")
@@ -704,7 +687,7 @@ def handle_submit_verification(
         return Err("No image provided for verification")
 
     # Save the image
-    image_uri = save_image(image_file)
+    image_uri = S3.save_image(image_file)
 
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
