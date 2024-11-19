@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN state_city jsonb NOT NULL DEFAULT '{"state": "None", "city": "None"}';

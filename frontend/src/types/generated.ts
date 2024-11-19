@@ -3,7 +3,7 @@
  * Do not make direct changes to the file.
  */
 
-export interface paths {
+export type paths = {
     "/auth/register": {
         parameters: {
             query?: never;
@@ -1825,9 +1825,9 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-}
+};
 export type webhooks = Record<string, never>;
-export interface components {
+export type components = {
     schemas: {
         RegisterRequest: {
             /** Format: email */
@@ -1891,7 +1891,7 @@ export interface components {
         };
         ParkingSpace: {
             /** Format: uuid */
-            id?: string;
+            id: string;
             is_paid: boolean;
             is_taken?: boolean;
             /** Format: uuid */
@@ -1940,6 +1940,10 @@ export interface components {
             push_notifications?: boolean;
             time?: string;
         };
+        UserHomeLocation: {
+            state?: string;
+            city?: string;
+        };
         User: {
             /** Format: uuid */
             id?: string;
@@ -1952,6 +1956,7 @@ export interface components {
             owner_profile?: components["schemas"]["OwnerProfile"];
             spot_finder_profile?: components["schemas"]["SpotFinderProfile"];
             notification_preferences?: components["schemas"]["NotificationPreferences"];
+            user_location?: components["schemas"]["UserHomeLocation"];
             /** Format: date-time */
             created_at?: string;
             /** Format: date-time */
@@ -2085,26 +2090,37 @@ export interface components {
             id: string;
             /**
              * Format: uuid
+             * @description Unique identifier of the user who created the report.
+             */
+            user_id?: string;
+            /**
+             * Format: uuid
              * @description Unique identifier of the reservation associated with this report.
              */
-            reservation_id: string;
+            reservation_id?: string | null;
             /**
              * Format: uuid
              * @description Unique identifier of the parking space involved in the reservation.
              */
-            parking_space_id: string;
-            /** @description Address of parking space. */
-            parking_space_address: string;
+            parking_space_id?: string | null;
+            /** @description Name of the parking space. */
+            parking_space_name?: string | null;
+            /** @description Address of the parking space. */
+            parking_space_address?: string | null;
+            /** @description Name of the owner of the parking space. */
+            owner_name?: string | null;
+            /** @description Name of the renter of the parking space. */
+            renter_name?: string | null;
             /**
              * Format: date-time
              * @description Start time of the reservation.
              */
-            start_time: string;
+            start_time?: string | null;
             /**
              * Format: date-time
              * @description End time of the reservation.
              */
-            end_time: string;
+            end_time?: string | null;
             /**
              * @description Type of the report.
              * @enum {string}
@@ -2118,7 +2134,7 @@ export interface components {
              */
             status: "open" | "in_progress" | "resolved";
             /** @description Response from the admin regarding the report. */
-            admin_response: string | null;
+            admin_response?: string | null;
             /**
              * Format: date-time
              * @description Timestamp when the report was created.
@@ -2129,10 +2145,21 @@ export interface components {
              * @description Timestamp when the report was last updated.
              */
             updated_at: string;
-            /** @description Name of the owner of the parking space. */
-            owner_name: string;
-            /** @description Name of the parking space. */
-            parking_space_name: string;
+            /**
+             * Format: date-time
+             * @description Actual departure time of the renter (for Renter Overstay reports).
+             */
+            departure_time?: string | null;
+            /** @description Duration of the overstay in minutes (for Renter Overstay reports). */
+            overstay_duration?: number | null;
+            /** @description Charge for the overstay (for Renter Overstay reports). */
+            overstay_charge?: number | null;
+            /** @description Type of damage reported (for Damage Report). */
+            damage_type?: string | null;
+            /** @description Severity of the damage (for Damage Report). */
+            damage_severity?: string | null;
+            /** @description URL of the image associated with the report. */
+            image_url?: string | null;
         };
         ReportListResponse: components["schemas"]["Report"][];
         ReportCreateRequest: {
@@ -2160,6 +2187,37 @@ export interface components {
     requestBodies: never;
     headers: never;
     pathItems: never;
-}
+};
+export type SchemaRegisterRequest = components['schemas']['RegisterRequest'];
+export type SchemaAuthResponse = components['schemas']['AuthResponse'];
+export type SchemaLoginRequest = components['schemas']['LoginRequest'];
+export type SchemaPasswordResetRequest = components['schemas']['PasswordResetRequest'];
+export type SchemaPasswordResetConfirmRequest = components['schemas']['PasswordResetConfirmRequest'];
+export type SchemaCarInfo = components['schemas']['CarInfo'];
+export type SchemaRenterProfile = components['schemas']['RenterProfile'];
+export type SchemaLocation = components['schemas']['Location'];
+export type SchemaTimeSlot = components['schemas']['TimeSlot'];
+export type SchemaPricingInfo = components['schemas']['PricingInfo'];
+export type SchemaParkingSpace = components['schemas']['ParkingSpace'];
+export type SchemaOwnerProfile = components['schemas']['OwnerProfile'];
+export type SchemaSpotFinderProfile = components['schemas']['SpotFinderProfile'];
+export type SchemaNotificationPreferences = components['schemas']['NotificationPreferences'];
+export type SchemaUserHomeLocation = components['schemas']['UserHomeLocation'];
+export type SchemaUser = components['schemas']['User'];
+export type SchemaUserUpdateRequest = components['schemas']['UserUpdateRequest'];
+export type SchemaUserDeletionConfirm = components['schemas']['UserDeletionConfirm'];
+export type SchemaCarInfoList = components['schemas']['CarInfoList'];
+export type SchemaParkingSpaceSummary = components['schemas']['ParkingSpaceSummary'];
+export type SchemaParkingSpaceCreateRequest = components['schemas']['ParkingSpaceCreateRequest'];
+export type SchemaParkingSpaceUpdateRequest = components['schemas']['ParkingSpaceUpdateRequest'];
+export type SchemaReservation = components['schemas']['Reservation'];
+export type SchemaReservationCreateRequest = components['schemas']['ReservationCreateRequest'];
+export type SchemaReservationUpdateRequest = components['schemas']['ReservationUpdateRequest'];
+export type SchemaSpotFinderSubmission = components['schemas']['SpotFinderSubmission'];
+export type SchemaNotification = components['schemas']['Notification'];
+export type SchemaPublicUserProfile = components['schemas']['PublicUserProfile'];
+export type SchemaReport = components['schemas']['Report'];
+export type SchemaReportListResponse = components['schemas']['ReportListResponse'];
+export type SchemaReportCreateRequest = components['schemas']['ReportCreateRequest'];
 export type $defs = Record<string, never>;
 export type operations = Record<string, never>;

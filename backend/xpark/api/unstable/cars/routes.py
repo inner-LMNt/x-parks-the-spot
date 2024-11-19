@@ -27,9 +27,9 @@ def get(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 @bp.get("<car_id>")
 @require_logged_in_user
 def get_car(car_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    match get_car_info(user_id, car_id=uuid.UUID(car_id)):
-        case Ok(cars):
-            return cars, 200
+    match get_car_info(car_id=uuid.UUID(car_id)):
+        case Ok(car):
+            return car, 200
         case Err(e):
             return {"err": e}, 500
 
@@ -46,7 +46,7 @@ def create(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         model=request.json["model"],
         license_plate=request.json["license_plate"],
         license_plate_state=request.json["license_plate_state"],
-        color=request.json.get("color")
+        color=request.json.get("color"),
     ):
         case Ok(car_info):
             return car_info, 201
@@ -75,7 +75,7 @@ def patch(car_id: str, token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         model=request.json.get("model"),
         license_plate=request.json.get("license_plate"),
         license_plate_state=request.json.get("license_plate_state"),
-        color=request.json.get("color")
+        color=request.json.get("color"),
     ):
         case Ok(car_info):
             return car_info, 200

@@ -6,6 +6,7 @@ from xpark.logic.reservations import (
     get_reservation,
     create_reservation,
     get_user_reservations,
+    get_owner_reservations,
     cancel_reservation_logic,
     get_max_extension_time_logic,
 )
@@ -147,3 +148,13 @@ def cancel_reservation_route(
                 return {"err": e}, 404
             else:
                 return {"err": e}, 400
+
+
+@bp.get("owner")
+@require_logged_in_user
+def get_owner_reservations_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match get_owner_reservations(user_id):
+        case Ok(data):
+            return data, 200
+        case Err(e):
+            return {"err": e}, 500

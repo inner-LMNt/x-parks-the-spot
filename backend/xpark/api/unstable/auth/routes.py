@@ -10,7 +10,11 @@ from xpark.logic.user import (
     handle_password_reset_confirmation,
     handle_set_notification_time,
     handle_get_notification_time,
+    set_user_location_request,
+    get_user_location_request,
+    handle_get_points,  # Testing purposes
 )
+
 
 from flask import request
 from result import Ok, Err
@@ -104,7 +108,6 @@ def reset_password(token: str) -> Tuple[Any, int]:
             return {"err": e}, 403
         case Ok(_):
             return {"message": "Password reset successfully"}, 200
-        
 
 
 @bp.post("notification-time")
@@ -117,7 +120,7 @@ def set_notification_time(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return {"message": "Notification time set successfully"}, 200
         case Err(e):
             return {"err": e}, 403
-        
+
 
 @bp.get("notification-time")
 @require_logged_in_user
@@ -129,8 +132,40 @@ def get_notification_time(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return {"err": e}, 403
 
 
-# @bp.get("id")
-# @require_logged_in_user
-# def id(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-#     print(user_id)
-#     return str(user_id), 200
+@bp.post("user-location")
+@require_logged_in_user
+def set_user_location(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    assert request.json
+    state = request.json["state"]
+    city = request.json["city"]
+    match set_user_location_request(user_id, state, city):
+        case Ok(_):
+            return {"message": "User location set successfully"}, 200
+        case Err(e):
+            return {"err": e}, 404
+
+
+@bp.get("user-location")
+@require_logged_in_user
+def get_user_location(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match get_user_location_request(user_id):
+        case Ok(location):
+            return location, 200
+        case Err(e):
+            return {"err": e}, 404
+
+
+@bp.get("points")
+@require_logged_in_user
+def get_points(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match handle_get_points(user_id):
+        case Ok(points):
+            return {"points": points}, 200
+        case Err(e):
+            return {"err": e}, 403
+
+
+@bp.get("/me")
+@require_logged_in_user
+def get_user_info_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    return {"id": str(user_id)}, 200

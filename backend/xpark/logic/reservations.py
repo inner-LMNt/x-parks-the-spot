@@ -18,6 +18,7 @@ class ReservationStatus(Enum):
     cancel = "canceled"
     complete = "completed"
 
+
 def check_if_available(
     conn: psycopg.Connection,
     parking_spot_id: uuid.UUID,
@@ -216,7 +217,6 @@ def update_reservation(
     end_time: Optional[datetime.datetime] = None,
     car_info_id: Optional[uuid.UUID] = None,
 ) -> Result[Dict[str, Any] | None, str]:
-
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
@@ -531,3 +531,35 @@ def get_max_extension_time_logic(
                 )
 
             return Ok(last_valid_time.isoformat())
+
+
+def get_owner_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT 
+                    reservations.id, 
+                    parking_spaces.name,
+                    parking_space_id, 
+                    lower(time) as start_time,
+                    upper(time) as end_time,
+                    car_info_id, 
+                    renter_id,
+                    status,
+                    json_build_object(
+                        'address',   parking_spaces.address,
+                        'latitude',  ST_Y(location::geometry),
+                        'longitude', ST_X(location::geometry)
+                    ) as location,
+                    reservations.price,
+                    reservations.created_at,
+                    reservations.updated_at
+                FROM reservations 
+                JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                WHERE parking_spaces.owner = %s
+                ORDER BY reservations.created_at DESC
+            """,
+                (user_id,),
+            )
+            return Ok(cur.fetchall())

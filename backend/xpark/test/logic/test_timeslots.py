@@ -17,6 +17,7 @@ from psycopg.types.range import Range
 # Wait why am I not doing this from the API
 # I'll make the API later, right now I gotta test this stuff so I can go to bed
 
+
 @pytest.mark.skip(reason="")
 def test_coalesce() -> None:
     # First create a user who will own the parking spaces

@@ -1,11 +1,12 @@
+import os
 from typing import Dict, Any, List
 
 from psycopg.rows import dict_row
+
 from xpark.utils.mailer import generate_templated_email, send_email
 from xpark.utils.db import DB
 from result import Result, Ok, Err
 import uuid
-
 
 
 def get_all_cancellations() -> Result[List[Dict[str, Any]], str]:
@@ -18,7 +19,7 @@ def get_all_cancellations() -> Result[List[Dict[str, Any]], str]:
                 cur.execute(
                     """
                     SELECT
-                        reservations.id,
+                        reservations.id as id,
                         reservations.status,
                         reservations.created_at,
                         reservations.updated_at,
@@ -31,7 +32,7 @@ def get_all_cancellations() -> Result[List[Dict[str, Any]], str]:
                     FROM reservations
                     JOIN users ON reservations.renter_id = users.id
                     JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
-                    WHERE reservations.acknowledged = 'false'
+                    WHERE reservations.acknowledged = 'false' AND reservations.status = 'canceled'
                     ORDER BY reservations.created_at DESC
                     """
                 )
@@ -62,7 +63,7 @@ def handle_acknowledge_cancellation(cancellation_id: uuid.UUID) -> Result[None, 
                     WHERE id = %s AND acknowledged = 'false'
                     RETURNING renter_id, parking_space_id
                     """,
-                    (str(cancellation_id),)
+                    (str(cancellation_id),),
                 )
                 result = cur.fetchone()
 
@@ -80,11 +81,13 @@ def handle_acknowledge_cancellation(cancellation_id: uuid.UUID) -> Result[None, 
                     FROM parking_spaces
                     WHERE id = %s
                     """,
-                    (str(parking_space_id),)
+                    (str(parking_space_id),),
                 )
                 parking_space = cur.fetchone()
                 if not parking_space:
-                    return Err("Parking space details not found for the acknowledged cancellation.")
+                    return Err(
+                        "Parking space details not found for the acknowledged cancellation."
+                    )
 
                 # Fetch renter's email and name for sending the email
                 cur.execute(
@@ -93,11 +96,13 @@ def handle_acknowledge_cancellation(cancellation_id: uuid.UUID) -> Result[None, 
                     FROM users
                     WHERE id = %s
                     """,
-                    (str(renter_id),)
+                    (str(renter_id),),
                 )
                 renter_info = cur.fetchone()
                 if not renter_info:
-                    return Err("User information not found for sending acknowledgment email.")
+                    return Err(
+                        "User information not found for sending acknowledgment email."
+                    )
 
                 renter_name = renter_info["name"]
                 renter_email = renter_info["email"]
@@ -113,7 +118,7 @@ def handle_acknowledge_cancellation(cancellation_id: uuid.UUID) -> Result[None, 
                 "cancel_response",
                 name=renter_name,
                 parking_space_name=parking_space["parking_space_name"],
-                parking_space_address=parking_space["parking_space_address"]
+                parking_space_address=parking_space["parking_space_address"],
             ),
         )
         return Ok(None)
@@ -130,22 +135,31 @@ def get_all_conflicts() -> Result[List[Dict[str, Any]], str]:
                 SELECT
                     reports.id,
                     reports.reservation_id,
+                    reports.user_id,
                     reports.description,
                     reports.type,
                     reports.status,
                     reports.admin_response,
+                    reports.departure_time,
+                    reports.overstay_duration,
+                    reports.overstay_charge,
+                    reports.damage_type,
+                    reports.damage_severity,
+                    reports.image_url,
                     reports.created_at,
                     reports.updated_at,
-                    users.name as owner_name,
-                    parking_spaces.name as parking_space_name,
-                    parking_spaces.address as parking_space_address,
-                    lower(reservations.time) as start_time,
-                    upper(reservations.time) as end_time,
+                    owners.name AS owner_name,
+                    renters.name AS renter_name,
+                    parking_spaces.name AS parking_space_name,
+                    parking_spaces.address AS parking_space_address,
+                    LOWER(reservations.time) AS start_time,
+                    UPPER(reservations.time) AS end_time,
                     reservations.parking_space_id
                 FROM reports
-                JOIN reservations ON reports.reservation_id = reservations.id
-                JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
-                JOIN users ON users.id = parking_spaces.owner
+                LEFT JOIN reservations ON reports.reservation_id = reservations.id
+                LEFT JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                LEFT JOIN users AS owners ON parking_spaces.owner = owners.id
+                LEFT JOIN users AS renters ON reservations.renter_id = renters.id
                 WHERE reports.status != 'resolved' -- Only get non-resolved reports
                 ORDER BY reports.created_at DESC
                 """
@@ -153,7 +167,10 @@ def get_all_conflicts() -> Result[List[Dict[str, Any]], str]:
             reports = cur.fetchall()
             return Ok(reports)
 
-def update_conflict_response(conflict_id: uuid.UUID, response_text: str) -> Result[Dict[str, Any], str]:
+
+def update_conflict_response(
+    conflict_id: uuid.UUID, response_text: str
+) -> Result[Dict[str, Any], str]:
     """
     Update the admin response for a specific conflict report in the database and notify the user via email.
     """
@@ -187,7 +204,7 @@ def update_conflict_response(conflict_id: uuid.UUID, response_text: str) -> Resu
                 JOIN reservations ON users.id = reservations.renter_id
                 WHERE reservations.id = %s
                 """,
-                (str(reservation_id),)
+                (str(reservation_id),),
             )
             user_info = cur.fetchone()
 
@@ -205,12 +222,11 @@ def update_conflict_response(conflict_id: uuid.UUID, response_text: str) -> Resu
             "conflict_response",
             name=user_name,
             description=updated_conflict["description"],
-            admin_response=response_text
-        )
+            admin_response=response_text,
+        ),
     )
 
     return Ok(updated_conflict)
-
 
 
 def get_all_pending_parking_spaces() -> Result[Dict[str, List[Dict[str, Any]]], str]:
@@ -251,7 +267,9 @@ def get_all_pending_parking_spaces() -> Result[Dict[str, List[Dict[str, Any]]], 
             return Ok({"pendingSpaces": rows})
 
 
-def handle_verify_parking(parking_space_id: uuid.UUID, is_verified: bool) -> Result[Dict[str, Any], str]:
+def handle_verify_parking(
+    parking_space_id: uuid.UUID, is_verified: bool
+) -> Result[Dict[str, Any], str]:
     # Step 1: Fetch the owner (user ID) of the parking space
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:  # Use dict_row here
@@ -259,7 +277,7 @@ def handle_verify_parking(parking_space_id: uuid.UUID, is_verified: bool) -> Res
                 """
                 SELECT owner FROM parking_spaces WHERE id = %s
                 """,
-                (str(parking_space_id),)
+                (str(parking_space_id),),
             )
             user_id_result = cur.fetchone()
             if not user_id_result:
@@ -268,7 +286,7 @@ def handle_verify_parking(parking_space_id: uuid.UUID, is_verified: bool) -> Res
             user_id = user_id_result["owner"]  # Access user_id directly
 
     # Step 2: Update the parking space verification status
-    verification_status = 'verified' if is_verified else 'rejected'
+    verification_status = "verified" if is_verified else "rejected"
 
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:  # Use dict_row here
@@ -283,7 +301,9 @@ def handle_verify_parking(parking_space_id: uuid.UUID, is_verified: bool) -> Res
             )
             updated_space = cur.fetchone()
             if not updated_space:
-                return Err(f"Failed to update the verification status of parking space with ID {parking_space_id}.")
+                return Err(
+                    f"Failed to update the verification status of parking space with ID {parking_space_id}."
+                )
 
     # Step 3: Fetch the user's name and email by user ID
     with DB.pool.connection() as conn:
@@ -292,7 +312,7 @@ def handle_verify_parking(parking_space_id: uuid.UUID, is_verified: bool) -> Res
                 """
                 SELECT name, email FROM users WHERE id = %s
                 """,
-                (str(user_id),)
+                (str(user_id),),
             )
             user_info_result = cur.fetchone()
             if not user_info_result:
@@ -308,7 +328,7 @@ def handle_verify_parking(parking_space_id: uuid.UUID, is_verified: bool) -> Res
             subject="Parking spot verification successful",
             content=generate_templated_email(
                 "spot_verified",
-                name=user_name  # Use the fetched user's name
+                name=user_name,  # Use the fetched user's name
             ),
         )
     else:
@@ -317,8 +337,117 @@ def handle_verify_parking(parking_space_id: uuid.UUID, is_verified: bool) -> Res
             subject="Parking spot verification rejected",
             content=generate_templated_email(
                 "spot_rejected",
-                name=user_name  # Use the fetched user's name
+                name=user_name,  # Use the fetched user's name
             ),
         )
 
     return Ok(updated_space)
+
+
+def admin_delete_paid_parking_space(
+    parking_space_id: uuid.UUID, reason: str
+) -> Result[None, str]:
+    """
+    Delete a paid parking space and ensure notifications are sent before cascade deletion
+    """
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            # 1. First get ALL necessary information before any deletions
+            cur.execute(
+                """
+                SELECT p.owner, p.is_paid, p.photos, p.name, u.email, u.name
+                FROM parking_spaces p
+                JOIN users u ON p.owner = u.id
+                WHERE p.id = %s
+                """,
+                (parking_space_id,),
+            )
+            result = cur.fetchone()
+
+            if not result:
+                return Err("spot not found")
+
+            owner_id, is_paid, photos, parking_space_name, owner_email, owner_name = (
+                result
+            )
+
+            if not is_paid:
+                return Err("not a paid spot")
+
+            # Get future reservations information BEFORE deletion
+            cur.execute(
+                """
+                SELECT DISTINCT 
+                    r.id,
+                    r.renter_id,
+                    lower(r.time) as start_time,
+                    upper(r.time) as end_time,
+                    u.email as renter_email,
+                    u.name as renter_name
+                FROM reservations r
+                JOIN users u ON r.renter_id = u.id
+                WHERE r.parking_space_id = %s
+                AND upper(r.time) > NOW()
+                AND r.status = 'booked'
+                """,
+                (parking_space_id,),
+            )
+            future_reservations = cur.fetchall()
+
+            notifications = []
+            for reservation in future_reservations:
+                _, _, start_time, end_time, renter_email, renter_name = reservation
+                notifications.append(
+                    {
+                        "email": renter_email,
+                        "name": renter_name,
+                        "start_time": start_time,
+                        "end_time": end_time,
+                    }
+                )
+
+            # 2. Now do the deletion (will cascade to all related tables)
+            cur.execute("DELETE FROM parking_spaces WHERE id = %s", (parking_space_id,))
+
+            # 3. Clean up photos
+            if photos:
+                for photo in photos:
+                    image_path = os.path.join(
+                        os.environ.get("BASE_FOLDER")
+                        or os.path.abspath(os.path.dirname(__file__)),
+                        photo.lstrip("/"),
+                    )
+                    if os.path.exists(image_path):
+                        os.remove(image_path)
+
+            # 4. Send all notifications after successful deletion
+            for notification in notifications:
+                email_content = generate_templated_email(
+                    "reservation_spot_deleted",
+                    name=notification["name"],
+                    parking_space_name=parking_space_name,
+                    start_time=notification["start_time"].strftime("%Y-%m-%d %H:%M %Z"),
+                    end_time=notification["end_time"].strftime("%Y-%m-%d %H:%M %Z"),
+                    cancel_reason=reason,
+                )
+                send_email(
+                    to=notification["email"],
+                    subject="Your Parking Reservation Has Been Cancelled",
+                    content=email_content,
+                )
+
+            # Send to owner
+            owner_email_content = generate_templated_email(
+                "spot_deleted",
+                owner_name=owner_name,
+                parking_space_name=parking_space_name,
+                reason=reason,
+            )
+
+            send_email(
+                to=owner_email,
+                subject="Your Parking Space Has Been Removed",
+                content=owner_email_content,
+            )
+
+            return Ok(None)

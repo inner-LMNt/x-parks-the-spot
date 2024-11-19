@@ -115,24 +115,15 @@ def add_car_info(
             return Ok(new_car)
 
 
-def get_car_info(user_id: uuid.UUID, car_id: uuid.UUID) -> Result[Dict[str, Any], str]:
+def get_car_info(car_id: uuid.UUID) -> Result[Dict[str, Any], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
                 """
-                SELECT 
-                    id, 
-                    make, 
-                    model, 
-                    license_plate,
-                    license_plate_state,
-                    color,
-                    created_at,
-                    updated_at
-                FROM cars
-                WHERE id = %s AND user_id = %s
+                SELECT id, make, model, license_plate, license_plate_state, created_at, updated_at, color
+                FROM cars WHERE id = %s
                 """,
-                (car_id, user_id),
+                (car_id,),
             )
             car = cur.fetchone()
 
@@ -149,7 +140,7 @@ def update_car(
     model: str | None = None,
     license_plate: str | None = None,
     license_plate_state: str | None = None,
-    color: str | None = None
+    color: str | None = None,
 ) -> Result[Dict[Any, Any], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:

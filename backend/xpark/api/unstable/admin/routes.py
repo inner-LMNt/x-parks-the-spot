@@ -5,13 +5,15 @@ from xpark.logic.admin import (
     get_all_conflicts,
     update_conflict_response,  # Import the new logic function
     get_all_cancellations,
-    handle_acknowledge_cancellation
+    handle_acknowledge_cancellation,
+    admin_delete_paid_parking_space,
 )
 from flask import request, jsonify
 from result import Ok, Err
 from typing import Any, Tuple
 from xpark.middleware.token_auth_middleware import require_admin
 import uuid
+
 
 @bp.get("get-conflicts")
 @require_admin
@@ -25,6 +27,7 @@ def get_conflicts_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     else:
         return jsonify({"error": result.unwrap_err()}), 400
 
+
 @bp.get("get-pending")
 def get_pending_parking_spaces_route() -> Tuple[Any, int]:
     """
@@ -35,6 +38,7 @@ def get_pending_parking_spaces_route() -> Tuple[Any, int]:
             return pending_spaces, 200
         case Err(e):
             return {"error": str(e)}, 403
+
 
 @bp.post("verify-parking-space")
 @require_admin
@@ -52,6 +56,7 @@ def verify_parking_space(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return updated_space, 200
         case Err(e):
             return {"error": str(e)}, 400
+
 
 @bp.post("update-conflict")
 @require_admin
@@ -77,6 +82,7 @@ def update_conflict_response_route(token: str, user_id: uuid.UUID) -> Tuple[Any,
     else:
         return jsonify({"error": result.unwrap_err()}), 400
 
+
 @bp.get("get-cancellations")
 @require_admin
 def get_cancellations_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
@@ -88,6 +94,7 @@ def get_cancellations_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         return jsonify(result.unwrap()), 200
     else:
         return jsonify({"error": result.unwrap_err()}), 400
+
 
 @bp.post("acknowledge-cancellation")
 @require_admin
@@ -111,3 +118,26 @@ def acknowledge_cancellation_route(token: str, user_id: uuid.UUID) -> Tuple[Any,
         return jsonify({"message": "Cancellation acknowledged"}), 200
     else:
         return jsonify({"error": result.unwrap_err()}), 400
+
+
+@bp.delete("parking-spaces/<parking_space_id>")
+@require_admin
+def admin_delete_parking_space_route(
+    token: str, user_id: uuid.UUID, parking_space_id: str
+) -> Tuple[Any, int]:
+    """
+    Admin route to delete a paid parking space and handle associated reservations
+    """
+    data = request.get_json()
+    reason = data.get("reason")
+
+    if not parking_space_id or not reason:
+        return {"error": "Parking space ID and reason are required"}, 400
+
+    match admin_delete_paid_parking_space(uuid.UUID(parking_space_id), reason):
+        case Ok(_):
+            return {}, 200
+        case Err("spot not found"):
+            return {"err": "Parking space not found"}, 404
+        case Err(e):
+            return {"err": str(e)}, 400

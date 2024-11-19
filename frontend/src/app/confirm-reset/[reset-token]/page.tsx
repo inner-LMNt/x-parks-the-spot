@@ -1,3 +1,3 @@
-import ConfirmReset from "./ConfirmReset";
+import ConfirmReset from "./ConfirmReset"
 
-export default ConfirmReset;
+export default ConfirmReset

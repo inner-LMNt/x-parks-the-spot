@@ -1,2 +1,2 @@
-import MySpotsPage from "./MySpotsPage";
-export default MySpotsPage;
+import MySpotsPage from "./MySpotsPage"
+export default MySpotsPage
