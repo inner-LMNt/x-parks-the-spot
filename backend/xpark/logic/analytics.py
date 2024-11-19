@@ -233,12 +233,12 @@ def get_dashboard_analytics(
 
             # ==== Spot Performance and Revenue by Spot ====
             spot_params = [
-                start_date, end_date,  # For daily_hours
-                start_date, end_date,  # For daily_bookings
+                start_date, end_date + timedelta(days=7),  # For daily_hours
+                start_date, end_date + timedelta(days=7),  # For daily_bookings
                 end_date, start_date,  # For occupied_hours LEAST/GREATEST
                 start_date, end_date,  # For occupied_hours OVERLAPS
                 end_date, start_date,  # For occupancy rate calculation
-                start_date, end_date,  # For reservations join
+                start_date, end_date + timedelta(days=7),  # For reservations join
                 user_id  # For owner check
             ]
             if spot_id:
