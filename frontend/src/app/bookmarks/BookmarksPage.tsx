@@ -13,7 +13,10 @@ import {
 } from "@/components/ui/card"
 import { useDispatch, useSelector } from "react-redux"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { fetchUserBookmarks, deleteBookmark } from "@/features/bookmarks/bookmarkSlice"
+import {
+  fetchUserBookmarks,
+  deleteBookmark,
+} from "@/features/bookmarks/bookmarkSlice"
 import { Bookmark as BookmarkIcon } from "lucide-react" // Imported FileWarning
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
@@ -22,9 +25,7 @@ export default function BookmarksPage() {
   const dispatch = useDispatch()
   const isLoggedIn = useSelector((state: any) => state.user.isLoggedIn)
   const router = useRouter()
-  const s = useAppSelector(
-    (state) => state.bookmarks,
-  )
+  const s = useAppSelector((state) => state.bookmarks)
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -59,8 +60,7 @@ export default function BookmarksPage() {
           <Card
             className="overflow-hidden hover:shadow-lg transition-shadow duration-300"
             onClick={() => {
-              // @ts-ignore
-              // dispatch(openEditCarModal(car))
+              router.push(`/bookings/${bookmark.parking_spot_id}/reserve`)
             }}
           >
             <CardHeader className="bg-gray-50">
@@ -95,17 +95,6 @@ export default function BookmarksPage() {
             renderBookmarks(s.bookmarks)
           )}
         </motion.div>
-        <div className="text-left mb-6">
-          <Button
-            variant="outline"
-            onClick={() => {
-              // @ts-ignore
-              // dispatch(setIsAddCarModalOpen(true))
-            }}
-          >
-            <BookmarkIcon className="mr-2" /> Add Bookmark
-          </Button>
-        </div>
       </div>
       <div className="flex h-16"></div>
     </div>
