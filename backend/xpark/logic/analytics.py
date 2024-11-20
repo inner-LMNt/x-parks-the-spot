@@ -288,55 +288,24 @@ def get_dashboard_analytics(
                             '1 hour'::interval
                         ) AS timestamp
                     ),
-                    confirmed_bookings AS (
+                    -- Just get the reservations in the next 7 days
+                    upcoming_bookings AS (
                         SELECT 
                             DATE_TRUNC('hour', LOWER(r.time)) as timestamp,
-                            SUM(r.price) as confirmed_revenue,
-                            COUNT(*) as booking_count,
-                            COUNT(*) * 100.0 / sc.total_spots as utilization_rate
+                            SUM(r.price) as revenue,
+                            COUNT(*) as booking_count
                         FROM reservations r
-                        JOIN parking_spaces ps ON r.parking_space_id = ps.id
-                        CROSS JOIN spot_counts sc
-                        WHERE ps.owner = %(user_id)s 
-                            AND ps.is_paid = TRUE
-                            AND r.status != 'canceled'
+                        WHERE status != 'canceled'
                             AND LOWER(r.time) >= %(now)s
                             AND LOWER(r.time) < %(next_7_days)s
-                            {spot_filter_sql}
-                        GROUP BY 1, sc.total_spots
-                    ),
-                    historical_patterns AS (
-                        SELECT 
-                            EXTRACT(DOW FROM LOWER(r.time)) as day_of_week,
-                            EXTRACT(HOUR FROM LOWER(r.time)) as hour,
-                            AVG(r.price) as avg_historical_revenue,
-                            COUNT(*) * 100.0 / 
-                                NULLIF(COUNT(DISTINCT DATE_TRUNC('day', LOWER(r.time))), 0) as avg_utilization
-                        FROM reservations r
-                        JOIN parking_spaces ps ON r.parking_space_id = ps.id
-                        WHERE ps.owner = %(user_id)s 
-                            AND ps.is_paid = TRUE
-                            AND r.status != 'canceled'
-                            AND LOWER(r.time) >= %(start_date)s - %(time_delta)s
-                            {spot_filter_sql}
-                        GROUP BY 1, 2
+                        GROUP BY 1
                     )
                     SELECT 
                         hs.timestamp,
-                        COALESCE(cb.confirmed_revenue, 0) as confirmed_revenue,
-                        COALESCE(
-                            (SELECT avg_historical_revenue 
-                             FROM historical_patterns 
-                             WHERE day_of_week = EXTRACT(DOW FROM hs.timestamp)
-                             AND hour = EXTRACT(HOUR FROM hs.timestamp)
-                            ), 0
-                        ) * (sc.total_spots - COALESCE(cb.booking_count, 0)) as potential_revenue,
-                        COALESCE(cb.booking_count, 0) as booking_count,
-                        COALESCE(cb.utilization_rate, 0) as spot_utilization,
-                        sc.total_spots as available_spots
+                        COALESCE(ub.revenue, 0) as potential_revenue
                     FROM hourly_series hs
                     CROSS JOIN spot_counts sc
-                    LEFT JOIN confirmed_bookings cb USING (timestamp)
+                    LEFT JOIN upcoming_bookings ub USING (timestamp)
                     ORDER BY timestamp;
                             """,
                 params
@@ -815,14 +784,7 @@ def get_dashboard_analytics(
                                 sum(row["booking_count"] for row in historical_revenue)
                                 if sum(row["booking_count"] for row in historical_revenue) > 0
                                 else 0
-                            ),
-                            "projectedNext7Days": sum(
-                                row["confirmed_revenue"] + row["potential_revenue"]
-                                for row in upcoming_revenue
-                            ),
-                            "periodOverPeriodGrowth": sum(
-                                row["period_over_period_growth"] for row in historical_revenue
-                            ) / len(historical_revenue) if historical_revenue else 0
+                            )
                         },
                         "occupancy": {
                             "overallRate": overall_occupancy_rate
@@ -837,23 +799,14 @@ def get_dashboard_analytics(
                         "historicalRevenue": [
                             {
                                 "timestamp": row["timestamp"].isoformat(),
-                                "actual": float(row["actual"]),
-                                "projected": float(row["projected"]),
-                                "bookingCount": row["booking_count"],
-                                "avgBookingValue": float(row["avg_booking_value"]),
-                                "cumulativeRevenue": float(row["cumulative_revenue"]),
-                                "periodOverPeriodGrowth": float(row["period_over_period_growth"])
+                                "actual": float(row["actual"])
                             }
                             for row in historical_revenue
                         ],
                         "upcomingRevenue": [
                             {
                                 "timestamp": row["timestamp"].isoformat(),
-                                "confirmed": float(row["confirmed_revenue"]),
-                                "potential": float(row["potential_revenue"]),
-                                "bookingCount": row["booking_count"],
-                                "spotUtilization": float(row["spot_utilization"]),
-                                "availableSpots": row["available_spots"]
+                                "potential": float(row["potential_revenue"])
                             }
                             for row in upcoming_revenue
                         ]

@@ -20,24 +20,20 @@ import {
   Scatter,
 } from "recharts";
 import { startOfWeek, startOfMonth, format, parseISO } from 'date-fns';
+import SummaryCard from "./RevenueSummaryCard";
+import {
+  DollarSign,
+  TrendingUp,
+} from "lucide-react";
 
 interface DetailedRevenuePoint {
   timestamp: string;
   actual: number;
-  projected: number;
-  bookingCount: number;
-  avgBookingValue: number;
-  cumulativeRevenue: number;
-  periodOverPeriodGrowth: number;
 }
 
 interface UpcomingRevenuePoint {
   timestamp: string;
-  confirmed: number;
   potential: number;
-  bookingCount: number;
-  spotUtilization: number;
-  availableSpots: number;
 }
 
 interface RevenueMetrics {
@@ -54,7 +50,7 @@ const RevenueTab: React.FC<RevenueTabProps> = ({ revenueMetrics, timeFilter }) =
   // Utility function to group data
   const groupData = (
       data: DetailedRevenuePoint[] | UpcomingRevenuePoint[],
-      granularity: 'day' | 'week' | 'month'
+      granularity: '8_hours' | 'day' | 'week' | 'month'
   ) => {
     const grouped: { [key: string]: any } = {};
 
@@ -63,11 +59,17 @@ const RevenueTab: React.FC<RevenueTabProps> = ({ revenueMetrics, timeFilter }) =
       let key: string;
 
       switch (granularity) {
+        case '8_hours':
+          const hours = Math.floor(date.getHours() / 8) * 8;
+          const roundedDate = new Date(date);
+          roundedDate.setHours(hours, 0, 0, 0);
+          key = format(roundedDate, 'yyyy-MM-dd HH:mm');
+          break;
         case 'day':
           key = format(date, 'yyyy-MM-dd');
           break;
         case 'week':
-          key = format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd'); // Weeks start on Monday
+          key = format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
           break;
         case 'month':
           key = format(startOfMonth(date), 'yyyy-MM');
@@ -77,7 +79,7 @@ const RevenueTab: React.FC<RevenueTabProps> = ({ revenueMetrics, timeFilter }) =
       }
 
       if (!grouped[key]) {
-        grouped[key] = { ...point, timestamp: key };
+        grouped[key] = { timestamp: key };
         // Initialize numerical fields for aggregation
         Object.keys(point).forEach(k => {
           if (k !== 'timestamp' && typeof point[k as keyof typeof point] === 'number') {
@@ -104,12 +106,12 @@ const RevenueTab: React.FC<RevenueTabProps> = ({ revenueMetrics, timeFilter }) =
   };
 
   // Determine granularity for Historical Data based on timeFilter
-  const granularityHistorical: 'day' | 'week' | 'month' = useMemo(() => {
+  const granularityHistorical: '8_hours' | 'day' | 'week' | 'month' = useMemo(() => {
     switch (timeFilter) {
       case '7_days':
-        return 'day';
+        return '8_hours';
       case '30_days':
-        return 'week'; // Change this to 'day' for finer granularity if desired
+        return 'day';
       case '1_year':
         return 'month';
       default:
@@ -117,66 +119,55 @@ const RevenueTab: React.FC<RevenueTabProps> = ({ revenueMetrics, timeFilter }) =
     }
   }, [timeFilter]);
 
-  // Determine granularity for Upcoming Data (finer granularity)
-  const granularityUpcoming: 'day' = 'day';
-
   // Process Historical Data with Aggregation
   const historicalData = useMemo(() => {
-    const aggregated = groupData(revenueMetrics.historicalRevenue, granularityHistorical);
-    return aggregated.map(point => ({
-      ...point,
-      timestamp: new Date(point.timestamp),
-    }));
+    return groupData(revenueMetrics.historicalRevenue, granularityHistorical);
   }, [revenueMetrics.historicalRevenue, granularityHistorical]);
 
-  const daysDifference = useMemo(() => {
-    if (!historicalData.length) return 0;
-    const startDate = historicalData[0].timestamp;
-    const endDate = historicalData[historicalData.length - 1].timestamp;
-    return Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-  }, [historicalData]);
-
-  // Format X-Axis Dates
-  const formatAxisDate = (timestamp: string | Date) => {
-    const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
-    if (granularityHistorical === 'day') {
-      return date.toLocaleDateString('en-US', {
-        weekday: 'short',
-        hour: 'numeric',
-        hour12: true
-      });
-    } else if (granularityHistorical === 'week') {
-      return `Wk ${format(date, 'MM/dd')}`;
-    } else if (granularityHistorical === 'month') {
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        year: 'numeric'
-      });
+  // Format X-Axis Dates for Historical Chart
+  const formatAxisDateHistorical = (timestamp: string) => {
+    const date = parseISO(timestamp);
+    switch (granularityHistorical) {
+      case '8_hours':
+        return format(date, 'MM/dd HH:mm');
+      case 'day':
+        return format(date, 'MM/dd');
+      case 'week':
+        return `Wk ${format(date, 'MM/dd')}`;
+      case 'month':
+        return format(date, 'MMM yyyy');
+      default:
+        return '';
     }
-    return '';
   };
 
-  // Format Tooltip Dates
-  const formatTooltipDate = (timestamp: string) => {
-    const date = new Date(timestamp);
-    if (granularityHistorical === 'day') {
-      return date.toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: true
-      });
-    } else if (granularityHistorical === 'week') {
-      return `Week of ${format(startOfWeek(date, { weekStartsOn: 1 }), 'MMM d, yyyy')}`;
-    } else if (granularityHistorical === 'month') {
-      return date.toLocaleDateString('en-US', {
-        month: 'long',
-        year: 'numeric'
-      });
+  // Format Tooltip Dates for Historical Chart
+  const formatTooltipDateHistorical = (timestamp: string) => {
+    const date = parseISO(timestamp);
+    switch (granularityHistorical) {
+      case '8_hours':
+        return format(date, 'PPpp');
+      case 'day':
+        return format(date, 'PPpp');
+      case 'week':
+        return `Week of ${format(startOfWeek(date, { weekStartsOn: 1 }), 'MMM d, yyyy')}`;
+      case 'month':
+        return format(date, 'MMMM yyyy');
+      default:
+        return '';
     }
-    return '';
+  };
+
+  // Format X-Axis Dates for Upcoming Forecast Chart
+  const formatAxisDateUpcoming = (timestamp: string) => {
+    const date = parseISO(timestamp);
+    return format(date, 'MM/dd');
+  };
+
+  // Format Tooltip Dates for Upcoming Forecast Chart
+  const formatTooltipDateUpcoming = (timestamp: string) => {
+    const date = parseISO(timestamp);
+    return format(date, 'MMM d, yyyy');
   };
 
   // Format Currency
@@ -189,262 +180,211 @@ const RevenueTab: React.FC<RevenueTabProps> = ({ revenueMetrics, timeFilter }) =
       }).format(value);
 
   // Calculate Tick Interval for Historical Data
-  const getTickInterval = useMemo(() => {
+  const getTickIntervalHistorical = useMemo(() => {
     return Math.max(1, Math.floor(historicalData.length / 6));
   }, [historicalData.length]);
 
-  // Calculate Tick Interval for Upcoming Data
-  const getTickIntervalUpcoming = (dataLength: number) => {
-    return Math.max(1, Math.floor(dataLength / 6));
-  };
-
-  // Aggregate Upcoming Data with Finer Granularity
+  // Aggregate Upcoming Data (Next 7 Days Forecast)
   const upcomingData = useMemo(() => {
-    return groupData(revenueMetrics.upcomingRevenue, granularityUpcoming);
-  }, [revenueMetrics.upcomingRevenue, granularityUpcoming]);
-
-  // Format Upcoming Data for Chart
-  const formattedUpcomingData = useMemo(() => {
-    return upcomingData.map(point => ({
-      ...point,
-      timestamp: new Date(point.timestamp),
-    }));
-  }, [upcomingData]);
+    return groupData(revenueMetrics.upcomingRevenue, 'day');
+  }, [revenueMetrics.upcomingRevenue]);
 
   // Prepare Scatter Data for Upcoming Chart
-  const confirmedScatterData = useMemo(() =>
-          formattedUpcomingData
-              .filter(point => point.confirmed > 0)
-              .map(point => ({
-                timestamp: point.timestamp,
-                confirmed: point.confirmed
-              })),
-      [formattedUpcomingData]
-  );
-
   const potentialScatterData = useMemo(() =>
-          formattedUpcomingData
+          revenueMetrics.upcomingRevenue
               .filter(point => point.potential > 0)
               .map(point => ({
                 timestamp: point.timestamp,
                 potential: point.potential
               })),
-      [formattedUpcomingData]
+      [revenueMetrics.upcomingRevenue]
   );
 
-  const spotUtilizationScatterData = useMemo(() =>
-          formattedUpcomingData
-              .filter(point => point.spotUtilization > 0)
-              .map(point => ({
-                timestamp: point.timestamp,
-                spotUtilization: point.spotUtilization
-              })),
-      [formattedUpcomingData]
-  );
+  // Compute Summary Metrics
+  const summaryMetrics = useMemo(() => {
+    // Total Actual Revenue
+    const totalActualRevenue = revenueMetrics.historicalRevenue.reduce((acc, curr) => acc + curr.actual, 0);
+
+    // Total Projected Revenue
+    const totalProjectedRevenue = revenueMetrics.upcomingRevenue.reduce((acc, curr) => acc + curr.potential, 0);
+
+    return {
+      totalActualRevenue,
+      totalProjectedRevenue
+    };
+  }, [revenueMetrics]);
 
   return (
       <div className="space-y-6">
-        {/* Historical Revenue Chart */}
+        {/* Main Summary Metrics Card */}
         <Card>
           <CardHeader>
-            <CardTitle>
-              {timeFilter === "7_days"
-                  ? "Last 7 Days Revenue"
-                  : timeFilter === "30_days"
-                      ? "Last 30 Days Revenue"
-                      : "Last Year Revenue"}
-            </CardTitle>
-            <CardDescription>
-              Revenue trends and booking patterns
-            </CardDescription>
+            <CardTitle className="text-lg font-semibold">Key Revenue Metrics</CardTitle>
+            <CardDescription>Overview of key revenue indicators</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                    data={historicalData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                      dataKey="timestamp"
-                      tickFormatter={formatAxisDate}
-                      interval={getTickInterval}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                      tick={{ fill: '#666', fontSize: 12 }}
-                  />
-                  <YAxis
-                      tickFormatter={formatCurrency}
-                      tick={{ fill: '#666', fontSize: 12 }}
-                  />
-                  <Tooltip
-                      formatter={(value: number, name: string) => {
-                        if (name === 'smoothedRevenue') {
-                          return [formatCurrency(value), 'Average Revenue'];
-                        }
-                        return [formatCurrency(value), 'Actual Revenue'];
-                      }}
-                      labelFormatter={formatTooltipDate}
-                      contentStyle={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        borderRadius: '6px',
-                        padding: '8px',
-                        border: '1px solid #eaeaea',
-                        fontSize: '12px',
-                      }}
-                  />
-                  <Legend verticalAlign="top" height={36} />
-                  {/* Main smooth line */}
-                  <Line
-                      type="monotone"
-                      dataKey="actual"
-                      name="Actual Revenue"
-                      stroke="#3b82f6"
-                      strokeWidth={3}
-                      dot={false}
-                      connectNulls
-                  />
-                  {/* Actual data points as Scatter */}
-                  <Scatter
-                      name="Individual Bookings"
-                      dataKey="actual"
-                      fill="#3b82f6"
-                      shape="circle"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Total Actual Revenue */}
+              <SummaryCard
+                  label="Total Actual Revenue"
+                  value={formatCurrency(summaryMetrics.totalActualRevenue)}
+                  Icon={DollarSign}
+                  iconColor="text-green-500"
+              />
+
+              {/* Total Projected Revenue */}
+              <SummaryCard
+                  label="Total Projected Revenue"
+                  value={formatCurrency(summaryMetrics.totalProjectedRevenue)}
+                  Icon={TrendingUp}
+                  iconColor="text-blue-500"
+              />
             </div>
           </CardContent>
         </Card>
 
-        {/* Upcoming Revenue Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Next 7 Days Revenue Forecast</CardTitle>
-            <CardDescription>
-              Detailed breakdown of confirmed bookings and potential revenue with spot utilization metrics
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                    data={formattedUpcomingData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                      dataKey="timestamp"
-                      tickFormatter={(timestamp) => format(new Date(timestamp), 'MM/dd')}
-                      interval={getTickIntervalUpcoming(formattedUpcomingData.length)}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                      tick={{ fill: '#666', fontSize: 12 }}
-                  />
-                  <YAxis
-                      yAxisId="revenue"
-                      orientation="left"
-                      tickFormatter={(value) => `$${value}`}
-                      tick={{ fill: '#666', fontSize: 12 }}
-                  />
-                  <YAxis
-                      yAxisId="growth"
-                      orientation="right"
-                      domain={[0, 100]}
-                      tickFormatter={(value) => `${value}%`}
-                      tick={{ fill: '#666', fontSize: 12 }}
-                  />
-                  <Tooltip
-                      formatter={(value: number, name: string) => {
-                        switch (name) {
-                          case 'confirmed':
-                            return [`$${value}`, 'Confirmed Revenue'];
-                          case 'potential':
-                            return [`$${value}`, 'Potential Revenue'];
-                          case 'spotUtilization':
-                            return [`${value}%`, 'Utilization'];
-                          default:
-                            return [value, name];
-                        }
-                      }}
-                      labelFormatter={(timestamp: string) =>
-                          format(new Date(timestamp), 'MMM d, yyyy')
-                      }
-                      contentStyle={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        borderRadius: '6px',
-                        padding: '8px',
-                        border: '1px solid #eaeaea',
-                        fontSize: '12px',
-                      }}
-                  />
-                  <Legend verticalAlign="top" height={86} />
-                  {/* Confirmed Revenue Line */}
-                  <Line
-                      yAxisId="revenue"
-                      type="monotone"
-                      dataKey="confirmed"
-                      name="Confirmed Revenue"
-                      stroke="#3b82f6"
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls
-                  />
-                  {/* Potential Revenue Line */}
-                  <Line
-                      yAxisId="revenue"
-                      type="monotone"
-                      dataKey="potential"
-                      name="Potential Revenue"
-                      stroke="#93c5fd"
-                      strokeDasharray="5 5"
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls
-                  />
-                  {/* Spot Utilization Line */}
-                  <Line
-                      yAxisId="growth"
-                      type="monotone"
-                      dataKey="spotUtilization"
-                      name="Utilization"
-                      stroke="#10b981"
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls
-                  />
-                  {/* Scatter for Confirmed Revenue Points */}
-                  <Scatter
-                      yAxisId="revenue"
-                      name="Confirmed Revenue Points"
-                      data={confirmedScatterData}
-                      fill="#3b82f6"
-                      shape="circle"
-                  />
-                  {/* Scatter for Potential Revenue Points */}
-                  <Scatter
-                      yAxisId="revenue"
-                      name="Potential Revenue Points"
-                      data={potentialScatterData}
-                      fill="#93c5fd"
-                      shape="circle"
-                  />
-                  {/* Scatter for Spot Utilization Points */}
-                  <Scatter
-                      yAxisId="growth"
-                      name="Utilization Points"
-                      data={spotUtilizationScatterData}
-                      fill="#10b981"
-                      shape="circle"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Historical Revenue Chart Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {timeFilter === "7_days"
+                    ? "Last 7 Days Revenue"
+                    : timeFilter === "30_days"
+                        ? "Last 30 Days Revenue"
+                        : "Last Year Revenue"}
+              </CardTitle>
+              <CardDescription>
+                Revenue trends over the selected period
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Chart */}
+              <div className="h-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                      data={historicalData}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                        dataKey="timestamp"
+                        tickFormatter={formatAxisDateHistorical}
+                        interval={getTickIntervalHistorical}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                        tick={{ fill: '#666', fontSize: 12 }}
+                    />
+                    <YAxis
+                        tickFormatter={formatCurrency}
+                        tick={{ fill: '#666', fontSize: 12 }}
+                    />
+                    <Tooltip
+                        formatter={(value: number, name: string) => [formatCurrency(value), 'Actual Revenue']}
+                        labelFormatter={formatTooltipDateHistorical}
+                        contentStyle={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                          borderRadius: '6px',
+                          padding: '8px',
+                          border: '1px solid #eaeaea',
+                          fontSize: '12px',
+                        }}
+                    />
+                    <Legend verticalAlign="top" height={36} />
+                    {/* Actual Revenue Line */}
+                    <Line
+                        type="monotone"
+                        dataKey="actual"
+                        name="Actual Revenue"
+                        stroke="#3b82f6"
+                        strokeWidth={3}
+                        dot={false}
+                        connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Upcoming Revenue Forecast Chart Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Next 7 Days Revenue Forecast</CardTitle>
+              <CardDescription>
+                Projected revenue for the upcoming 7 days
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Chart */}
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                      data={upcomingData}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                        dataKey="timestamp"
+                        tickFormatter={formatAxisDateUpcoming}
+                        interval={Math.max(1, Math.floor(upcomingData.length / 6))}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                        tick={{ fill: '#666', fontSize: 12 }}
+                    />
+                    <YAxis
+                        yAxisId="left"
+                        orientation="left"
+                        tickFormatter={formatCurrency}
+                        tick={{ fill: '#666', fontSize: 12 }}
+                    />
+                    <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        domain={[0, 100]}
+                        tickFormatter={(value) => `${value}%`}
+                        tick={{ fill: '#666', fontSize: 12 }}
+                    />
+                    <Tooltip
+                        formatter={(value: number, name: string) => {
+                          switch (name) {
+                            case 'potential':
+                              return [formatCurrency(value), 'Potential Revenue'];
+                            default:
+                              return [value, name];
+                          }
+                        }}
+                        labelFormatter={formatTooltipDateUpcoming}
+                        contentStyle={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                          borderRadius: '6px',
+                          padding: '8px',
+                          border: '1px solid #eaeaea',
+                          fontSize: '12px',
+                        }}
+                    />
+                    <Legend verticalAlign="top" height={36} />
+                    {/* Potential Revenue Line */}
+                    <Line
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="potential"
+                        name="Potential Revenue"
+                        stroke="#93c5fd"
+                        strokeDasharray="5 5"
+                        strokeWidth={3}
+                        dot={false}
+                        connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
   );
 };

@@ -31,7 +31,7 @@ const TIME_FILTERS = {
 export default function OwnerDashboard() {
   const dispatch = useAppDispatch()
   const router = useRouter()
-  const [selectedTab, setSelectedTab] = useState("revenue")
+  const [selectedTab, setSelectedTab] = useState("bookings")
   const [timeFilter, setTimeFilter] =
     useState<keyof typeof TIME_FILTERS>("30_days")
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null)
