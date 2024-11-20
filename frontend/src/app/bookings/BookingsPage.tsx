@@ -29,6 +29,11 @@ import { Button } from "@/components/ui/button"
 import DeleteReservationModal from "@/components/custom/DeleteReservationModal"
 import RatingSelector from "@/components/custom/RatingSelector"
 import parkingSpaceSlice from "@/features/parking-space/parkingSpaceSlice"
+import {
+  fetchUserBookmarks,
+  deleteBookmark,
+  addBookmark,
+} from "@/features/bookmarks/bookmarkSlice"
 
 // SectionHeader Component
 function SectionHeader({ title }: { title: string }) {
@@ -62,6 +67,8 @@ function ReservationCard({
   onCancel: (reservation: Reservation) => void
 }) {
   const router = useRouter()
+  const [isBookmarked, setIsBookmarked] = useState<boolean>(false)
+  const dispatch = useAppDispatch()
 
   const handleClick = () => {
     router.push(`/bookings/${reservation.parking_space_id}`)
@@ -82,6 +89,11 @@ function ReservationCard({
       car,
     )
   }, [reservation, car])
+
+  useEffect(() => {
+    dispatch(fetchUserBookmarks()).unwrap()
+    setIsBookmarked(reservation.is_bookmarked)
+  }, [reservation, dispatch])
 
   const now = new Date()
   const startTime = new Date(reservation.start_time ?? now)
@@ -157,6 +169,24 @@ function ReservationCard({
               className="w-full"
             >
               Book Again
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full mt-4"
+              size="lg"
+              onClick={() => {
+                if (isBookmarked) {
+                  dispatch(
+                    deleteBookmark(reservation.parking_space_id),
+                  ).unwrap()
+                  setIsBookmarked(false)
+                } else {
+                  dispatch(addBookmark(reservation.parking_space_id)).unwrap()
+                  setIsBookmarked(true)
+                }
+              }}
+            >
+              {isBookmarked ? "Remove Bookmark" : "Bookmark for Later"}
             </Button>
           </div>
           {!isPast && reservation.status !== "canceled" && (

@@ -13,6 +13,7 @@ required:
   - updated_at
   - price
   - location
+  - is_bookmarked
 properties:
   id:
     type: string
@@ -55,3 +56,5 @@ properties:
     type: number
   location:
     $ref: './Location.yaml'
+  is_bookmarked:
+    type: boolean

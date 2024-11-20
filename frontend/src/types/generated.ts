@@ -2138,6 +2138,7 @@ export type components = {
             updated_at: string;
             price: number;
             location: components["schemas"]["Location"];
+            is_bookmarked: boolean;
         };
         ReservationCreateRequest: {
             /** Format: uuid */
