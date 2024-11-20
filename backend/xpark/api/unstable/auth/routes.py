@@ -205,7 +205,6 @@ def use_points_badge(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 @bp.get("badge-list")
 @require_logged_in_user
 def get_badge_list(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    print("get_badge_list")
     match handle_get_badge_list(user_id):
         case Ok(badges):
             return {"badges": badges}, 200

@@ -521,7 +521,10 @@ def handle_buy_badge(
             description = f"Badge purchase: {id_to_name[badge_id]}"
 
             cur.execute(
-                "INSERT INTO points_transaction (user_id, transaction_type, points_amount, description, balance_after_transaction) VALUES (%s, 'spend', %s, %s, %s)",
+                """
+                INSERT INTO points_transaction (user_id, transaction_type, points_amount, description, balance_after_transaction, status)
+                VALUES (%s, 'spend', %s, %s, %s, 'active')
+                """,
                 (user_id, price, description, points["current"] - price),
             )
 
@@ -540,4 +543,63 @@ def handle_get_badge_list(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
                 return Err("User not found")
 
             result = list(map(int, result["badges"]))
+            return Ok(result)
+
+
+def handle_buy_raffle_ticket(user_id: uuid.UUID, raffle_id: int, price: int) -> Result[None, str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            # Check sufficient points
+            cur.execute(
+                "SELECT points FROM users WHERE id = %s FOR UPDATE",
+                (user_id,),
+            )
+            result = cur.fetchone()
+            if not result:
+                return Err("User not found")
+            points = result[0]
+            if points["current"] < price:
+                return Err("Insufficient points")
+
+            # Update points and raffle tickets
+            cur.execute(
+                "UPDATE users SET points = jsonb_set(points, '{current}', ((points->>'current')::integer - %s)::text::jsonb) WHERE id = %s",
+                (price, user_id),
+            )
+
+            # Might want to change this later by storing shop items in a separate table
+            # Right now, they're all hardcoded
+            id_to_name = {
+                4: "$10 Gift Card",
+            }
+            description = f"Raffle ticket purchase: {id_to_name[raffle_id]}"
+
+            cur.execute(
+                """
+                INSERT INTO points_transaction (user_id, transaction_type, points_amount, description, balance_after_transaction, status)
+                VALUES (%s, 'spend', %s, %s, %s, 'active')
+                """,
+                (user_id, price, description, points["current"] - price),
+            )
+
+            return Ok(None)
+        
+
+def handle_get_raffle_tickets(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
+    # Right now, only accounting for 1 raffle prize
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT COUNT(*)
+                FROM points_transaction
+                WHERE user_id = %s AND description LIKE 'Raffle ticket purchase%'
+                AND status = 'active'
+                """,
+                (user_id,),
+            )
+            result = cur.fetchone()
+            if not result:
+                return Err("User not found")
+
             return Ok(result)

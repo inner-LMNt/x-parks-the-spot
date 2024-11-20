@@ -81,6 +81,7 @@ export default function ProfilePage() {
     const currentPoints = useAppSelector((state) => state.user.current_points);
     const totalPoints = useAppSelector((state) => state.user.total_points);
     const userBadges = useAppSelector((state) => state.user.badges) || [];
+    const [badges, setBadges] = useState(userBadges);
 
     const handleLogout = async () => {
         await dispatch(logout());
@@ -120,8 +121,9 @@ export default function ProfilePage() {
     }, [dispatch]);
 
     useEffect(() => {
-        dispatch(get_badge_list());
-    }, []);
+        setBadges(userBadges);
+    }, [userBadges]);
+
 
     const badgeDetails: { [key: string]: { colorClass: string; label: string } } = {
         '1': { colorClass: "bg-yellow-600", label: "Bronze Badge" },
