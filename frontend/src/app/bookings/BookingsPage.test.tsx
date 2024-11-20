@@ -1,19 +1,19 @@
 // BookingsPage.test.tsx
 
-import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import BookingsPage from "./BookingsPage"; // Adjust the import path based on your file structure
-import { Provider } from "react-redux";
-import configureStore, { MockStoreEnhanced } from "redux-mock-store";
-import thunk from "redux-thunk";
+import React from "react"
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import BookingsPage from "./BookingsPage" // Adjust the import path based on your file structure
+import { Provider } from "react-redux"
+import configureStore, { MockStoreEnhanced } from "redux-mock-store"
+import thunk from "redux-thunk"
 import {
   fetchUserReservations,
   cancelReservation,
-} from "@/features/reservations/reservationsSlice";
-import { toast } from "@/hooks/use-toast";
+} from "@/features/reservations/reservationsSlice"
+import { toast } from "@/hooks/use-toast"
 
 // Initialize mock store without middlewares as per your setup
-const mockStore = configureStore([]);
+const mockStore = configureStore([])
 
 // Mock Next.js navigation hooks
 jest.mock("next/navigation", () => ({
@@ -25,21 +25,21 @@ jest.mock("next/navigation", () => ({
     pathname: "/",
     query: {},
   }),
-}));
+}))
 
 // Mock actions from reservationsSlice
 jest.mock("@/features/reservations/reservationsSlice", () => ({
   fetchUserReservations: jest.fn(),
   cancelReservation: jest.fn(),
-}));
+}))
 
 // Mock the toast hook
 jest.mock("@/hooks/use-toast", () => ({
   toast: jest.fn(),
-}));
+}))
 
 describe.skip("BookingsPage Component", () => {
-  let store: MockStoreEnhanced<unknown, {}>;
+  let store: MockStoreEnhanced<unknown, {}>
 
   beforeEach(() => {
     store = mockStore({
@@ -127,20 +127,20 @@ describe.skip("BookingsPage Component", () => {
         error: null,
         parkingSpace: null,
       },
-    });
+    })
 
     // Mock the implementation of actions
-    (fetchUserReservations as jest.Mock).mockReturnValue({
+    ;(fetchUserReservations as jest.Mock).mockReturnValue({
       type: "reservations/fetchUserReservations",
-    });
-    (cancelReservation as jest.Mock).mockReturnValue({
+    })
+    ;(cancelReservation as jest.Mock).mockReturnValue({
       type: "reservations/cancelReservation",
-    });
-  });
+    })
+  })
 
   afterEach(() => {
-    jest.clearAllMocks();
-  });
+    jest.clearAllMocks()
+  })
 
   it("renders the BookingsPage component with loading state", () => {
     store = mockStore({
@@ -167,30 +167,30 @@ describe.skip("BookingsPage Component", () => {
         error: null,
         parkingSpace: null,
       },
-    });
+    })
 
     render(
       <Provider store={store}>
         <BookingsPage />
       </Provider>,
-    );
+    )
 
     expect(
       screen.getByText(/Loading your reservations.../i),
-    ).toBeInTheDocument();
-  });
+    ).toBeInTheDocument()
+  })
 
   it("renders the BookingsPage component with reservations", () => {
     render(
       <Provider store={store}>
         <BookingsPage />
       </Provider>,
-    );
+    )
 
     // Verify section headers
-    expect(screen.getByText("Current Reservations")).toBeInTheDocument();
-    expect(screen.getByText("Upcoming Reservations")).toBeInTheDocument();
-    expect(screen.getByText("Past Reservations")).toBeInTheDocument();
+    expect(screen.getByText("Current Reservations")).toBeInTheDocument()
+    expect(screen.getByText("Upcoming Reservations")).toBeInTheDocument()
+    expect(screen.getByText("Past Reservations")).toBeInTheDocument()
 
     // Verify reservation cards
     // Since multiple 'booked' texts exist, we'll target them by their context
@@ -198,18 +198,18 @@ describe.skip("BookingsPage Component", () => {
     // Current Reservation
     const currentReservation = screen.getByText(
       "1692f1d6-a67b-4659-a555-bdf22359bd24",
-    );
-    expect(currentReservation).toBeInTheDocument();
-    expect(screen.getAllByText(/booked/i)).toHaveLength(3); // Assuming all reservations have 'booked'
+    )
+    expect(currentReservation).toBeInTheDocument()
+    expect(screen.getAllByText(/booked/i)).toHaveLength(3) // Assuming all reservations have 'booked'
 
     // Upcoming Reservation
-    const upcomingReservation = screen.getByText("space2");
-    expect(upcomingReservation).toBeInTheDocument();
+    const upcomingReservation = screen.getByText("space2")
+    expect(upcomingReservation).toBeInTheDocument()
 
     // Past Reservation
-    const pastReservation = screen.getByText("space3");
-    expect(pastReservation).toBeInTheDocument();
-  });
+    const pastReservation = screen.getByText("space3")
+    expect(pastReservation).toBeInTheDocument()
+  })
 
   it("renders the BookingsPage component with no reservations", () => {
     store = mockStore({
@@ -236,41 +236,41 @@ describe.skip("BookingsPage Component", () => {
         error: null,
         parkingSpace: null,
       },
-    });
+    })
 
     render(
       <Provider store={store}>
         <BookingsPage />
       </Provider>,
-    );
+    )
 
-    expect(screen.getByText(/You have no reservations./i)).toBeInTheDocument();
+    expect(screen.getByText(/You have no reservations./i)).toBeInTheDocument()
     expect(
       screen.getByRole("button", { name: /Make a Reservation/i }),
-    ).toBeInTheDocument();
-  });
+    ).toBeInTheDocument()
+  })
 
   it("handles reservation click and navigates to reservation detail", async () => {
-    const { push } = require("next/navigation").useRouter();
+    const { push } = require("next/navigation").useRouter()
 
     render(
       <Provider store={store}>
         <BookingsPage />
       </Provider>,
-    );
+    )
 
     // Click on the first reservation card
     const reservationCard = screen.getByText(
       "1692f1d6-a67b-4659-a555-bdf22359bd24",
-    );
-    fireEvent.click(reservationCard);
+    )
+    fireEvent.click(reservationCard)
 
     await waitFor(() => {
       expect(push).toHaveBeenCalledWith(
         "/bookings/1692f1d6-a67b-4659-a555-bdf22359bd24",
-      );
-    });
-  });
+      )
+    })
+  })
 
   it("displays error message when fetching reservations fails", () => {
     store = mockStore({
@@ -297,18 +297,18 @@ describe.skip("BookingsPage Component", () => {
         error: null,
         parkingSpace: null,
       },
-    });
+    })
 
     render(
       <Provider store={store}>
         <BookingsPage />
       </Provider>,
-    );
+    )
 
     expect(
       screen.getByText(/Failed to fetch reservations at this time./i),
-    ).toBeInTheDocument();
-  });
+    ).toBeInTheDocument()
+  })
 
   it("handles global loading indicator correctly", () => {
     store = mockStore({
@@ -335,18 +335,18 @@ describe.skip("BookingsPage Component", () => {
         error: null,
         parkingSpace: null,
       },
-    });
+    })
 
     render(
       <Provider store={store}>
         <BookingsPage />
       </Provider>,
-    );
+    )
 
     expect(
       screen.getByText(/Loading your reservations.../i),
-    ).toBeInTheDocument();
-  });
+    ).toBeInTheDocument()
+  })
 
   // Test the reservation cancellation flow
   it("handles successful reservation cancellation", async () => {
@@ -354,51 +354,51 @@ describe.skip("BookingsPage Component", () => {
       <Provider store={store}>
         <BookingsPage />
       </Provider>,
-    );
+    )
 
     // Click on the cancel button of the first reservation card
-    const cancelButton = screen.getAllByText("Cancel")[0];
-    fireEvent.click(cancelButton);
+    const cancelButton = screen.getAllByText("Cancel")[0]
+    fireEvent.click(cancelButton)
 
     // Confirm the cancellation in the modal
-    const confirmButton = screen.getByText("Cancel Reservation");
-    fireEvent.click(confirmButton);
+    const confirmButton = screen.getByText("Cancel Reservation")
+    fireEvent.click(confirmButton)
 
     await waitFor(() => {
-      expect(cancelReservation).toHaveBeenCalledWith("1");
+      expect(cancelReservation).toHaveBeenCalledWith("1")
       expect(toast).toHaveBeenCalledWith({
         title: "Reservation Cancelled",
         description: "Your reservation has been canceled successfully.",
         variant: "success",
-      });
-    });
-  });
+      })
+    })
+  })
 
   it("handles cancellation attempt within 2 hours of the reservation start time", async () => {
     render(
       <Provider store={store}>
         <BookingsPage />
       </Provider>,
-    );
+    )
 
     // Click on the cancel button of the first reservation card
-    const cancelButton = screen.getAllByText("Cancel")[0];
-    fireEvent.click(cancelButton);
+    const cancelButton = screen.getAllByText("Cancel")[0]
+    fireEvent.click(cancelButton)
 
     // Confirm the cancellation in the modal
-    const confirmButton = screen.getByText("Cancel Reservation");
-    fireEvent.click(confirmButton);
+    const confirmButton = screen.getByText("Cancel Reservation")
+    fireEvent.click(confirmButton)
 
     await waitFor(() => {
-      expect(cancelReservation).not.toHaveBeenCalled();
+      expect(cancelReservation).not.toHaveBeenCalled()
       expect(toast).toHaveBeenCalledWith({
         title: "Failed to Cancel Reservation",
         description:
           "Reservations can only be canceled at least 2 hours before the start time.",
         variant: "destructive",
-      });
-    });
-  });
+      })
+    })
+  })
 
   it("handles cancellation attempt by a user who does not own the reservation", async () => {
     store = mockStore({
@@ -445,29 +445,29 @@ describe.skip("BookingsPage Component", () => {
         error: null,
         parkingSpace: null,
       },
-    });
+    })
 
     render(
       <Provider store={store}>
         <BookingsPage />
       </Provider>,
-    );
+    )
 
     // Click on the cancel button of the first reservation card
-    const cancelButton = screen.getAllByText("Cancel")[0];
-    fireEvent.click(cancelButton);
+    const cancelButton = screen.getAllByText("Cancel")[0]
+    fireEvent.click(cancelButton)
 
     // Confirm the cancellation in the modal
-    const confirmButton = screen.getByText("Cancel Reservation");
-    fireEvent.click(confirmButton);
+    const confirmButton = screen.getByText("Cancel Reservation")
+    fireEvent.click(confirmButton)
 
     await waitFor(() => {
-      expect(cancelReservation).not.toHaveBeenCalled();
+      expect(cancelReservation).not.toHaveBeenCalled()
       expect(toast).toHaveBeenCalledWith({
         title: "Failed to Cancel Reservation",
         description: "User not authorized to cancel this reservation.",
         variant: "destructive",
-      });
-    });
-  });
-});
+      })
+    })
+  })
+})

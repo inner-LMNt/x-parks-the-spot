@@ -1,34 +1,34 @@
 // src/pages/bookings.tsx
 
-"use client";
+"use client"
 
-import React, { useState, useEffect, useRef } from "react";
-import { useRouter, useSearchParams, useParams } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import React, { useState, useEffect, useRef } from "react"
+import { useRouter, useSearchParams, useParams } from "next/navigation"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   bookParkingSpace,
   resetError,
   fetchUserReservations,
-} from "@/features/reservations/reservationsSlice";
+} from "@/features/reservations/reservationsSlice"
 import {
   fetchParkingSpace,
   unlockParkingSpace,
   lockParkingSpace,
-} from "@/features/parking-space/parkingSpaceSlice";
-import { fetchUserCars } from "@/features/cars/carSlice";
+} from "@/features/parking-space/parkingSpaceSlice"
+import { fetchUserCars } from "@/features/cars/carSlice"
 import {
   ReservationCreateRequest,
   Reservation,
   CarInfo,
   TimeSlot,
-} from "@/types/type";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+} from "@/types/type"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   MapPin,
   DollarSign,
@@ -38,60 +38,60 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronUp,
-} from "lucide-react";
-import { format } from "date-fns";
-import { toast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+} from "lucide-react"
+import { format } from "date-fns"
+import { toast } from "@/hooks/use-toast"
+import { cn } from "@/lib/utils"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import AddCarModal from "@/components/custom/AddCarModal";
-import Link from "next/link";
-import ImageWrapper from "@/components/custom/ImageWrapper";
-import { RatingDisplay } from "@/components/custom/RatingDisplay";
+} from "@/components/ui/select"
+import AddCarModal from "@/components/custom/AddCarModal"
+import Link from "next/link"
+import ImageWrapper from "@/components/custom/ImageWrapper"
+import { RatingDisplay } from "@/components/custom/RatingDisplay"
 
 /**
  * **Booking Page Component**
  */
 export default function ParkingSpaceBooking() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAddCarModalOpen, setIsAddCarModalOpen] = useState(false); // State to control modal
-  const [showFullImage, setShowFullImage] = useState(false);
-  const params = useParams();
-  const parkingSpaceId = (params?.["parking-space-id"] as string) ?? "invalid";
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const previousUrl = searchParams?.get("previousUrl") ?? "/bookings";
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isAddCarModalOpen, setIsAddCarModalOpen] = useState(false) // State to control modal
+  const [showFullImage, setShowFullImage] = useState(false)
+  const params = useParams()
+  const parkingSpaceId = (params?.["parking-space-id"] as string) ?? "invalid"
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const previousUrl = searchParams?.get("previousUrl") ?? "/bookings"
 
-  const dispatch = useAppDispatch();
+  const dispatch = useAppDispatch()
   const parkingSpace = useAppSelector(
     (state) => state.parkingSpace.parkingSpace,
-  );
-  const loading = useAppSelector((state) => state.parkingSpace.loading);
-  const error = useAppSelector((state) => state.parkingSpace.error);
+  )
+  const loading = useAppSelector((state) => state.parkingSpace.loading)
+  const error = useAppSelector((state) => state.parkingSpace.error)
   const lockStatus: string = useAppSelector(
     (state) => state.parkingSpace.lockStatus,
-  );
+  )
   const lockExpiresAt = useAppSelector(
     (state) => state.parkingSpace.lockExpiresAt,
-  );
-  const bookingError = useAppSelector((state) => state.parkingSpace.error);
+  )
+  const bookingError = useAppSelector((state) => state.parkingSpace.error)
   const userReservations = useAppSelector((state) =>
     state.reservations.reservations.filter(
       (r: Reservation) => r.parking_space_id === parkingSpaceId,
     ),
-  );
-  const carInfos = useAppSelector((state) => state.cars.cars); // Use cars from carSlice
-  const carLoading = useAppSelector((state) => state.cars.loading);
-  const carError = useAppSelector((state) => state.cars.error);
+  )
+  const carInfos = useAppSelector((state) => state.cars.cars) // Use cars from carSlice
+  const carLoading = useAppSelector((state) => state.cars.loading)
+  const carError = useAppSelector((state) => state.cars.error)
 
   // Authentication Check
-  const isLoggedIn = useAppSelector((state) => state.user.isLoggedIn);
-  const userId = useAppSelector((state) => state.user.id); // Assuming user ID is stored here
+  const isLoggedIn = useAppSelector((state) => state.user.isLoggedIn)
+  const userId = useAppSelector((state) => state.user.id) // Assuming user ID is stored here
 
   const [booking, setBooking] = useState<ReservationCreateRequest>({
     parking_space_id: parkingSpaceId,
@@ -99,26 +99,26 @@ export default function ParkingSpaceBooking() {
     end_time: "",
     car_info_id: "",
     renter_id: userId, // Dynamically set the authenticated user ID
-  });
+  })
 
   /**
    * **Fetch Parking Space Details and User's Car Info**
    */
   useEffect(() => {
     // @ts-ignore
-    dispatch(fetchParkingSpace(parkingSpaceId));
+    dispatch(fetchParkingSpace(parkingSpaceId))
     // @ts-ignore
-    dispatch(fetchUserCars()); // Fetch cars from carSlice
-  }, [dispatch, parkingSpaceId]);
+    dispatch(fetchUserCars()) // Fetch cars from carSlice
+  }, [dispatch, parkingSpaceId])
 
   /**
    * **Open AddCarModal if No Cars Exist**
    */
   useEffect(() => {
     if (!carLoading && carInfos.length === 0) {
-      setIsAddCarModalOpen(true);
+      setIsAddCarModalOpen(true)
     }
-  }, [carLoading, carInfos.length]);
+  }, [carLoading, carInfos.length])
 
   /**
    * **Handle Booking Errors**
@@ -129,10 +129,10 @@ export default function ParkingSpaceBooking() {
         title: "Booking Failed",
         description: bookingError,
         variant: "destructive",
-      });
-      dispatch(resetError());
+      })
+      dispatch(resetError())
     }
-  }, [bookingError, dispatch]);
+  }, [bookingError, dispatch])
 
   /**
    * **Handle Input Changes**
@@ -140,9 +140,9 @@ export default function ParkingSpaceBooking() {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
-    const { name, value } = e.target;
-    setBooking((prev) => ({ ...prev, [name]: value }));
-  };
+    const { name, value } = e.target
+    setBooking((prev) => ({ ...prev, [name]: value }))
+  }
 
   /**
    * **Check if Booking is 24 Hours**
@@ -152,28 +152,28 @@ export default function ParkingSpaceBooking() {
     end: string | undefined,
   ): boolean => {
     if (!start || !end) {
-      return false;
+      return false
     }
-    return start === end;
-  };
+    return start === end
+  }
 
   /**
    * **Validate Date String**
    */
   const isValidDate = (dateString: string | undefined): boolean => {
     if (!dateString) {
-      return false;
+      return false
     }
-    const date = new Date(dateString);
-    return !isNaN(date.getTime());
-  };
+    const date = new Date(dateString)
+    return !isNaN(date.getTime())
+  }
 
   /**
    * **Handle Form Submission**
    */
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true); // Mark the form as submitting
+    e.preventDefault()
+    setIsSubmitting(true) // Mark the form as submitting
 
     // Validate input fields
     if (!booking.car_info_id) {
@@ -181,9 +181,9 @@ export default function ParkingSpaceBooking() {
         title: "Car Not Selected",
         description: "Please select a car before proceeding with the booking.",
         variant: "destructive",
-      });
-      setIsSubmitting(false);
-      return;
+      })
+      setIsSubmitting(false)
+      return
     }
 
     if (!isValidDate(booking.start_time) || !isValidDate(booking.end_time)) {
@@ -191,9 +191,9 @@ export default function ParkingSpaceBooking() {
         title: "Invalid Date",
         description: "Please enter valid start and end times.",
         variant: "destructive",
-      });
-      setIsSubmitting(false);
-      return;
+      })
+      setIsSubmitting(false)
+      return
     }
 
     // Check if it's a 24-hour booking
@@ -204,31 +204,31 @@ export default function ParkingSpaceBooking() {
           title: "Invalid Time",
           description: "End time must be after start time.",
           variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
+        })
+        setIsSubmitting(false)
+        return
       }
 
       // Additionally, ensure duration is at least one hour
       const durationMinutes =
         (new Date(booking.end_time).getTime() -
           new Date(booking.start_time).getTime()) /
-        (1000 * 60);
+        (1000 * 60)
       if (durationMinutes > 0 && durationMinutes < 60) {
         toast({
           title: "Invalid Duration",
           description: "Booking duration must be at least one hour.",
           variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
+        })
+        setIsSubmitting(false)
+        return
       }
     }
 
-    const startDateTime = new Date(booking.start_time).toISOString();
+    const startDateTime = new Date(booking.start_time).toISOString()
     const endDateTime = is24Hours(booking.start_time, booking.end_time)
       ? new Date(booking.start_time).toISOString() // For 24-hour booking, end_time same as start_time
-      : new Date(booking.end_time).toISOString();
+      : new Date(booking.end_time).toISOString()
 
     const reservationRequest: ReservationCreateRequest = {
       parking_space_id: booking.parking_space_id,
@@ -236,28 +236,28 @@ export default function ParkingSpaceBooking() {
       end_time: endDateTime,
       car_info_id: booking.car_info_id,
       renter_id: booking.renter_id,
-    };
+    }
 
-    const resultAction = await dispatch(bookParkingSpace(reservationRequest));
+    const resultAction = await dispatch(bookParkingSpace(reservationRequest))
     if (bookParkingSpace.fulfilled.match(resultAction)) {
       // Booking successful
       toast({
         title: "Booking Successful",
         description: "Your reservation has been confirmed.",
         variant: "success",
-      });
-      router.push("/bookings");
+      })
+      router.push("/bookings")
     } else {
       // Booking failed
-      const errormsg = useAppSelector((state) => state.reservations.error);
+      const errormsg = useAppSelector((state) => state.reservations.error)
       toast({
         title: "Booking Failed",
         description: errormsg || "Unable to complete your booking.",
         variant: "destructive",
-      });
+      })
     }
-    setIsSubmitting(false); // Reset the submitting state
-  };
+    setIsSubmitting(false) // Reset the submitting state
+  }
 
   /**
    * **Calculate Total Price**
@@ -268,12 +268,12 @@ export default function ParkingSpaceBooking() {
       !booking.end_time ||
       !parkingSpace?.pricing_info?.base_price
     ) {
-      return 0;
+      return 0
     }
-    const start = new Date(booking.start_time);
-    const end = new Date(booking.end_time);
-    let hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-    let price = hours * parkingSpace.pricing_info.base_price;
+    const start = new Date(booking.start_time)
+    const end = new Date(booking.end_time)
+    let hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
+    let price = hours * parkingSpace.pricing_info.base_price
 
     if (
       parkingSpace.pricing_info.dynamic_pricing &&
@@ -281,18 +281,18 @@ export default function ParkingSpaceBooking() {
     ) {
       switch (parkingSpace.pricing_info.dynamic_pricing_algorithm) {
         case "peak_hours":
-          price *= 1.2;
-          break;
+          price *= 1.2
+          break
         case "off_peak":
-          price *= 0.9;
-          break;
+          price *= 0.9
+          break
         default:
-          break;
+          break
       }
     }
 
-    return price > 0 ? price : 0;
-  };
+    return price > 0 ? price : 0
+  }
 
   /**
    * **Render Availability Schedule**
@@ -304,7 +304,7 @@ export default function ParkingSpaceBooking() {
     ) {
       return parkingSpace.availability_schedule.map(
         (schedule: TimeSlot, index: number) => {
-          const { day_of_week, start_time, end_time } = schedule;
+          const { day_of_week, start_time, end_time } = schedule
 
           if (start_time === end_time && start_time === "00:00") {
             return (
@@ -315,18 +315,18 @@ export default function ParkingSpaceBooking() {
                 <Clock className="w-5 h-5 text-blue-500 mr-1" />
                 <span className="text-sm">{day_of_week}: 24 hours</span>
               </div>
-            );
+            )
           }
 
           // Function to format "HH:mm" to "p" format
           const formatTime = (time: string): string => {
-            const [hour, minute] = time.split(":").map(Number);
-            const date = new Date();
-            date.setHours(hour, minute, 0, 0);
-            return format(date, "p"); // e.g., "12:00 AM"
-          };
+            const [hour, minute] = time.split(":").map(Number)
+            const date = new Date()
+            date.setHours(hour, minute, 0, 0)
+            return format(date, "p") // e.g., "12:00 AM"
+          }
 
-          const timeRange = `${formatTime(start_time)} - ${formatTime(end_time)}`;
+          const timeRange = `${formatTime(start_time)} - ${formatTime(end_time)}`
 
           return (
             <div key={`${day_of_week}-${index}`} className="flex items-center">
@@ -335,12 +335,12 @@ export default function ParkingSpaceBooking() {
                 {day_of_week}: {timeRange}
               </span>
             </div>
-          );
+          )
         },
-      );
+      )
     }
-    return "No availability schedule";
-  };
+    return "No availability schedule"
+  }
 
   /**
    * **Render Loading State**
@@ -350,7 +350,7 @@ export default function ParkingSpaceBooking() {
       <div className="flex justify-center items-center h-screen">
         <p>Loading...</p>
       </div>
-    );
+    )
   }
 
   /**
@@ -363,15 +363,15 @@ export default function ParkingSpaceBooking() {
         <Button
           onClick={() => {
             // @ts-ignore
-            dispatch(fetchParkingSpace(parkingSpaceId));
+            dispatch(fetchParkingSpace(parkingSpaceId))
             // @ts-ignore
-            dispatch(fetchUserCars());
+            dispatch(fetchUserCars())
           }}
         >
           Retry
         </Button>
       </div>
-    );
+    )
   }
 
   /**
@@ -382,7 +382,7 @@ export default function ParkingSpaceBooking() {
       <div className="flex justify-center items-center h-screen">
         <p>No parking space found.</p>
       </div>
-    );
+    )
   }
 
   /**
@@ -399,7 +399,7 @@ export default function ParkingSpaceBooking() {
           to view your profile.
         </p>
       </div>
-    );
+    )
   }
 
   /**
@@ -641,5 +641,5 @@ export default function ParkingSpaceBooking() {
         onClose={() => setIsAddCarModalOpen(false)}
       />
     </div>
-  );
+  )
 }

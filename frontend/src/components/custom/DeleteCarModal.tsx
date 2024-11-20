@@ -1,16 +1,16 @@
-import React, { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { deleteCar, resetCarError } from "@/features/cars/carSlice";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "@/hooks/use-toast";
+import React, { useEffect } from "react"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { deleteCar, resetCarError } from "@/features/cars/carSlice"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { toast } from "@/hooks/use-toast"
 
 interface DeleteCarModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  carId: string;
-  carDetails: { make: string; model: string; licensePlate: string };
+  isOpen: boolean
+  onClose: () => void
+  carId: string
+  carDetails: { make: string; model: string; licensePlate: string }
 }
 
 const DeleteCarModal: React.FC<DeleteCarModalProps> = ({
@@ -19,8 +19,8 @@ const DeleteCarModal: React.FC<DeleteCarModalProps> = ({
   carId,
   carDetails,
 }) => {
-  const dispatch = useAppDispatch();
-  const { loading, error } = useAppSelector((state) => state.cars);
+  const dispatch = useAppDispatch()
+  const { loading, error } = useAppSelector((state) => state.cars)
 
   useEffect(() => {
     if (error) {
@@ -28,27 +28,27 @@ const DeleteCarModal: React.FC<DeleteCarModalProps> = ({
         title: "Failed to Delete Car",
         description: error,
         variant: "destructive",
-      });
-      dispatch(resetCarError());
+      })
+      dispatch(resetCarError())
     }
-  }, [error, dispatch]);
+  }, [error, dispatch])
 
   const handleDelete = async () => {
     try {
-      await dispatch(deleteCar(carId)).unwrap();
+      await dispatch(deleteCar(carId)).unwrap()
       toast({
         title: "Car Deleted",
         description: "Your car has been deleted successfully.",
         variant: "success",
-      });
-      onClose(); // Close the modal
+      })
+      onClose() // Close the modal
     } catch (err) {
       // Error handling is already managed in useEffect
-      console.error(err);
+      console.error(err)
     }
-  };
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
@@ -86,7 +86,7 @@ const DeleteCarModal: React.FC<DeleteCarModalProps> = ({
         </CardContent>
       </Card>
     </div>
-  );
-};
+  )
+}
 
-export default DeleteCarModal;
+export default DeleteCarModal

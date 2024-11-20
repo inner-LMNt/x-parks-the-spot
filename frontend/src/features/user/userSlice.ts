@@ -6,8 +6,8 @@ import {
   UnknownAction,
   PayloadAction,
   isAnyOf,
-} from "@reduxjs/toolkit";
-import axios from "../../api/axiosInstance"; // Ensure the path is correct
+} from "@reduxjs/toolkit"
+import axios from "../../api/axiosInstance" // Ensure the path is correct
 import {
   LoginRequest,
   RegisterRequest,
@@ -15,24 +15,26 @@ import {
   User,
   PasswordResetRequest,
   UserUpdateRequest,
-} from "@/types/type";
+} from "@/types/type"
 
 /**
  * Interface for the user slice state
  */
 interface UserState {
-  isLoggedIn: boolean;
-  access_token: string | null;
-  name: string | null;
+  isLoggedIn: boolean
+  access_token: string | null
+  name: string | null
   location: {
-    latitude: number | null;
-    longitude: number | null;
-  };
-  loading: boolean;
-  error: string | null;
-  notificationTime: string | null;
-  total_points: number | null;
-  current_points: number | null;
+    latitude: number | null
+    longitude: number | null
+  }
+  loading: boolean
+  error: string | null
+  notificationTime: string | null
+  userCity: string | null
+  userState: string | null
+  total_points: number | null
+  current_points: number | null
 }
 
 const initialState: UserState = {
@@ -46,9 +48,11 @@ const initialState: UserState = {
   loading: false,
   error: null,
   notificationTime: null,
+  userCity: null,
+  userState: null,
   total_points: 0,
   current_points: 0,
-};
+}
 
 /**
  * Define the login thunk
@@ -59,15 +63,15 @@ export const login = createAsyncThunk<
   { rejectValue: string } // ThunkAPI config
 >("user/login", async (credentials, { rejectWithValue }) => {
   try {
-    const response = await axios.post<AuthResponse>("auth/login", credentials);
-    return response.data;
+    const response = await axios.post<AuthResponse>("auth/login", credentials)
+    return response.data
   } catch (error: any) {
     if (error.status === 401) {
-      return rejectWithValue("Invalid email or password");
+      return rejectWithValue("Invalid email or password")
     }
-    return rejectWithValue("Login failed");
+    return rejectWithValue("Login failed")
   }
-});
+})
 
 export const deleteAccount = createAsyncThunk<
   void, // Return type of the payload creator
@@ -76,12 +80,12 @@ export const deleteAccount = createAsyncThunk<
 >("user/deleteAccount", async (token: string, { rejectWithValue }) => {
   try {
     // Send request to delete account, no body needed, just the token
-    const response = await axios.get(`/auth/confirm-delete/${token}`);
-    return response.data;
+    const response = await axios.get(`/auth/confirm-delete/${token}`)
+    return response.data
   } catch (error: any) {
-    return rejectWithValue("Deletion Token Invalid");
+    return rejectWithValue("Deletion Token Invalid")
   }
-});
+})
 
 // Thunk for updating spot status
 export const updateSpot = createAsyncThunk(
@@ -90,15 +94,15 @@ export const updateSpot = createAsyncThunk(
     try {
       const response = await axios.post("/api/spot/update", formData, {
         headers: { "Content-Type": "multipart/form-data" },
-      });
-      return response.data;
+      })
+      return response.data
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to update spot status",
-      );
+      )
     }
   },
-);
+)
 
 export const request_delete_account = createAsyncThunk<
   void, // Return type of the payload creator
@@ -109,15 +113,15 @@ export const request_delete_account = createAsyncThunk<
     // Implement logout logic if needed (e.g., API call to invalidate token)
     const response = await axios.post("auth/request_delete_account", {
       password,
-    });
-    return response.data;
+    })
+    return response.data
   } catch (error: any) {
     if (error.response?.status === 401) {
-      return rejectWithValue("Invalid password");
+      return rejectWithValue("Invalid password")
     }
-    return rejectWithValue("Account deletion request failed");
+    return rejectWithValue("Account deletion request failed")
   }
-});
+})
 
 /**
  * Define the register thunk
@@ -131,12 +135,12 @@ export const register_acc = createAsyncThunk<
     const response = await axios.post<AuthResponse>(
       "auth/register",
       credentials,
-    );
-    return response.data;
+    )
+    return response.data
   } catch (error: any) {
-    return rejectWithValue("Registration failed");
+    return rejectWithValue("Registration failed")
   }
-});
+})
 
 /**
  * Define the logout thunk
@@ -148,12 +152,12 @@ export const logout = createAsyncThunk<
 >("user/logout", async (_, { rejectWithValue }) => {
   try {
     // Implement logout logic if needed (e.g., API call to invalidate token)
-    await axios.post("auth/logout");
-    return;
+    await axios.post("auth/logout")
+    return
   } catch (error: any) {
-    return rejectWithValue("Logout failed");
+    return rejectWithValue("Logout failed")
   }
-});
+})
 
 export const reset_password = createAsyncThunk<
   void,
@@ -165,16 +169,16 @@ export const reset_password = createAsyncThunk<
     try {
       const response = await axios.post(`auth/reset-password/${token}`, {
         new_password: newPassword, // Match the backend's expected field name
-      });
-      return response.data;
+      })
+      return response.data
     } catch (error: any) {
       if (error.response?.status === 400) {
-        return rejectWithValue("Invalid token or password");
+        return rejectWithValue("Invalid token or password")
       }
-      return rejectWithValue("Password reset failed");
+      return rejectWithValue("Password reset failed")
     }
   },
-);
+)
 
 export const reset_request = createAsyncThunk<
   void, // Return type of the payload creator
@@ -184,15 +188,15 @@ export const reset_request = createAsyncThunk<
   try {
     const response = await axios.post("auth/password-reset", {
       email,
-    } as PasswordResetRequest);
-    return response.data;
+    } as PasswordResetRequest)
+    return response.data
   } catch (error: any) {
     if (error.status === 404) {
-      return rejectWithValue("Email not found");
+      return rejectWithValue("Email not found")
     }
-    return rejectWithValue("Password reset failed");
+    return rejectWithValue("Password reset failed")
   }
-});
+})
 
 export const update_notification_time = createAsyncThunk<
   User,
@@ -204,13 +208,13 @@ export const update_notification_time = createAsyncThunk<
     try {
       const response = await axios.post("auth/notification-time", {
         time: notificationTime,
-      });
-      return response.data;
+      })
+      return response.data
     } catch (error: any) {
-      return rejectWithValue("Failed to update notification time");
+      return rejectWithValue("Failed to update notification time")
     }
   },
-);
+)
 
 export const get_notification_time = createAsyncThunk<
   string | null,
@@ -218,12 +222,38 @@ export const get_notification_time = createAsyncThunk<
   { rejectValue: string }
 >("user/get_notification_time", async (_, { rejectWithValue }) => {
   try {
-    const response = await axios.get("auth/notification-time");
-    return response.data.time;
+    const response = await axios.get("auth/notification-time")
+    return response.data.time
   } catch (error: any) {
-    return rejectWithValue("Failed to get notification time");
+    return rejectWithValue("Failed to get notification time")
   }
-});
+})
+
+export const set_user_location = createAsyncThunk<
+  void,
+  { state: string; city: string },
+  { rejectValue: string }
+>("user/set_user_location", async ({ state, city }, { rejectWithValue }) => {
+  try {
+    const response = await axios.post("auth/user-location", { state, city })
+    return response.data
+  } catch (error: any) {
+    return rejectWithValue("Failed to set user location")
+  }
+})
+
+export const get_user_location = createAsyncThunk<
+  { state: string; city: string } | null,
+  void,
+  { rejectValue: string }
+>("user/get_user_location", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("auth/user-location")
+    return response.data
+  } catch (error: any) {
+    return rejectWithValue("Failed to get user location")
+  }
+})
 
 export const get_points = createAsyncThunk<
   { total: number; current: number } | null,
@@ -231,13 +261,13 @@ export const get_points = createAsyncThunk<
   { rejectValue: string }
 >("user/get_points", async (_, { rejectWithValue }) => {
   try {
-    const response = await axios.get("auth/points");
-    console.log("data", response.data);
-    return response.data.points;
+    const response = await axios.get("auth/points")
+    console.log("data", response.data)
+    return response.data.points
   } catch (error: any) {
-    return rejectWithValue("Failed to get points");
+    return rejectWithValue("Failed to get points")
   }
-});
+})
 
 // @ts-ignore
 const userSlice = createSlice<UserState, {}, "user">({
@@ -258,8 +288,8 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof get_points.pending
         > => action.type.endsWith("/pending"),
         (state) => {
-          state.loading = true;
-          state.error = null;
+          state.loading = true
+          state.error = null
         },
       )
 
@@ -276,16 +306,16 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof get_points.rejected
         > => action.type.endsWith("/rejected"),
         (state, action) => {
-          state.loading = false;
+          state.loading = false
 
           // Note: because the type of the action could be different, I need to simply
           // parse it as a json string and back to json to get the field out
 
           const actionmessage = JSON.parse(
             JSON.stringify(action, null, 2),
-          ).payload;
-          state.error = actionmessage || "An error occurred";
-          state.loading = false;
+          ).payload
+          state.error = actionmessage || "An error occurred"
+          state.loading = false
         },
       )
 
@@ -293,10 +323,10 @@ const userSlice = createSlice<UserState, {}, "user">({
       .addMatcher(
         isAnyOf(login.fulfilled, register_acc.fulfilled),
         (state, action: PayloadAction<AuthResponse>) => {
-          state.loading = false;
-          state.isLoggedIn = true;
-          state.access_token = action.payload.access_token || null;
-          state.name = action.payload.name || null;
+          state.loading = false
+          state.isLoggedIn = true
+          state.access_token = action.payload.access_token || null
+          state.name = action.payload.name || null
         },
       )
 
@@ -304,9 +334,9 @@ const userSlice = createSlice<UserState, {}, "user">({
       .addMatcher(
         isAnyOf(logout.fulfilled, reset_password.fulfilled),
         (state) => {
-          state.loading = false;
-          state.isLoggedIn = false;
-          state.access_token = null;
+          state.loading = false
+          state.isLoggedIn = false
+          state.access_token = null
         },
       )
 
@@ -314,19 +344,19 @@ const userSlice = createSlice<UserState, {}, "user">({
         (action: { type: string }): action is { type: "user/errorReset" } =>
           action.type === "user/errorReset",
         (state) => {
-          state.error = null;
-          state.loading = false;
+          state.error = null
+          state.loading = false
         },
       )
       .addMatcher(
         (action: { type: string }): action is { type: "user/errorReset" } =>
           action.type === "user/errorReset",
         (state) => {
-          state.error = null;
-          state.loading = false;
-          state.access_token = null;
-          state.isLoggedIn = false;
-          state.name = null;
+          state.error = null
+          state.loading = false
+          state.access_token = null
+          state.isLoggedIn = false
+          state.name = null
         },
       )
 
@@ -334,35 +364,51 @@ const userSlice = createSlice<UserState, {}, "user">({
         (action: { type: string }): action is { type: "user/resetLoggedIn" } =>
           action.type === "user/resetLoggedIn",
         (state) => {
-          state.error = null;
-          state.loading = false;
-          state.access_token = null;
-          state.isLoggedIn = false;
-          state.name = null;
+          state.error = null
+          state.loading = false
+          state.access_token = null
+          state.isLoggedIn = false
+          state.name = null
         },
       )
 
       .addMatcher(
         isAnyOf(update_notification_time.fulfilled),
         (state, action) => {
-          state.loading = false;
-          state.notificationTime = action.meta.arg.notificationTime;
+          state.loading = false
+          state.notificationTime = action.meta.arg.notificationTime
         },
       )
 
       .addMatcher(isAnyOf(get_notification_time.fulfilled), (state, action) => {
-        state.loading = false;
-        state.notificationTime = action.payload;
+        state.loading = false
+        state.notificationTime = action.payload
+      })
+
+      .addMatcher(isAnyOf(set_user_location.fulfilled), (state, action) => {
+        state.loading = false
+        state.userState = action.meta.arg.state
+        state.userCity = action.meta.arg.city
+      })
+      .addMatcher(isAnyOf(get_user_location.fulfilled), (state, action) => {
+        state.loading = false
+        state.userState = action.payload?.state || null
+        state.userCity = action.payload?.city || null
+      })
+
+      .addMatcher(isAnyOf(get_notification_time.fulfilled), (state, action) => {
+        state.loading = false
+        state.notificationTime = action.payload
       })
 
       .addMatcher(isAnyOf(get_points.fulfilled), (state, action) => {
-        state.loading = false;
+        state.loading = false
         //@ts-ignore
-        state.total_points = action.payload?.total;
+        state.total_points = action.payload?.total
         //@ts-ignore
-        state.current_points = action.payload?.current;
-      });
+        state.current_points = action.payload?.current
+      })
   },
-});
+})
 
-export default userSlice.reducer;
+export default userSlice.reducer

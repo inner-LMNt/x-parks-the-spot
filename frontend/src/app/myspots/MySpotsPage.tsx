@@ -1,15 +1,15 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, useState } from "react"
+import { motion } from "framer-motion"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import {
   MapPin,
   Edit,
@@ -20,16 +20,16 @@ import {
   ShieldCheck,
   ShieldX,
   TrendingUp,
-} from "lucide-react";
-import { ParkingSpace } from "@/types/type";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { getOwnerSpots, deleteParkingSpot } from "@/features/owner/ownerSlice";
-import verifyParkingSpot from "@/features/owner/ownerSlice";
-import ImageWrapper from "@/components/custom/ImageWrapper";
-import VerificationModal from "@/components/custom/VerificationModal"; // Import the verification modal
-import EditSpotModal from "@/components/custom/EditSpotModal";
+} from "lucide-react"
+import { ParkingSpace } from "@/types/type"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { getOwnerSpots, deleteParkingSpot } from "@/features/owner/ownerSlice"
+import verifyParkingSpot from "@/features/owner/ownerSlice"
+import ImageWrapper from "@/components/custom/ImageWrapper"
+import VerificationModal from "@/components/custom/VerificationModal" // Import the verification modal
+import EditSpotModal from "@/components/custom/EditSpotModal"
 import {
   Dialog,
   DialogContent,
@@ -37,67 +37,67 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog"; // Import your dialog components
+} from "@/components/ui/dialog" // Import your dialog components
 
 export default function MySpotsPage() {
-  const isLoggedIn = useAppSelector((state) => state.user.isLoggedIn);
-  const router = useRouter();
-  const dispatch = useAppDispatch();
+  const isLoggedIn = useAppSelector((state) => state.user.isLoggedIn)
+  const router = useRouter()
+  const dispatch = useAppDispatch()
   const { paidSpots, freeSpots, pendingSpots, loading, error } = useAppSelector(
     (state) => state.owner,
-  );
+  )
 
-  const [verificationModalOpen, setVerificationModalOpen] = useState(false);
-  const [currentSpotId, setCurrentSpotId] = useState<string | null>(null);
-  const [domLoaded, setDomLoaded] = useState(false);
+  const [verificationModalOpen, setVerificationModalOpen] = useState(false)
+  const [currentSpotId, setCurrentSpotId] = useState<string | null>(null)
+  const [domLoaded, setDomLoaded] = useState(false)
 
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [spotToDelete, setSpotToDelete] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [spotToDelete, setSpotToDelete] = useState<string | null>(null)
 
   useEffect(() => {
-    setDomLoaded(true);
-  }, []);
+    setDomLoaded(true)
+  }, [])
 
   useEffect(() => {
     if (isLoggedIn) {
       //@ts-ignore
-      dispatch(getOwnerSpots());
+      dispatch(getOwnerSpots())
     }
-  }, [dispatch, isLoggedIn]);
+  }, [dispatch, isLoggedIn])
 
   const openDeleteModal = (id: string) => {
-    setSpotToDelete(id);
-    setDeleteModalOpen(true);
-  };
+    setSpotToDelete(id)
+    setDeleteModalOpen(true)
+  }
 
   const closeDeleteModal = () => {
-    setSpotToDelete(null);
-    setDeleteModalOpen(false);
-  };
+    setSpotToDelete(null)
+    setDeleteModalOpen(false)
+  }
 
   const handleConfirmDelete = async () => {
     if (spotToDelete) {
       // @ts-ignore
-      await dispatch(deleteParkingSpot(spotToDelete)); // Will reroute to login because of line 42 in axiosInstance.ts
+      await dispatch(deleteParkingSpot(spotToDelete)) // Will reroute to login because of line 42 in axiosInstance.ts
       // @ts-ignore
-      dispatch(getOwnerSpots()); // Re-fetch the updated spots list
-      closeDeleteModal();
+      dispatch(getOwnerSpots()) // Re-fetch the updated spots list
+      closeDeleteModal()
     }
-  };
+  }
 
   // Modal state
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
+  const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null)
 
   const openModal = (spot: ParkingSpace) => {
-    setSelectedSpot(spot);
-    setIsModalOpen(true);
-  };
+    setSelectedSpot(spot)
+    setIsModalOpen(true)
+  }
 
   const closeModal = () => {
-    setSelectedSpot(null);
-    setIsModalOpen(false);
-  };
+    setSelectedSpot(null)
+    setIsModalOpen(false)
+  }
   const emptySpots = (
     <motion.div
       initial={{ opacity: 0 }}
@@ -114,39 +114,32 @@ export default function MySpotsPage() {
         </Button>
       </Link>
     </motion.div>
-  );
+  )
 
   const openVerificationModal = (spotId: string) => {
-    setCurrentSpotId(spotId);
-    setVerificationModalOpen(true);
-  };
+    setCurrentSpotId(spotId)
+    setVerificationModalOpen(true)
+  }
 
   const closeVerificationModal = () => {
-    setVerificationModalOpen(false);
-    setCurrentSpotId(null);
-  };
+    setVerificationModalOpen(false)
+    setCurrentSpotId(null)
+  }
 
   const getVerificationStatusIcon = (spot: ParkingSpace) => {
-    console.log("next ", spot.verification_status);
+    console.log("next ", spot.verification_status)
     if (spot.verification_status === "verified") {
       // @ts-ignore
-      return (
-        <ShieldCheck className="w-6 h-6 text-green-500" title="Verified" />
-      );
+      return <ShieldCheck className="w-6 h-6 text-green-500" />
     }
     if (spot.verification_status === "pending") {
       // @ts-ignore
-      return (
-        <ShieldEllipsis
-          className="w-6 h-6 text-yellow-500"
-          title="Pending Verification"
-        />
-      );
+      return <ShieldEllipsis className="w-6 h-6 text-yellow-500" />
     }
     return (
       <ShieldX className="w-6 h-6 text-red-500" aria-label="Not Verified" />
-    );
-  };
+    )
+  }
 
   const renderSpots = (spots: ParkingSpace[]) => (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -264,7 +257,7 @@ export default function MySpotsPage() {
         </motion.div>
       ))}
     </div>
-  );
+  )
 
   return (
     domLoaded && (
@@ -410,5 +403,5 @@ export default function MySpotsPage() {
         <div className="flex h-16"></div>
       </div>
     )
-  );
+  )
 }

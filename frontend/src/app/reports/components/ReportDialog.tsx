@@ -1,30 +1,30 @@
-"use client";
+"use client"
 
-import React from "react";
-import { motion } from "framer-motion";
+import React from "react"
+import { motion } from "framer-motion"
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { ReportForm } from "./ReportForm";
-import { X } from "lucide-react";
+} from "@/components/ui/card"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { ReportForm } from "./ReportForm"
+import { X } from "lucide-react"
 
 export const ReportDialog: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  preselectedReservation?: any;
-  preselectedType: string | null;
+  isOpen: boolean
+  onClose: () => void
+  preselectedReservation?: any
+  preselectedType: string | null
 }> = ({
   isOpen,
   onClose,
   preselectedReservation = undefined,
   preselectedType = null,
 }) => {
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     <motion.div
@@ -65,7 +65,7 @@ export const ReportDialog: React.FC<{
         </div>
       </Card>
     </motion.div>
-  );
-};
+  )
+}
 
-export default ReportDialog;
+export default ReportDialog

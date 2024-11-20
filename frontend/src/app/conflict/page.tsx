@@ -1,2 +1,2 @@
-import ConflictPage from "./ConflictPage";
-export default ConflictPage;
+import ConflictPage from "./ConflictPage"
+export default ConflictPage

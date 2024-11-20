@@ -125,7 +125,7 @@ def get_all_cancellations() -> Result[List[Dict[str, Any]], str]:
                 cur.execute(
                     """
                     SELECT
-                        reservations.id,
+                        reservations.id as id,
                         reservations.status,
                         reservations.created_at,
                         reservations.updated_at,
@@ -138,7 +138,7 @@ def get_all_cancellations() -> Result[List[Dict[str, Any]], str]:
                     FROM reservations
                     JOIN users ON reservations.renter_id = users.id
                     JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
-                    WHERE reservations.acknowledged = 'false'
+                    WHERE reservations.acknowledged = 'false' AND reservations.status = 'canceled'
                     ORDER BY reservations.created_at DESC
                     """
                 )

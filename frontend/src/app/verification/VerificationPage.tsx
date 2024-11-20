@@ -1,122 +1,122 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, useState } from "react"
+import { motion } from "framer-motion"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { MapPin } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { MapPin } from "lucide-react"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   getAllPendingSpots,
   verifyParkingSpot,
-} from "@/features/admin/adminSlice";
-import ImageWrapper from "@/components/custom/ImageWrapper";
+} from "@/features/admin/adminSlice"
+import ImageWrapper from "@/components/custom/ImageWrapper"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog"
 
 // Define the type for a pending spot
 interface PendingSpot {
-  id: string;
-  name: string;
-  is_paid: boolean;
-  photos: string[];
-  owner_name: string;
-  owner_email: string;
-  latitude: number;
-  longitude: number;
-  verification_photos?: string[];
-  address: string;
+  id: string
+  name: string
+  is_paid: boolean
+  photos: string[]
+  owner_name: string
+  owner_email: string
+  latitude: number
+  longitude: number
+  verification_photos?: string[]
+  address: string
 }
 
 export const VerificationPage = () => {
-  const dispatch = useAppDispatch();
+  const dispatch = useAppDispatch()
   const { pendingSpots, loading, error } = useAppSelector(
     (state) => state.admin,
-  );
+  )
 
-  const [isListExpanded, setIsListExpanded] = useState(true);
-  const [selectedSpot, setSelectedSpot] = useState<PendingSpot | null>(null);
-  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [confirmInput, setConfirmInput] = useState("");
+  const [isListExpanded, setIsListExpanded] = useState(true)
+  const [selectedSpot, setSelectedSpot] = useState<PendingSpot | null>(null)
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false)
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
+  const [confirmInput, setConfirmInput] = useState("")
   const [actionType, setActionType] = useState<"approve" | "reject" | null>(
     null,
-  );
-  const [errorMessage, setErrorMessage] = useState("");
-  const [expandedImage, setExpandedImage] = useState<string | null>(null); // State for expanded image
-  const MAX_ITEMS = 1;
+  )
+  const [errorMessage, setErrorMessage] = useState("")
+  const [expandedImage, setExpandedImage] = useState<string | null>(null) // State for expanded image
+  const MAX_ITEMS = 1
   useEffect(() => {
-    dispatch(getAllPendingSpots());
-  }, [dispatch]);
+    dispatch(getAllPendingSpots())
+  }, [dispatch])
 
   const handleVerification = async (spotId: string, is_verified: boolean) => {
-    await dispatch(verifyParkingSpot({ spotId, is_verified }));
-    dispatch(getAllPendingSpots());
-  };
+    await dispatch(verifyParkingSpot({ spotId, is_verified }))
+    dispatch(getAllPendingSpots())
+  }
 
   const toggleListExpansion = () => {
-    setIsListExpanded((prev) => !prev);
-  };
+    setIsListExpanded((prev) => !prev)
+  }
 
   const openVerificationModal = (spot: PendingSpot) => {
-    setSelectedSpot(spot);
-    setIsVerificationModalOpen(true);
-  };
+    setSelectedSpot(spot)
+    setIsVerificationModalOpen(true)
+  }
 
   const closeVerificationModal = () => {
-    setIsVerificationModalOpen(false);
-    setSelectedSpot(null);
-  };
+    setIsVerificationModalOpen(false)
+    setSelectedSpot(null)
+  }
 
   const openConfirmModal = (
     action: "approve" | "reject",
     spot: PendingSpot,
   ) => {
-    setSelectedSpot(spot);
-    setActionType(action);
-    setIsConfirmModalOpen(true);
-    setErrorMessage("");
-  };
+    setSelectedSpot(spot)
+    setActionType(action)
+    setIsConfirmModalOpen(true)
+    setErrorMessage("")
+  }
 
   const closeConfirmModal = () => {
-    setIsConfirmModalOpen(false);
-    setConfirmInput("");
-  };
+    setIsConfirmModalOpen(false)
+    setConfirmInput("")
+  }
 
   const confirmAction = async () => {
     if (confirmInput === "confirm" && selectedSpot) {
-      const is_verified = actionType === "approve";
-      await handleVerification(selectedSpot.id, is_verified);
-      closeConfirmModal();
+      const is_verified = actionType === "approve"
+      await handleVerification(selectedSpot.id, is_verified)
+      closeConfirmModal()
     } else {
-      setErrorMessage("You must type 'confirm' to proceed.");
+      setErrorMessage("You must type 'confirm' to proceed.")
     }
-  };
+  }
 
   const handleImageClick = (image: string) => {
-    setExpandedImage(image);
-  };
+    setExpandedImage(image)
+  }
 
   const closeExpandedImage = () => {
-    setExpandedImage(null);
-  };
+    setExpandedImage(null)
+  }
 
   if (loading) {
-    return <p className="text-center text-lg">Loading...</p>;
+    return <p className="text-center text-lg">Loading...</p>
   }
 
   if (error) {
-    return <p className="text-red-500 text-center">Error: {error}</p>;
+    return <p className="text-red-500 text-center">Error: {error}</p>
   }
 
   return (
@@ -341,7 +341,7 @@ export const VerificationPage = () => {
         </Dialog>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default VerificationPage;
+export default VerificationPage

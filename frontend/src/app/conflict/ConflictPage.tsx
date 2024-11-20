@@ -1,9 +1,9 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React, { useEffect, useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import {
   MapPin,
   Calendar,
@@ -16,39 +16,38 @@ import {
   Settings,
   User,
   DollarSign,
-} from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+} from "lucide-react"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   getAllConflicts,
   getCancelled,
   updateConflictResponse,
   acknowledgeCancelled,
-} from "@/features/admin/adminSlice";
-import { fetchParkingSpace } from "@/features/parking-space/parkingSpaceSlice";
-import { toast } from "@/hooks/use-toast";
-import ImageWrapper from "@/components/custom/ImageWrapper";
+} from "@/features/admin/adminSlice"
+import { fetchParkingSpace } from "@/features/parking-space/parkingSpaceSlice"
+import { toast } from "@/hooks/use-toast"
+import ImageWrapper from "@/components/custom/ImageWrapper"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Report } from "@/types/type";
-import { format, isValid } from "date-fns";
-import { Skeleton } from "@/components/ui/skeleton";
-import DeleteListingDialog from "@/app/conflict/components/DeleteListingDialog";
-import UserInfo from "./components/[user-id]/UserInfo";
+} from "@/components/ui/dialog"
+import { Report } from "@/types/type"
+import { format, isValid } from "date-fns"
+import { Skeleton } from "@/components/ui/skeleton"
+import DeleteListingDialog from "@/app/conflict/components/DeleteListingDialog"
 
-const MAX_ITEMS = 4;
+const MAX_ITEMS = 4
 
 const safeFormatDate = (
   dateString: string | undefined,
   dateFormat: string,
 ): string => {
-  if (!dateString) return "N/A";
-  const date = new Date(dateString);
-  return isValid(date) ? format(date, dateFormat) : "Invalid date";
-};
+  if (!dateString) return "N/A"
+  const date = new Date(dateString)
+  return isValid(date) ? format(date, dateFormat) : "Invalid date"
+}
 
 const ReportSkeleton = () => (
   <Card className="shadow-lg">
@@ -76,7 +75,7 @@ const ReportSkeleton = () => (
       </div>
     </CardHeader>
   </Card>
-);
+)
 
 const ReportCard = ({
   report,
@@ -87,20 +86,19 @@ const ReportCard = ({
   setResponseText,
   handleImageClick,
   parkingSpaceData,
-  handleUserClick, // Add this prop
 }: any) => {
   const getReportIcon = (type: Report["type"]) => {
     switch (type) {
       case "Reservation Issue":
-        return <AlertCircle className="w-4 h-4 text-green-500" />;
+        return <AlertCircle className="w-4 h-4 text-green-500" />
       case "Renter Overstay":
-        return <Clock className="w-4 h-4 text-yellow-500" />;
+        return <Clock className="w-4 h-4 text-yellow-500" />
       case "Damage Report":
-        return <ShieldX className="w-4 h-4 text-red-500" />;
+        return <ShieldX className="w-4 h-4 text-red-500" />
       default:
-        return <Settings className="w-4 h-4 text-gray-500" />;
+        return <Settings className="w-4 h-4 text-gray-500" />
     }
-  };
+  }
 
   return (
     <Card key={report.id} className="shadow-lg">
@@ -147,40 +145,23 @@ const ReportCard = ({
               {/* Report Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <div className="space-y-2 text-slate-950">
-                    {report.owner_name && (
-                      <div className="flex items-center gap-2">
-                        <strong>Owner:</strong>
-                        <button
-                          className="text-blue-500 underline hover:text-blue-700 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            console.log("Owner ID:", report.owner_id); // Debug log
-                            handleUserClick(report.owner_id);
-                          }}
-                        >
-                          {report.owner_name}
-                        </button>
-                      </div>
-                    )}
-
-                    {report.renter_name && (
-                      <div className="flex items-center gap-2">
-                        <strong>Renter:</strong>
-                        <button
-                          className="text-blue-500 underline hover:text-blue-700 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            console.log("Renter ID:", report); // Debug log
-                            handleUserClick(report.user_id);
-                          }}
-                        >
-                          {report.renter_name}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
+                  {/* Basic Information */}
+                  {report.owner_name && (
+                    <div className="flex items-center gap-2 text-slate-950">
+                      <User className="w-4 h-4 text-slate-600" />
+                      <span>
+                        <strong>Owner:</strong> {report.owner_name}
+                      </span>
+                    </div>
+                  )}
+                  {report.renter_name && (
+                    <div className="flex items-center gap-2 text-slate-950">
+                      <User className="w-4 h-4 text-slate-600" />
+                      <span>
+                        <strong>Renter:</strong> {report.renter_name}
+                      </span>
+                    </div>
+                  )}
                   {/* Reservation Period */}
                   {report.start_time && report.end_time && (
                     <div className="flex items-center gap-2 text-slate-950">
@@ -299,8 +280,8 @@ const ReportCard = ({
         )}
       </AnimatePresence>
     </Card>
-  );
-};
+  )
+}
 
 const CancellationCard = ({
   cancellation,
@@ -335,39 +316,29 @@ const CancellationCard = ({
       </Button>
     </CardContent>
   </Card>
-);
+)
 
 const AdminReportsPage = () => {
-  const dispatch = useAppDispatch();
+  const dispatch = useAppDispatch()
   const {
     conflicts: reports = [],
     cancellations = [],
     loading,
     error,
-  } = useAppSelector((state) => state.admin);
-  const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
+  } = useAppSelector((state) => state.admin)
+  const [expandedReportId, setExpandedReportId] = useState<string | null>(null)
   const [responseText, setResponseText] = useState<{ [key: string]: string }>(
     {},
-  );
+  )
   const [parkingSpaceData, setParkingSpaceData] = useState<{
-    [key: string]: any;
-  }>({});
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-
-  const handleUserClick = (userId: string) => {
-    console.log("User ID clicked:", userId); // Debug log
-    setSelectedUserId(userId);
-  };
-
-  const closeModal = () => {
-    setSelectedUserId(null); // Close the modal
-  };
+    [key: string]: any
+  }>({})
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
   useEffect(() => {
-    dispatch(getAllConflicts());
-    dispatch(getCancelled());
-  }, [dispatch]);
+    dispatch(getAllConflicts())
+    dispatch(getCancelled())
+  }, [dispatch])
 
   useEffect(() => {
     if (error) {
@@ -375,12 +346,12 @@ const AdminReportsPage = () => {
         title: "Error",
         description: error,
         variant: "destructive",
-      });
+      })
     }
-  }, [error]);
+  }, [error])
 
   const toggleReport = (id: string, parkingSpaceId: string) => {
-    setExpandedReportId(expandedReportId === id ? null : id);
+    setExpandedReportId(expandedReportId === id ? null : id)
 
     if (parkingSpaceId && !parkingSpaceData[parkingSpaceId]) {
       dispatch(fetchParkingSpace(parkingSpaceId))
@@ -393,59 +364,59 @@ const AdminReportsPage = () => {
             title: "Error",
             description: "Failed to fetch parking space details.",
             variant: "destructive",
-          });
-        });
+          })
+        })
     }
-  };
+  }
 
   const handleImageClick = (imageSrc: string) => {
-    setSelectedImage(imageSrc);
-  };
+    setSelectedImage(imageSrc)
+  }
 
   const handleResponseSubmit = async (id: string) => {
-    const response = responseText[id];
+    const response = responseText[id]
     if (response?.trim()) {
       try {
-        await dispatch(updateConflictResponse({ id, response })).unwrap();
+        await dispatch(updateConflictResponse({ id, response })).unwrap()
         toast({
           title: "Response Sent",
           description: "The report response has been updated.",
           variant: "success",
-        });
-        dispatch(getAllConflicts());
-        setResponseText((prev) => ({ ...prev, [id]: "" }));
+        })
+        dispatch(getAllConflicts())
+        setResponseText((prev) => ({ ...prev, [id]: "" }))
       } catch (error: any) {
         toast({
           title: "Error",
           description: error.message,
           variant: "destructive",
-        });
+        })
       }
     }
-  };
+  }
 
   const handleAcknowledgeCancellation = async (id: string) => {
     try {
-      await dispatch(acknowledgeCancelled(id)).unwrap();
+      await dispatch(acknowledgeCancelled(id)).unwrap()
       toast({
         title: "Cancellation Acknowledged",
         description: "The cancellation has been removed.",
         variant: "success",
-      });
-      dispatch(getCancelled());
+      })
+      dispatch(getCancelled())
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
-      });
+      })
     }
-  };
+  }
 
   // Limit items based on MAX_ITEMS with priority for reports
-  const visibleReports = reports.slice(0, MAX_ITEMS);
-  const remainingItems = MAX_ITEMS - visibleReports.length;
-  const visibleCancellations = cancellations.slice(0, remainingItems);
+  const visibleReports = reports.slice(0, MAX_ITEMS)
+  const remainingItems = MAX_ITEMS - visibleReports.length
+  const visibleCancellations = cancellations.slice(0, remainingItems)
 
   if (loading) {
     return (
@@ -463,7 +434,7 @@ const AdminReportsPage = () => {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -489,10 +460,8 @@ const AdminReportsPage = () => {
                 setResponseText={setResponseText}
                 handleImageClick={handleImageClick}
                 parkingSpaceData={parkingSpaceData}
-                handleUserClick={handleUserClick} // Pass the function here
               />
             ))}
-
             {visibleCancellations.map((cancellation: any) => (
               <CancellationCard
                 key={cancellation.id}
@@ -503,20 +472,6 @@ const AdminReportsPage = () => {
           </div>
         )}
       </div>
-
-      {/* Modal */}
-      <Dialog open={!!selectedUserId} onOpenChange={closeModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>User Information</DialogTitle>
-          </DialogHeader>
-          {selectedUserId ? (
-            <UserInfo userId={selectedUserId} />
-          ) : (
-            <p>No user selected.</p>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Image Modal */}
       <Dialog
@@ -546,7 +501,7 @@ const AdminReportsPage = () => {
         </DialogContent>
       </Dialog>
     </div>
-  );
-};
+  )
+}
 
-export default AdminReportsPage;
+export default AdminReportsPage

@@ -1,9 +1,10 @@
-"use client";
+"use client"
 
-import React from "react";
-import Link from "next/link";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { get_points } from "@/features/user/userSlice";
+import React from "react"
+import Link from "next/link"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { get_user_location } from "@/features/user/userSlice"
+import { get_points } from "@/features/user/userSlice"
 import {
   Settings,
   ArrowUpCircle,
@@ -11,9 +12,9 @@ import {
   LogOut,
   FileWarning,
   Car,
-} from "lucide-react"; // Imported FileWarning
-import { logout } from "@/features/user/userSlice";
-import { Button } from "@/components/ui/button";
+} from "lucide-react" // Imported FileWarning
+import { logout } from "@/features/user/userSlice"
+import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,10 +25,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { router } from "next/client";
-import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+} from "@/components/ui/alert-dialog"
+import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
 
 // Profile stats component
 function ProfileStats({ label, value }: { label: string; value: number }) {
@@ -36,7 +36,7 @@ function ProfileStats({ label, value }: { label: string; value: number }) {
       <p className="text-lg md:text-xl font-bold">{value}</p>
       <p className="text-sm md:text-base text-gray-600">{label}</p>
     </div>
-  );
+  )
 }
 
 // Achievement card component supporting both Tailwind colors and hex codes
@@ -44,8 +44,8 @@ function AchievementCard({
   colorClass,
   label,
 }: {
-  colorClass: string;
-  label: string;
+  colorClass: string
+  label: string
 }) {
   return (
     <div className="flex flex-col items-center">
@@ -56,7 +56,7 @@ function AchievementCard({
       ></div>
       <p className="text-xs text-gray-600">{label}</p>
     </div>
-  );
+  )
 }
 
 // Comment card component
@@ -65,9 +65,9 @@ function CommentCard({
   comment,
   sentiment,
 }: {
-  user: string;
-  comment: string;
-  sentiment: string;
+  user: string
+  comment: string
+  sentiment: string
 }) {
   return (
     <div className="bg-gray-100 p-4 rounded-lg shadow-sm flex justify-between items-start drop-shadow-lg">
@@ -85,44 +85,43 @@ function CommentCard({
         )}
       </div>
     </div>
-  );
+  )
 }
 
 export default function ProfilePage() {
-  const dispatch = useAppDispatch();
-  const isLoggedIn = useAppSelector((state: any) => state.user.isLoggedIn);
+  const dispatch = useAppDispatch()
+  const isLoggedIn = useAppSelector((state: any) => state.user.isLoggedIn)
+  const [eloRating] = React.useState(1200)
+  const router = useRouter()
+  const name = useAppSelector((state: any) => state.user.name)
+  const userState = useAppSelector((state: any) => state.user.userState)
+  const userCity = useAppSelector((state: any) => state.user.userCity)
   //const yearsOnApp = useSelector((state:any) => state.user.);
-  const [eloRating] = React.useState(1200);
-  const router = useRouter();
-  const name = useAppSelector((state: any) => state.user.name);
-  const currentPoints = useAppSelector((state) => state.user.current_points);
-  const totalPoints = useAppSelector((state) => state.user.total_points);
+  const currentPoints = useAppSelector((state) => state.user.current_points)
+  const totalPoints = useAppSelector((state) => state.user.total_points)
+
   const handleLogout = async () => {
     // @ts-ignore
-    await dispatch(logout());
-    router.push("/login");
-  };
+    await dispatch(logout())
+    router.push("/login")
+  }
 
   console.log(
     "Select ",
     useAppSelector((state: any) => state.user),
-  );
+  )
 
   const userProfile = {
     username: name,
     joinedDate: new Date(2020, 5, 1),
     spotfindPosts: 50,
     yearsOnApp: 2,
-  };
+  }
 
-  const maxElo = 3000; // ????
+  const maxElo = 3000 // ????
 
   const comments = [
-    {
-      user: "User1",
-      comment: "Logged many good spots!",
-      sentiment: "positive",
-    },
+    { user: "User1", comment: "Logged many spots!", sentiment: "positive" },
     {
       user: "User2",
       comment: "Found a great spot, thanks!",
@@ -138,7 +137,7 @@ export default function ProfilePage() {
       comment: "Helpful and friendly service!",
       sentiment: "positive",
     },
-  ];
+  ]
 
   if (!isLoggedIn) {
     return (
@@ -151,14 +150,15 @@ export default function ProfilePage() {
           to view your profile.
         </p>
       </div>
-    );
+    )
   }
 
-  const [domLoaded, setDomLoaded] = useState(false);
+  const [domLoaded, setDomLoaded] = useState(false)
   useEffect(() => {
-    setDomLoaded(true);
-    dispatch(get_points());
-  }, []);
+    dispatch(get_user_location())
+    setDomLoaded(true)
+    dispatch(get_points())
+  }, [])
 
   return (
     domLoaded && (
@@ -235,6 +235,13 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          {/* Location Section */}
+          <div className="text-left mb-6">
+            <h2 className="text-lg font-semibold mb-4">Location</h2>
+            <p className="text-sm text-gray-700">State: {userState}</p>
+            <p className="text-sm text-gray-700">City: {userCity}</p>
+          </div>
+
           {/* Elo Rating Bar */}
           <div className="w-full bg-gray-300 rounded-full h-4 mb-6 drop-shadow-lg">
             <div
@@ -290,5 +297,5 @@ export default function ProfilePage() {
         <div className="flex h-16"></div>
       </div>
     )
-  );
+  )
 }

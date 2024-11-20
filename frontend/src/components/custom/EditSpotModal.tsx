@@ -1,19 +1,19 @@
 // src/components/custom/EditSpotModal.tsx
 
-"use client";
+"use client"
 
-import React, { useState, useEffect, Fragment, useRef } from "react";
-import { Dialog, Transition } from "@headlessui/react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft } from "lucide-react";
-import { useDispatch, useSelector } from "react-redux";
-import { updateParkingSpot, resetError } from "@/features/owner/ownerSlice";
-import { useToast } from "@/hooks/use-toast";
-import { RootState, AppDispatch } from "@/store";
-import { ParkingSpace, DaysOfWeek, TimeSlot } from "@/types/type";
+import React, { useState, useEffect, Fragment, useRef } from "react"
+import { Dialog, Transition } from "@headlessui/react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ArrowLeft } from "lucide-react"
+import { useDispatch, useSelector } from "react-redux"
+import { updateParkingSpot, resetError } from "@/features/owner/ownerSlice"
+import { useToast } from "@/hooks/use-toast"
+import { RootState, AppDispatch } from "@/store"
+import { ParkingSpace, DaysOfWeek, TimeSlot } from "@/types/type"
 import {
   AlertDialog,
   AlertDialogOverlay,
@@ -23,12 +23,12 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogFooter,
-} from "@/components/ui/alert-dialog"; // Import necessary sub-components
+} from "@/components/ui/alert-dialog" // Import necessary sub-components
 
 interface EditSpotModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  spot: ParkingSpace;
+  isOpen: boolean
+  onClose: () => void
+  spot: ParkingSpace
 }
 
 const EditSpotModal: React.FC<EditSpotModalProps> = ({
@@ -36,64 +36,66 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
   onClose,
   spot,
 }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { toast } = useToast();
-  const { loading, error } = useSelector((state: RootState) => state.owner);
+  const dispatch = useDispatch<AppDispatch>()
+  const { toast } = useToast()
+  const { loading, error } = useSelector((state: RootState) => state.owner)
 
   // Controlled Inputs
   //@ts-ignore
-  const [name, setName] = useState<string>(spot.is_paid ? spot.name : "");
+  const [name, setName] = useState<string>(spot.is_paid ? spot.name : "")
   //@ts-ignore
   const [address, setAddress] = useState<string>(
+    //@ts-ignore
     spot.is_paid ? spot.location.address : "",
-  );
+  )
   const [price, setPrice] = useState<number | null>(
     spot.is_paid ? spot.pricing_info?.base_price || null : null,
-  );
+  )
 
   const [timeSlot, setTimeSlot] = useState<any>({
     day_of_week: spot.availability_schedule?.map((s) => s.day_of_week) || [],
     start_time: spot.availability_schedule?.[0]?.start_time || "",
     end_time: spot.availability_schedule?.[0]?.end_time || "",
-  });
+  })
 
-  const [is24Seven, setIs24Seven] = useState<boolean>(false);
+  const [is24Seven, setIs24Seven] = useState<boolean>(false)
 
   // Location
   //@ts-ignore
   const [userLocation, setUserLocation] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(spot.location || null);
-  const [geoEnabled, setGeoEnabled] = useState(true);
-  const [locationLoading, setLocationLoading] = useState(false);
-  const [availabilityError, setAvailabilityError] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    lat: number
+    lng: number
+    //@ts-ignore
+  } | null>(spot.location || null)
+  const [geoEnabled, setGeoEnabled] = useState(true)
+  const [locationLoading, setLocationLoading] = useState(false)
+  const [availabilityError, setAvailabilityError] = useState<string>("")
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
 
   // Latitude and Longitude state
   const [latitude, setLatitude] = useState<string>(
     spot.location?.latitude.toString() || "",
-  );
+  )
   const [longitude, setLongitude] = useState<string>(
     spot.location?.longitude.toString() || "",
-  );
+  )
 
   // Reverification Confirmation Dialog State
-  const [isReverifyOpen, setIsReverifyOpen] = useState<boolean>(false);
-  const [pendingSubmit, setPendingSubmit] = useState<any>(null); // To store updatedData temporarily
+  const [isReverifyOpen, setIsReverifyOpen] = useState<boolean>(false)
+  const [pendingSubmit, setPendingSubmit] = useState<any>(null) // To store updatedData temporarily
 
   // Change Detection State
-  const [isChanged, setIsChanged] = useState<boolean>(false);
+  const [isChanged, setIsChanged] = useState<boolean>(false)
 
   // Store initial data in a ref to persist across renders
   const initialData = useRef<{
-    name: any;
-    address: string;
-    price: number | null;
-    latitude: any;
-    longitude: any;
-    is24Seven: boolean;
-    timeSlot: any;
+    name: any
+    address: string
+    price: number | null
+    latitude: any
+    longitude: any
+    is24Seven: boolean
+    timeSlot: any
   }>({
     name: (spot.is_paid ? spot.name : "") ?? "",
     address: (spot.is_paid ? spot.location.address : "") ?? "",
@@ -107,7 +109,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
       start_time: spot.availability_schedule?.[0]?.start_time || "",
       end_time: spot.availability_schedule?.[0]?.end_time || "",
     },
-  });
+  })
 
   /**
    * Update initialData and is24Seven when modal opens with a new spot
@@ -117,16 +119,16 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
       // Compute if the spot is 24/7
       const hasAllTimesZero = spot.availability_schedule?.every(
         (s) => s.start_time === "00:00" && s.end_time === "23:59",
-      );
+      )
       //@ts-ignore
-      const hasSevenDays = spot?.availability_schedule?.length >= 7 ?? false;
-      const computedIs24Seven = !!(hasAllTimesZero && hasSevenDays);
+      const hasSevenDays = spot?.availability_schedule?.length >= 7 ?? false
+      const computedIs24Seven = !!(hasAllTimesZero && hasSevenDays)
 
-      console.log("Availability Schedule:", spot.availability_schedule);
-      console.log("All times zero:", hasAllTimesZero);
-      console.log("Has seven days:", hasSevenDays);
+      console.log("Availability Schedule:", spot.availability_schedule)
+      console.log("All times zero:", hasAllTimesZero)
+      console.log("Has seven days:", hasSevenDays)
 
-      setIs24Seven(computedIs24Seven);
+      setIs24Seven(computedIs24Seven)
 
       // Set initial data with the correct is24Seven value
       initialData.current = {
@@ -142,46 +144,46 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
           start_time: spot.availability_schedule?.[0]?.start_time || "",
           end_time: spot.availability_schedule?.[0]?.end_time || "",
         },
-      };
+      }
 
-      setIsChanged(false);
-      console.log("Initial data set:", initialData.current);
+      setIsChanged(false)
+      console.log("Initial data set:", initialData.current)
     }
-  }, [isOpen, spot]);
+  }, [isOpen, spot])
 
   /**
    * Validate Availability Slot
    */
   const calculateTimeDifference = (start: string, end: string): number => {
-    const [startHour, startMinute] = start.split(":").map(Number);
-    const [endHour, endMinute] = end.split(":").map(Number);
+    const [startHour, startMinute] = start.split(":").map(Number)
+    const [endHour, endMinute] = end.split(":").map(Number)
 
-    const startTotalMinutes = startHour * 60 + startMinute;
-    const endTotalMinutes = endHour * 60 + endMinute;
+    const startTotalMinutes = startHour * 60 + startMinute
+    const endTotalMinutes = endHour * 60 + endMinute
 
-    let diff = endTotalMinutes - startTotalMinutes;
+    let diff = endTotalMinutes - startTotalMinutes
     if (diff < 0) {
-      diff += 24 * 60; // Wrap around to next day
+      diff += 24 * 60 // Wrap around to next day
     }
-    return diff;
-  };
+    return diff
+  }
 
   const validateAvailability = () => {
-    let isValid = true;
-    let errorMsg = "";
+    let isValid = true
+    let errorMsg = ""
 
     if (is24Seven) {
       // For 24/7, ensure start_time is '00:00' and end_time is '23:59'
       if (timeSlot.start_time !== "00:00" || timeSlot.end_time !== "23:59") {
-        isValid = false;
+        isValid = false
         errorMsg =
-          "24/7 slots must have start time set to 00:00 and end times set to 23:59.";
+          "24/7 slots must have start time set to 00:00 and end times set to 23:59."
       }
     } else {
       // Check if at least one day is selected
       if (timeSlot.day_of_week.length === 0) {
-        isValid = false;
-        errorMsg = "Please select at least one day of the week.";
+        isValid = false
+        errorMsg = "Please select at least one day of the week."
       }
 
       // Validate time durations
@@ -189,47 +191,47 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
         const diffMinutes = calculateTimeDifference(
           timeSlot.start_time,
           timeSlot.end_time,
-        );
+        )
 
         if (diffMinutes !== 0 && diffMinutes < 60) {
-          isValid = false;
+          isValid = false
           errorMsg =
-            "Each time slot must allow for at least one hour of parking.";
+            "Each time slot must allow for at least one hour of parking."
         }
       } else {
-        isValid = false;
-        errorMsg = "Please provide both start and end times.";
+        isValid = false
+        errorMsg = "Please provide both start and end times."
       }
     }
 
     if (isValid) {
-      setAvailabilityError("");
+      setAvailabilityError("")
     } else {
-      setAvailabilityError(errorMsg);
+      setAvailabilityError(errorMsg)
     }
 
-    return isValid;
-  };
+    return isValid
+  }
 
   /**
    * Handle 24/7 Toggle
    */
   const handle24SevenToggle = (checked: boolean) => {
-    setIs24Seven(checked);
+    setIs24Seven(checked)
     if (checked) {
       setTimeSlot({
         day_of_week: [],
         start_time: "00:00",
         end_time: "23:59",
-      });
+      })
     } else {
       setTimeSlot({
         day_of_week: [],
         start_time: "",
         end_time: "",
-      });
+      })
     }
-  };
+  }
 
   /**
    * Handle Days of the Week Selection
@@ -239,68 +241,68 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
       setTimeSlot((prev: any) => ({
         ...prev,
         day_of_week: [...prev.day_of_week, day],
-      }));
+      }))
     } else {
       setTimeSlot((prev: any) => ({
         ...prev,
         day_of_week: prev.day_of_week.filter((d: DaysOfWeek) => d !== day),
-      }));
+      }))
     }
-  };
+  }
 
   /**
    * Get User's Current Location
    */
   const getUserLocation = () => {
-    setLocationLoading(true);
+    setLocationLoading(true)
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const location = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-          };
-          setUserLocation(location);
-          setLatitude(position.coords.latitude.toString());
-          setLongitude(position.coords.longitude.toString());
-          setGeoEnabled(true);
-          setLocationLoading(false);
+          }
+          setUserLocation(location)
+          setLatitude(position.coords.latitude.toString())
+          setLongitude(position.coords.longitude.toString())
+          setGeoEnabled(true)
+          setLocationLoading(false)
         },
         () => {
-          console.error("Error: The Geolocation service failed.");
-          setGeoEnabled(false);
-          setLocationLoading(false);
+          console.error("Error: The Geolocation service failed.")
+          setGeoEnabled(false)
+          setLocationLoading(false)
         },
-      );
+      )
     } else {
-      console.error("Error: Your browser doesn't support geolocation.");
-      setGeoEnabled(false);
-      setLocationLoading(false);
+      console.error("Error: Your browser doesn't support geolocation.")
+      setGeoEnabled(false)
+      setLocationLoading(false)
     }
-  };
+  }
 
   /**
    * Function to compare two availability schedules
    */
   const areSchedulesEqual = (sched1: any[], sched2: any[]) => {
-    if (sched1.length !== sched2.length) return false;
+    if (sched1.length !== sched2.length) return false
     const sorted1 = [...sched1].sort((a, b) =>
       a.day_of_week.localeCompare(b.day_of_week),
-    );
+    )
     const sorted2 = [...sched2].sort((a, b) =>
       a.day_of_week.localeCompare(b.day_of_week),
-    );
+    )
     for (let i = 0; i < sorted1.length; i++) {
       if (
         sorted1[i].day_of_week !== sorted2[i].day_of_week ||
         sorted1[i].start_time !== sorted2[i].start_time ||
         sorted1[i].end_time !== sorted2[i].end_time
       ) {
-        return false;
+        return false
       }
     }
-    return true;
-  };
+    return true
+  }
 
   /**
    * Determine if changes require reverification (only address and location)
@@ -311,23 +313,23 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
   ): boolean => {
     if (updated.location) {
       const addressChanged =
-        updated.location.address !== original.location.address;
+        updated.location.address !== original.location.address
       const latitudeChanged =
-        updated.location.latitude !== original.location.latitude;
+        updated.location.latitude !== original.location.latitude
       const longitudeChanged =
-        updated.location.longitude !== original.location.longitude;
-      return addressChanged || latitudeChanged || longitudeChanged;
+        updated.location.longitude !== original.location.longitude
+      return addressChanged || latitudeChanged || longitudeChanged
     }
-    return false;
-  };
+    return false
+  }
 
   /**
    * Handle Form Submission
    */
   const handleSubmit = async (event?: React.FormEvent<HTMLFormElement>) => {
-    if (event) event.preventDefault();
-    setIsSubmitting(true);
-    console.log("handleSubmit called");
+    if (event) event.preventDefault()
+    setIsSubmitting(true)
+    console.log("handleSubmit called")
 
     // Validate availability before proceeding
     if (!validateAvailability()) {
@@ -337,10 +339,10 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
           availabilityError ||
           "Please fix the errors in your availability schedule.",
         variant: "destructive",
-      });
-      setIsSubmitting(false);
-      console.log("Validation failed:", availabilityError);
-      return;
+      })
+      setIsSubmitting(false)
+      console.log("Validation failed:", availabilityError)
+      return
     }
 
     // Validate price (if is_paid)
@@ -349,36 +351,36 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
         title: "Invalid Price",
         description: "Please enter a valid price.",
         variant: "destructive",
-      });
-      setIsSubmitting(false);
-      console.log("Price validation failed:", price);
-      return;
+      })
+      setIsSubmitting(false)
+      console.log("Price validation failed:", price)
+      return
     }
 
     // Validate latitude and longitude
-    const parsedLatitude = parseFloat(latitude);
-    const parsedLongitude = parseFloat(longitude);
+    const parsedLatitude = parseFloat(latitude)
+    const parsedLongitude = parseFloat(longitude)
 
     if (isNaN(parsedLatitude) || isNaN(parsedLongitude)) {
       toast({
         title: "Invalid Coordinates",
         description: "Please enter valid latitude and longitude values.",
         variant: "destructive",
-      });
-      setIsSubmitting(false);
-      console.log("Coordinate validation failed:", { latitude, longitude });
-      return;
+      })
+      setIsSubmitting(false)
+      console.log("Coordinate validation failed:", { latitude, longitude })
+      return
     }
 
     // Build the new availability_schedule array based on the current state
-    let newAvailabilitySchedule: any[] = [];
+    let newAvailabilitySchedule: any[] = []
     if (spot.is_paid) {
       if (is24Seven) {
         newAvailabilitySchedule = Object.values(DaysOfWeek).map((day) => ({
           day_of_week: day,
           start_time: "00:00",
           end_time: "23:59",
-        }));
+        }))
       } else {
         newAvailabilitySchedule = timeSlot.day_of_week.map(
           (day: DaysOfWeek) => ({
@@ -386,30 +388,30 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
             start_time: timeSlot.start_time,
             end_time: timeSlot.end_time,
           }),
-        );
+        )
       }
     }
 
     // Determine if availability_schedule has changed
-    let availabilityChanged = false;
+    let availabilityChanged = false
     if (spot.is_paid) {
       availabilityChanged = !areSchedulesEqual(
         newAvailabilitySchedule,
         spot?.availability_schedule ?? [],
-      );
+      )
     }
 
     // Initialize updatedData with changed fields only
     const updatedData: Partial<ParkingSpace> & {
-      requireReverification?: boolean;
-    } = {};
+      requireReverification?: boolean
+    } = {}
 
     // Compare and add changed fields
     if (spot.is_paid) {
       // Name Change
       if (name !== initialData.current.name) {
-        updatedData.name = name;
-        console.log("Name changed:", name);
+        updatedData.name = name
+        console.log("Name changed:", name)
       }
 
       // Address or Location Change
@@ -431,8 +433,8 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
             longitude !== initialData.current.longitude
               ? parsedLongitude
               : spot.location.longitude,
-        };
-        console.log("Location changed:", updatedData.location);
+        }
+        console.log("Location changed:", updatedData.location)
       }
 
       // Price Change
@@ -440,14 +442,14 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
         updatedData.pricing_info = {
           ...updatedData.pricing_info,
           base_price: price!,
-        };
-        console.log("Price changed:", price);
+        }
+        console.log("Price changed:", price)
       }
 
       // Availability Change
       if (availabilityChanged) {
-        updatedData.availability_schedule = newAvailabilitySchedule;
-        console.log("Availability changed:", newAvailabilitySchedule);
+        updatedData.availability_schedule = newAvailabilitySchedule
+        console.log("Availability changed:", newAvailabilitySchedule)
       }
     }
 
@@ -455,19 +457,16 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
     const changesRequireReverification = determineReverificationRequirements(
       spot,
       updatedData,
-    );
-    console.log(
-      "Changes require reverification:",
-      changesRequireReverification,
-    );
+    )
+    console.log("Changes require reverification:", changesRequireReverification)
 
     if (changesRequireReverification) {
       // Store updatedData temporarily and open confirmation dialog
-      setPendingSubmit(updatedData);
-      setIsReverifyOpen(true);
-      setIsSubmitting(false);
-      console.log("Opening reverification dialog");
-      return;
+      setPendingSubmit(updatedData)
+      setIsReverifyOpen(true)
+      setIsSubmitting(false)
+      console.log("Opening reverification dialog")
+      return
     }
 
     // If no changes, do not proceed
@@ -476,15 +475,15 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
         title: "No Changes Detected",
         description: "You have not made any changes to update.",
         variant: "destructive",
-      });
-      setIsSubmitting(false);
-      console.log("No changes detected");
-      return;
+      })
+      setIsSubmitting(false)
+      console.log("No changes detected")
+      return
     }
 
     // Proceed to submit without reverification
-    await submitUpdate(updatedData);
-  };
+    await submitUpdate(updatedData)
+  }
 
   /**
    * Function to submit the update
@@ -493,87 +492,87 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
     dataToSubmit: Partial<ParkingSpace> & { requireReverification?: boolean },
   ) => {
     try {
-      console.log("Submitting update with data:", dataToSubmit);
+      console.log("Submitting update with data:", dataToSubmit)
       // Dispatch the thunk and unwrap the result to catch errors
       // @ts-ignore
       const updatedSpot = await dispatch(
         updateParkingSpot({ id: spot.id, data: dataToSubmit }),
-      ).unwrap();
-      console.log("Update dispatched successfully:", updatedSpot);
+      ).unwrap()
+      console.log("Update dispatched successfully:", updatedSpot)
 
       toast({
         title: "Spot Updated Successfully!",
         description: "Your parking spot has been updated.",
-      });
-      dispatch(resetError());
-      onClose();
+      })
+      dispatch(resetError())
+      onClose()
     } catch (error: any) {
-      console.error("Error during update:", error);
+      console.error("Error during update:", error)
       toast({
         title: "Error",
         description: error || "Failed to update parking spot.",
         variant: "destructive",
-      });
+      })
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
   /**
    * Handle Confirmation Dialog
    */
   const handleConfirmReverification = () => {
     if (pendingSubmit) {
-      const updatedData = { ...pendingSubmit, requireReverification: true };
-      setIsReverifyOpen(false);
-      setPendingSubmit(null);
+      const updatedData = { ...pendingSubmit, requireReverification: true }
+      setIsReverifyOpen(false)
+      setPendingSubmit(null)
       console.log(
         "Confirmed reverification, submitting update with requireReverification: true",
-      );
-      submitUpdate(updatedData);
+      )
+      submitUpdate(updatedData)
     }
-  };
+  }
 
   const handleCancelReverification = () => {
-    setIsReverifyOpen(false);
-    setPendingSubmit(null);
+    setIsReverifyOpen(false)
+    setPendingSubmit(null)
     toast({
       title: "Update Cancelled",
       description: "Your changes were not saved.",
       variant: "destructive",
-    });
-    console.log("Cancelled reverification");
-  };
+    })
+    console.log("Cancelled reverification")
+  }
 
   /**
    * Reset form when modal closes
    */
   useEffect(() => {
     if (!isOpen) {
-      setName((spot.is_paid ? spot.name : "") ?? "");
-      setAddress((spot.is_paid ? spot.location.address : "") ?? "");
-      setPrice(spot.is_paid ? spot.pricing_info?.base_price || null : null);
+      setName((spot.is_paid ? spot.name : "") ?? "")
+      setAddress((spot.is_paid ? spot.location.address : "") ?? "")
+      setPrice(spot.is_paid ? spot.pricing_info?.base_price || null : null)
       setTimeSlot({
         day_of_week:
           spot.availability_schedule?.map((s) => s.day_of_week) || [],
         start_time: spot.availability_schedule?.[0]?.start_time || "",
         end_time: spot.availability_schedule?.[0]?.end_time || "",
-      });
-      setIs24Seven(false);
+      })
+      setIs24Seven(false)
       // @ts-ignore
-      setUserLocation(spot.location || null);
-      setLatitude(spot.location?.latitude.toString() || "");
-      setLongitude(spot.location?.longitude.toString() || "");
-      setGeoEnabled(true);
-      setLocationLoading(false);
-      setAvailabilityError("");
-      setIsReverifyOpen(false);
-      setPendingSubmit(null);
-      setIsChanged(false);
-      dispatch(resetError());
-      console.log("Form reset");
+      setUserLocation(spot.location || null)
+      setLatitude(spot.location?.latitude.toString() || "")
+      setLongitude(spot.location?.longitude.toString() || "")
+      setGeoEnabled(true)
+      setLocationLoading(false)
+      setAvailabilityError("")
+      setIsReverifyOpen(false)
+      setPendingSubmit(null)
+      setIsChanged(false)
+      dispatch(resetError())
+      console.log("Form reset")
     }
-  }, [isOpen, spot, dispatch]);
+  }, [isOpen, spot, dispatch])
 
   /**
    * Detect Changes
@@ -581,16 +580,16 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
   useEffect(() => {
     const hasNameChanged = spot.is_paid
       ? name !== initialData.current.name
-      : false;
+      : false
     const hasAddressChanged = spot.is_paid
       ? address !== initialData.current.address
-      : false;
+      : false
     const hasPriceChanged = spot.is_paid
       ? price !== initialData.current.price
-      : false;
-    const hasLatitudeChanged = latitude !== initialData.current.latitude;
-    const hasLongitudeChanged = longitude !== initialData.current.longitude;
-    const hasIs24SevenChanged = is24Seven !== initialData.current.is24Seven;
+      : false
+    const hasLatitudeChanged = latitude !== initialData.current.latitude
+    const hasLongitudeChanged = longitude !== initialData.current.longitude
+    const hasIs24SevenChanged = is24Seven !== initialData.current.is24Seven
 
     const currentAvailabilitySchedule = is24Seven
       ? Object.values(DaysOfWeek).map((day) => ({
@@ -602,7 +601,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
           day_of_week: day,
           start_time: timeSlot.start_time,
           end_time: timeSlot.end_time,
-        }));
+        }))
 
     const initialAvailabilitySchedule = is24Seven
       ? Object.values(DaysOfWeek).map((day) => ({
@@ -614,12 +613,12 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
           day_of_week: s.day_of_week,
           start_time: s.start_time,
           end_time: s.end_time,
-        })) || [];
+        })) || []
 
     const hasAvailabilityChanged = !areSchedulesEqual(
       currentAvailabilitySchedule,
       initialAvailabilitySchedule,
-    );
+    )
 
     const anyChange =
       hasNameChanged ||
@@ -628,9 +627,9 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
       hasLatitudeChanged ||
       hasLongitudeChanged ||
       hasIs24SevenChanged ||
-      hasAvailabilityChanged;
+      hasAvailabilityChanged
 
-    setIsChanged(anyChange);
+    setIsChanged(anyChange)
 
     console.log("Change Detection:", {
       hasNameChanged,
@@ -641,7 +640,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
       hasIs24SevenChanged,
       hasAvailabilityChanged,
       anyChange,
-    });
+    })
   }, [
     name,
     address,
@@ -651,7 +650,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
     is24Seven,
     timeSlot,
     spot.availability_schedule,
-  ]);
+  ])
 
   return (
     <>
@@ -850,7 +849,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
                                 id={`24seven-edit`}
                                 checked={is24Seven}
                                 onCheckedChange={(checked) => {
-                                  handle24SevenToggle(checked as boolean);
+                                  handle24SevenToggle(checked as boolean)
                                 }}
                               />
                               <Label
@@ -929,7 +928,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
                                             handleDaySelection(
                                               day as DaysOfWeek,
                                               checked as boolean,
-                                            );
+                                            )
                                           }}
                                         />
                                         <Label
@@ -1028,7 +1027,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
         </AlertDialogContent>
       </AlertDialog>
     </>
-  );
-};
+  )
+}
 
-export default EditSpotModal;
+export default EditSpotModal

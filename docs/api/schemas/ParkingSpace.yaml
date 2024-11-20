@@ -1,5 +1,6 @@
 type: object
 required:
+  - id
   - location
   - is_paid
 properties:

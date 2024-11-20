@@ -1,21 +1,21 @@
 // src/mocks/handlers/reservations/reservationsHandler.ts
 
-import { http, HttpResponse } from "msw";
+import { http, HttpResponse } from "msw"
 import {
   Reservation,
   ReservationCreateRequest,
   ReservationUpdateRequest,
   CarInfo,
-} from "@/types/type";
-import { reservations } from "@/mocks/data/reservations/reservationsData";
-import { carInfos } from "@/mocks/data/cars/carInfoData";
+} from "@/types/type"
+import { reservations } from "@/mocks/data/reservations/reservationsData"
+import { carInfos } from "@/mocks/data/cars/carInfoData"
 
 /**
  * **Simulated Authentication Context**
  * Replace 'user1' with dynamic user IDs as needed.
  * In a real scenario, extract from request headers or tokens.
  */
-const authenticatedUserId = "user1";
+const authenticatedUserId = "user1"
 
 /**
  * Handler for GET /reservations
@@ -26,11 +26,11 @@ export const getUserReservationsHandler = http.get<never, never, Reservation[]>(
   async ({ request }) => {
     let userReservations = reservations.filter(
       (a) => a.renter_id === authenticatedUserId,
-    );
+    )
 
-    return HttpResponse.json(userReservations, { status: 200 });
+    return HttpResponse.json(userReservations, { status: 200 })
   },
-);
+)
 
 /**
  * Handler for GET /reservations/:id
@@ -41,18 +41,18 @@ export const getReservationByIdHandler = http.get<
   { id: string },
   Reservation | { message: string }
 >("/v1/reservations/:id", async ({ params }) => {
-  const { id } = params;
-  const reservation = reservations.find((r) => r.id === id);
+  const { id } = params
+  const reservation = reservations.find((r) => r.id === id)
 
   if (reservation) {
-    return HttpResponse.json(reservation, { status: 200 });
+    return HttpResponse.json(reservation, { status: 200 })
   } else {
     return HttpResponse.json(
       { message: "Reservation not found" },
       { status: 404 },
-    );
+    )
   }
-});
+})
 
 /**
  * Handler for POST /reservations
@@ -64,10 +64,10 @@ export const createReservationHandler = http.post<
   Reservation | { message: string }
 >("/v1/reservations", async ({ request }) => {
   // Parse the request body
-  const body: ReservationCreateRequest = await request.json();
+  const body: ReservationCreateRequest = await request.json()
 
   const { parking_space_id, start_time, end_time, car_info_id, renter_id } =
-    body;
+    body
 
   // Validate required fields
   if (
@@ -77,7 +77,7 @@ export const createReservationHandler = http.post<
     !car_info_id ||
     !renter_id
   ) {
-    return HttpResponse.json({ message: "Invalid input" }, { status: 400 });
+    return HttpResponse.json({ message: "Invalid input" }, { status: 400 })
   }
 
   // Assuming you have a way to fetch parkingSpace and carInfo
@@ -92,13 +92,13 @@ export const createReservationHandler = http.post<
     id: parking_space_id,
     owner_id: "owner1",
     locked: false,
-  } as any;
+  } as any
 
   if (!parkingSpace) {
     return HttpResponse.json(
       { message: "Parking space not found" },
       { status: 404 },
-    );
+    )
   }
 
   // Check if the parking space is locked by the user
@@ -106,7 +106,7 @@ export const createReservationHandler = http.post<
     return HttpResponse.json(
       { message: "Parking space is locked by another user" },
       { status: 403 },
-    );
+    )
   }
 
   // Check for overlapping reservations
@@ -115,7 +115,7 @@ export const createReservationHandler = http.post<
       reservation.parking_space_id === parking_space_id &&
       (reservation.start_time ?? end_time) < end_time &&
       (reservation.end_time ?? start_time) > start_time,
-  );
+  )
 
   if (overlappingReservation) {
     return HttpResponse.json(
@@ -123,7 +123,7 @@ export const createReservationHandler = http.post<
         message: "Parking space is already reserved for the selected time slot",
       },
       { status: 409 },
-    );
+    )
   }
 
   // Create new reservation
@@ -145,19 +145,19 @@ export const createReservationHandler = http.post<
     car_info_id: "car_id",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-  };
+  }
 
-  reservations.push(newReservation);
+  reservations.push(newReservation)
 
   // Optionally, unlock the parking space if reservation is made
   if (parkingSpace.locked) {
-    parkingSpace.locked = false;
-    parkingSpace.locked_by = undefined;
-    parkingSpace.locked_until = undefined;
+    parkingSpace.locked = false
+    parkingSpace.locked_by = undefined
+    parkingSpace.locked_until = undefined
   }
 
-  return HttpResponse.json(newReservation, { status: 201 });
-});
+  return HttpResponse.json(newReservation, { status: 201 })
+})
 
 /**
  * Handler for PUT /reservations/:id
@@ -168,37 +168,37 @@ export const updateReservationHandler = http.put<
   any,
   Reservation | { message: string }
 >("/v1/reservations/:id", async ({ request, params }) => {
-  const { id } = params;
+  const { id } = params
   // Parse the request body
-  const body: any = await request.json();
-  const { start_time, end_time, status } = body;
+  const body: any = await request.json()
+  const { start_time, end_time, status } = body
   if (!start_time || !end_time || !status) {
-    return HttpResponse.json({ message: "Invalid input" }, { status: 400 });
+    return HttpResponse.json({ message: "Invalid input" }, { status: 400 })
   }
-  const reservationIndex = reservations.findIndex((r) => r.id === id);
+  const reservationIndex = reservations.findIndex((r) => r.id === id)
 
   if (reservationIndex === -1) {
     return HttpResponse.json(
       { message: "Reservation not found" },
       { status: 404 },
-    );
+    )
   }
 
-  const existingReservation = reservations[reservationIndex];
+  const existingReservation = reservations[reservationIndex]
   // Placeholder: Replace with actual logic to fetch parkingSpace
-  const parkingSpace = { id: existingReservation.parking_space_id } as any;
+  const parkingSpace = { id: existingReservation.parking_space_id } as any
 
   if (!parkingSpace) {
     return HttpResponse.json(
       { message: "Associated parking space not found" },
       { status: 404 },
-    );
+    )
   }
 
   // If updating time, check for overlaps
   if (start_time || end_time) {
-    const newStartTime = start_time || existingReservation.start_time;
-    const newEndTime = end_time || existingReservation.end_time;
+    const newStartTime = start_time || existingReservation.start_time
+    const newEndTime = end_time || existingReservation.end_time
 
     const overlappingReservation = reservations.find(
       (reservation) =>
@@ -206,7 +206,7 @@ export const updateReservationHandler = http.put<
         reservation.id !== id &&
         (reservation.start_time ?? newEndTime) < newEndTime &&
         (reservation.end_time ?? newStartTime) > newStartTime,
-    );
+    )
 
     if (overlappingReservation) {
       return HttpResponse.json(
@@ -215,7 +215,7 @@ export const updateReservationHandler = http.put<
             "Parking space is already reserved for the selected time slot",
         },
         { status: 409 },
-      );
+      )
     }
   }
 
@@ -226,12 +226,12 @@ export const updateReservationHandler = http.put<
     end_time: end_time || existingReservation.end_time,
     status: status || existingReservation.status,
     updated_at: new Date().toISOString(),
-  };
+  }
 
-  reservations[reservationIndex] = updatedReservation;
+  reservations[reservationIndex] = updatedReservation
 
-  return HttpResponse.json(updatedReservation, { status: 200 });
-});
+  return HttpResponse.json(updatedReservation, { status: 200 })
+})
 
 /**
  * Handler for GET /cars
@@ -241,9 +241,9 @@ export const getUserCarInfosHandler = http.get<never, never, CarInfo[]>(
   "/v1/cars",
   async () => {
     // Assuming all carInfos belong to the authenticated user
-    return HttpResponse.json(carInfos, { status: 200 });
+    return HttpResponse.json(carInfos, { status: 200 })
   },
-);
+)
 
 /**
  * **Export Reservations Handlers**
@@ -254,4 +254,4 @@ export const reservationsHandlers = [
   createReservationHandler,
   updateReservationHandler,
   getUserCarInfosHandler,
-];
+]

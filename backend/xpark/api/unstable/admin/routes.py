@@ -17,6 +17,7 @@ from xpark.middleware.token_auth_middleware import require_admin
 import uuid
 
 
+
 @bp.get("user-details/<user>")
 @require_admin
 def fetch_user_details_route(

@@ -1,17 +1,17 @@
-import React, { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { cancelReservation } from "@/features/reservations/reservationsSlice";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "@/hooks/use-toast";
-import { Reservation } from "@/types/type";
+import React, { useEffect } from "react"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { cancelReservation } from "@/features/reservations/reservationsSlice"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { toast } from "@/hooks/use-toast"
+import { Reservation } from "@/types/type"
 
 interface DeleteReservationModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  reservation: Reservation;
-  onConfirm: () => void; // Add this line
+  isOpen: boolean
+  onClose: () => void
+  reservation: Reservation
+  onConfirm: () => void // Add this line
 }
 
 const DeleteReservationModal: React.FC<DeleteReservationModalProps> = ({
@@ -20,9 +20,9 @@ const DeleteReservationModal: React.FC<DeleteReservationModalProps> = ({
   reservation,
   onConfirm,
 }) => {
-  const dispatch = useAppDispatch();
-  const { loading, error } = useAppSelector((state) => state.reservations);
-  const [domLoaded, setDomLoaded] = React.useState(false);
+  const dispatch = useAppDispatch()
+  const { loading, error } = useAppSelector((state) => state.reservations)
+  const [domLoaded, setDomLoaded] = React.useState(false)
 
   useEffect(() => {
     if (error) {
@@ -30,35 +30,35 @@ const DeleteReservationModal: React.FC<DeleteReservationModalProps> = ({
         title: "Failed to Cancel Reservation",
         description: error,
         variant: "destructive",
-      });
+      })
       // dispatch(resetReservationError()); // Uncomment if reset action
     }
-  }, [error, dispatch]);
+  }, [error, dispatch])
 
   useEffect(() => {
-    setDomLoaded(true);
-  }, []);
+    setDomLoaded(true)
+  }, [])
 
   const handleDelete = async () => {
     try {
       if (reservation.id) {
-        await dispatch(cancelReservation(reservation.id)).unwrap();
+        await dispatch(cancelReservation(reservation.id)).unwrap()
         toast({
           title: "Reservation Cancelled",
           description: "Your reservation has been canceled successfully.",
           variant: "success",
-        });
-        onConfirm(); // Call the onConfirm prop
-        onClose();
+        })
+        onConfirm() // Call the onConfirm prop
+        onClose()
       } else {
-        console.error("Reservation ID is undefined");
+        console.error("Reservation ID is undefined")
       }
     } catch (err) {
-      console.error(err);
+      console.error(err)
     }
-  };
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     domLoaded && (
@@ -107,7 +107,7 @@ const DeleteReservationModal: React.FC<DeleteReservationModalProps> = ({
         </Card>
       </div>
     )
-  );
-};
+  )
+}
 
-export default DeleteReservationModal;
+export default DeleteReservationModal

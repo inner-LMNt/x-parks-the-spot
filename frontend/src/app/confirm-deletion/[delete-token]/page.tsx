@@ -1,3 +1,3 @@
-import ConfirmDeletion from "./ConfirmDeletion";
+import ConfirmDeletion from "./ConfirmDeletion"
 
-export default ConfirmDeletion;
+export default ConfirmDeletion

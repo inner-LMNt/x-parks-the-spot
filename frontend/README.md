@@ -401,7 +401,6 @@ you find workarounds if you need a server component to use this type of informat
 - Configure `.env.local` similar to how it is done in `.template.env`:
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api/unstable
-NEXT_PUBLIC_BASE_URL=http://localhost:5000
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=key
 ```
 
