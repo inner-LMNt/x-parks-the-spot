@@ -18,7 +18,6 @@ def get_dashboard_analytics_route(token: str, user_id: uuid.UUID) -> Tuple[Any, 
         user_id=user_id, time_filter=time_filter, spot_id=spot_id
     ):
         case Ok(data):
-            print(data)
             return data, 200
         case Err(e):
             return {"err": e}, 400  # Return 400 for client errors
