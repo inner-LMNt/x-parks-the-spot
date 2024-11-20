@@ -472,9 +472,20 @@ def handle_get_transaction_history(user_id: uuid.UUID) -> Result[Dict[str, int],
             return Ok(result)
 
 
-def handle_buy_badge(
-    user_id: uuid.UUID, badge_id: int, price: int
-) -> Result[None, str]:
+def handle_buy_badge(user_id: uuid.UUID, badge_id: int) -> Result[None, str]:
+    # Might want to change this later by storing shop items in a separate table
+    # Right now, they're all hardcoded
+    id_to_name = {
+        1: "Bronze",
+        2: "Silver",
+        3: "Gold",
+    }
+
+    id_to_price = {
+        1: 500,
+        2: 1000,
+        3: 2000,
+    }
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             # Check sufficient points
@@ -486,6 +497,7 @@ def handle_buy_badge(
             if not result:
                 return Err("User not found")
             points = result[0]
+            price = id_to_price[badge_id]
             if points["current"] < price:
                 return Err("Insufficient points")
 
@@ -511,13 +523,6 @@ def handle_buy_badge(
                 (badge_id, user_id),
             )
 
-            # Might want to change this later by storing shop items in a separate table
-            # Right now, they're all hardcoded
-            id_to_name = {
-                1: "Bronze",
-                2: "Silver",
-                3: "Gold",
-            }
             description = f"Badge purchase: {id_to_name[badge_id]}"
 
             cur.execute(
@@ -546,7 +551,16 @@ def handle_get_badge_list(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
             return Ok(result)
 
 
-def handle_buy_raffle_ticket(user_id: uuid.UUID, raffle_id: int, price: int) -> Result[None, str]:
+def handle_buy_raffle_ticket(user_id: uuid.UUID, raffle_id: int) -> Result[None, str]:
+    # Might want to change this later by storing shop items in a separate table
+    # Right now, they're all hardcoded
+    id_to_name = {
+        4: "$10 Gift Card",
+    }
+
+    id_to_price = {
+        4: 750,
+    }
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             # Check sufficient points
@@ -558,6 +572,7 @@ def handle_buy_raffle_ticket(user_id: uuid.UUID, raffle_id: int, price: int) -> 
             if not result:
                 return Err("User not found")
             points = result[0]
+            price = id_to_price[raffle_id]
             if points["current"] < price:
                 return Err("Insufficient points")
 
@@ -567,11 +582,6 @@ def handle_buy_raffle_ticket(user_id: uuid.UUID, raffle_id: int, price: int) -> 
                 (price, user_id),
             )
 
-            # Might want to change this later by storing shop items in a separate table
-            # Right now, they're all hardcoded
-            id_to_name = {
-                4: "$10 Gift Card",
-            }
             description = f"Raffle ticket purchase: {id_to_name[raffle_id]}"
 
             cur.execute(
@@ -593,13 +603,13 @@ def handle_get_raffle_tickets(user_id: uuid.UUID) -> Result[Dict[str, int], str]
                 """
                 SELECT COUNT(*)
                 FROM points_transaction
-                WHERE user_id = %s AND description LIKE 'Raffle ticket purchase%'
+                WHERE user_id = %s AND description LIKE %s
                 AND status = 'active'
                 """,
-                (user_id,),
+                (user_id, 'Raffle ticket purchase%'),
             )
             result = cur.fetchone()
             if not result:
                 return Err("User not found")
-
+            print(result)
             return Ok(result)

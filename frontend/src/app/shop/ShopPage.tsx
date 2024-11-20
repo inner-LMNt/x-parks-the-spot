@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { get_transactions, get_points, buy_badge } from "@/features/user/userSlice";
+import { get_transactions, get_points, buy_badge, buy_raffle_ticket, get_raffle_tickets } from "@/features/user/userSlice";
 import { ShoppingCart, Award, Ticket, ArrowUpCircle, ArrowDownCircle } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -19,27 +19,35 @@ export default function ShopPage() {
   const dispatch = useAppDispatch();
   const userPoints = useAppSelector((state) => state.user.current_points);
   const transactions = useAppSelector((state) => state.user.transactions);
+  const tickets = useAppSelector((state) => state.user.active_raffle_tickets);
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState('shop');
 
-  const handlePurchase = (item: typeof shopItems[0]) => {
-    if (userPoints >= item.points) {
-      toast({
-        title: "Purchase Successful!",
-        description: `You've purchased ${item.name} for ${item.points} points.`,
-        variant: "success",
+  const handlePurchaseRaffle = (item: typeof shopItems[0]) => {
+    dispatch(buy_raffle_ticket({ raffleId: item.id }))
+      .then((resultAction: any) => {
+        if (buy_raffle_ticket.fulfilled.match(resultAction)) {
+          dispatch(get_raffle_tickets())
+          toast({
+            title: "Purchase Successful!",
+            description: `You've purchased ${item.name} for ${item.points} points.`,
+            variant: "success",
+          })
+        } else if (buy_raffle_ticket.rejected.match(resultAction)) {
+          toast({
+            title: "Purchase Failed",
+            description: resultAction.payload ? resultAction.payload : "An unknown error occurred",
+            variant: "destructive",
+          });
+        }
       })
-    } else {
-      toast({
-        title: "Insufficient Points",
-        description: "You don't have enough points to purchase this item.",
-        variant: "destructive",
+      .catch((error: any) => {
+        console.error("Failed to purchase raffle", error)
       })
-    }
   }
 
   const handlePurchaseBadge = (item: typeof shopItems[0]) => {
-    dispatch(buy_badge({ badgeId: item.id, price: item.points }))
+    dispatch(buy_badge({ badgeId: item.id }))
       .then((resultAction: any) => {
         if (buy_badge.fulfilled.match(resultAction)) {
           dispatch(get_points())
@@ -63,6 +71,8 @@ export default function ShopPage() {
 
   useEffect(() => {
     dispatch(get_transactions())
+    dispatch(get_points())
+    dispatch(get_raffle_tickets())
   }, [dispatch])
 
   return (
@@ -104,7 +114,7 @@ export default function ShopPage() {
                     <span className="text-lg font-semibold text-gray-800">{item.points} Points</span>
                   </Card>
                 </div>
-                <CardDescription>{item.type === "badge" ? "Exclusive Badge" : "Raffle Entry"}</CardDescription>
+                <CardDescription>{item.type === "badge" ? "Exclusive Badge" : `Raffle Entry - You currently have ${tickets} tickets`}</CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
                 <p className="text-sm text-muted-foreground">
@@ -114,7 +124,7 @@ export default function ShopPage() {
                 </p>
               </CardContent>
               <CardFooter className="flex justify-between items-center">
-                <Button onClick={() => (item.id >= 1 && item.id <= 3 ? handlePurchaseBadge(item) : handlePurchase(item))}>
+                <Button onClick={() => (item.id >= 1 && item.id <= 3 ? handlePurchaseBadge(item) : handlePurchaseRaffle(item))}>
                   Purchase
                 </Button>
               </CardFooter>

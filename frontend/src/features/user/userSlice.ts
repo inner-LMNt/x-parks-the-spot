@@ -16,6 +16,7 @@ import {
   PasswordResetRequest,
   UserUpdateRequest,
 } from "@/types/type"
+import { act } from "react"
 
 /**
  * Interface for the user slice state
@@ -25,18 +26,19 @@ interface UserState {
   access_token: string | null
   name: string | null
   location: {
-    latitude: number | null;
-    longitude: number | null;
-  };
-  loading: boolean;
-  error: string | null;
-  notificationTime: string | null;
-  userCity: string | null;
-  userState: string | null;
-  total_points: number | null;
-  current_points: number | null;
-  badges: number[];
-  transactions: any[];
+    latitude: number | null
+    longitude: number | null
+  }
+  loading: boolean
+  error: string | null
+  notificationTime: string | null
+  userCity: string | null
+  userState: string | null
+  total_points: number | null
+  current_points: number | null
+  badges: number[]
+  transactions: any[]
+  active_raffle_tickets: number
 }
 
 const initialState: UserState = {
@@ -56,7 +58,8 @@ const initialState: UserState = {
   current_points: 0,
   badges: [],
   transactions: [],
-};
+  active_raffle_tickets: 0,
+}
 
 /**
  * Define the login thunk
@@ -102,10 +105,10 @@ export const updateSpot = createAsyncThunk(
       return response.data
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to update spot status",
+        error.response?.data?.message || "Failed to update spot status"
       )
     }
-  },
+  }
 )
 
 export const request_delete_account = createAsyncThunk<
@@ -138,7 +141,7 @@ export const register_acc = createAsyncThunk<
   try {
     const response = await axios.post<AuthResponse>(
       "auth/register",
-      credentials,
+      credentials
     )
     return response.data
   } catch (error: any) {
@@ -181,7 +184,7 @@ export const reset_password = createAsyncThunk<
       }
       return rejectWithValue("Password reset failed")
     }
-  },
+  }
 )
 
 export const reset_request = createAsyncThunk<
@@ -208,13 +211,15 @@ export const get_user_name = createAsyncThunk<
   { rejectValue: string }
 >("user/get_user_name", async (_, { rejectWithValue }) => {
   try {
-    const response = await axios.get("auth/user-name");
-    return response.data.name;
+    const response = await axios.get("auth/user-name")
+    return response.data.name
   } catch (error: any) {
-    console.log("error", error);
-    return rejectWithValue(error.response?.data?.err || "Failed to get user name");
+    console.log("error", error)
+    return rejectWithValue(
+      error.response?.data?.err || "Failed to get user name"
+    )
   }
-});
+})
 
 export const update_notification_time = createAsyncThunk<
   User,
@@ -231,7 +236,7 @@ export const update_notification_time = createAsyncThunk<
     } catch (error: any) {
       return rejectWithValue("Failed to update notification time")
     }
-  },
+  }
 )
 
 export const get_notification_time = createAsyncThunk<
@@ -279,13 +284,13 @@ export const get_points = createAsyncThunk<
   { rejectValue: string }
 >("user/get_points", async (_, { rejectWithValue }) => {
   try {
-    const response = await axios.get("auth/points");
-    console.log("data", response.data);
-    return response.data.points;
+    const response = await axios.get("auth/points")
+    console.log("data", response.data)
+    return response.data.points
   } catch (error: any) {
     return rejectWithValue("Failed to get points")
   }
-});
+})
 
 export const get_transactions = createAsyncThunk<
   any[],
@@ -293,25 +298,27 @@ export const get_transactions = createAsyncThunk<
   { rejectValue: string }
 >("user/get_transactions", async (_, { rejectWithValue }) => {
   try {
-    const response = await axios.get("auth/transaction-history");
-    return response.data.transactions;
+    const response = await axios.get("auth/transaction-history")
+    return response.data.transactions
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.err || "Failed to get transactions");
+    return rejectWithValue(
+      error.response?.data?.err || "Failed to get transactions"
+    )
   }
-});
+})
 
 export const buy_badge = createAsyncThunk<
-  { current_points: number } | null,
-  { badgeId: number; price: number },
+  null,
+  { badgeId: number },
   { rejectValue: string }
->("user/buy_badge", async ({ badgeId, price }, { rejectWithValue }) => {
+>("user/buy_badge", async ({ badgeId }, { rejectWithValue }) => {
   try {
-    const response = await axios.post("auth/buy-badge", { badgeId, price });
-    return response.data;
+    const response = await axios.post("auth/shop/buy-badge", { badgeId })
+    return response.data
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.err || "Failed to buy badge");
+    return rejectWithValue(error.response?.data?.err || "Failed to buy badge")
   }
-});
+})
 
 export const get_badge_list = createAsyncThunk<
   number[],
@@ -319,12 +326,40 @@ export const get_badge_list = createAsyncThunk<
   { rejectValue: string }
 >("user/get_badge_list", async (_, { rejectWithValue }) => {
   try {
-    const response = await axios.get("auth/badge-list");
-    return response.data.badges;
+    const response = await axios.get("auth/badge-list")
+    return response.data.badges
   } catch (error: any) {
-    return rejectWithValue("Failed to get badge list");
+    return rejectWithValue("Failed to get badge list")
   }
-});
+})
+
+export const buy_raffle_ticket = createAsyncThunk<
+  null,
+  { raffleId: number },
+  { rejectValue: string }
+>("user/buy_raffle_ticket", async ({ raffleId }, { rejectWithValue }) => {
+  try {
+    const response = await axios.post("auth/shop/buy-raffle", { raffleId })
+    return response.data
+  } catch (error: any) {
+    return rejectWithValue(
+      error.response?.data?.err || "Failed to buy raffle ticket"
+    )
+  }
+})
+
+export const get_raffle_tickets = createAsyncThunk<
+  number,
+  void,
+  { rejectValue: string }
+>("user/get_raffle_tickets", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("auth/raffle-tickets")
+    return response.data.tickets.count
+  } catch (error: any) {
+    return rejectWithValue("Failed to get raffle tickets")
+  }
+})
 
 // @ts-ignore
 const userSlice = createSlice<UserState, {}, "user">({
@@ -335,7 +370,7 @@ const userSlice = createSlice<UserState, {}, "user">({
     builder
       .addMatcher(
         (
-          action: UnknownAction,
+          action: UnknownAction
         ): action is ReturnType<
           | typeof login.pending
           | typeof register_acc.pending
@@ -347,17 +382,19 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof get_transactions.pending
           | typeof buy_badge.pending
           | typeof get_badge_list.pending
+          | typeof buy_raffle_ticket.pending
+          | typeof get_raffle_tickets.pending
         > => action.type.endsWith("/pending"),
         (state) => {
           state.loading = true
           state.error = null
-        },
+        }
       )
 
       // Handle all rejected actions
       .addMatcher(
         (
-          action: UnknownAction,
+          action: UnknownAction
         ): action is ReturnType<
           | typeof login.rejected
           | typeof register_acc.rejected
@@ -369,6 +406,8 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof get_transactions.rejected
           | typeof buy_badge.rejected
           | typeof get_badge_list.rejected
+          | typeof buy_raffle_ticket.rejected
+          | typeof get_raffle_tickets.rejected
         > => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false
@@ -377,11 +416,11 @@ const userSlice = createSlice<UserState, {}, "user">({
           // parse it as a json string and back to json to get the field out
 
           const actionmessage = JSON.parse(
-            JSON.stringify(action, null, 2),
+            JSON.stringify(action, null, 2)
           ).payload
           state.error = actionmessage || "An error occurred"
           state.loading = false
-        },
+        }
       )
 
       // Handle fulfilled actions for login and register_acc
@@ -392,7 +431,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           state.isLoggedIn = true
           state.access_token = action.payload.access_token || null
           state.name = action.payload.name || null
-        },
+        }
       )
 
       // Handle fulfilled actions for logout and reset
@@ -402,7 +441,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           state.loading = false
           state.isLoggedIn = false
           state.access_token = null
-        },
+        }
       )
 
       .addMatcher(
@@ -411,7 +450,7 @@ const userSlice = createSlice<UserState, {}, "user">({
         (state) => {
           state.error = null
           state.loading = false
-        },
+        }
       )
       .addMatcher(
         (action: { type: string }): action is { type: "user/errorReset" } =>
@@ -422,7 +461,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           state.access_token = null
           state.isLoggedIn = false
           state.name = null
-        },
+        }
       )
 
       .addMatcher(
@@ -434,23 +473,20 @@ const userSlice = createSlice<UserState, {}, "user">({
           state.access_token = null
           state.isLoggedIn = false
           state.name = null
-        },
-      )
-
-      .addMatcher(
-        isAnyOf(get_user_name.fulfilled),
-        (state, action) => {
-          state.loading = false;
-          state.name = action.payload;
         }
       )
+
+      .addMatcher(isAnyOf(get_user_name.fulfilled), (state, action) => {
+        state.loading = false
+        state.name = action.payload
+      })
 
       .addMatcher(
         isAnyOf(update_notification_time.fulfilled),
         (state, action) => {
           state.loading = false
           state.notificationTime = action.meta.arg.notificationTime
-        },
+        }
       )
 
       .addMatcher(isAnyOf(get_notification_time.fulfilled), (state, action) => {
@@ -470,36 +506,45 @@ const userSlice = createSlice<UserState, {}, "user">({
       })
 
       .addMatcher(isAnyOf(get_notification_time.fulfilled), (state, action) => {
-        state.loading = false;
-        state.notificationTime = action.payload;
+        state.loading = false
+        state.notificationTime = action.payload
       })
 
       .addMatcher(isAnyOf(get_points.fulfilled), (state, action) => {
-        state.loading = false;
+        state.loading = false
         //@ts-ignore
-        state.total_points = action.payload?.total;
+        state.total_points = action.payload?.total
         //@ts-ignore
-        state.current_points = action.payload?.current;
+        state.current_points = action.payload?.current
       })
 
       .addMatcher(isAnyOf(get_transactions.fulfilled), (state, action) => {
-        state.loading = false;
-        state.transactions = action.payload;
+        state.loading = false
+        state.transactions = action.payload
       })
 
       .addMatcher(isAnyOf(buy_badge.fulfilled), (state, action) => {
-        state.loading = false;
-        state.current_points = action.payload?.current_points ?? null;
+        state.loading = false
         if (!state.badges) {
-          state.badges = [];
+          state.badges = []
         }
-        state.badges.push(Number(action.meta.arg.badgeId));
+        state.badges.push(Number(action.meta.arg.badgeId))
       })
 
       .addMatcher(isAnyOf(get_badge_list.fulfilled), (state, action) => {
-        state.loading = false;
-        state.badges = action.payload;
-      });
+        state.loading = false
+        state.badges = action.payload
+      })
+
+      .addMatcher(isAnyOf(buy_raffle_ticket.fulfilled), (state, action) => {
+        state.loading = false
+      })
+
+      .addMatcher(isAnyOf(get_raffle_tickets.fulfilled), (state, action) => {
+        state.loading = false
+        console.log("action.payload", action.payload)
+        state.active_raffle_tickets = action.payload
+      })
   },
 })
 
