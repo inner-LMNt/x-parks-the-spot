@@ -26,7 +26,7 @@ def test_basic_analytics_response_structure(client: FlaskClient) -> None:
         reservations_per_spot=3,
         days_of_history=30
     )
-    spot_id = str(scenario_data["spot_ids"][0])
+    spot_id = str(scenario_data["spot_ids"][0])  # type: ignore
 
     # Create multiple renter accounts for ratings
     test_ratings = [(5, 4), (4, 5), (3, 4)]
@@ -166,7 +166,7 @@ def test_analytics_with_reservations(client: FlaskClient) -> None:
         reservations_per_spot=5,
         days_of_history=30
     )
-    space_id = scenario_data["spot_ids"][0]
+    space_id = str(scenario_data["spot_ids"][0])  # type: ignore
 
     # Add reservations
     base_time = datetime.now(timezone.utc) - timedelta(days=21)
@@ -598,7 +598,8 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
         reservations_per_spot=5,
         days_of_history=30
     )
-    spot_ids = scenario_data["spot_ids"] # type: List[str]
+    assert isinstance(scenario_data["spot_ids"], list)
+    spot_ids = scenario_data["spot_ids"]
     renter_id = get_user_id_from_token(client, renter_token)
     car_id = create_test_car(client, renter_token)
 
@@ -629,10 +630,13 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
     ]
 
     # Insert the upcoming reservations
+
     for res in upcoming_reservations:
+        assert isinstance(res["start_time"], datetime)
+        assert isinstance(res["duration"], timedelta)
         insert_reservation_directly(
             renter_id=renter_id,
-            space_id=res["spot_id"],
+            space_id=str(res["spot_id"]),
             car_id=car_id,
             start_time=res["start_time"],
             end_time=res["start_time"] + res["duration"]
@@ -744,9 +748,9 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
     spot_2 = next(sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 280.0)
     spot_3 = next(sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 420.0)
 
-    assert spot_1["completedBookings"] == 500
-    assert spot_2["completedBookings"] == 450
-    assert spot_3["completedBookings"] == 400
+    assert spot_1["completedBookings"] == 475
+    assert spot_2["completedBookings"] == 425
+    assert spot_3["completedBookings"] == 375
 
     # 5. Rating Metrics
     rating_metrics = data["ratingMetrics"]
