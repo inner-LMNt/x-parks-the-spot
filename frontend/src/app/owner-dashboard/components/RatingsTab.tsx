@@ -3,14 +3,6 @@
 import React, { useState } from "react"
 import { Star } from "lucide-react"
 import { motion } from "framer-motion"
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/Card"
-import { MapPin } from "lucide-react"
 
 interface RatingDistribution {
   stars: number

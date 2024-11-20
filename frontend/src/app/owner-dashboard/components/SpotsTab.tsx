@@ -43,7 +43,7 @@ interface SpotPerformance {
   popularDays: Array<{ day: string; bookings: number }>
 }
 
-interface SpotsTabProps {
+export interface SpotsTabProps {
   paidSpots: ParkingSpace[]
   pendingSpots: ParkingSpace[]
   spotPerformance: Record<string, SpotPerformance>

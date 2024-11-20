@@ -411,10 +411,10 @@ def create_test_image(
 
 
 def setup_analytics_scenario(
-        client: FlaskClient,
-        num_spots: int = 3,
-        reservations_per_spot: int = 5,
-        days_of_history: int = 30,
+    client: FlaskClient,
+    num_spots: int = 3,
+    reservations_per_spot: int = 5,
+    days_of_history: int = 30,
 ) -> Tuple[str, str, Dict[str, List[str] | Dict[str, List[str]]]]:
     """
     Creates a complete analytics testing scenario with:
@@ -431,7 +431,11 @@ def setup_analytics_scenario(
 
     spot_ids = []
     reservation_ids: Dict[str, List[str]] = {}
-    base_time = datetime.now(timezone.utc) - timedelta(days=days_of_history) + timedelta(minutes=2)
+    base_time = (
+        datetime.now(timezone.utc)
+        - timedelta(days=days_of_history)
+        + timedelta(minutes=2)
+    )
 
     # Create spots with different prices
     for i in range(num_spots):
@@ -460,7 +464,7 @@ def setup_analytics_scenario(
                 space_id=spot_id,
                 car_id=car_id,
                 start_time=start_time,
-                end_time=end_time
+                end_time=end_time,
             )
             # Store the reservation ID (though we don't get it back from insert_directly)
             reservation_ids[spot_id].append(str(uuid.uuid4()))
@@ -473,12 +477,12 @@ def setup_analytics_scenario(
 
 
 def generate_varied_reservation_pattern(
-        client: FlaskClient,
-        token: str,
-        spot_id: str,
-        pattern_type: str,
-        base_time: datetime,
-        num_reservations: int,
+    client: FlaskClient,
+    token: str,
+    spot_id: str,
+    pattern_type: str,
+    base_time: datetime,
+    num_reservations: int,
 ) -> List[str]:
     """
     Generate reservations following specific patterns:
@@ -502,7 +506,7 @@ def generate_varied_reservation_pattern(
                 space_id=spot_id,
                 car_id=car_id,
                 start_time=start_time,
-                end_time=end_time
+                end_time=end_time,
             )
             reservation_ids.append(str(uuid.uuid4()))
 
@@ -520,7 +524,7 @@ def generate_varied_reservation_pattern(
                             space_id=spot_id,
                             car_id=car_id,
                             start_time=start_time,
-                            end_time=end_time
+                            end_time=end_time,
                         )
                         reservation_ids.append(str(uuid.uuid4()))
             else:  # Weekday
@@ -533,7 +537,7 @@ def generate_varied_reservation_pattern(
                         space_id=spot_id,
                         car_id=car_id,
                         start_time=start_time,
-                        end_time=end_time
+                        end_time=end_time,
                     )
                     reservation_ids.append(str(uuid.uuid4()))
             current_time += timedelta(days=1)
@@ -563,6 +567,7 @@ def submit_test_ratings(
             },
         )
         assert response.status_code == 200
+
 
 def insert_reservation_directly(
     renter_id: str, space_id: str, car_id: str, start_time: datetime, end_time: datetime

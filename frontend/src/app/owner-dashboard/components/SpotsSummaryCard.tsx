@@ -8,9 +8,23 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card"
-import { ShieldCheck, Clock, Star } from "lucide-react"
+import { ShieldCheck, Clock, Star, LucideIcon } from "lucide-react"
 
-const SummaryMetric = ({ label, value, subtext, Icon, iconColor }) => (
+interface SummaryMetricProps {
+  label: string
+  value: number | string
+  subtext?: string
+  Icon: LucideIcon
+  iconColor: string
+}
+
+const SummaryMetric: React.FC<SummaryMetricProps> = ({
+  label,
+  value,
+  subtext,
+  Icon,
+  iconColor,
+}) => (
   <div className="flex items-center space-x-4">
     <div className={`${iconColor} p-2 rounded-full bg-background`}>
       <Icon className="w-4 h-4" />
@@ -23,7 +37,15 @@ const SummaryMetric = ({ label, value, subtext, Icon, iconColor }) => (
   </div>
 )
 
-const SpotsSummaryCard = ({
+interface SpotsSummaryCardProps {
+  verifiedSpots: number
+  totalSpots: number
+  pendingSpots: number
+  avgRating: number
+  numReviews: number
+}
+
+const SpotsSummaryCard: React.FC<SpotsSummaryCardProps> = ({
   verifiedSpots,
   totalSpots,
   pendingSpots,

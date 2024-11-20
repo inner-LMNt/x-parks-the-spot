@@ -125,7 +125,7 @@ const RevenueTab: React.FC<RevenueTabProps> = ({
         case "1_year":
           return "month"
         default:
-          return "day"
+          return "week"
       }
     }, [timeFilter])
 

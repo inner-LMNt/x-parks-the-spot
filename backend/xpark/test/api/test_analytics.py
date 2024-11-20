@@ -1,7 +1,6 @@
 import json
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import List
 
 from flask.testing import FlaskClient
 
@@ -13,7 +12,8 @@ from xpark.test.utils.utils import (
     create_test_reservation_at_time,
     get_user_id_from_token,
     insert_reservation_directly,
-    mark_reservations_completed, generate_varied_reservation_pattern, submit_test_ratings, setup_analytics_scenario,
+    generate_varied_reservation_pattern,
+    setup_analytics_scenario,
 )
 
 
@@ -24,14 +24,16 @@ def test_basic_analytics_response_structure(client: FlaskClient) -> None:
         client,
         num_spots=2,  # Keep 2 spots for testing variety
         reservations_per_spot=3,
-        days_of_history=30
+        days_of_history=30,
     )
     spot_id = str(scenario_data["spot_ids"][0])  # type: ignore
 
     # Create multiple renter accounts for ratings
     test_ratings = [(5, 4), (4, 5), (3, 4)]
     for i, (availability, cleanliness) in enumerate(test_ratings):
-        rater_token = create_test_user(client, email=f"rater_{i}_{uuid.uuid4().hex}@example.com")
+        rater_token = create_test_user(
+            client, email=f"rater_{i}_{uuid.uuid4().hex}@example.com"
+        )
         response = client.post(
             f"/api/unstable/parking-spaces/{spot_id}/rate",
             headers={"Authorization": f"Bearer {rater_token}"},
@@ -53,8 +55,12 @@ def test_basic_analytics_response_structure(client: FlaskClient) -> None:
 
     # 1. Validate Overall Structure
     expected_top_level_keys = {
-        "overallMetrics", "revenueMetrics", "bookingMetrics",
-        "spotPerformance", "upcomingEarnings", "ratingMetrics"
+        "overallMetrics",
+        "revenueMetrics",
+        "bookingMetrics",
+        "spotPerformance",
+        "upcomingEarnings",
+        "ratingMetrics",
     }
     assert set(data.keys()) == expected_top_level_keys
 
@@ -72,8 +78,12 @@ def test_basic_analytics_response_structure(client: FlaskClient) -> None:
     # Check stats fields
     stats = booking_metrics["stats"]
     expected_stat_fields = {
-        "active", "avgDuration", "canceled", "completed",
-        "completionRate", "total"
+        "active",
+        "avgDuration",
+        "canceled",
+        "completed",
+        "completionRate",
+        "total",
     }
     assert set(stats.keys()) == expected_stat_fields
 
@@ -81,12 +91,26 @@ def test_basic_analytics_response_structure(client: FlaskClient) -> None:
     if booking_metrics["recentBookings"]:  # If there are any bookings
         booking = booking_metrics["recentBookings"][0]
         expected_booking_fields = {
-            "carDetails", "duration", "endTime", "id", "price",
-            "renterName", "spotId", "spotName", "startTime",
-            "status", "time_status"
+            "carDetails",
+            "duration",
+            "endTime",
+            "id",
+            "price",
+            "renterName",
+            "spotId",
+            "spotName",
+            "startTime",
+            "status",
+            "time_status",
         }
         assert set(booking.keys()) == expected_booking_fields
-        assert set(booking["carDetails"].keys()) == {"color", "make", "model", "plate", "state"}
+        assert set(booking["carDetails"].keys()) == {
+            "color",
+            "make",
+            "model",
+            "plate",
+            "state",
+        }
 
     # 4. Validate revenueMetrics
     revenue_metrics = data["revenueMetrics"]
@@ -107,9 +131,15 @@ def test_basic_analytics_response_structure(client: FlaskClient) -> None:
     # 5. Validate spotPerformance
     for spot_id, performance in data["spotPerformance"].items():
         expected_performance_fields = {
-            "activeBookings", "averageBookingLength", "canceledBookings",
-            "completedBookings", "occupancyRate", "popularDays",
-            "popularHours", "totalBookings", "totalRevenue"
+            "activeBookings",
+            "averageBookingLength",
+            "canceledBookings",
+            "completedBookings",
+            "occupancyRate",
+            "popularDays",
+            "popularHours",
+            "totalBookings",
+            "totalRevenue",
         }
         assert set(performance.keys()) == expected_performance_fields
 
@@ -121,29 +151,55 @@ def test_basic_analytics_response_structure(client: FlaskClient) -> None:
         # Check popularDays structure
         for day in performance["popularDays"]:
             assert set(day.keys()) == {"day", "bookings"}
-            assert day["day"] in {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
+            assert day["day"] in {
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday",
+            }
 
     # 6. Validate upcomingEarnings
     upcoming = data["upcomingEarnings"]
     assert set(upcoming.keys()) == {"reservations", "total"}
     if upcoming["reservations"]:
         reservation = upcoming["reservations"][0]
-        assert set(reservation.keys()) == {"spotName", "startTime", "endTime", "earnings"}
+        assert set(reservation.keys()) == {
+            "spotName",
+            "startTime",
+            "endTime",
+            "earnings",
+        }
 
     # 7. Validate ratingMetrics
     rating_metrics = data["ratingMetrics"]
-    assert set(rating_metrics.keys()) == {"averageRatings", "totalRatings", "ratingsBySpot"}
+    assert set(rating_metrics.keys()) == {
+        "averageRatings",
+        "totalRatings",
+        "ratingsBySpot",
+    }
 
     # Check averageRatings structure
-    assert set(rating_metrics["averageRatings"].keys()) == {"availability", "cleanliness", "total"}
+    assert set(rating_metrics["averageRatings"].keys()) == {
+        "availability",
+        "cleanliness",
+        "total",
+    }
 
     # Check ratingsBySpot structure
     if rating_metrics["ratingsBySpot"]:
         spot_rating = rating_metrics["ratingsBySpot"][0]
         expected_spot_rating_fields = {
-            "availabilityRating", "cleanlinessRating", "ratingCount",
-            "ratingDistribution", "recentReviews", "spotId", "spotName",
-            "totalRating"
+            "availabilityRating",
+            "cleanlinessRating",
+            "ratingCount",
+            "ratingDistribution",
+            "recentReviews",
+            "spotId",
+            "spotName",
+            "totalRating",
         }
         assert set(spot_rating.keys()) == expected_spot_rating_fields
 
@@ -161,32 +217,19 @@ def test_basic_analytics_response_structure(client: FlaskClient) -> None:
 def test_analytics_with_reservations(client: FlaskClient) -> None:
     """Test analytics data with varied reservation patterns."""
     owner_token, renter_token, scenario_data = setup_analytics_scenario(
-        client,
-        num_spots=1,
-        reservations_per_spot=5,
-        days_of_history=30
+        client, num_spots=1, reservations_per_spot=5, days_of_history=30
     )
     space_id = str(scenario_data["spot_ids"][0])  # type: ignore
 
     # Add reservations
     base_time = datetime.now(timezone.utc) - timedelta(days=21)
     weekend_reservations = generate_varied_reservation_pattern(
-        client,
-        renter_token,
-        space_id,
-        "weekend_heavy",
-        base_time,
-        5
+        client, renter_token, space_id, "weekend_heavy", base_time, 5
     )
 
     peak_base_time = datetime.now(timezone.utc) - timedelta(days=7)
     peak_reservations = generate_varied_reservation_pattern(
-        client,
-        renter_token,
-        space_id,
-        "peak_hours",
-        peak_base_time,
-        5
+        client, renter_token, space_id, "peak_hours", peak_base_time, 5
     )
 
     # Submit ratings from different users
@@ -223,8 +266,9 @@ def test_analytics_with_reservations(client: FlaskClient) -> None:
     print(f"\nRating metrics: {rating_metrics}")
 
     # Validate ratings
-    assert rating_metrics["totalRatings"] == len(test_ratings), \
-        f"Expected {len(test_ratings)} ratings, got {rating_metrics['totalRatings']}"
+    assert rating_metrics["totalRatings"] == len(
+        test_ratings
+    ), f"Expected {len(test_ratings)} ratings, got {rating_metrics['totalRatings']}"
 
     # Validate booking volumes
     initial_bookings = 5
@@ -232,22 +276,28 @@ def test_analytics_with_reservations(client: FlaskClient) -> None:
     peak_count = len(peak_reservations)
     total_expected = initial_bookings + weekend_count + peak_count
 
-    assert spot_data["totalBookings"] == total_expected, \
-        f"Mismatch in bookings. Got {spot_data['totalBookings']}, " \
+    assert spot_data["totalBookings"] == total_expected, (
+        f"Mismatch in bookings. Got {spot_data['totalBookings']}, "
         f"Expected: {total_expected}"
+    )
 
     # Time pattern validation remains the same...
     peak_hours = sorted(hour["hour"] for hour in spot_data["popularHours"])
     popular_days = [day["day"] for day in spot_data["popularDays"]]
 
-    assert any(9 <= hour <= 17 for hour in peak_hours), \
-        f"No business hours ({peak_hours}) found in peak hours"
-    assert any(day in ["Saturday", "Sunday"] for day in popular_days), \
-        f"No weekend days found in {popular_days}"
+    assert any(
+        9 <= hour <= 17 for hour in peak_hours
+    ), f"No business hours ({peak_hours}) found in peak hours"
+    assert any(
+        day in ["Saturday", "Sunday"] for day in popular_days
+    ), f"No weekend days found in {popular_days}"
+
 
 def test_analytics_with_no_data(client: FlaskClient) -> None:
     """Test that the analytics endpoint returns zeros/empty values with no data."""
-    owner_token = create_test_user(client, email=f"owner_{uuid.uuid4().hex}@example.com")
+    owner_token = create_test_user(
+        client, email=f"owner_{uuid.uuid4().hex}@example.com"
+    )
     space_id = create_test_parking_space(client, token=owner_token)
 
     response = client.get(
@@ -270,8 +320,12 @@ def test_analytics_with_no_data(client: FlaskClient) -> None:
     # Validate empty booking metrics
     booking_stats = data["bookingMetrics"]["stats"]
     expected_zero_stats = [
-        "total", "active", "completed", "canceled",
-        "avgDuration", "completionRate"
+        "total",
+        "active",
+        "completed",
+        "canceled",
+        "avgDuration",
+        "completionRate",
     ]
     for stat in expected_zero_stats:
         assert booking_stats[stat] == 0, f"Expected {stat} to be 0"
@@ -290,6 +344,7 @@ def test_analytics_with_no_data(client: FlaskClient) -> None:
     rating_metrics = data["ratingMetrics"]
     assert rating_metrics["totalRatings"] == 0
     assert rating_metrics["averageRatings"]["total"] == 0
+
 
 def test_analytics_with_single_parking_space(client: FlaskClient) -> None:
     """Test analytics data when there is a single parking space and no reservations."""
@@ -593,10 +648,7 @@ def test_analytics_with_no_auth(client: FlaskClient) -> None:
 def test_analytics_response_strict(client: FlaskClient) -> None:
     """Test analytics response including all metrics with exact values."""
     owner_token, renter_token, scenario_data = setup_analytics_scenario(
-        client,
-        num_spots=3,
-        reservations_per_spot=5,
-        days_of_history=30
+        client, num_spots=3, reservations_per_spot=5, days_of_history=30
     )
     assert isinstance(scenario_data["spot_ids"], list)
     spot_ids = scenario_data["spot_ids"]
@@ -611,22 +663,22 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
             "spot_id": spot_ids[0],
             "start_time": now + timedelta(days=3),
             "duration": timedelta(hours=4),
-            "expected_price": 40.0
+            "expected_price": 40.0,
         },
         # 6 days from now, Spot 2 ($20/hr * 3 hours = $60)
         {
             "spot_id": spot_ids[1],
             "start_time": now + timedelta(days=6),
             "duration": timedelta(hours=3),
-            "expected_price": 60.0
+            "expected_price": 60.0,
         },
         # 10 days from now, Spot 3 ($30/hr * 5 hours = $150) - should not be included in upcoming
         {
             "spot_id": spot_ids[2],
             "start_time": now + timedelta(days=10),
             "duration": timedelta(hours=5),
-            "expected_price": 150.0
-        }
+            "expected_price": 150.0,
+        },
     ]
 
     # Insert the upcoming reservations
@@ -639,13 +691,15 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
             space_id=str(res["spot_id"]),
             car_id=car_id,
             start_time=res["start_time"],
-            end_time=res["start_time"] + res["duration"]
+            end_time=res["start_time"] + res["duration"],
         )
 
     # Add ratings from different users
     test_ratings = [(5, 4), (4, 5), (3, 4)]
     for i, (availability, cleanliness) in enumerate(test_ratings):
-        rater_token = create_test_user(client, email=f"rater_{i}_{uuid.uuid4().hex}@example.com")
+        rater_token = create_test_user(
+            client, email=f"rater_{i}_{uuid.uuid4().hex}@example.com"
+        )
         response = client.post(
             f"/api/unstable/parking-spaces/{spot_ids[0]}/rate",
             headers={"Authorization": f"Bearer {rater_token}"},
@@ -709,19 +763,29 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
     assert len(historical) == 31
 
     # Check specific historical dates
-    oct_21_entry = next(h for h in historical if h["timestamp"] == "2024-10-21T00:00:00+00:00")
+    oct_21_entry = next(
+        h for h in historical if h["timestamp"] == "2024-10-21T00:00:00+00:00"
+    )
     assert round(oct_21_entry["actual"], 1) == 120.0
 
-    oct_27_entry = next(h for h in historical if h["timestamp"] == "2024-10-27T00:00:00+00:00")
+    oct_27_entry = next(
+        h for h in historical if h["timestamp"] == "2024-10-27T00:00:00+00:00"
+    )
     assert round(oct_27_entry["actual"], 1) == 180.0
 
-    nov_2_entry = next(h for h in historical if h["timestamp"] == "2024-11-02T00:00:00+00:00")
+    nov_2_entry = next(
+        h for h in historical if h["timestamp"] == "2024-11-02T00:00:00+00:00"
+    )
     assert round(nov_2_entry["actual"], 1) == 240.0
 
-    nov_8_entry = next(h for h in historical if h["timestamp"] == "2024-11-08T00:00:00+00:00")
+    nov_8_entry = next(
+        h for h in historical if h["timestamp"] == "2024-11-08T00:00:00+00:00"
+    )
     assert round(nov_8_entry["actual"], 1) == 120.0
 
-    nov_14_entry = next(h for h in historical if h["timestamp"] == "2024-11-14T00:00:00+00:00")
+    nov_14_entry = next(
+        h for h in historical if h["timestamp"] == "2024-11-14T00:00:00+00:00"
+    )
     assert round(nov_14_entry["actual"], 1) == 180.0
 
     # 4. Spot Performance
@@ -744,9 +808,15 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
             assert day_data["bookings"] == 1
 
     # Check specific spot revenues and completions
-    spot_1 = next(sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 140.0)
-    spot_2 = next(sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 280.0)
-    spot_3 = next(sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 420.0)
+    spot_1 = next(
+        sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 140.0
+    )
+    spot_2 = next(
+        sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 280.0
+    )
+    spot_3 = next(
+        sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 420.0
+    )
 
     assert spot_1["completedBookings"] == 475
     assert spot_2["completedBookings"] == 425
@@ -790,18 +860,23 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
     # Check specific upcoming hours
     day_3_hour = now + timedelta(days=3)
     day_3_hour = day_3_hour.replace(minute=0, second=0, microsecond=0)
-    day_3_entry = next(u for u in upcoming_revenue if u["timestamp"] == day_3_hour.isoformat())
+    day_3_entry = next(
+        u for u in upcoming_revenue if u["timestamp"] == day_3_hour.isoformat()
+    )
     assert round(day_3_entry["potential"], 1) == 40.0
 
     day_6_hour = now + timedelta(days=6)
     day_6_hour = day_6_hour.replace(minute=0, second=0, microsecond=0)
-    day_6_entry = next(u for u in upcoming_revenue if u["timestamp"] == day_6_hour.isoformat())
+    day_6_entry = next(
+        u for u in upcoming_revenue if u["timestamp"] == day_6_hour.isoformat()
+    )
     assert round(day_6_entry["potential"], 1) == 60.0
 
     # Verify day 10 reservation is not included
     day_10_hour = now + timedelta(days=10)
     day_10_hour = day_10_hour.replace(minute=0, second=0, microsecond=0)
     assert not any(
-        u for u in upcoming_revenue
+        u
+        for u in upcoming_revenue
         if u["timestamp"] == day_10_hour.isoformat() and u["potential"] > 0
     )
