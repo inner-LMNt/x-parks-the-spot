@@ -252,26 +252,26 @@ export default function OwnerDashboard() {
         >
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger
-                value="revenue"
-                disabled={analyticsLoading || analyticsError}
+              value="revenue"
+              disabled={analyticsLoading || analyticsError}
             >
               Revenue
             </TabsTrigger>
             <TabsTrigger
-                value="bookings"
-                disabled={analyticsLoading || analyticsError}
+              value="bookings"
+              disabled={analyticsLoading || analyticsError}
             >
               Bookings
             </TabsTrigger>
             <TabsTrigger
-                value="spots"
-                disabled={analyticsLoading || analyticsError}
+              value="spots"
+              disabled={analyticsLoading || analyticsError}
             >
               Spots
             </TabsTrigger>
             <TabsTrigger
-                value="ratings"
-                disabled={analyticsLoading || analyticsError}
+              value="ratings"
+              disabled={analyticsLoading || analyticsError}
             >
               Ratings
             </TabsTrigger>
