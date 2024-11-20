@@ -73,7 +73,9 @@ export const addBookmark = createAsyncThunk<
     if (error.response?.status === 403) {
       return rejectWithValue("Forbidden")
     }
-    return rejectWithValue(error.response?.data?.error || "Failed to add bookmark")
+    return rejectWithValue(
+      error.response?.data?.error || "Failed to add bookmark",
+    )
   }
 })
 
@@ -128,10 +130,13 @@ const bookmarkSlice = createSlice({
         state.loading = true
         state.error = null
       })
-      .addCase(fetchUserBookmarks.fulfilled, (state: BookmarksState, action) => {
-        state.loading = false
-        state.bookmarks = action.payload
-      })
+      .addCase(
+        fetchUserBookmarks.fulfilled,
+        (state: BookmarksState, action) => {
+          state.loading = false
+          state.bookmarks = action.payload
+        },
+      )
       .addCase(fetchUserBookmarks.rejected, (state: BookmarksState, action) => {
         state.loading = false
         state.error = action.payload || "Failed to fetch bookmarks"
@@ -165,7 +170,9 @@ const bookmarkSlice = createSlice({
       .addCase(deleteBookmark.fulfilled, (state: BookmarksState, action) => {
         state.loading = false
         // Delete the updated bookmark in the list
-        var i = state.bookmarks.findIndex((x) => x.parking_spot_id == action.payload.parking_spot_id)
+        var i = state.bookmarks.findIndex(
+          (x) => x.parking_spot_id == action.payload.parking_spot_id,
+        )
         state.bookmarks.splice(i, 1)
       })
       .addCase(deleteBookmark.rejected, (state: BookmarksState, action) => {
