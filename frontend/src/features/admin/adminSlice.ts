@@ -223,132 +223,35 @@ const adminSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      // Handle updateConflictResponse
-      .addCase(updateConflictResponse.pending, (state: AdminState) => {
-        state.loading = true
-        state.error = null
-      })
-      .addCase(
-        updateConflictResponse.fulfilled,
-        (state: AdminState, action: any) => {
-          state.loading = false
-          state.conflicts = state.conflicts.map((conflict) =>
-            conflict.id === action.payload.id
-              ? { ...conflict, admin_response: action.payload.admin_response }
-              : conflict,
-          )
-        },
-      )
-      .addCase(
-        updateConflictResponse.rejected,
-        (state: AdminState, action: any) => {
+        .addCase(verifyParkingSpot.pending, (state: AdminState) => {
+          state.loading = true
+          state.error = null
+        })
+        .addCase(
+            verifyParkingSpot.fulfilled,
+            (state: AdminState, action: any) => {
+              state.loading = false
+              const updatedSpot = action.payload
+              state.pendingSpots = state.pendingSpots.map((spot) =>
+                  spot.id === updatedSpot.id ? updatedSpot : spot,
+              )
+            },
+        )
+        .addCase(verifyParkingSpot.rejected, (state: AdminState, action: any) => {
           state.loading = false
           state.error = action.payload as string
-        },
-      )
-      // Handle getAllConflicts
-      .addCase(getAllConflicts.pending, (state: AdminState) => {
-        state.loading = true
-        state.error = null
-      })
-      .addCase(getAllConflicts.fulfilled, (state: AdminState, action: any) => {
-        state.loading = false
-        state.conflicts = action.payload
-      })
-      .addCase(getAllConflicts.rejected, (state: AdminState, action: any) => {
-        state.loading = false
-        state.error = action.payload as string
-      })
-      // Handle getCancelled
-      .addCase(getCancelled.pending, (state: AdminState) => {
-        state.loading = true
-        state.error = null
-      })
-      .addCase(getCancelled.fulfilled, (state: AdminState, action: any) => {
-        state.loading = false
-        state.cancellations = action.payload
-      })
-      .addCase(getCancelled.rejected, (state: AdminState, action: any) => {
-        state.loading = false
-        state.error = action.payload as string
-      })
-      // Handle acknowledgeCancelled
-      .addCase(acknowledgeCancelled.pending, (state: AdminState) => {
-        state.loading = true
-        state.error = null
-      })
-      .addCase(
-        acknowledgeCancelled.fulfilled,
-        (state: AdminState, action: any) => {
+        })
+        .addCase(deleteParkingSpace.pending, (state: AdminState) => {
+          state.loading = true
+          state.error = null
+        })
+        .addCase(deleteParkingSpace.fulfilled, (state: AdminState, action) => {
           state.loading = false
-          state.cancellations = state.cancellations.filter(
-            (cancellation) => cancellation.id !== action.payload,
-          )
-        },
-      )
-      .addCase(
-        acknowledgeCancelled.rejected,
-        (state: AdminState, action: any) => {
+        })
+        .addCase(deleteParkingSpace.rejected, (state: AdminState, action) => {
           state.loading = false
           state.error = action.payload as string
-        },
-      )
-      // Handle getAllPendingSpots
-      .addCase(getAllPendingSpots.pending, (state: AdminState) => {
-        state.loading = true
-        state.error = null
-      })
-      .addCase(
-        getAllPendingSpots.fulfilled,
-        (state: AdminState, action: any) => {
-          state.loading = false
-          state.pendingSpots = action.payload.pendingSpaces
-        },
-      )
-      .addCase(
-        getAllPendingSpots.rejected,
-        (state: AdminState, action: any) => {
-          state.loading = false
-          state.error = action.payload as string
-        },
-      )
-      // Handle verifyParkingSpot
-      .addCase(verifyParkingSpot.pending, (state: AdminState) => {
-        state.loading = true
-        state.error = null
-      })
-      .addCase(
-        verifyParkingSpot.fulfilled,
-        (state: AdminState, action: any) => {
-          state.loading = false
-          const updatedSpot = action.payload
-          state.pendingSpots = state.pendingSpots.map((spot) =>
-            spot.id === updatedSpot.id ? updatedSpot : spot,
-          )
-        },
-      )
-      .addCase(verifyParkingSpot.rejected, (state: AdminState, action: any) => {
-        state.loading = false
-        state.error = action.payload as string
-      })
-      .addCase(deleteParkingSpace.pending, (state: AdminState) => {
-        state.loading = true
-        state.error = null
-      })
-      .addCase(deleteParkingSpace.fulfilled, (state: AdminState, action) => {
-        state.loading = false
-      })
-      .addCase(deleteParkingSpace.rejected, (state: AdminState, action) => {
-        state.loading = false
-        state.error = action.payload as string
-      })
-  },
-})
-  name: "admin",
-  initialState,
-  reducers: {},
-  extraReducers: (builder) => {
-    builder
+        })
       // Fetch user details
       .addCase(fetchUserDetails.pending, (state: AdminState) => {
         state.loading = true;
@@ -464,38 +367,8 @@ const adminSlice = createSlice({
           state.loading = false;
           state.error = action.payload as string;
         },
-      )
-      // Handle verifyParkingSpot
-      .addCase(verifyParkingSpot.pending, (state: AdminState) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(
-        verifyParkingSpot.fulfilled,
-        (state: AdminState, action: any) => {
-          state.loading = false;
-          const updatedSpot = action.payload;
-          state.pendingSpots = state.pendingSpots.map((spot) =>
-            spot.id === updatedSpot.id ? updatedSpot : spot,
-          );
-        },
-      )
-      .addCase(verifyParkingSpot.rejected, (state: AdminState, action: any) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      })
-      .addCase(deleteParkingSpace.pending, (state: AdminState) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(deleteParkingSpace.fulfilled, (state: AdminState, action) => {
-        state.loading = false;
-      })
-      .addCase(deleteParkingSpace.rejected, (state: AdminState, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      });
+      );
   },
-});
+})
 
 export default adminSlice.reducer
