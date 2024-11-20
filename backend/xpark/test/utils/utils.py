@@ -88,11 +88,15 @@ def create_test_parking_space(
     # Prepare the multipart form data with proper types
     form_data: Dict[str, Union[str, FileStorage]] = {
         "data": json.dumps(parking_space_data),
+<<<<<<< HEAD
         "image": FileStorage(
             stream=io.BytesIO(b"dummy image content"),
             filename="test.jpg",
             content_type="image/jpeg",
         ),
+=======
+        "image": create_test_image(),
+>>>>>>> origin/main
     }
 
     response = client.post(
@@ -224,6 +228,7 @@ def create_sequential_reservations(
 
 def submit_parking_verification(client: FlaskClient, token: str, space_id: str) -> None:
     """Helper to submit a verification request for a parking space with an image."""
+<<<<<<< HEAD
     # Create a dummy image file for verification
     image_data = io.BytesIO(b"dummy image content")
     image_file = FileStorage(
@@ -234,6 +239,12 @@ def submit_parking_verification(client: FlaskClient, token: str, space_id: str) 
         f"/api/unstable/parking-spaces/{space_id}/verify",
         headers={"Authorization": f"Bearer {token}"},
         data={"image": image_file},
+=======
+    response = client.post(
+        f"/api/unstable/parking-spaces/{space_id}/verify",
+        headers={"Authorization": f"Bearer {token}"},
+        data={"image": create_test_image()},
+>>>>>>> origin/main
         content_type="multipart/form-data",
     )
 
@@ -374,6 +385,8 @@ def create_test_report(
         data["damage_severity"] = damage_severity or "Minor"
         if not image:
             image = create_test_image()
+    else:
+        raise Exception("Invalid report type")
 
     if image:
         files = {"image": image}
@@ -402,7 +415,7 @@ def create_test_image(
 ) -> FileStorage:
     """Create a test image file"""
     return FileStorage(
-        stream=io.BytesIO(b"dummy image content"),
+        stream=io.BytesIO(bytes.fromhex("FFD8FFDB000000")),
         filename=filename,
         content_type=content_type,
     )
@@ -413,7 +426,11 @@ def setup_analytics_scenario(
     num_spots: int = 3,
     reservations_per_spot: int = 5,
     days_of_history: int = 30,
+<<<<<<< HEAD
 ) -> Tuple[str, str, Dict[str, List[str]]]:
+=======
+) -> Tuple[str, str, Dict[str, List[str] | Dict[str, List[str]]]]:
+>>>>>>> origin/main
     """
     Creates a complete analytics testing scenario with:
     - One owner with multiple spots
@@ -563,7 +580,11 @@ def generate_varied_reservation_pattern(
 
 def insert_reservation_directly(
     renter_id: str, space_id: str, car_id: str, start_time: datetime, end_time: datetime
+<<<<<<< HEAD
 ):
+=======
+) -> None:
+>>>>>>> origin/main
     """Inserts a reservation directly into the database for testing purposes."""
     reservation_id = str(uuid.uuid4())
     duration_hours = (end_time - start_time).total_seconds() / 3600
@@ -616,10 +637,17 @@ def get_user_id_from_token(client: FlaskClient, token: str) -> str:
     data = response.get_json()
     user_id = data.get("id")
     assert user_id is not None, "User ID not found in response"
+    assert type(user_id) is str
     return user_id
 
 
+<<<<<<< HEAD
 def mark_reservations_completed(client: FlaskClient, reservation_ids: List[str]):
+=======
+def mark_reservations_completed(
+    client: FlaskClient, reservation_ids: List[str]
+) -> None:
+>>>>>>> origin/main
     """Marks the specified reservations as completed in the database."""
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:

@@ -1,23 +1,23 @@
 // src/mocks/handlers/index.ts
 
-import { loginHandler } from "./auth/loginHandler";
-import { registerHandler } from "./auth/registerHandler";
-import { resetHandler, resetConfirmHandler } from "./auth/resetHandler";
-import { searchHandler, searchSpots } from "./search/searchHandler";
-import { deleteHandler } from "./auth/deleteHandler";
+import { loginHandler } from "./auth/loginHandler"
+import { registerHandler } from "./auth/registerHandler"
+import { resetHandler, resetConfirmHandler } from "./auth/resetHandler"
+import { searchHandler, searchSpots } from "./search/searchHandler"
+import { deleteHandler } from "./auth/deleteHandler"
 import {
   getUserReservationsHandler,
   getReservationByIdHandler,
   createReservationHandler,
   updateReservationHandler,
   getUserCarInfosHandler,
-} from "./reservations/reservationsHandler";
+} from "./reservations/reservationsHandler"
 import {
   getParkingSpaceHandler,
   getOwnedParkingSpacesHandler,
   lockParkingSpaceHandler,
   unlockParkingSpaceHandler,
-} from "./parking-space/parkingSpaceHandler";
+} from "./parking-space/parkingSpaceHandler"
 
 export const handlers = [
   loginHandler,
@@ -37,4 +37,4 @@ export const handlers = [
   unlockParkingSpaceHandler,
   getUserCarInfosHandler,
   // Additional handlers
-];
+]

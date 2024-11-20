@@ -1,4 +1,4 @@
-'use client';
+"use client"
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -27,7 +27,7 @@ function ProfileStats({ label, value }: { label: string; value: number }) {
             <p className="text-lg md:text-xl font-bold">{value}</p>
             <p className="text-sm md:text-base text-gray-600">{label}</p>
         </div>
-    );
+    )
 }
 
 function AchievementCard({ colorClass, label }: { colorClass: string; label: string }) {
@@ -48,10 +48,11 @@ function CommentCard({
     comment,
     sentiment,
 }: {
-    user: string;
-    comment: string;
-    sentiment: string;
+    user: string
+    comment: string
+    sentiment: string
 }) {
+
     return (
         <div className="bg-gray-100 p-4 rounded-lg shadow-sm flex justify-between items-start drop-shadow-lg">
             <div>
@@ -242,5 +243,5 @@ export default function ProfilePage() {
                 </div>
             </div>
         )
-    );
+    )
 }

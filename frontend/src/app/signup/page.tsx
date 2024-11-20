@@ -1,2 +1,2 @@
-import SignUpPage from "./SignupPage";
+import SignUpPage from "./SignupPage"
 export default SignUpPage

@@ -1,8 +1,7 @@
-from flask import Flask, send_from_directory
+from flask import Flask
 from .config import Config
 from psycopg_pool import ConnectionPool
 import smtplib
-from typing import Any
 
 
 def create_app(config_class: type[Config] = Config) -> Flask:
@@ -26,6 +25,12 @@ def create_app(config_class: type[Config] = Config) -> Flask:
 
         mailer_connect()
 
+    # Initialize S3 uploads
+    # from .utils.s3 import S3
+
+    if Config.S3_ENABLED == "yes":
+        S3.connect()
+
     # Run SQL migrations in one transaction. Any failures will not modify the database
     with DB.pool.connection() as conn:
         makemigrate(conn)
@@ -33,10 +38,6 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     import xpark.api.unstable as unstable
 
     app.register_blueprint(unstable.bp)
-
-    @app.route("/static/<path:filename>")
-    def static_files(filename: str) -> Any:
-        return send_from_directory(Config.STATIC_FOLDER, filename)
 
     @app.route("/")
     def status() -> str:

@@ -210,7 +210,7 @@ def get_dashboard_analytics(
 
             # Calculate overall occupancy rate
             overall_occupancy_rate = (
-                overall_occupancy_rate / len(spot_metrics_rows)
+                int(overall_occupancy_rate / len(spot_metrics_rows))
                 if spot_metrics_rows
                 else 0
             )

@@ -7,7 +7,7 @@ from flask import jsonify, request
 from result import Ok, Err
 
 from . import bp
-from xpark.logic.parkingspace import save_image
+from xpark.utils.s3 import S3
 from xpark.logic.reports import (
     create_damage_report_logic,
     create_other_issue_report_logic,
@@ -75,7 +75,7 @@ def create_renter_overstay_report(token: str, user_id: UUID) -> Tuple[Any, int]:
     assert description is not None
     assert departure_time_str is not None
 
-    image_url = save_image(image)
+    image_url = S3.save_image(image)
 
     # Parse departure_time and make it timezone-aware (assuming UTC)
     departure_time = datetime.fromisoformat(departure_time_str)
@@ -117,7 +117,7 @@ def create_damage_report(token: str, user_id: UUID) -> Tuple[Any, int]:
     assert damage_type is not None
     assert damage_severity is not None
 
-    image_url = save_image(image)
+    image_url = S3.save_image(image)
 
     match create_damage_report_logic(
         user_id,

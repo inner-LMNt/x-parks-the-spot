@@ -1,2 +1,2 @@
-import ReportsPage from "./ReportsPage";
-export default ReportsPage;
+import ReportsPage from "./ReportsPage"
+export default ReportsPage

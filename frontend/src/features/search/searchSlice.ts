@@ -22,12 +22,12 @@ export const searchSpots = createAsyncThunk<
   { rejectValue: string }
 >("search/spots", async (searchRequest, { rejectWithValue }) => {
   try {
-    const response = await axios.post<SearchResponse>("/search", searchRequest);
-    return response.data;
+    const response = await axios.post<SearchResponse>("/search", searchRequest)
+    return response.data
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Search failed");
+    return rejectWithValue(error.response?.data?.message || "Search failed")
   }
-});
+})
 
 export const searchLeaderboard = createAsyncThunk<
   LeaderboardUser[],
@@ -47,22 +47,22 @@ const searchSlice = createSlice({
   initialState,
   reducers: {
     errorReset(state) {
-      state.error = null;
+      state.error = null
     },
   },
   extraReducers: (builder) => {
     builder
       .addCase(searchSpots.pending, (state: SearchState) => {
-        state.loading = true;
-        state.error = null;
+        state.loading = true
+        state.error = null
       })
       .addCase(searchSpots.fulfilled, (state: SearchState, action: any) => {
-        state.loading = false;
-        state.spots = action.payload;
+        state.loading = false
+        state.spots = action.payload
       })
       .addCase(searchSpots.rejected, (state: SearchState, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
+        state.loading = false
+        state.error = action.payload as string
       })
       .addCase(searchLeaderboard.pending, (state: SearchState) => {
         state.loading = true;
@@ -80,11 +80,11 @@ const searchSlice = createSlice({
         (action: { type: string }): action is { type: "search/resetSpots" } =>
           action.type === "search/resetSpots",
         (state: SearchState) => {
-          console.log("Resetting spots");
-        }
-      );
+          console.log("Resetting spots")
+        },
+      )
   },
-});
+})
 
-export const { errorReset } = searchSlice.actions;
-export default searchSlice.reducer;
+export const { errorReset } = searchSlice.actions
+export default searchSlice.reducer
