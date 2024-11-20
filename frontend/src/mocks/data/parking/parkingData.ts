@@ -435,21 +435,21 @@ export const spaces: ParkingSpace[] = [
 export function findParking(
   lat: number,
   lng: number,
-  radius: number
+  radius: number,
 ): ParkingSpace[] {
   console.log("Finding parking spots within radius", radius, "km of", lat, lng);
   return spaces.filter((space) => {
     const distance = Math.sqrt(
       Math.pow(space.location.latitude - lat, 2) +
-        Math.pow(space.location.longitude - lng, 2)
+        Math.pow(space.location.longitude - lng, 2),
     );
     // Rough approximation: 1 degree is about 111 km
 
-    return distance * 111 <= radius
-  })
+    return distance * 111 <= radius;
+  });
 }
 
 export function userSubmissions(owner_id: string): ParkingSpace[] {
-  console.log("Getting user submissions for owner_id", owner_id)
-  return spaces.filter(space => space.owner_id === owner_id)
+  console.log("Getting user submissions for owner_id", owner_id);
+  return spaces.filter((space) => space.owner_id === owner_id);
 }

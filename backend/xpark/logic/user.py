@@ -345,7 +345,7 @@ def handle_set_notification_time(user_id: uuid.UUID, time: str) -> Result[None, 
             SET user_preferences = COALESCE(user_preferences, '{}'::jsonb) || jsonb_build_object('notification_time', %s::text)
             WHERE id = %s
             """
-    
+
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(query, (time, str(user_id)))
@@ -367,7 +367,7 @@ def handle_get_notification_time(user_id: uuid.UUID) -> Result[str, str]:
                 return Err("User not found")
 
             return Ok(result[0])
-        
+
 
 def handle_get_points(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
     with DB.pool.connection() as conn:
@@ -380,5 +380,3 @@ def handle_get_points(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
             if not result:
                 return Err("User not found")
             return Ok(result)
-        
-

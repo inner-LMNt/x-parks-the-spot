@@ -106,7 +106,6 @@ def reset_password(token: str) -> Tuple[Any, int]:
             return {"err": e}, 403
         case Ok(_):
             return {"message": "Password reset successfully"}, 200
-        
 
 
 @bp.post("notification-time")
@@ -119,7 +118,7 @@ def set_notification_time(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return {"message": "Notification time set successfully"}, 200
         case Err(e):
             return {"err": e}, 403
-        
+
 
 @bp.get("notification-time")
 @require_logged_in_user
@@ -139,7 +138,6 @@ def get_points(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return {"points": points}, 200
         case Err(e):
             return {"err": e}, 403
-
 
 
 # @bp.get("id")

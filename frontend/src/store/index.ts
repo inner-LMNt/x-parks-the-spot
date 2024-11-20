@@ -33,7 +33,7 @@ export const createStore = (preloadedState?: Partial<RootState>) => {
       reports: reportReducer,
       reportDetails: reportDetailsReducer,
       ownerReservations: ownerReservationsReducer,
-      reservationCar: reservationCarReducer
+      reservationCar: reservationCarReducer,
     },
     // @ts-ignore
     middleware: (getDefaultMiddleware) =>

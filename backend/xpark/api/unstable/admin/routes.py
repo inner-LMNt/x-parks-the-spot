@@ -16,9 +16,12 @@ from typing import Any, Tuple
 from xpark.middleware.token_auth_middleware import require_admin
 import uuid
 
+
 @bp.get("user-details/<user>")
 @require_admin
-def fetch_user_details_route(token: str, user_id: uuid.UUID, user: str) -> Tuple[Any, int]:
+def fetch_user_details_route(
+    token: str, user_id: uuid.UUID, user: str
+) -> Tuple[Any, int]:
     """
     Fetch user details including past bookings, parking spaces, and reports.
     """
@@ -46,6 +49,7 @@ def get_conflicts_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     else:
         return jsonify({"error": result.unwrap_err()}), 400
 
+
 @bp.get("get-pending")
 def get_pending_parking_spaces_route() -> Tuple[Any, int]:
     """
@@ -56,6 +60,7 @@ def get_pending_parking_spaces_route() -> Tuple[Any, int]:
             return pending_spaces, 200
         case Err(e):
             return {"error": str(e)}, 403
+
 
 @bp.post("verify-parking-space")
 @require_admin
@@ -73,6 +78,7 @@ def verify_parking_space(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return updated_space, 200
         case Err(e):
             return {"error": str(e)}, 400
+
 
 @bp.post("update-conflict")
 @require_admin
@@ -98,6 +104,7 @@ def update_conflict_response_route(token: str, user_id: uuid.UUID) -> Tuple[Any,
     else:
         return jsonify({"error": result.unwrap_err()}), 400
 
+
 @bp.get("get-cancellations")
 @require_admin
 def get_cancellations_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
@@ -109,6 +116,7 @@ def get_cancellations_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         return jsonify(result.unwrap()), 200
     else:
         return jsonify({"error": result.unwrap_err()}), 400
+
 
 @bp.post("acknowledge-cancellation")
 @require_admin
@@ -133,9 +141,12 @@ def acknowledge_cancellation_route(token: str, user_id: uuid.UUID) -> Tuple[Any,
     else:
         return jsonify({"error": result.unwrap_err()}), 400
 
+
 @bp.delete("parking-spaces/<parking_space_id>")
 @require_admin
-def admin_delete_parking_space_route(token: str, user_id: uuid.UUID, parking_space_id: str) -> Tuple[Any, int]:
+def admin_delete_parking_space_route(
+    token: str, user_id: uuid.UUID, parking_space_id: str
+) -> Tuple[Any, int]:
     """
     Admin route to delete a paid parking space and handle associated reservations
     """
