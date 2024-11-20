@@ -72,18 +72,18 @@ export interface DashboardAnalytics {
     }>
   }
   spotPerformance: Record<
-      string,
-      {
-        totalRevenue: number
-        totalBookings: number
-        occupancyRate: number
-        averageBookingLength: number
-        activeBookings: number
-        completedBookings: number
-        canceledBookings: number
-        popularHours: Array<{ hour: number; bookings: number }>
-        popularDays: Array<{ day: string; bookings: number }>
-      }
+    string,
+    {
+      totalRevenue: number
+      totalBookings: number
+      occupancyRate: number
+      averageBookingLength: number
+      activeBookings: number
+      completedBookings: number
+      canceledBookings: number
+      popularHours: Array<{ hour: number; bookings: number }>
+      popularDays: Array<{ day: string; bookings: number }>
+    }
   >
   upcomingEarnings: {
     total: number

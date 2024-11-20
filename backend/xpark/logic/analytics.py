@@ -694,7 +694,9 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                 for row in rating_distribution_rows:
                     stars = row["stars"]
                     count = row["count"]  # This was incorrectly indented
-                    percentage = (count / total_ratings) * 100 if total_ratings > 0 else 0
+                    percentage = (
+                        (count / total_ratings) * 100 if total_ratings > 0 else 0
+                    )
                     rating_distribution.append(
                         {"stars": stars, "count": count, "percentage": percentage}
                     )
@@ -742,7 +744,9 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                     "availability": float(
                         overall_ratings.get("avg_availability_rating", 0)
                     ),
-                    "cleanliness": float(overall_ratings.get("avg_cleanliness_rating", 0)),
+                    "cleanliness": float(
+                        overall_ratings.get("avg_cleanliness_rating", 0)
+                    ),
                     "total": float(overall_ratings.get("avg_total_rating", 0)),
                 },
                 "totalRatings": overall_ratings.get("total_ratings", 0),
@@ -757,14 +761,19 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                             "total": sum(row["actual"] for row in historical_revenue),
                             "perBooking": (
                                 sum(row["actual"] for row in historical_revenue)
-                                / sum(row["booking_count"] for row in historical_revenue)
-                                if sum(row["booking_count"] for row in historical_revenue)
+                                / sum(
+                                    row["booking_count"] for row in historical_revenue
+                                )
+                                if sum(
+                                    row["booking_count"] for row in historical_revenue
+                                )
                                 > 0
                                 else 0
                             ),
                         },
                         "occupancy": {
-                            "overallRate": overall_occupancy_rate / len(spot_metrics_rows)
+                            "overallRate": overall_occupancy_rate
+                            / len(spot_metrics_rows)
                             if spot_metrics_rows
                             else 0
                         },

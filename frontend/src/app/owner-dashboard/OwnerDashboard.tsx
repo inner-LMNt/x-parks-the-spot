@@ -103,12 +103,12 @@ export default function OwnerDashboard() {
           <SelectContent>
             <SelectItem value="all">All Spots</SelectItem>
             {[...pendingSpots, ...paidSpots]
-                .sort((a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0))
-                .map((spot) => (
-              <SelectItem key={spot.id} value={spot.id}>
-                {spot.name}
-              </SelectItem>
-            ))}
+              .sort((a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0))
+              .map((spot) => (
+                <SelectItem key={spot.id} value={spot.id}>
+                  {spot.name}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
       </div>
@@ -177,8 +177,8 @@ export default function OwnerDashboard() {
               Dashboard
             </h1>
             <p className="text-sm text-gray-500">
-              {paidSpots.length + pendingSpots.length} active spots • {ownerReservations.length} total
-              bookings
+              {paidSpots.length + pendingSpots.length} active spots •{" "}
+              {ownerReservations.length} total bookings
             </p>
           </div>
           <FilterControls />
@@ -201,7 +201,10 @@ export default function OwnerDashboard() {
           {analytics && (
             <>
               <TabsContent value="revenue">
-                <RevenueTab revenueMetrics={analytics.revenueMetrics} timeFilter={timeFilter} />
+                <RevenueTab
+                  revenueMetrics={analytics.revenueMetrics}
+                  timeFilter={timeFilter}
+                />
               </TabsContent>
 
               <TabsContent value="bookings">
@@ -215,6 +218,7 @@ export default function OwnerDashboard() {
                   spotPerformance={analytics.spotPerformance}
                   avgRating={analytics.ratingMetrics.averageRatings.total}
                   numReviews={analytics.ratingMetrics.totalRatings}
+                  selectedSpotId={selectedSpotId}
                 />
               </TabsContent>
 

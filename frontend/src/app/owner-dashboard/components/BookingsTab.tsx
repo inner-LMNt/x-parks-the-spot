@@ -69,8 +69,9 @@ interface BookingsTabProps {
 }
 
 export default function BookingsTab({ bookingMetrics }: BookingsTabProps) {
-  const [statusFilter, setStatusFilter] = useState
-  <"all" | "upcoming" | "current" | "past" | "canceled">("all")
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "upcoming" | "current" | "past" | "canceled"
+  >("all")
 
   const filteredBookings = useMemo(() => {
     if (statusFilter === "all") {
@@ -78,11 +79,12 @@ export default function BookingsTab({ bookingMetrics }: BookingsTabProps) {
     }
     if (statusFilter === "canceled") {
       return bookingMetrics.recentBookings.filter(
-          booking => booking.status === "canceled"
+        (booking) => booking.status === "canceled",
       )
     }
     return bookingMetrics.recentBookings.filter(
-        booking => booking.status !== "canceled" && booking.time_status === statusFilter
+      (booking) =>
+        booking.status !== "canceled" && booking.time_status === statusFilter,
     )
   }, [statusFilter, bookingMetrics.recentBookings])
 
@@ -174,78 +176,82 @@ export default function BookingsTab({ bookingMetrics }: BookingsTabProps) {
               No bookings match the selected status.
             </p>
           ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Details</TableHead>
-                    <TableHead>When</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredBookings.map((booking) => (
-                      <TableRow
-                          key={booking.id}
-                          className={booking.time_status === 'current' ? 'bg-blue-50' : ''}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Details</TableHead>
+                  <TableHead>When</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredBookings.map((booking) => (
+                  <TableRow
+                    key={booking.id}
+                    className={
+                      booking.time_status === "current" ? "bg-blue-50" : ""
+                    }
+                  >
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="font-medium">
+                          {booking.spotName || "Unnamed Spot"}
+                        </div>
+                        <div className="text-sm text-gray-500 flex items-center gap-2">
+                          {booking.renterName || "Anonymous"}
+                          {booking.rentalCount > 1 && (
+                            <span className="text-xs px-1 bg-gray-100 rounded">
+                              {booking.rentalCount}x
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {[
+                            booking.carDetails.make,
+                            booking.carDetails.model,
+                            booking.carDetails.plate,
+                          ]
+                            .filter(Boolean)
+                            .join(" • ")}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-0.5">
+                        <div className="text-sm">
+                          {format(parseISO(booking.startTime), "MMM d, h:mma")}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {booking.isMultiDay
+                            ? `${booking.daysDuration}d`
+                            : `${Number(booking.duration).toFixed(1)}h`}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      ${booking.price.toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          booking.status === "canceled"
+                            ? "destructive"
+                            : booking.time_status === "upcoming"
+                              ? "secondary"
+                              : "default"
+                        }
                       >
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="font-medium">
-                              {booking.spotName || "Unnamed Spot"}
-                            </div>
-                            <div className="text-sm text-gray-500 flex items-center gap-2">
-                              {booking.renterName || "Anonymous"}
-                              {booking.rentalCount > 1 && (
-                                  <span className="text-xs px-1 bg-gray-100 rounded">
-                  {booking.rentalCount}x
-                </span>
-                              )}
-                            </div>
-                            <div className="text-xs text-gray-400">
-                              {[
-                                booking.carDetails.make,
-                                booking.carDetails.model,
-                                booking.carDetails.plate
-                              ].filter(Boolean).join(' • ')}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-0.5">
-                            <div className="text-sm">
-                              {format(parseISO(booking.startTime), "MMM d, h:mma")}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {booking.isMultiDay
-                                  ? `${booking.daysDuration}d`
-                                  : `${Number(booking.duration).toFixed(1)}h`}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          ${booking.price.toFixed(2)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                              variant={
-                                booking.status === "canceled"
-                                    ? "destructive"
-                                    : booking.time_status === "upcoming"
-                                        ? "secondary"
-                                        : "default"
-                              }
-                          >
-                            {booking.status === "canceled"
-                                ? "Canceled"
-                                : booking.time_status.charAt(0).toUpperCase() +
-                                booking.time_status.slice(1)}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                        {booking.status === "canceled"
+                          ? "Canceled"
+                          : booking.time_status.charAt(0).toUpperCase() +
+                            booking.time_status.slice(1)}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
