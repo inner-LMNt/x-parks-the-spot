@@ -53,7 +53,7 @@ def get_dashboard_analytics(
                 end_date + timedelta(days=7),  # For main query
             ]
             cur.execute(
-                f"""
+                """
                     WITH time_metrics AS (
                         SELECT 
                             -- Total reservations that could have been completed in period
@@ -274,7 +274,7 @@ def get_dashboard_analytics(
 
             # ==== Enhanced Upcoming Revenue Query ====
             cur.execute(
-                f"""
+                """
                     WITH spot_counts AS (
                         SELECT COUNT(*) as total_spots
                         FROM parking_spaces
@@ -317,7 +317,7 @@ def get_dashboard_analytics(
 
             # ==== Spot Performance and Revenue by Spot ====
             # Add filter to the spot performance query
-            spot_query = f"""
+            spot_query = """
                 WITH RECURSIVE daily_hours AS (
                     SELECT 
                         r.id,
@@ -519,7 +519,7 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                 end_date + timedelta(days=7),
                 start_date,
             ]
-            recent_bookings_query = f"""
+            recent_bookings_query = """
                 WITH reservation_details AS (
                     SELECT 
                         r.id,
