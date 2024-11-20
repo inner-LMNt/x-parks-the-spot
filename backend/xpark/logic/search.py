@@ -4,6 +4,7 @@ from xpark.utils.db import DB
 from result import Ok, Err
 from datetime import datetime, timezone
 
+
 def search_query(
     lat: float,
     long: float,
@@ -13,7 +14,7 @@ def search_query(
     max_price: Optional[float],
     start_time: Optional[datetime],
     end_time: Optional[datetime],
-    is_taken: Optional[bool] = None
+    is_taken: Optional[bool] = None,
 ) -> list[dict[str, Any]]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -71,7 +72,9 @@ def search_query(
             parking_spaces = cur.fetchall()
 
             # Calculate elapsed time for each taken spot and update name
-            now = datetime.now(timezone.utc)  # Set now to UTC to match the timezone of updated_at
+            now = datetime.now(
+                timezone.utc
+            )  # Set now to UTC to match the timezone of updated_at
             for parking_space in parking_spaces:
                 # Update name for taken spots
                 if parking_space["is_taken"]:
@@ -90,19 +93,34 @@ def search_query(
                         parking_space["name"] = "Updated just now"
 
                 # Process ratings
-                if parking_space['is_paid']:
-                    if (parking_space['ratings_count_availability'] == 0 or
-                        parking_space['ratings_count_availability'] is None) and \
-                       (parking_space['ratings_count_cleanliness'] == 0 or
-                        parking_space['ratings_count_cleanliness'] is None):
-                        parking_space['avg_total_rating'] = "unrated"
+                if parking_space["is_paid"]:
+                    if (
+                        parking_space["ratings_count_availability"] == 0
+                        or parking_space["ratings_count_availability"] is None
+                    ) and (
+                        parking_space["ratings_count_cleanliness"] == 0
+                        or parking_space["ratings_count_cleanliness"] is None
+                    ):
+                        parking_space["avg_total_rating"] = "unrated"
                     else:
-                        parking_space['avg_total_rating'] = float(parking_space['avg_total_rating']) if parking_space['avg_total_rating'] != 0 else "unrated"
-                        parking_space['avg_availability_rating'] = float(parking_space['avg_availability_rating']) if parking_space['avg_availability_rating'] != 0 else None
-                        parking_space['avg_cleanliness_rating'] = float(parking_space['avg_cleanliness_rating']) if parking_space['avg_cleanliness_rating'] != 0 else None
+                        parking_space["avg_total_rating"] = (
+                            float(parking_space["avg_total_rating"])
+                            if parking_space["avg_total_rating"] != 0
+                            else "unrated"
+                        )
+                        parking_space["avg_availability_rating"] = (
+                            float(parking_space["avg_availability_rating"])
+                            if parking_space["avg_availability_rating"] != 0
+                            else None
+                        )
+                        parking_space["avg_cleanliness_rating"] = (
+                            float(parking_space["avg_cleanliness_rating"])
+                            if parking_space["avg_cleanliness_rating"] != 0
+                            else None
+                        )
 
             return parking_spaces
-        
+
 
 def search_leaderboard() -> list[dict[str, Any]]:
     with DB.pool.connection() as conn:

@@ -149,6 +149,7 @@ def cancel_reservation_route(
             else:
                 return {"err": e}, 400
 
+
 @bp.get("owner")
 @require_logged_in_user
 def get_owner_reservations_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:

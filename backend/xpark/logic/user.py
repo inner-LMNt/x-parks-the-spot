@@ -359,7 +359,7 @@ def handle_set_notification_time(user_id: uuid.UUID, time: str) -> Result[None, 
             SET user_preferences = COALESCE(user_preferences, '{}'::jsonb) || jsonb_build_object('notification_time', %s::text)
             WHERE id = %s
             """
-    
+
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(query, (time, str(user_id)))
@@ -382,10 +382,11 @@ def handle_get_notification_time(user_id: uuid.UUID) -> Result[str, str]:
 
             return Ok(result[0])
 
-          
+
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(base_dir, "../static/data/uscities.csv")
 CITIES_DATA = pd.read_csv(csv_path)
+
 
 def validate_city_state(state: str, city: str) -> bool:
     state = state.strip().upper()
@@ -395,20 +396,22 @@ def validate_city_state(state: str, city: str) -> bool:
         (CITIES_DATA["state_id"] == state) & (CITIES_DATA["city"].str.lower() == city)
     ]
     return not matching_rows.empty
-    
-    
-def set_user_location_request(user_id: uuid.UUID, state: str, city: str) -> Result[None, str]:
+
+
+def set_user_location_request(
+    user_id: uuid.UUID, state: str, city: str
+) -> Result[None, str]:
     city = city.title()
     if city != "None":
         if not validate_city_state(state, city):
             return Err("Invalid city-state combination")
-        
+
     query = """
             UPDATE users
             SET state_city = COALESCE(state_city, '{}'::jsonb) || jsonb_build_object('state', %s::text, 'city', %s::text)
             WHERE id = %s
             """
-    
+
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(query, (state, city, str(user_id)))
@@ -416,7 +419,7 @@ def set_user_location_request(user_id: uuid.UUID, state: str, city: str) -> Resu
                 return Err("User not found")
 
             return Ok(None)
-        
+
 
 def get_user_location_request(user_id: uuid.UUID) -> Result[Dict[str, str], str]:
     query = """
@@ -424,7 +427,7 @@ def get_user_location_request(user_id: uuid.UUID) -> Result[Dict[str, str], str]
             FROM users
             WHERE id = %s
             """
-    
+
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(query, (str(user_id),))
@@ -434,7 +437,7 @@ def get_user_location_request(user_id: uuid.UUID) -> Result[Dict[str, str], str]
 
             return Ok({"state": result[0], "city": result[1]})
 
-          
+
 def handle_get_points(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -446,6 +449,7 @@ def handle_get_points(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
             if not result:
                 return Err("User not found")
             return Ok(result)
+
 
 def handle_get_transaction_history(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
     with DB.pool.connection() as conn:
@@ -467,7 +471,10 @@ def handle_get_transaction_history(user_id: uuid.UUID) -> Result[Dict[str, int],
                 return Err("User not found")
             return Ok(result)
 
-def handle_buy_badge(user_id: uuid.UUID, badge_id: int, price: int) -> Result[None, str]:
+
+def handle_buy_badge(
+    user_id: uuid.UUID, badge_id: int, price: int
+) -> Result[None, str]:
     with DB.pool.connection() as conn:
         with conn.cursor() as cur:
             # Check sufficient points
@@ -481,7 +488,7 @@ def handle_buy_badge(user_id: uuid.UUID, badge_id: int, price: int) -> Result[No
             points = result[0]
             if points["current"] < price:
                 return Err("Insufficient points")
-            
+
             # Check if badge already exists
             cur.execute(
                 "SELECT badges FROM users WHERE id = %s",
@@ -493,7 +500,7 @@ def handle_buy_badge(user_id: uuid.UUID, badge_id: int, price: int) -> Result[No
             badges = result[0]
             if str(badge_id) in badges:
                 return Err("Badge already purchased")
-            
+
             # Update points and badges
             cur.execute(
                 "UPDATE users SET points = jsonb_set(points, '{current}', ((points->>'current')::integer - %s)::text::jsonb) WHERE id = %s",
@@ -503,7 +510,7 @@ def handle_buy_badge(user_id: uuid.UUID, badge_id: int, price: int) -> Result[No
                 "UPDATE users SET badges = array_append(badges, %s::text) WHERE id = %s",
                 (badge_id, user_id),
             )
-            
+
             # Might want to change this later by storing shop items in a separate table
             # Right now, they're all hardcoded
             id_to_name = {
@@ -519,7 +526,7 @@ def handle_buy_badge(user_id: uuid.UUID, badge_id: int, price: int) -> Result[No
             )
 
             return Ok(None)
-        
+
 
 def handle_get_badge_list(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
     with DB.pool.connection() as conn:
@@ -531,6 +538,6 @@ def handle_get_badge_list(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
             result = cur.fetchone()
             if not result:
                 return Err("User not found")
-            
-            result = list(map(int, result['badges']))
+
+            result = list(map(int, result["badges"]))
             return Ok(result)

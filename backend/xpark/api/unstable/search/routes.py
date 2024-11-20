@@ -10,7 +10,6 @@ from result import Ok, Err
 import uuid
 
 
-
 @bp.post("")
 def search() -> Tuple[Any, int]:
     assert request.json

@@ -147,6 +147,7 @@ export default function LeaderboardComponent() {
                                 </TableHeader>
                                 <TableBody>
                                     {currentUsers.map((user: LeaderboardUser, index: number) => {
+                                        // Comparison by name, points, state, and city, but possibly we can do by ID in the future
                                         const isCurrentUser = user.name === userName && Number(user.points) === userPoints && user.state === userState && user.city === userCity;
                                         const userKey = `${user.name}-${user.points}-${user.state}-${user.city}`;
 

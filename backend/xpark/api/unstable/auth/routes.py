@@ -112,7 +112,7 @@ def reset_password(token: str) -> Tuple[Any, int]:
             return {"err": e}, 403
         case Ok(_):
             return {"message": "Password reset successfully"}, 200
-        
+
 
 @bp.get("user-name")
 @require_logged_in_user
@@ -134,7 +134,7 @@ def set_notification_time(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return {"message": "Notification time set successfully"}, 200
         case Err(e):
             return {"err": e}, 403
-        
+
 
 @bp.get("notification-time")
 @require_logged_in_user
@@ -144,7 +144,7 @@ def get_notification_time(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return {"time": time}, 200
         case Err(e):
             return {"err": e}, 403
-        
+
 
 @bp.post("user-location")
 @require_logged_in_user
@@ -177,7 +177,7 @@ def get_points(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return {"points": points}, 200
         case Err(e):
             return {"err": e}, 403
-        
+
 
 @bp.get("transaction-history")
 @require_logged_in_user
@@ -200,7 +200,7 @@ def use_points_badge(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return {"message": "Badge bought successfully", "points": points}, 200
         case Err(e):
             return {"err": e}, 402  # placeholder to prevent 403 redirection
-        
+
 
 @bp.get("badge-list")
 @require_logged_in_user
@@ -212,8 +212,8 @@ def get_badge_list(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
         case Err(e):
             return {"err": e}, 403
 
-          
-@bp.get('/me')
+
+@bp.get("/me")
 @require_logged_in_user
 def get_user_info_route(token: str, user_id: uuid.UUID):
-    return {'id': str(user_id)}, 200
+    return {"id": str(user_id)}, 200
