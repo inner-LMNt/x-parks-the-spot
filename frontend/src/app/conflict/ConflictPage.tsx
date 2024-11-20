@@ -22,7 +22,7 @@ import {
   getAllConflicts,
   getCancelled,
   updateConflictResponse,
-  acknowledgeCancelled,
+  acknowledgeCancelled, fetchUserDetails,
 } from "@/features/admin/adminSlice"
 import { fetchParkingSpace } from "@/features/parking-space/parkingSpaceSlice"
 import { toast } from "@/hooks/use-toast"
@@ -37,8 +37,18 @@ import { Report } from "@/types/type"
 import { format, isValid } from "date-fns"
 import { Skeleton } from "@/components/ui/skeleton"
 import DeleteListingDialog from "@/app/conflict/components/DeleteListingDialog"
+import UserInfo from "./components/[user-id]/UserInfo";
 
-const MAX_ITEMS = 4
+const MAX_ITEMS = 10
+
+interface UserDetailsType {
+  id: string;
+  name: string;
+  email: string;
+  pastBookings?: any[];
+  parkingSpaces?: any[];
+  reports?: any[];
+}
 
 const safeFormatDate = (
   dateString: string | undefined,
@@ -86,6 +96,7 @@ const ReportCard = ({
   setResponseText,
   handleImageClick,
   parkingSpaceData,
+  handleUserClick,
 }: any) => {
   const getReportIcon = (type: Report["type"]) => {
     switch (type) {
@@ -145,23 +156,40 @@ const ReportCard = ({
               {/* Report Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  {/* Basic Information */}
-                  {report.owner_name && (
-                    <div className="flex items-center gap-2 text-slate-950">
-                      <User className="w-4 h-4 text-slate-600" />
-                      <span>
-                        <strong>Owner:</strong> {report.owner_name}
-                      </span>
-                    </div>
-                  )}
-                  {report.renter_name && (
-                    <div className="flex items-center gap-2 text-slate-950">
-                      <User className="w-4 h-4 text-slate-600" />
-                      <span>
-                        <strong>Renter:</strong> {report.renter_name}
-                      </span>
-                    </div>
-                  )}
+                  <div className="space-y-2 text-slate-950">
+                    {report.owner_name && (
+                        <div className="flex items-center gap-2">
+                          <strong>Owner:</strong>
+                          <button
+                              className="text-blue-500 underline hover:text-blue-700 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log("Owner ID:", report.owner_id); // Debug log
+                                handleUserClick(report.owner_id);
+                              }}
+                          >
+                            {report.owner_name}
+                          </button>
+                        </div>
+                    )}
+
+                    {report.renter_name && (
+                        <div className="flex items-center gap-2">
+                          <strong>Renter:</strong>
+                          <button
+                              className="text-blue-500 underline hover:text-blue-700 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log("Renter ID:", report); // Debug log
+                                handleUserClick(report.user_id);
+                              }}
+                          >
+                            {report.renter_name}
+                          </button>
+                        </div>
+                    )}
+
+                  </div>
                   {/* Reservation Period */}
                   {report.start_time && report.end_time && (
                     <div className="flex items-center gap-2 text-slate-950">
@@ -334,6 +362,35 @@ const AdminReportsPage = () => {
     [key: string]: any
   }>({})
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [userDetails, setUserDetails] = useState<UserDetailsType | null>(null);
+
+
+
+  const handleUserClick = (userId: string) => {
+    console.log("User ID clicked:", userId);
+
+    dispatch(fetchUserDetails(userId))
+        .unwrap()
+        .then((userDetail) => {
+          console.log("API returned user details:", userDetail); // Logs correct data
+          setUserDetails(userDetail); // Schedule state update
+        })
+        .catch((error) => {
+          console.error("Failed to fetch user details:", error);
+        });
+
+    setSelectedUserId(userId);
+  };
+  useEffect(() => {
+    console.log("Updated userDetails:", userDetails);
+  }, [userDetails]);
+
+
+  const closeModal = () => {
+    setSelectedUserId(null); // Close the modal
+    setUserDetails(null);
+  };
 
   useEffect(() => {
     dispatch(getAllConflicts())
@@ -460,6 +517,7 @@ const AdminReportsPage = () => {
                 setResponseText={setResponseText}
                 handleImageClick={handleImageClick}
                 parkingSpaceData={parkingSpaceData}
+                handleUserClick={handleUserClick}
               />
             ))}
             {visibleCancellations.map((cancellation: any) => (
@@ -472,6 +530,20 @@ const AdminReportsPage = () => {
           </div>
         )}
       </div>
+
+      {/* Modal */}
+      <Dialog open={!!selectedUserId} onOpenChange={closeModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>User Information</DialogTitle>
+          </DialogHeader>
+          {selectedUserId ? (
+              <UserInfo userId={selectedUserId} userDetails={userDetails} />
+          ) : (
+              <p>No user selected.</p>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Image Modal */}
       <Dialog

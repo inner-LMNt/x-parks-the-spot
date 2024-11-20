@@ -53,6 +53,7 @@ export const fetchUserDetails = createAsyncThunk<
   { rejectValue: string }
 >("admin/fetchUserDetails", async (userId, { rejectWithValue }) => {
   try {
+    console.log(userId)
     const response = await axios.get(`/admin/user-details/${userId}`);
     return response.data;
   } catch (error: any) {
