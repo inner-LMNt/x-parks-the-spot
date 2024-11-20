@@ -171,7 +171,7 @@ const bookmarkSlice = createSlice({
         state.loading = false
         // Delete the updated bookmark in the list
         var i = state.bookmarks.findIndex(
-          (x) => x.parking_spot_id == action.payload.parking_spot_id,
+          (x) => x.parking_space_id == action.payload.parking_space_id,
         )
         state.bookmarks.splice(i, 1)
       })

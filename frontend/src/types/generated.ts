@@ -2109,7 +2109,7 @@ export type components = {
         };
         Bookmark: {
             /** Format: uuid */
-            parking_spot_id: string;
+            parking_space_id: string;
             name: string;
             location: components["schemas"]["Location"];
         };

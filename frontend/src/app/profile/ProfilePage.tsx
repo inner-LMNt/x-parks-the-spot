@@ -12,6 +12,7 @@ import {
   LogOut,
   FileWarning,
   Car,
+  Bookmark,
 } from "lucide-react" // Imported FileWarning
 import { logout } from "@/features/user/userSlice"
 import { Button } from "@/components/ui/button"
@@ -297,7 +298,7 @@ export default function ProfilePage() {
             <h2 className="text-lg font-semibold mb-4">Bookmarks</h2>
             <Link href="/bookmarks" passHref>
               <Button variant="outline">
-                <Car className="mr-2" /> View Your Bookmarks
+                <Bookmark className="mr-2" /> View Your Bookmarks
               </Button>
             </Link>
           </div>

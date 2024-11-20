@@ -52,7 +52,7 @@ export default function BookmarksPage() {
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {bookmarks.map((bookmark) => (
         <motion.div
-          key={bookmark.parking_spot_id}
+          key={bookmark.parking_space_id}
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3 }}
@@ -60,7 +60,7 @@ export default function BookmarksPage() {
           <Card
             className="overflow-hidden hover:shadow-lg transition-shadow duration-300"
             onClick={() => {
-              router.push(`/bookings/${bookmark.parking_spot_id}/reserve`)
+              router.push(`/bookings/${bookmark.parking_space_id}/reserve`)
             }}
           >
             <CardHeader className="bg-gray-50">

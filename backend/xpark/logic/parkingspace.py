@@ -395,7 +395,9 @@ def create_free_parking_space(
             return Ok(parking_space)
 
 
-def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str]:
+def get_parking_space(
+    parking_space_id: uuid.UUID, user_id: Optional[uuid.UUID]
+) -> Result[Dict[str, Any], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
@@ -417,6 +419,7 @@ def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str
                     is_taken,
                     availability_schedule,
                     verification_status,
+                    EXISTS(SELECT 1 FROM bookmarked_spots WHERE user_id=%(user_id)s AND parking_space_id=%(parking_space_id)s) as is_bookmarked,
                     created_at,
                     updated_at,
                     CASE WHEN is_paid THEN COALESCE(avg_availability_rating, 0) ELSE NULL END AS avg_availability_rating,
@@ -425,9 +428,9 @@ def get_parking_space(parking_space_id: uuid.UUID) -> Result[Dict[str, Any], str
                     CASE WHEN is_paid THEN COALESCE(ratings_count_availability, 0) ELSE NULL END AS ratings_count_availability,
                     CASE WHEN is_paid THEN COALESCE(ratings_count_cleanliness, 0) ELSE NULL END AS ratings_count_cleanliness
                 FROM parking_spaces
-                WHERE id = %s
+                WHERE id = %(parking_space_id)s
             """,
-                (parking_space_id,),
+                {"parking_space_id": parking_space_id, "user_id": user_id},
             )
             parking_space = cur.fetchone()
             if not parking_space:
