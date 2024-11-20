@@ -8,38 +8,94 @@ from xpark.utils.db import DB
 from result import Result, Ok, Err
 import uuid
 
-def fetch_user_details(user_uuid: uuid.UUID) -> Result[Dict[str, Any], str]:
+def fetch_user_details(user_id: uuid.UUID) -> Result[Dict[str, Any], str]:
     """
-    Fetch only the basic profile information of a user.
+    Fetch user details including past bookings, parking spaces, and reports.
     """
     try:
         with DB.pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
-                # Fetch basic user details
+                # Fetch user basic information
                 cur.execute(
                     """
                     SELECT id, name, email
                     FROM users
                     WHERE id = %s
                     """,
-                    (str(user_uuid),)
+                    (str(user_id),)
                 )
-                user_data = cur.fetchone()
-
-                if not user_data:
+                user_info = cur.fetchone()
+                if not user_info:
                     return Err("User not found")
 
-                # Return basic user details
-                user_profile = {
-                    "id": user_data["id"],
-                    "name": user_data["name"],
-                    "email": user_data["email"],
-                }
+                # Fetch user past bookings
+                cur.execute(
+                    """
+                    SELECT
+                        reservations.id,
+                        reservations.status,
+                        LOWER(reservations.time) AS start_time,
+                        UPPER(reservations.time) AS end_time,
+                        parking_spaces.name AS parking_space_name,
+                        parking_spaces.address AS parking_space_address
+                    FROM reservations
+                    JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                    WHERE reservations.renter_id = %s
+                    ORDER BY reservations.created_at DESC
+                    """,
+                    (str(user_id),)
+                )
+                past_bookings = cur.fetchall()
 
-                return Ok(user_profile)
+                # Fetch user parking spaces
+                cur.execute(
+                    """
+                    SELECT
+                        id,
+                        name,
+                        address,
+                        verification_status,
+                        created_at
+                    FROM parking_spaces
+                    WHERE owner = %s
+                    ORDER BY created_at DESC
+                    """,
+                    (str(user_id),)
+                )
+                parking_spaces = cur.fetchall()
+
+                # Fetch user reports
+                cur.execute(
+                    """
+                    SELECT
+                        reports.id,
+                        reports.description,
+                        reports.type,
+                        reports.status,
+                        reports.created_at,
+                        reports.updated_at
+                    FROM reports
+                    WHERE reports.user_id = %s
+                    ORDER BY reports.created_at DESC
+                    """,
+                    (str(user_id),)
+                )
+                reports = cur.fetchall()
+
+        # Aggregate all fetched data into a single object
+        user_details = {
+            "id": user_info["id"],
+            "name": user_info["name"],
+            "email": user_info["email"],
+            "pastBookings": past_bookings,
+            "parkingSpaces": parking_spaces,
+            "reports": reports,
+        }
+
+        return Ok(user_details)
+
     except Exception as e:
-        return Err(f"Failed to fetch user profile: {str(e)}")
-
+        return Err(f"Failed to fetch user details: {str(e)}")
 
 
 def handle_ban_user(user_id: uuid.UUID, rationale: str):
@@ -181,6 +237,7 @@ def get_all_conflicts() -> Result[List[Dict[str, Any]], str]:
                     reports.id,
                     reports.reservation_id,
                     reports.user_id,
+                    reporters.name AS reporter_name,
                     reports.description,
                     reports.type,
                     reports.status,
@@ -194,7 +251,9 @@ def get_all_conflicts() -> Result[List[Dict[str, Any]], str]:
                     reports.created_at,
                     reports.updated_at,
                     owners.name AS owner_name,
+                    owners.id AS owner_id,
                     renters.name AS renter_name,
+                    renters.id AS renter_id,
                     parking_spaces.name AS parking_space_name,
                     parking_spaces.address AS parking_space_address,
                     LOWER(reservations.time) AS start_time,
@@ -205,6 +264,7 @@ def get_all_conflicts() -> Result[List[Dict[str, Any]], str]:
                 LEFT JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
                 LEFT JOIN users AS owners ON parking_spaces.owner = owners.id
                 LEFT JOIN users AS renters ON reservations.renter_id = renters.id
+                LEFT JOIN users AS reporters ON reports.user_id = reporters.id
                 WHERE reports.status != 'resolved' -- Only get non-resolved reports
                 ORDER BY reports.created_at DESC
                 """

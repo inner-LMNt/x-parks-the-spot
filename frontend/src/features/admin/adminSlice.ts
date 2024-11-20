@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "@/api/axiosInstance";
 import { ParkingSpace } from "@/types/type";
 
+
 interface Conflict {
     id: string;
     reservation_id: string;
@@ -16,6 +17,9 @@ interface Conflict {
     parking_space_address: string;
     start_time: string;
     end_time: string;
+    owner_id: string;
+    reporter_id: string;
+    reporter_name: string;
 }
 interface UserDetails {
     id: string;
@@ -43,23 +47,21 @@ const initialState: AdminState = {
     error: null,
 };
 
-// Fetch user details
+// Async thunk to fetch user details
 export const fetchUserDetails = createAsyncThunk<
     UserDetails,
     string,
     { rejectValue: string }
 >("admin/fetchUserDetails", async (userId, { rejectWithValue }) => {
     try {
-        console.log("Calling fetchUserDetails with ID:", userId);
-        const response = await axios.get(`/admin/users/${userId}`);
-        console.log("Response data:", response.data); // Debugging
+        const response = await axios.get(`/admin/user-details/${userId}`);
         return response.data;
     } catch (error: any) {
-        console.error("Error in fetchUserDetails:", error); // Log the full error object
-        const errorMessage = error.response?.data?.error || "Failed to fetch user details.";
-        return rejectWithValue(errorMessage); // Provide fallback error message
+        console.error("Error fetching user details:", error);
+        return rejectWithValue(error.response?.data?.error || "Failed to fetch user details");
     }
 });
+
 
 
 // Ban user
@@ -204,7 +206,7 @@ const adminSlice = createSlice({
             })
             .addCase(fetchUserDetails.fulfilled, (state: AdminState, action: any) => {
                 state.loading = false;
-                state.userDetails = action.payload;
+                state.userDetails = action.payload; // Assign API response directly
             })
             .addCase(fetchUserDetails.rejected, (state: AdminState, action: any) => {
                 state.loading = false;

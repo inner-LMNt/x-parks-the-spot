@@ -16,23 +16,22 @@ from typing import Any, Tuple
 from xpark.middleware.token_auth_middleware import require_admin
 import uuid
 
-@bp.get("users/<user_id>")
-def fetch_user_details_route(user_id: str) -> Tuple[Any, int]:
+@bp.get("user-details/<user>")
+@require_admin
+def fetch_user_details_route(token: str, user_id: uuid.UUID, user: str) -> Tuple[Any, int]:
     """
-    Fetch details for a specific user
+    Fetch user details including past bookings, parking spaces, and reports.
     """
     try:
-        # Fetch user details
-        result = fetch_user_details(user_uuid)
-        if result.is_ok():
-            return jsonify(result.unwrap()), 200
-        else:
-            error_message = result.unwrap_err()
-            print(f"[Error] Fetching user details failed for user_id: {user_id}. Reason: {error_message}")
-            return jsonify({"error": error_message}), 404
-    except Exception as e:
-        print(f"[Server Error] Unexpected error occurred: {e}")
-        return {"error": "An unexpected error occurred while fetching user details"}, 500
+        user_uuid = uuid.UUID(user)
+    except ValueError:
+        return {"error": "Invalid user ID format"}, 400
+
+    result = fetch_user_details(user_uuid)
+    if result.is_ok():
+        return jsonify(result.unwrap()), 200
+    else:
+        return {"error": result.unwrap_err()}, 400
 
 
 @bp.get("get-conflicts")

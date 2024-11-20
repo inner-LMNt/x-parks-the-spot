@@ -294,8 +294,10 @@ const AdminReportsPage = () => {
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
     const handleUserClick = (userId: string) => {
-        setSelectedUserId(userId); // Open the modal with the selected user ID
+        console.log("User ID clicked:", userId); // Debug log
+        setSelectedUserId(userId);
     };
+
 
     const closeModal = () => {
         setSelectedUserId(null); // Close the modal
@@ -438,11 +440,14 @@ const AdminReportsPage = () => {
                     <DialogHeader>
                         <DialogTitle>User Information</DialogTitle>
                     </DialogHeader>
-                    {selectedUserId && (
-                        <UserInfo userId={selectedUserId} onClose={closeModal} />
+                    {selectedUserId ? (
+                        <UserInfo userId={selectedUserId} />
+                    ) : (
+                        <p>No user selected.</p>
                     )}
                 </DialogContent>
             </Dialog>
+
 
             {/* Image Modal */}
             <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
