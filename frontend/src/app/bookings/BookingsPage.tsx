@@ -20,7 +20,8 @@ import {
   Calendar,
   ArrowRightCircle,
   Loader2,
-  FileWarning, Bookmark,
+  FileWarning,
+  Bookmark,
 } from "lucide-react"
 import { Avatar } from "@/components/ui/avatar"
 import Link from "next/link"
@@ -109,118 +110,123 @@ function ReservationCard({
   }
 
   return (
-      <Card>
-        <CardHeader className="flex justify-between items-center">
-          <div className="flex items-center justify-between w-full">
-            <CardTitle className="flex items-center text-lg font-medium text-gray-900">
-              <MapPin className="w-5 h-5 mr-2 text-blue-500" />
-              {reservation.name}
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">{reservation.status}</Badge>
-              <Button
-                  variant={isBookmarked ? "default" : "secondary"}
-                  size="sm"
-                  onClick={() => {
-                    if (isBookmarked) {
-                      dispatch(deleteBookmark(reservation.parking_space_id)).unwrap()
-                      setIsBookmarked(false)
-                    } else {
-                      dispatch(addBookmark(reservation.parking_space_id)).unwrap()
-                      setIsBookmarked(true)
-                    }
-                  }}
-              >
-                <Bookmark className="w-4 h-4" />
-              </Button>
-            </div>
+    <Card>
+      <CardHeader className="flex justify-between items-center">
+        <div className="flex items-center justify-between w-full">
+          <CardTitle className="flex items-center text-lg font-medium text-gray-900">
+            <MapPin className="w-5 h-5 mr-2 text-blue-500" />
+            {reservation.name}
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">{reservation.status}</Badge>
+            <Button
+              variant={isBookmarked ? "default" : "secondary"}
+              size="sm"
+              onClick={() => {
+                if (isBookmarked) {
+                  dispatch(
+                    deleteBookmark(reservation.parking_space_id),
+                  ).unwrap()
+                  setIsBookmarked(false)
+                } else {
+                  dispatch(addBookmark(reservation.parking_space_id)).unwrap()
+                  setIsBookmarked(true)
+                }
+              }}
+            >
+              <Bookmark className="w-4 h-4" />
+            </Button>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center mb-2">
-            <Calendar className="w-4 h-4 mr-2 text-gray-500" />
-            <p className="text-sm text-gray-700">
-              {format(new Date(reservation.start_time ?? new Date()), "PPP")}
-            </p>
-          </div>
-          <div className="flex items-center mb-2">
-            <Clock className="w-4 h-4 mr-2 text-gray-500" />
-            <p className="text-sm text-gray-700">
-              {format(new Date(reservation.start_time ?? new Date()), "p")} -{" "}
-              {format(new Date(reservation.end_time ?? new Date()), "p")}
-            </p>
-          </div>
-          <div className="items-center mb-4">
-            <p className="text-sm text-gray-700">
-              <strong>License Plate:</strong> {car.license_plate}
-            </p>
-            <p className="text-sm text-gray-700">
-              <strong>State:</strong> {car.license_plate_state}
-            </p>
-          </div>
-          <div className="flex items-center mb-2">
-            <p className="text-sm text-gray-700">
-              <strong>Price:</strong> ${reservation.price ? reservation.price.toFixed(2) : "0.00"}
-            </p>
-          </div>
-          <div className="flex items-center mb-2">
-            <p className="text-sm text-gray-700">
-              <strong>Location:</strong>{" "}
-              {reservation.location.address ? reservation.location.address : "N/A"}
-            </p>
-          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center mb-2">
+          <Calendar className="w-4 h-4 mr-2 text-gray-500" />
+          <p className="text-sm text-gray-700">
+            {format(new Date(reservation.start_time ?? new Date()), "PPP")}
+          </p>
+        </div>
+        <div className="flex items-center mb-2">
+          <Clock className="w-4 h-4 mr-2 text-gray-500" />
+          <p className="text-sm text-gray-700">
+            {format(new Date(reservation.start_time ?? new Date()), "p")} -{" "}
+            {format(new Date(reservation.end_time ?? new Date()), "p")}
+          </p>
+        </div>
+        <div className="items-center mb-4">
+          <p className="text-sm text-gray-700">
+            <strong>License Plate:</strong> {car.license_plate}
+          </p>
+          <p className="text-sm text-gray-700">
+            <strong>State:</strong> {car.license_plate_state}
+          </p>
+        </div>
+        <div className="flex items-center mb-2">
+          <p className="text-sm text-gray-700">
+            <strong>Price:</strong> $
+            {reservation.price ? reservation.price.toFixed(2) : "0.00"}
+          </p>
+        </div>
+        <div className="flex items-center mb-2">
+          <p className="text-sm text-gray-700">
+            <strong>Location:</strong>{" "}
+            {reservation.location.address
+              ? reservation.location.address
+              : "N/A"}
+          </p>
+        </div>
 
-          <div className="space-y-4">
-            {isPast && reservation.status != "canceled" && (
-                <RatingSelector
-                    parkingSpaceId={reservation.parking_space_id as string}
-                />
-            )}
-
-            <div className="space-y-2">
-              <Button
-                  onClick={() => {
-                    router.push(`/bookings/${reservation.parking_space_id}/reserve`)
-                  }}
-                  className="w-full"
-              >
-                Book Again
-              </Button>
-            </div>
-            {!isPast && reservation.status !== "canceled" && (
-                <div className="flex justify-end mt-4">
-                  <Button
-                      onClick={() => router.push(`/extend/${reservation.id}`)}
-                      className="w-full"
-                  >
-                    Extend Reservation
-                  </Button>
-                </div>
-            )}
-          </div>
-          {isUpcoming && (
-              <>
-                {isCancellable ? (
-                    <p className="text-sm text-gray-700">
-                      Time to cancel: {formattimeTillCancel(timeTillCancel)}
-                    </p>
-                ) : (
-                    <p className="text-sm text-red-500">
-                      Reservation is no longer cancellable
-                    </p>
-                )}
-                {isCancellable && (
-                    <div className="flex justify-center mt-4">
-                      <Button variant="destructive" onClick={handleCancelClick}>
-                        Cancel
-                      </Button>
-                    </div>
-                )}
-              </>
+        <div className="space-y-4">
+          {isPast && reservation.status != "canceled" && (
+            <RatingSelector
+              parkingSpaceId={reservation.parking_space_id as string}
+            />
           )}
-        </CardContent>
-      </Card>
-  );
+
+          <div className="space-y-2">
+            <Button
+              onClick={() => {
+                router.push(`/bookings/${reservation.parking_space_id}/reserve`)
+              }}
+              className="w-full"
+            >
+              Book Again
+            </Button>
+          </div>
+          {!isPast && reservation.status !== "canceled" && (
+            <div className="flex justify-end mt-4">
+              <Button
+                onClick={() => router.push(`/extend/${reservation.id}`)}
+                className="w-full"
+              >
+                Extend Reservation
+              </Button>
+            </div>
+          )}
+        </div>
+        {isUpcoming && (
+          <>
+            {isCancellable ? (
+              <p className="text-sm text-gray-700">
+                Time to cancel: {formattimeTillCancel(timeTillCancel)}
+              </p>
+            ) : (
+              <p className="text-sm text-red-500">
+                Reservation is no longer cancellable
+              </p>
+            )}
+            {isCancellable && (
+              <div className="flex justify-center mt-4">
+                <Button variant="destructive" onClick={handleCancelClick}>
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  )
 }
 
 export default function BookingsPage() {
@@ -286,7 +292,7 @@ export default function BookingsPage() {
 
     // Dispatch action to fetch user's cars
     dispatch(fetchUserCars())
-  }, [dispatch, ])
+  }, [dispatch])
 
   const now = new Date()
 
