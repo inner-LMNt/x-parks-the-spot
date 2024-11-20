@@ -9,7 +9,6 @@ from datetime import datetime, timedelta, timezone
 def get_dashboard_analytics(
     user_id: uuid.UUID,
     time_filter: str = "30_days",
-    spot_id: Optional[uuid.UUID] = None,
 ) -> Result[Dict[str, Any], str]:
     # Define time deltas
     time_deltas = {
@@ -29,7 +28,6 @@ def get_dashboard_analytics(
         "user_id": user_id,
         "start_date": start_date,
         "end_date": end_date,
-        "spot_id": spot_id,
         "now": now,
         "next_7_days": now + timedelta(days=7),
         "time_delta": time_deltas[time_filter],
@@ -37,11 +35,6 @@ def get_dashboard_analytics(
     }
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            # ==== Prepare spot filter ====
-            # Added leading space to ensure correct SQL syntax
-            spot_filter_sql = ""
-            if spot_id:
-                spot_filter_sql = " AND ps.id = %s"
 
             # ==== Overall Revenue Metrics ====
             overall_params = [
@@ -54,8 +47,6 @@ def get_dashboard_analytics(
                 user_id,  # For main query
                 start_date, end_date + timedelta(days=7)  # For main query
             ]
-            if spot_id:
-                overall_params.append(spot_id)
             cur.execute(
                 f"""
                     WITH time_metrics AS (
@@ -86,7 +77,6 @@ def get_dashboard_analytics(
                         WHERE ps.owner = %s 
                           AND ps.is_paid = TRUE 
                           AND LOWER(r.time) BETWEEN %s AND %s
-                          {spot_filter_sql}
                     )
                     SELECT 
                         COALESCE(SUM(r.price), 0) AS total_revenue,
@@ -142,7 +132,6 @@ def get_dashboard_analytics(
                     WHERE ps.owner = %s 
                       AND ps.is_paid = TRUE 
                       AND LOWER(r.time) BETWEEN %s AND %s
-                      {spot_filter_sql}
                     GROUP BY tm.total_relevant_bookings, tm.successful_completions
                 """,
                 overall_params,
@@ -209,7 +198,6 @@ def get_dashboard_analytics(
                     AND ps.is_paid = TRUE
                     AND r.status != 'canceled'
                     AND LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
-                    {spot_filter_sql}
                 GROUP BY 1
             ),
             previous_period AS (
@@ -231,7 +219,6 @@ def get_dashboard_analytics(
                     AND LOWER(r.time) BETWEEN 
                         %(start_date)s - %(time_delta)s 
                         AND %(end_date)s - %(time_delta)s
-                    {spot_filter_sql}
                 GROUP BY 1
             ),
             running_totals AS (
@@ -269,7 +256,7 @@ def get_dashboard_analytics(
             LEFT JOIN previous_period pp USING (timestamp)
             LEFT JOIN running_totals rt USING (timestamp)
             ORDER BY timestamp;
-            """.format(spot_filter_sql=spot_filter_sql), params)
+            """, params)
             historical_revenue = cur.fetchall()
 
             # ==== Enhanced Upcoming Revenue Query ====
@@ -279,7 +266,6 @@ def get_dashboard_analytics(
                         SELECT COUNT(*) as total_spots
                         FROM parking_spaces
                         WHERE owner = %(user_id)s AND is_paid = TRUE
-                        {spot_filter_sql}
                     ),
                     hourly_series AS (
                         SELECT generate_series(
@@ -313,156 +299,160 @@ def get_dashboard_analytics(
             upcoming_revenue = cur.fetchall()
 
             # ==== Spot Performance and Revenue by Spot ====
-            spot_params = [
-                start_date, end_date + timedelta(days=7),  # For daily_hours
-                start_date, end_date + timedelta(days=7),  # For daily_bookings
-                end_date, start_date,  # For occupied_hours LEAST/GREATEST
-                start_date, end_date,  # For occupied_hours OVERLAPS
-                end_date, start_date,  # For occupancy rate calculation
-                start_date, end_date + timedelta(days=7),  # For reservations join
-                user_id  # For owner check
-            ]
-            if spot_id:
-                spot_params.append(spot_id)
             cur.execute(
                 f"""
-                    WITH RECURSIVE daily_hours AS (
-                        -- Generate series of days and hours for each reservation
-                        SELECT 
-                            r.id,
-                            r.parking_space_id,
-                            -- Generate each day within the reservation
-                            generate_series(
-                                date_trunc('day', LOWER(r.time)),
-                                date_trunc('day', UPPER(r.time)),
-                                '1 day'::interval
-                            )::date as booking_date,
-                            -- For first day, start from actual start time
-                            CASE 
-                                WHEN date_trunc('day', generate_series) = date_trunc('day', LOWER(r.time))
-                                THEN date_trunc('hour', LOWER(r.time))
-                                ELSE date_trunc('hour', generate_series)
-                            END +
-                            INTERVAL '1 hour' * generate_series(
-                                0,
-                                CASE 
-                                    -- For first day, start counting from actual start hour
-                                    WHEN date_trunc('day', generate_series) = date_trunc('day', LOWER(r.time))
-                                    THEN 23 - EXTRACT(HOUR FROM LOWER(r.time))::integer
-                                    -- For last day, only count until end hour
-                                    WHEN date_trunc('day', generate_series) = date_trunc('day', UPPER(r.time))
-                                    THEN EXTRACT(HOUR FROM UPPER(r.time))::integer
-                                    -- For middle days, count all 24 hours
-                                    ELSE 23
-                                END
-                            ) AS hour_timestamp
-                        FROM reservations r,
-                            generate_series(
-                                date_trunc('day', LOWER(r.time)),
-                                date_trunc('day', UPPER(r.time)),
-                                '1 day'::interval
+                            WITH RECURSIVE daily_hours AS (
+                                -- Generate series of days and hours for each reservation
+                                SELECT 
+                                    r.id,
+                                    r.parking_space_id,
+                                    -- Generate each day within the reservation
+                                    generate_series(
+                                        date_trunc('day', LOWER(r.time)),
+                                        date_trunc('day', UPPER(r.time)),
+                                        '1 day'::interval
+                                    )::date as booking_date,
+                                    -- For first day, start from actual start time
+                                    CASE 
+                                        WHEN date_trunc('day', generate_series) = date_trunc('day', LOWER(r.time))
+                                        THEN date_trunc('hour', LOWER(r.time))
+                                        ELSE date_trunc('hour', generate_series)
+                                    END +
+                                    INTERVAL '1 hour' * generate_series(
+                                        0,
+                                        CASE 
+                                            -- For first day, start counting from actual start hour
+                                            WHEN date_trunc('day', generate_series) = date_trunc('day', LOWER(r.time))
+                                            THEN 23 - EXTRACT(HOUR FROM LOWER(r.time))::integer
+                                            -- For last day, only count until end hour
+                                            WHEN date_trunc('day', generate_series) = date_trunc('day', UPPER(r.time))
+                                            THEN EXTRACT(HOUR FROM UPPER(r.time))::integer
+                                            -- For middle days, count all 24 hours
+                                            ELSE 23
+                                        END
+                                    ) AS hour_timestamp
+                                FROM reservations r,
+                                    generate_series(
+                                        date_trunc('day', LOWER(r.time)),
+                                        date_trunc('day', UPPER(r.time)),
+                                        '1 day'::interval
+                                    )
+                                WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
+                            ),
+                            aggregated_hours AS (
+                                -- Count each hour occurrence across all days
+                                SELECT 
+                                    parking_space_id,
+                                    ARRAY_AGG(DISTINCT EXTRACT(HOUR FROM hour_timestamp)::integer) AS hours,
+                                    COUNT(*) AS hour_count,
+                                    EXTRACT(HOUR FROM hour_timestamp)::integer AS hour
+                                FROM daily_hours
+                                GROUP BY parking_space_id, EXTRACT(HOUR FROM hour_timestamp)::integer
+                            ),
+                            daily_bookings AS (
+                                -- Get each individual day from reservations
+                                SELECT 
+                                    r.parking_space_id,
+                                    generate_series::date as booking_date,
+                                    TRIM(TO_CHAR(generate_series, 'Day')) as day_name
+                                FROM reservations r,
+                                    generate_series(
+                                        date_trunc('day', LOWER(r.time)),
+                                        date_trunc('day', UPPER(r.time)),
+                                        '1 day'::interval
+                                    )
+                                WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
+                            ),
+                            weekly_days AS (
+                                -- Count occurrences of each day
+                                SELECT 
+                                    parking_space_id,
+                                    day_name,
+                                    COUNT(*) as booking_count
+                                FROM daily_bookings
+                                GROUP BY parking_space_id, day_name
+                            ),
+                            occupied_hours AS (
+                                -- Calculate total occupied hours per spot
+                                SELECT
+                                    parking_space_id,
+                                    SUM(
+                                        EXTRACT(EPOCH FROM 
+                                            LEAST(UPPER(r.time), %(now)s) - 
+                                            GREATEST(LOWER(r.time), %(start_date)s)
+                                        )/3600
+                                    ) as total_occupied_hours
+                                FROM reservations r
+                                WHERE 
+                                    r.status != 'canceled' AND
+                                    (LOWER(r.time), UPPER(r.time)) OVERLAPS (%(start_date)s, %(end_date)s)
+                                GROUP BY parking_space_id
+                            ),
+                            total_revenue_cte AS (
+                                -- Accurately calculate total revenue per spot to avoid double-counting
+                                SELECT
+                                    ps.id AS spot_id,
+                                    COALESCE(SUM(r.price), 0) AS total_revenue
+                                FROM parking_spaces ps
+                                LEFT JOIN reservations r 
+                                    ON ps.id = r.parking_space_id 
+                                    AND LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
+                                    AND r.status != 'canceled'
+                                WHERE ps.owner = %(user_id)s 
+                                  AND ps.is_paid = TRUE 
+                                GROUP BY ps.id
                             )
-                        WHERE LOWER(r.time) BETWEEN %s AND %s
-                    ),
-                    aggregated_hours AS (
-                        -- Count each hour occurrence across all days
-                        SELECT 
-                            parking_space_id,
-                            ARRAY_AGG(DISTINCT EXTRACT(HOUR FROM hour_timestamp)::integer) AS hours,
-                            COUNT(*) AS hour_count,
-                            EXTRACT(HOUR FROM hour_timestamp)::integer AS hour
-                        FROM daily_hours
-                        GROUP BY parking_space_id, EXTRACT(HOUR FROM hour_timestamp)::integer
-                    ),
-                    daily_bookings AS (
-                        -- Get each individual day from reservations
-                        SELECT 
-                            r.parking_space_id,
-                            generate_series::date as booking_date,
-                            TRIM(TO_CHAR(generate_series, 'Day')) as day_name
-                        FROM reservations r,
-                            generate_series(
-                                date_trunc('day', LOWER(r.time)),
-                                date_trunc('day', UPPER(r.time)),
-                                '1 day'::interval
-                            )
-                        WHERE LOWER(r.time) BETWEEN %s AND %s
-                    ),
-                    weekly_days AS (
-                        -- Count occurrences of each day
-                        SELECT 
-                            parking_space_id,
-                            day_name,
-                            COUNT(*) as booking_count
-                        FROM daily_bookings
-                        GROUP BY parking_space_id, day_name
-                    ),
-                    occupied_hours AS (
-                        -- Calculate total occupied hours per spot
-                        SELECT
-                            parking_space_id,
-                            SUM(
-                                EXTRACT(EPOCH FROM 
-                                    LEAST(UPPER(r.time), %s) - 
-                                    GREATEST(LOWER(r.time), %s)
-                                )/3600
-                            ) as total_occupied_hours
-                        FROM reservations r
-                        WHERE 
-                            r.status != 'canceled' AND
-                            (LOWER(r.time), UPPER(r.time)) OVERLAPS (%s, %s)
-                        GROUP BY parking_space_id
-                    )
-                    SELECT 
-                        ps.id AS spot_id,
-                        ps.name AS spot_name,
-                        ps.price AS base_price,
-                        COALESCE(COUNT(DISTINCT r.id), 0) AS total_bookings,
-                        COALESCE(SUM(r.price), 0) AS total_revenue,
-                        COALESCE(SUM(CASE WHEN r.status = 'active' THEN 1 ELSE 0 END), 0) AS active_bookings,
-                        COALESCE(SUM(CASE WHEN r.status = 'completed' THEN 1 ELSE 0 END), 0) AS completed_bookings,
-                        COALESCE(SUM(CASE WHEN r.status = 'canceled' THEN 1 ELSE 0 END), 0) AS canceled_bookings,
-                        COALESCE(AVG(EXTRACT(EPOCH FROM UPPER(r.time) - LOWER(r.time))/3600), 0) AS average_booking_length,
-                        COALESCE(
-                            jsonb_agg(
-                                jsonb_build_object(
-                                    'hour', ah.hour,
-                                    'bookings', ah.hour_count
-                                )
-                            ) FILTER (WHERE ah.hour IS NOT NULL),
-                            '[]'::jsonb
-                        ) AS popular_hours,
-                        COALESCE(
-                            jsonb_agg(
-                                jsonb_build_object(
-                                    'day', wd.day_name,
-                                    'bookings', wd.booking_count
-                                )
-                            ) FILTER (WHERE wd.day_name IS NOT NULL),
-                            '[]'::jsonb
-                        ) AS popular_days,
-                        -- New occupancy rate calculation
-                        COALESCE(
-                            (oh.total_occupied_hours / 
-                            (EXTRACT(EPOCH FROM %s - %s)/3600)) * 100,
-                            0
-                        ) AS occupancy_rate
-                    FROM parking_spaces ps
-                    LEFT JOIN reservations r 
-                        ON ps.id = r.parking_space_id 
-                        AND LOWER(r.time) BETWEEN %s AND %s
-                    LEFT JOIN aggregated_hours ah
-                        ON ps.id = ah.parking_space_id
-                    LEFT JOIN weekly_days wd
-                        ON ps.id = wd.parking_space_id
-                    LEFT JOIN occupied_hours oh
-                        ON ps.id = oh.parking_space_id
-                    WHERE ps.owner = %s 
-                      AND ps.is_paid = TRUE 
-                      {spot_filter_sql}
-                    GROUP BY ps.id, ps.name, ps.price, oh.total_occupied_hours
-                """,
-                spot_params,
+                            SELECT 
+                                ps.id AS spot_id,
+                                ps.name AS spot_name,
+                                ps.price AS base_price,
+                                COALESCE(COUNT(DISTINCT r.id), 0) AS total_bookings,
+                                COALESCE(tr.total_revenue, 0) AS total_revenue, -- Updated to use CTE
+                                COALESCE(SUM(CASE WHEN r.status = 'active' THEN 1 ELSE 0 END), 0) AS active_bookings,
+                                COALESCE(SUM(CASE WHEN r.status = 'completed' THEN 1 ELSE 0 END), 0) AS completed_bookings,
+                                COALESCE(SUM(CASE WHEN r.status = 'canceled' THEN 1 ELSE 0 END), 0) AS canceled_bookings,
+                                COALESCE(AVG(EXTRACT(EPOCH FROM UPPER(r.time) - LOWER(r.time))/3600), 0) AS average_booking_length,
+                                COALESCE(
+                                    jsonb_agg(
+                                        jsonb_build_object(
+                                            'hour', ah.hour,
+                                            'bookings', ah.hour_count
+                                        )
+                                    ) FILTER (WHERE ah.hour IS NOT NULL),
+                                    '[]'::jsonb
+                                ) AS popular_hours,
+                                COALESCE(
+                                    jsonb_agg(
+                                        jsonb_build_object(
+                                            'day', wd.day_name,
+                                            'bookings', wd.booking_count
+                                        )
+                                    ) FILTER (WHERE wd.day_name IS NOT NULL),
+                                    '[]'::jsonb
+                                ) AS popular_days,
+                                -- New occupancy rate calculation
+                                COALESCE(
+                                    (oh.total_occupied_hours / 
+                                    (EXTRACT(EPOCH FROM %(now)s - %(start_date)s)/3600)) * 100,
+                                    0
+                                ) AS occupancy_rate
+                            FROM parking_spaces ps
+                            LEFT JOIN reservations r 
+                                ON ps.id = r.parking_space_id 
+                                AND LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
+                            LEFT JOIN aggregated_hours ah
+                                ON ps.id = ah.parking_space_id
+                            LEFT JOIN weekly_days wd
+                                ON ps.id = wd.parking_space_id
+                            LEFT JOIN occupied_hours oh
+                                ON ps.id = oh.parking_space_id
+                            LEFT JOIN total_revenue_cte tr
+                                ON ps.id = tr.spot_id
+                            WHERE ps.owner = %(user_id)s 
+                              AND ps.is_paid = TRUE 
+                            GROUP BY ps.id, ps.name, ps.price, oh.total_occupied_hours, tr.total_revenue
+                        """,
+                params
             )
             spot_metrics_rows = cur.fetchall()
 
@@ -477,35 +467,30 @@ def get_dashboard_analytics(
                 # Process popular hours and days
                 popular_hours = row.get("popular_hours") or []
                 popular_days = row.get("popular_days") or []
+                unique_hours = list({entry['hour']: entry for entry in popular_hours}.values())
+                unique_days = list({entry['day']: entry for entry in popular_days}.values())
 
                 spot_performance[spot_id_str] = {
-                    "totalRevenue": row.get("total_revenue") or 0,
-                    "totalBookings": row.get("total_bookings") or 0,
-                    "occupancyRate": occupancy_rate,
-                    "averageBookingLength": row.get("average_booking_length") or 0,
-                    "activeBookings": row.get("active_bookings") or 0,
-                    "completedBookings": row.get("completed_bookings") or 0,
-                    "canceledBookings": row.get("canceled_bookings") or 0,
-                    "popularHours": popular_hours,
-                    "popularDays": popular_days,
+                    "totalRevenue": float(row.get("total_revenue") or 0),
+                    "totalBookings": int(row.get("total_bookings") or 0),
+                    "occupancyRate": float(occupancy_rate),
+                    "averageBookingLength": float(row.get("average_booking_length") or 0),
+                    "activeBookings": int(row.get("active_bookings") or 0),
+                    "completedBookings": int(row.get("completed_bookings") or 0),
+                    "canceledBookings": int(row.get("canceled_bookings") or 0),
+                    "popularHours": unique_hours,
+                    "popularDays": unique_days,
                 }
                 revenue_by_spot.append(
                     {
                         "spotId": spot_id_str,
                         "spotName": row.get("spot_name"),
-                        "revenue": row.get("total_revenue") or 0,
-                        "bookings": row.get("total_bookings") or 0,
-                        "occupancyRate": occupancy_rate,
-                        "basePrice": row.get("base_price"),
+                        "revenue": float(row.get("total_revenue") or 0),
+                        "bookings": int(row.get("total_bookings") or 0),
+                        "occupancyRate": float(occupancy_rate),
+                        "basePrice": float(row.get("base_price") or 0),
                     }
                 )
-
-            # Calculate overall occupancy rate
-            overall_occupancy_rate = (
-                int(overall_occupancy_rate / len(spot_metrics_rows))
-                if spot_metrics_rows
-                else 0
-            )
 
             # ==== Recent Bookings ====
             # Corrected parameter ordering: [user_id, start_date, end_date, spot_id (if any)]
@@ -515,8 +500,6 @@ def get_dashboard_analytics(
                 start_date, end_date + timedelta(days=7),  # Second period check
                 end_date + timedelta(days=7), start_date  # Third period check (for overlapping)
             ]
-            if spot_id:
-                recent_params.append(spot_id)
             cur.execute(
                 f"""
                     WITH reservation_details AS (
@@ -572,7 +555,6 @@ def get_dashboard_analytics(
                                 OR UPPER(r.time) BETWEEN %s AND %s
                                 OR (LOWER(r.time) <= %s AND UPPER(r.time) >= %s)
                             )
-                            {spot_filter_sql}
                     )
                     SELECT 
                         id,
@@ -619,12 +601,9 @@ def get_dashboard_analytics(
               AND r.status NOT IN ('canceled') 
               AND LOWER(r.time) >= NOW() 
               AND LOWER(r.time) <= NOW() + INTERVAL '7 days'
-              {spot_filter_sql}
             ORDER BY LOWER(r.time)
             """
             upcoming_params = [user_id]
-            if spot_id:
-                upcoming_params.append(spot_id)
             cur.execute(
                 upcoming_query,
                 upcoming_params,
@@ -638,8 +617,6 @@ def get_dashboard_analytics(
             # ==== Overall Average Ratings ====
             # Corrected parameter ordering: [user_id, start_date, end_date, spot_id (if any)]
             rating_params = [user_id, start_date, end_date]
-            if spot_id:
-                rating_params.append(spot_id)
             cur.execute(
                 f"""
                 SELECT 
@@ -653,7 +630,6 @@ def get_dashboard_analytics(
                   AND ps.is_paid = TRUE 
                   AND r.updated_at > %s 
                   AND r.updated_at < %s
-                  {spot_filter_sql}
                 """,
                 rating_params,
             )
@@ -662,8 +638,6 @@ def get_dashboard_analytics(
             # ==== Ratings By Spot ====
             # Corrected parameter ordering: [start_date, end_date, user_id, spot_id (if any)]
             ratings_by_spot_params = [start_date, end_date, user_id]
-            if spot_id:
-                ratings_by_spot_params.append(spot_id)
             cur.execute(
                 f"""
                 SELECT 
@@ -680,7 +654,6 @@ def get_dashboard_analytics(
                     AND r.updated_at < %s
                 WHERE ps.owner = %s 
                   AND ps.is_paid = TRUE 
-                  {spot_filter_sql}
                 GROUP BY ps.id, ps.name
                 """,
                 ratings_by_spot_params,

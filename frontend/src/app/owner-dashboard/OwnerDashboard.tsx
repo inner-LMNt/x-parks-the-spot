@@ -89,29 +89,6 @@ export default function OwnerDashboard() {
           </SelectContent>
         </Select>
       </div>
-
-      <div className="w-48">
-        <Select
-          value={selectedSpotId || "all"}
-          onValueChange={(value) =>
-            setSelectedSpotId(value === "all" ? null : value)
-          }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select spot" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Spots</SelectItem>
-            {[...pendingSpots, ...paidSpots]
-                .sort((a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0))
-                .map((spot) => (
-              <SelectItem key={spot.id} value={spot.id}>
-                {spot.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
     </div>
   )
 

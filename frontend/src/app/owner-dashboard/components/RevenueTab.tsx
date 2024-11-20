@@ -349,14 +349,7 @@ const RevenueTab: React.FC<RevenueTabProps> = ({ revenueMetrics, timeFilter }) =
                         tick={{ fill: '#666', fontSize: 12 }}
                     />
                     <Tooltip
-                        formatter={(value: number, name: string) => {
-                          switch (name) {
-                            case 'potential':
-                              return [formatCurrency(value), 'Potential Revenue'];
-                            default:
-                              return [value, name];
-                          }
-                        }}
+                        formatter={(value: number, name: string) => [formatCurrency(value), 'Future Revenue']}
                         labelFormatter={formatTooltipDateUpcoming}
                         contentStyle={{
                           backgroundColor: 'rgba(255, 255, 255, 0.95)',
