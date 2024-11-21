@@ -4,7 +4,7 @@ import React from "react"
 import Link from "next/link"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { get_user_location } from "@/features/user/userSlice"
-import { get_points } from "@/features/user/userSlice"
+import { get_points, get_score } from "@/features/user/userSlice"
 import {
   Settings,
   ArrowUpCircle,
@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
+import { RatingStars } from "@/components/custom/RatingDisplay"
 
 // Profile stats component
 function ProfileStats({ label, value }: { label: string; value: number }) {
@@ -100,6 +101,7 @@ export default function ProfilePage() {
   //const yearsOnApp = useSelector((state:any) => state.user.);
   const currentPoints = useAppSelector((state) => state.user.current_points)
   const totalPoints = useAppSelector((state) => state.user.total_points)
+  const score = useAppSelector((state) => state.user.score)
 
   const handleLogout = async () => {
     // @ts-ignore
@@ -157,8 +159,9 @@ export default function ProfilePage() {
   const [domLoaded, setDomLoaded] = useState(false)
   useEffect(() => {
     dispatch(get_user_location())
-    setDomLoaded(true)
     dispatch(get_points())
+    dispatch(get_score())
+    setDomLoaded(true)
   }, [])
 
   return (
@@ -223,6 +226,8 @@ export default function ProfilePage() {
             <h1 className="text-2xl md:text-3xl font-bold mb-1">
               {userProfile.username}
             </h1>
+            <RatingStars rating={score} />
+            <div className="h-3"></div>
             <p className="text-lg md:text-xl text-gray-600 mb-4">
               Total Points: {totalPoints}
             </p>

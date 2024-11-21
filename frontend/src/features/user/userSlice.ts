@@ -35,6 +35,7 @@ interface UserState {
   userState: string | null
   total_points: number | null
   current_points: number | null
+  score: number
 }
 
 const initialState: UserState = {
@@ -52,6 +53,7 @@ const initialState: UserState = {
   userState: null,
   total_points: 0,
   current_points: 0,
+  score: 5,
 }
 
 /**
@@ -269,6 +271,20 @@ export const get_points = createAsyncThunk<
   }
 })
 
+export const get_score = createAsyncThunk<
+  { score: number } | null,
+  void,
+  { rejectValue: string }
+>("user/get_score", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("auth/score")
+    console.log("data", response.data)
+    return response.data.score
+  } catch (error: any) {
+    return rejectWithValue("Failed to get score")
+  }
+})
+
 // @ts-ignore
 const userSlice = createSlice<UserState, {}, "user">({
   name: "user",
@@ -286,6 +302,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof reset_password.pending
           | typeof update_notification_time.pending
           | typeof get_points.pending
+          | typeof get_score.pending
         > => action.type.endsWith("/pending"),
         (state) => {
           state.loading = true
@@ -304,6 +321,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof reset_password.rejected
           // | typeof update_notification_time.rejected
           | typeof get_points.rejected
+          | typeof get_score.rejected
         > => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false
@@ -407,6 +425,13 @@ const userSlice = createSlice<UserState, {}, "user">({
         state.total_points = action.payload?.total
         //@ts-ignore
         state.current_points = action.payload?.current
+      })
+
+      .addMatcher(isAnyOf(get_score.fulfilled), (state, action) => {
+        state.loading = false
+        console.log(`score! ${action.payload}`)
+        //@ts-ignore
+        state.score = action.payload
       })
   },
 })
