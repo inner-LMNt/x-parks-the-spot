@@ -173,7 +173,7 @@ const BookingDetailCard = ({
                     {booking.status === "canceled"
                       ? "Canceled"
                       : booking.time_status.charAt(0).toUpperCase() +
-                      booking.time_status.slice(1)}
+                        booking.time_status.slice(1)}
                   </Badge>
                 </div>
               </CardHeader>
