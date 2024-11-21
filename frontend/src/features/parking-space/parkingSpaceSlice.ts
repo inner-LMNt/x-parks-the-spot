@@ -36,6 +36,14 @@ interface RatingPayload {
   cleanlinessRating?: number
 }
 
+export const resetParkingSpaceState = createAsyncThunk<
+  void,
+  void,
+  { rejectValue: string }
+>("parkingSpace/resetParkingSpaceState", async (_, { dispatch }) => {
+  dispatch(resetParkingSpace())
+})
+
 export const getAllPendingSpots = createAsyncThunk<
   { pendingSpaces: ParkingSpace[] },
   void,
@@ -293,6 +301,7 @@ const parkingSpaceSlice = createSlice({
         state.loading = false
         state.error = action.payload || "Failed to update spot status"
       })
+
     /**
      * Handle fetchParkingSpace actions
      */
@@ -414,6 +423,20 @@ const parkingSpaceSlice = createSlice({
       .addCase(submitRating.rejected, (state: ParkingSpaceState, action) => {
         state.error = "Failed to submit rating"
       })
+      },
+    )
+
+    builder.addCase(
+      resetParkingSpaceState.fulfilled,
+      (state: ParkingSpaceState) => {
+        state.parkingSpace = null
+        state.lockStatus = "idle"
+        state.lockExpiresAt = null
+        state.error = null
+        state.loading = false
+        state.pointsAwarded = false
+      },
+    )
   },
 })
 

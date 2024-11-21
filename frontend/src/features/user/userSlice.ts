@@ -16,6 +16,7 @@ import {
   PasswordResetRequest,
   UserUpdateRequest,
 } from "@/types/type"
+import { act } from "react"
 
 /**
  * Interface for the user slice state
@@ -35,6 +36,9 @@ interface UserState {
   userState: string | null
   total_points: number | null
   current_points: number | null
+  badges: number[]
+  transactions: any[]
+  active_raffle_tickets: number
   score: number
 }
 
@@ -53,6 +57,9 @@ const initialState: UserState = {
   userState: null,
   total_points: 0,
   current_points: 0,
+  badges: [],
+  transactions: [],
+  active_raffle_tickets: 0,
   score: 5,
 }
 
@@ -200,6 +207,22 @@ export const reset_request = createAsyncThunk<
   }
 })
 
+export const get_user_name = createAsyncThunk<
+  string | null,
+  void,
+  { rejectValue: string }
+>("user/get_user_name", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("auth/user-name")
+    return response.data.name
+  } catch (error: any) {
+    console.log("error", error)
+    return rejectWithValue(
+      error.response?.data?.err || "Failed to get user name",
+    )
+  }
+})
+
 export const update_notification_time = createAsyncThunk<
   User,
   { notificationTime: string },
@@ -271,6 +294,75 @@ export const get_points = createAsyncThunk<
   }
 })
 
+export const get_transactions = createAsyncThunk<
+  any[],
+  void,
+  { rejectValue: string }
+>("user/get_transactions", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("auth/transaction-history")
+    return response.data.transactions
+  } catch (error: any) {
+    return rejectWithValue(
+      error.response?.data?.err || "Failed to get transactions",
+    )
+  }
+})
+
+export const buy_badge = createAsyncThunk<
+  null,
+  { badgeId: number },
+  { rejectValue: string }
+>("user/buy_badge", async ({ badgeId }, { rejectWithValue }) => {
+  try {
+    const response = await axios.post("auth/shop/buy-badge", { badgeId })
+    return response.data
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.err || "Failed to buy badge")
+  }
+})
+
+export const get_badge_list = createAsyncThunk<
+  number[],
+  void,
+  { rejectValue: string }
+>("user/get_badge_list", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("auth/badge-list")
+    return response.data.badges
+  } catch (error: any) {
+    return rejectWithValue("Failed to get badge list")
+  }
+})
+
+export const buy_raffle_ticket = createAsyncThunk<
+  null,
+  { raffleId: number },
+  { rejectValue: string }
+>("user/buy_raffle_ticket", async ({ raffleId }, { rejectWithValue }) => {
+  try {
+    const response = await axios.post("auth/shop/buy-raffle", { raffleId })
+    return response.data
+  } catch (error: any) {
+    return rejectWithValue(
+      error.response?.data?.err || "Failed to buy raffle ticket",
+    )
+  }
+})
+
+export const get_raffle_tickets = createAsyncThunk<
+  number,
+  void,
+  { rejectValue: string }
+>("user/get_raffle_tickets", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("auth/raffle-tickets")
+    return response.data.tickets.count
+  } catch (error: any) {
+    return rejectWithValue("Failed to get raffle tickets")
+  }
+})
+
 export const get_score = createAsyncThunk<
   { score: number } | null,
   void,
@@ -300,8 +392,14 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof register_acc.pending
           | typeof logout.pending
           | typeof reset_password.pending
+          | typeof get_user_name.pending
           | typeof update_notification_time.pending
           | typeof get_points.pending
+          | typeof get_transactions.pending
+          | typeof buy_badge.pending
+          | typeof get_badge_list.pending
+          | typeof buy_raffle_ticket.pending
+          | typeof get_raffle_tickets.pending
           | typeof get_score.pending
         > => action.type.endsWith("/pending"),
         (state) => {
@@ -319,8 +417,13 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof register_acc.rejected
           | typeof logout.rejected
           | typeof reset_password.rejected
-          // | typeof update_notification_time.rejected
+          | typeof get_user_name.rejected
           | typeof get_points.rejected
+          | typeof get_transactions.rejected
+          | typeof buy_badge.rejected
+          | typeof get_badge_list.rejected
+          | typeof buy_raffle_ticket.rejected
+          | typeof get_raffle_tickets.rejected
           | typeof get_score.rejected
         > => action.type.endsWith("/rejected"),
         (state, action) => {
@@ -390,6 +493,11 @@ const userSlice = createSlice<UserState, {}, "user">({
         },
       )
 
+      .addMatcher(isAnyOf(get_user_name.fulfilled), (state, action) => {
+        state.loading = false
+        state.name = action.payload
+      })
+
       .addMatcher(
         isAnyOf(update_notification_time.fulfilled),
         (state, action) => {
@@ -408,16 +516,6 @@ const userSlice = createSlice<UserState, {}, "user">({
         state.userState = action.meta.arg.state
         state.userCity = action.meta.arg.city
       })
-      .addMatcher(isAnyOf(get_user_location.fulfilled), (state, action) => {
-        state.loading = false
-        state.userState = action.payload?.state || null
-        state.userCity = action.payload?.city || null
-      })
-
-      .addMatcher(isAnyOf(get_notification_time.fulfilled), (state, action) => {
-        state.loading = false
-        state.notificationTime = action.payload
-      })
 
       .addMatcher(isAnyOf(get_points.fulfilled), (state, action) => {
         state.loading = false
@@ -425,6 +523,34 @@ const userSlice = createSlice<UserState, {}, "user">({
         state.total_points = action.payload?.total
         //@ts-ignore
         state.current_points = action.payload?.current
+      })
+
+      .addMatcher(isAnyOf(get_transactions.fulfilled), (state, action) => {
+        state.loading = false
+        state.transactions = action.payload
+      })
+
+      .addMatcher(isAnyOf(buy_badge.fulfilled), (state, action) => {
+        state.loading = false
+        if (!state.badges) {
+          state.badges = []
+        }
+        state.badges.push(Number(action.meta.arg.badgeId))
+      })
+
+      .addMatcher(isAnyOf(get_badge_list.fulfilled), (state, action) => {
+        state.loading = false
+        state.badges = action.payload
+      })
+
+      .addMatcher(isAnyOf(buy_raffle_ticket.fulfilled), (state, action) => {
+        state.loading = false
+      })
+
+      .addMatcher(isAnyOf(get_raffle_tickets.fulfilled), (state, action) => {
+        state.loading = false
+        console.log("action.payload", action.payload)
+        state.active_raffle_tickets = action.payload
       })
 
       .addMatcher(isAnyOf(get_score.fulfilled), (state, action) => {

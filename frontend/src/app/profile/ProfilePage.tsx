@@ -1,10 +1,15 @@
 "use client"
 
-import React from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { get_user_location } from "@/features/user/userSlice"
-import { get_points, get_score } from "@/features/user/userSlice"
+import {
+  get_user_location,
+  get_points,
+  get_score,
+  get_badge_list,
+  get_raffle_tickets,
+} from "@/features/user/userSlice"
 import {
   Settings,
   ArrowUpCircle,
@@ -12,7 +17,9 @@ import {
   LogOut,
   FileWarning,
   Car,
+  Ticket,
   Bookmark,
+  Award,
 } from "lucide-react" // Imported FileWarning
 import { logout } from "@/features/user/userSlice"
 import { Button } from "@/components/ui/button"
@@ -28,10 +35,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
 import { RatingStars } from "@/components/custom/RatingDisplay"
 
-// Profile stats component
 function ProfileStats({ label, value }: { label: string; value: number }) {
   return (
     <div>
@@ -41,7 +46,6 @@ function ProfileStats({ label, value }: { label: string; value: number }) {
   )
 }
 
-// Achievement card component supporting both Tailwind colors and hex codes
 function AchievementCard({
   colorClass,
   label,
@@ -51,17 +55,12 @@ function AchievementCard({
 }) {
   return (
     <div className="flex flex-col items-center">
-      <div
-        className={`w-12 h-12 rounded-full mb-2 ${colorClass} drop-shadow-lg`} // Added drop shadow here
-        role="img"
-        aria-label={label}
-      ></div>
+      <Award className={`w-12 h-12 mb-2 ${colorClass} drop-shadow-lg`} />
       <p className="text-xs text-gray-600">{label}</p>
     </div>
   )
 }
 
-// Comment card component
 function CommentCard({
   user,
   comment,
@@ -73,8 +72,6 @@ function CommentCard({
 }) {
   return (
     <div className="bg-gray-100 p-4 rounded-lg shadow-sm flex justify-between items-start drop-shadow-lg">
-      {" "}
-      {/* Added drop shadow here */}
       <div>
         <p className="text-sm font-bold text-gray-900">{user}</p>
         <p className="text-sm text-gray-700">{comment}</p>
@@ -90,6 +87,21 @@ function CommentCard({
   )
 }
 
+function getTimeRemaining(endTime: Date) {
+  const total =
+    Date.parse(endTime.toString()) - Date.parse(new Date().toString())
+  const seconds = Math.floor((total / 1000) % 60)
+  const minutes = Math.floor((total / 1000 / 60) % 60)
+  const hours = Math.floor((total / (1000 * 60 * 60)) % 24)
+  const days = Math.floor(total / (1000 * 60 * 60 * 24))
+  return { total, days, hours, minutes, seconds }
+}
+
+function getEndOfMonth() {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+}
+
 export default function ProfilePage() {
   const dispatch = useAppDispatch()
   const isLoggedIn = useAppSelector((state: any) => state.user.isLoggedIn)
@@ -98,21 +110,22 @@ export default function ProfilePage() {
   const name = useAppSelector((state: any) => state.user.name)
   const userState = useAppSelector((state: any) => state.user.userState)
   const userCity = useAppSelector((state: any) => state.user.userCity)
-  //const yearsOnApp = useSelector((state:any) => state.user.);
   const currentPoints = useAppSelector((state) => state.user.current_points)
   const totalPoints = useAppSelector((state) => state.user.total_points)
+  const userBadges = useAppSelector((state) => state.user.badges) || []
+  const raffleTickets = useAppSelector(
+    (state) => state.user.active_raffle_tickets,
+  )
+  const [badges, setBadges] = useState(userBadges)
+  const [timeRemaining, setTimeRemaining] = useState(
+    getTimeRemaining(getEndOfMonth()),
+  )
   const score = useAppSelector((state) => state.user.score)
 
   const handleLogout = async () => {
-    // @ts-ignore
     await dispatch(logout())
     router.push("/login")
   }
-
-  console.log(
-    "Select ",
-    useAppSelector((state: any) => state.user),
-  )
 
   const userProfile = {
     username: name,
@@ -121,7 +134,7 @@ export default function ProfilePage() {
     yearsOnApp: 2,
   }
 
-  const maxElo = 3000 // ????
+  const maxElo = 3000
 
   const comments = [
     { user: "User1", comment: "Logged many spots!", sentiment: "positive" },
@@ -161,14 +174,35 @@ export default function ProfilePage() {
     dispatch(get_user_location())
     dispatch(get_points())
     dispatch(get_score())
+    dispatch(get_badge_list())
+    dispatch(get_raffle_tickets())
     setDomLoaded(true)
+  }, [dispatch])
+
+  useEffect(() => {
+    setBadges(userBadges)
+  }, [userBadges])
+
+  useEffect(() => {
+    setDomLoaded(true)
+    const interval = setInterval(() => {
+      setTimeRemaining(getTimeRemaining(getEndOfMonth()))
+    }, 1000)
+
+    return () => clearInterval(interval)
   }, [])
+
+  const badgeDetails: { [key: string]: { colorClass: string; label: string } } =
+    {
+      "1": { colorClass: "text-yellow-600", label: "Bronze Badge" },
+      "2": { colorClass: "text-gray-400", label: "Silver Badge" },
+      "3": { colorClass: "text-yellow-300", label: "Gold Badge" },
+    }
 
   return (
     domLoaded && (
       <div className="min-h-screen flex flex-col items-center justify-between bg-gray-50 p-4 md:p-8 text-gray-900">
         <div className="relative w-full max-w-md md:max-w-lg lg:max-w-xl text-center white rounded-lg p-6 md:p-8">
-          {/* Logout Button with AlertDialog */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
@@ -198,9 +232,7 @@ export default function ProfilePage() {
             </AlertDialogContent>
           </AlertDialog>
 
-          {/* Settings and Reports Icons */}
           <div className="absolute top-4 right-4 flex">
-            {/* Reports Icon */}
             <Link href="/reports" passHref>
               <Button variant="ghost" size="icon" className="p-2">
                 <FileWarning
@@ -209,7 +241,6 @@ export default function ProfilePage() {
                 />
               </Button>
             </Link>
-            {/* Settings Icon */}
             <Link href="/settings" passHref>
               <Button variant="ghost" size="icon" className="p-2">
                 <Settings
@@ -220,7 +251,6 @@ export default function ProfilePage() {
             </Link>
           </div>
 
-          {/* Profile Section */}
           <div className="flex flex-col items-center mb-4">
             <div className="w-24 h-24 rounded-full bg-gray-300 mb-4 drop-shadow-lg" />
             <h1 className="text-2xl md:text-3xl font-bold mb-1">
@@ -241,14 +271,12 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Location Section */}
           <div className="text-left mb-6">
             <h2 className="text-lg font-semibold mb-4">Location</h2>
             <p className="text-sm text-gray-700">State: {userState}</p>
             <p className="text-sm text-gray-700">City: {userCity}</p>
           </div>
 
-          {/* Elo Rating Bar */}
           <div className="w-full bg-gray-300 rounded-full h-4 mb-6 drop-shadow-lg">
             <div
               className="bg-green-500 h-4 rounded-full"
@@ -256,20 +284,44 @@ export default function ProfilePage() {
             ></div>
           </div>
 
-          {/* Achievements Section */}
           <div className="text-left mb-6">
-            <h2 className="text-lg font-semibold mb-4">Achievements</h2>
+            <h2 className="text-lg font-semibold mb-4"> Badges </h2>
             <div className="grid grid-cols-3 gap-4">
-              <AchievementCard colorClass="bg-blue-500" label="Top Spot" />
-              <AchievementCard
-                colorClass="bg-yellow-500"
-                label="Quick Finder"
-              />
-              <AchievementCard colorClass="bg-red-500" label="Top Rating" />
+              {Array.isArray(userBadges) && userBadges.length > 0 ? (
+                [...userBadges]
+                  .sort((a: number, b: number) => a - b)
+                  .map((badge: number) => (
+                    <AchievementCard
+                      key={badge}
+                      colorClass={badgeDetails[badge].colorClass}
+                      label={badgeDetails[badge].label}
+                    />
+                  ))
+              ) : (
+                <p className="text-sm text-gray-600">No badges yet.</p>
+              )}
             </div>
           </div>
 
-          {/* Comments/Review Section */}
+          <div className="text-left mb-6">
+            <h2 className="text-lg font-semibold mb-4">Raffle Tickets</h2>
+            <div className="flex items-center gap-2">
+              <Ticket className="h-6 w-6 text-blue-500" />
+              <p className="text-lg font-semibold text-gray-800">
+                {raffleTickets} Tickets
+              </p>
+            </div>
+            <div className="mt-2 text-left">
+              <p className="text-sm text-gray-600">
+                Tickets are drawn at the end of each month.
+              </p>
+              <div className="text-xl font-semibold text-gray-800">
+                {timeRemaining.days}d {timeRemaining.hours}h{" "}
+                {timeRemaining.minutes}m {timeRemaining.seconds}s
+              </div>
+            </div>
+          </div>
+
           <div className="text-left mb-6">
             <h2 className="text-lg font-semibold mb-4">Comments</h2>
             <div className="space-y-2">
