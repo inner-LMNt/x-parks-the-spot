@@ -7,6 +7,8 @@ from xpark.logic.admin import (
     get_all_cancellations,
     handle_acknowledge_cancellation,
     admin_delete_paid_parking_space,
+    get_raffle_entries,
+    perform_raffle,
     handle_ban_user,
     fetch_user_details,
 )
@@ -187,3 +189,29 @@ def admin_delete_parking_space_route(
             return {"err": "Parking space not found"}, 404
         case Err(e):
             return {"err": str(e)}, 400
+
+
+@bp.get("get-raffle-entries")
+@require_admin
+def get_raffle_entries_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    """
+    Fetch all raffle entries
+    """
+    result = get_raffle_entries()
+    if result.is_ok():
+        return jsonify(result.unwrap()), 200
+    else:
+        return jsonify({"error": result.unwrap_err()}), 400
+
+
+@bp.post("perform-raffle")
+@require_admin
+def perform_raffle_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    """
+    Perform the raffle and select a winner
+    """
+    result = perform_raffle()
+    if result.is_ok():
+        return jsonify(result.unwrap()), 200
+    else:
+        return jsonify({"error": result.unwrap_err()}), 402

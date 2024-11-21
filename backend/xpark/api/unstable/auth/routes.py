@@ -8,11 +8,17 @@ from xpark.logic.user import (
     handle_confirm_delete,
     handle_password_reset_request,
     handle_password_reset_confirmation,
+    handle_get_name,
     handle_set_notification_time,
     handle_get_notification_time,
     set_user_location_request,
     get_user_location_request,
     handle_get_points,  # Testing purposes
+    handle_get_transaction_history,
+    handle_buy_badge,
+    handle_get_badge_list,
+    handle_buy_raffle_ticket,
+    handle_get_raffle_tickets,
     get_responsiveness_score,
 )
 
@@ -111,6 +117,16 @@ def reset_password(token: str) -> Tuple[Any, int]:
             return {"message": "Password reset successfully"}, 200
 
 
+@bp.get("user-name")
+@require_logged_in_user
+def get_user_name(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match handle_get_name(user_id):
+        case Ok(name):
+            return {"name": name}, 200
+        case Err(e):
+            return {"err": e}, 404
+
+
 @bp.post("notification-time")
 @require_logged_in_user
 def set_notification_time(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
@@ -176,7 +192,61 @@ def get_points(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return {"err": e}, 403
 
 
-@bp.get("me")
+@bp.get("transaction-history")
+@require_logged_in_user
+def get_transaction_history(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match handle_get_transaction_history(user_id):
+        case Ok(transactions):
+            return {"transactions": transactions}, 200
+        case Err(e):
+            return {"err": e}, 402  # placeholder to prevent 403 redirection
+
+
+@bp.post("shop/buy-badge")
+@require_logged_in_user
+def use_points_badge(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    assert request.json
+    badge_id = request.json["badgeId"]
+    match handle_buy_badge(user_id, badge_id):
+        case Ok(_):
+            return {"message": "Badge bought successfully"}, 200
+        case Err(e):
+            return {"err": e}, 402  # placeholder to prevent 403 redirection
+
+
+@bp.get("badge-list")
+@require_logged_in_user
+def get_badge_list(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match handle_get_badge_list(user_id):
+        case Ok(badges):
+            return {"badges": badges}, 200
+        case Err(e):
+            return {"err": e}, 403
+
+
+@bp.post("shop/buy-raffle")
+@require_logged_in_user
+def use_points_raffle(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    assert request.json
+    raffle_id = request.json["raffleId"]
+    match handle_buy_raffle_ticket(user_id, raffle_id):
+        case Ok(_):
+            return {"message": "Raffle bought successfully"}, 200
+        case Err(e):
+            return {"err": e}, 402  # placeholder to prevent 403 redirection
+
+
+@bp.get("raffle-tickets")
+@require_logged_in_user
+def get_raffle_list(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match handle_get_raffle_tickets(user_id):
+        case Ok(tickets):
+            return {"tickets": tickets}, 200
+        case Err(e):
+            return {"err": e}, 403
+
+
+@bp.get("/me")
 @require_logged_in_user
 def get_user_info_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     return {"id": user_id}, 200
