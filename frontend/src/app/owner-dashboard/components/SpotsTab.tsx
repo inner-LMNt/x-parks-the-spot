@@ -12,8 +12,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { ParkingSpace } from "@/types/type"
 import {
-  BarChart,
-  Bar,
   LineChart,
   Line,
   XAxis,
@@ -21,15 +19,23 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  BarChart,
+  Bar,
 } from "recharts"
-import { Clock, MapPin, ShieldCheck, Star } from "lucide-react"
+import { MapPin, ShieldCheck, Star, Clock, ChevronDown } from "lucide-react"
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion"
+import SpotsSummaryCard from "./SpotsSummaryCard"
 
 interface SpotPerformance {
   totalRevenue: number
   totalBookings: number
   occupancyRate: number
   averageBookingLength: number
-  repeatBookers: number
   activeBookings: number
   completedBookings: number
   canceledBookings: number
@@ -37,16 +43,98 @@ interface SpotPerformance {
   popularDays: Array<{ day: string; bookings: number }>
 }
 
-interface SpotsTabProps {
+export interface SpotsTabProps {
   paidSpots: ParkingSpace[]
   pendingSpots: ParkingSpace[]
   spotPerformance: Record<string, SpotPerformance>
+  avgRating: number
+  numReviews: number
+  selectedSpotId: string | null
 }
+
+const WEEKDAYS_ORDER = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+]
+
+function formatHour(hour: number) {
+  const formattedHour = hour.toString().padStart(2, "0")
+  return `${formattedHour}:00`
+}
+
+const PerformanceCharts: React.FC<{
+  popularHours: Array<{ hour: string; reservations: number }>
+  popularDays: Array<{ day: string; reservations: number }>
+  className?: string
+}> = ({ popularHours, popularDays, className }) => (
+  <div className={className}>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div>
+        <h4 className="text-sm font-semibold mb-4 text-slate-950">
+          Popular Hours
+        </h4>
+        <div className="h-[200px] text-slate-950">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={popularHours}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="hour" />
+              <YAxis />
+              <Tooltip
+                formatter={(value: number) => [
+                  `${value} reservations`,
+                  "Reservations",
+                ]}
+              />
+              <Line
+                type="monotone"
+                dataKey="reservations"
+                stroke="#3b82f6"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                activeDot={{ r: 5 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div>
+        <h4 className="text-sm font-semibold mb-4 text-slate-950">
+          Popular Days
+        </h4>
+        <div className="h-[200px] text-slate-950">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={popularDays}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="day" />
+              <YAxis />
+              <Tooltip
+                formatter={(value: number) => [
+                  `${value} reservations`,
+                  "Reservations",
+                ]}
+              />
+              <Bar dataKey="reservations" fill="#10b981" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  </div>
+)
 
 export default function SpotsTab({
   paidSpots,
   pendingSpots,
   spotPerformance,
+  avgRating,
+  numReviews,
+  selectedSpotId,
 }: SpotsTabProps) {
   const verifiedSpots = useMemo(
     () => paidSpots.filter((spot) => spot.verification_status === "verified"),
@@ -55,14 +143,46 @@ export default function SpotsTab({
 
   const spotsWithPerformance = useMemo(
     () =>
-      paidSpots
+      [...pendingSpots, ...paidSpots]
         .filter((spot) => spotPerformance[spot.id])
         .map((spot) => ({
           ...spot,
           performance: spotPerformance[spot.id],
         })),
-    [paidSpots, spotPerformance],
+    [paidSpots, pendingSpots, spotPerformance],
   )
+
+  const selectedSpot = useMemo(
+    () => spotsWithPerformance.find((spot) => spot.id === selectedSpotId),
+    [spotsWithPerformance, selectedSpotId],
+  )
+
+  const aggregatedData = useMemo(() => {
+    const source = selectedSpot ? [selectedSpot] : spotsWithPerformance
+
+    const hoursMap: Record<number, number> = {}
+    const daysMap: Record<string, number> = {}
+
+    source.forEach((spot) => {
+      spot.performance.popularHours.forEach(({ hour, bookings }) => {
+        hoursMap[hour] = (hoursMap[hour] || 0) + bookings
+      })
+      spot.performance.popularDays.forEach(({ day, bookings }) => {
+        daysMap[day] = (daysMap[day] || 0) + bookings
+      })
+    })
+
+    return {
+      hours: Array.from({ length: 24 }, (_, i) => ({
+        hour: formatHour(i),
+        reservations: hoursMap[i] || 0,
+      })),
+      days: WEEKDAYS_ORDER.map((day) => ({
+        day,
+        reservations: daysMap[day] || 0,
+      })),
+    }
+  }, [spotsWithPerformance, selectedSpot])
 
   return (
     <motion.div
@@ -71,164 +191,100 @@ export default function SpotsTab({
       exit={{ opacity: 0, y: -20 }}
       className="space-y-6"
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Verified Spots
-            </CardTitle>
-            <ShieldCheck className="w-4 h-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{verifiedSpots.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {((verifiedSpots.length / paidSpots.length) * 100).toFixed(0)}% of
-              total spots
-            </p>
-          </CardContent>
-        </Card>
+      <SpotsSummaryCard
+        verifiedSpots={verifiedSpots.length}
+        totalSpots={paidSpots.length}
+        pendingSpots={pendingSpots.length}
+        avgRating={avgRating}
+        numReviews={numReviews}
+      />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Verification
-            </CardTitle>
-            <Clock className="w-4 h-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingSpots.length}</div>
-            <p className="text-xs text-muted-foreground">Awaiting approval</p>
-          </CardContent>
-        </Card>
+      <Card className="p-4">
+        <CardHeader>
+          <CardTitle>
+            {selectedSpot
+              ? `${selectedSpot.name} Performance`
+              : "Overall Spot Performance"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <PerformanceCharts
+            popularHours={aggregatedData.hours}
+            popularDays={aggregatedData.days}
+          />
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Average Rating
-            </CardTitle>
-            <Star className="w-4 h-4 text-yellow-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {(
-                paidSpots.reduce(
-                  (acc, spot) =>
-                    acc +
-                    (spot.avg_total_rating === "unrated"
-                      ? 0
-                      : Number(spot.avg_total_rating || 0)),
-                  0,
-                ) / verifiedSpots.length
-              ).toFixed(1)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Based on{" "}
-              {verifiedSpots.reduce(
-                (acc, spot) => acc + (spot.ratings_count_availability || 0),
-                0,
-              )}{" "}
-              reviews
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {spotsWithPerformance.map((spot) => (
-        <Card key={spot.id} className="overflow-hidden">
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle>{spot.name || "Unnamed Spot"}</CardTitle>
-                <CardDescription className="flex items-center mt-1">
-                  <MapPin className="w-4 h-4 mr-1" />
-                  {spot.location.address}
-                </CardDescription>
-              </div>
-              <Badge
-                variant={
-                  spot.verification_status === "verified"
-                    ? "default"
-                    : spot.verification_status === "pending"
-                      ? "secondary"
-                      : "destructive"
-                }
-              >
-                {spot.verification_status}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div>
-                <h4 className="text-sm font-semibold mb-4">Hourly Occupancy</h4>
-                <div className="h-[200px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={spot.performance.popularHours}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="hour" />
-                      <YAxis />
-                      <Tooltip
-                        formatter={(value: number) => [
-                          `${value} bookings`,
-                          "Bookings",
-                        ]}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="bookings"
-                        stroke="#3b82f6"
-                        strokeWidth={2}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
+      {!selectedSpotId && (
+        <Accordion type="single" collapsible className="space-y-4">
+          {spotsWithPerformance.map((spot) => (
+            <AccordionItem
+              value={spot.id}
+              key={spot.id}
+              className="border rounded-lg overflow-hidden bg-card"
+            >
+              <AccordionTrigger className="w-full px-6 py-4 hover:no-underline">
+                <div className="w-full">
+                  <div className="relative">
+                    <Badge
+                      variant={
+                        spot.verification_status === "verified"
+                          ? "default"
+                          : spot.verification_status === "pending"
+                            ? "secondary"
+                            : "destructive"
+                      }
+                      className="absolute right-0 top-0"
+                    >
+                      {spot.verification_status}
+                    </Badge>
+                    <div className="pr-24">
+                      <h3 className="text-lg font-semibold text-slate-950">
+                        {spot.name || "Unnamed Spot"}
+                      </h3>
+                      <div className="flex items-center mt-1 text-muted-foreground">
+                        <MapPin className="w-4 h-4 mr-1" />
+                        {spot.location.address}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 mt-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Revenue</p>
+                        <p className="text-lg font-bold text-slate-950">
+                          ${Number(spot.performance.totalRevenue).toFixed(2)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Bookings
+                        </p>
+                        <p className="text-lg font-bold text-slate-950">
+                          {spot.performance.totalBookings}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Occupancy Rate
+                        </p>
+                        <p className="text-lg font-bold text-slate-950">
+                          {Number(spot.performance.occupancyRate).toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-
-              <div>
-                <h4 className="text-sm font-semibold mb-4">Popular Days</h4>
-                <div className="h-[200px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={spot.performance.popularDays}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="day" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="bookings" fill="#10b981" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-              <div className="space-y-1">
-                <p className="text-sm text-gray-500">Total Revenue</p>
-                <p className="text-lg font-bold">
-                  ${spot.performance.totalRevenue}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-gray-500">Occupancy Rate</p>
-                <p className="text-lg font-bold">
-                  {spot.performance.occupancyRate.toFixed(1)}%
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-gray-500">Avg Booking Length</p>
-                <p className="text-lg font-bold">
-                  {spot.performance.averageBookingLength}h
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-gray-500">Repeat Bookings</p>
-                <p className="text-lg font-bold">
-                  {spot.performance.repeatBookers}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+                <PerformanceCharts
+                  popularHours={aggregatedData.hours}
+                  popularDays={aggregatedData.days}
+                  className="mt-4"
+                />
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      )}
     </motion.div>
   )
 }

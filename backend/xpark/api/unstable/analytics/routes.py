@@ -15,7 +15,7 @@ def get_dashboard_analytics_route(token: str, user_id: uuid.UUID) -> Tuple[Any, 
     spot_id = uuid.UUID(spot_id_str) if spot_id_str else None
 
     match get_dashboard_analytics(
-        user_id=user_id, time_filter=time_filter, spot_id=spot_id
+        user_id=user_id, time_filter=time_filter, filter_ps_id=spot_id
     ):
         case Ok(data):
             return data, 200

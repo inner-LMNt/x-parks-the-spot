@@ -1,6 +1,6 @@
+import json
 import uuid
 from datetime import datetime, timedelta, timezone
-import pytest
 
 from flask.testing import FlaskClient
 
@@ -12,114 +12,39 @@ from xpark.test.utils.utils import (
     create_test_reservation_at_time,
     get_user_id_from_token,
     insert_reservation_directly,
-    mark_reservations_completed,
+    generate_varied_reservation_pattern,
+    setup_analytics_scenario,
 )
 
 
 def test_basic_analytics_response_structure(client: FlaskClient) -> None:
-    """Test that the analytics endpoint returns the expected data structure and contents."""
-    # Create an owner user
-    owner_email = f"owner_{uuid.uuid4().hex}@example.com"
-    owner_token = create_test_user(client, email=owner_email)
-
-    # Create a parking space
-    space_id = create_test_parking_space(client, token=owner_token)
-
-    # Make a GET request to the analytics endpoint
-    response = client.get(
-        "/api/unstable/analytics/dashboard",
-        headers={"Authorization": f"Bearer {owner_token}"},
+    """Test that the analytics endpoint returns the expected data structure."""
+    # Create test scenario with fewer reservations to better track what's happening
+    owner_token, renter_token, scenario_data = setup_analytics_scenario(
+        client,
+        num_spots=2,  # Keep 2 spots for testing variety
+        reservations_per_spot=3,
+        days_of_history=30,
     )
-    assert (
-        response.status_code == 200
-    ), f"Failed to get analytics data: {response.get_json()}"
-    data = response.get_json()
-    assert data is not None
+    spot_id = str(scenario_data["spot_ids"][0])  # type: ignore
 
-    # Check that the response contains the expected top-level keys
-    expected_keys = [
-        "overallMetrics",
-        "revenueMetrics",
-        "bookingMetrics",
-        "spotPerformance",
-        "upcomingEarnings",
-    ]
-    for key in expected_keys:
-        assert key in data, f"Key '{key}' not found in analytics data"
+    # Create multiple renter accounts for ratings
+    test_ratings = [(5, 4), (4, 5), (3, 4)]
+    for i, (availability, cleanliness) in enumerate(test_ratings):
+        rater_token = create_test_user(
+            client, email=f"rater_{i}_{uuid.uuid4().hex}@example.com"
+        )
+        response = client.post(
+            f"/api/unstable/parking-spaces/{spot_id}/rate",
+            headers={"Authorization": f"Bearer {rater_token}"},
+            json={
+                "availability_rating": availability,
+                "cleanliness_rating": cleanliness,
+            },
+        )
+        assert response.status_code == 200
 
-    # Validate 'overallMetrics' structure and contents
-    overall_metrics = data["overallMetrics"]
-    assert isinstance(overall_metrics, dict), "overallMetrics should be a dictionary"
-    for metric in ["revenue", "occupancy", "bookings"]:
-        assert metric in overall_metrics, f"'{metric}' key not found in overallMetrics"
-
-    # Validate 'revenue' metrics
-    revenue = overall_metrics["revenue"]
-    for key in ["total", "perBooking", "trends"]:
-        assert key in revenue, f"'{key}' key not found in revenue metrics"
-    assert isinstance(revenue["trends"], list), "'trends' should be a list"
-
-    # Validate 'occupancy' metrics
-    occupancy = overall_metrics["occupancy"]
-    for key in ["overallRate", "popularTimes"]:
-        assert key in occupancy, f"'{key}' key not found in occupancy metrics"
-    assert isinstance(
-        occupancy["popularTimes"], list
-    ), "'popularTimes' should be a list"
-
-    # Validate 'bookings' metrics
-    bookings = overall_metrics["bookings"]
-    for key in ["active", "total", "percentageActive"]:
-        assert key in bookings, f"'{key}' key not found in bookings metrics"
-
-    # Validate 'revenueMetrics' structure
-    revenue_metrics = data["revenueMetrics"]
-    expected_revenue_keys = [
-        "monthlyRevenue",
-        "dailyRevenue",
-        "hourlyRevenue",
-        "revenueBySpot",
-    ]
-    for key in expected_revenue_keys:
-        assert key in revenue_metrics, f"Key '{key}' not found in revenueMetrics"
-        assert isinstance(
-            revenue_metrics[key], list
-        ), f"'{key}' should be a list in revenueMetrics"
-
-    # Validate 'bookingMetrics' structure
-    booking_metrics = data["bookingMetrics"]
-    assert "stats" in booking_metrics, "'stats' key not found in bookingMetrics"
-    assert (
-        "recentBookings" in booking_metrics
-    ), "'recentBookings' key not found in bookingMetrics"
-    assert isinstance(booking_metrics["stats"], dict), "'stats' should be a dictionary"
-    assert isinstance(
-        booking_metrics["recentBookings"], list
-    ), "'recentBookings' should be a list"
-
-    # Validate 'spotPerformance' structure
-    spot_performance = data["spotPerformance"]
-    assert isinstance(spot_performance, dict), "spotPerformance should be a dictionary"
-    assert (
-        space_id in spot_performance
-    ), f"Space ID {space_id} not found in spotPerformance"
-
-    # Validate 'upcomingEarnings' structure
-    upcoming_earnings = data["upcomingEarnings"]
-    for key in ["total", "reservations"]:
-        assert key in upcoming_earnings, f"'{key}' key not found in upcomingEarnings"
-    assert isinstance(
-        upcoming_earnings["reservations"], list
-    ), "'reservations' should be a list"
-
-
-def test_analytics_with_no_data(client: FlaskClient) -> None:
-    """Test that the analytics endpoint returns zeros or empty lists when there is no data."""
-    # Create an owner user
-    owner_email = f"owner_{uuid.uuid4().hex}@example.com"
-    owner_token = create_test_user(client, email=owner_email)
-
-    # Make a GET request to the analytics endpoint
+    # Get analytics data
     response = client.get(
         "/api/unstable/analytics/dashboard",
         headers={"Authorization": f"Bearer {owner_token}"},
@@ -128,62 +53,297 @@ def test_analytics_with_no_data(client: FlaskClient) -> None:
     data = response.get_json()
     assert data is not None
 
-    # Check that numerical metrics are zero and lists are empty
-    overall_metrics = data.get("overallMetrics", {})
-    revenue_metrics = data.get("revenueMetrics", {})
-    booking_metrics = data.get("bookingMetrics", {})
-    spot_performance = data.get("spotPerformance", {})
-    upcoming_earnings = data.get("upcomingEarnings", {})
+    # 1. Validate Overall Structure
+    expected_top_level_keys = {
+        "overallMetrics",
+        "revenueMetrics",
+        "bookingMetrics",
+        "spotPerformance",
+        "upcomingEarnings",
+        "ratingMetrics",
+    }
+    assert set(data.keys()) == expected_top_level_keys
 
-    # Validate 'overallMetrics' contents
-    revenue = overall_metrics.get("revenue", {})
-    assert revenue.get("total", 1) == 0, "Expected total revenue to be 0"
-    assert revenue.get("perBooking", 1) == 0, "Expected revenue per booking to be 0"
-    assert revenue.get("trends", [1]) == [], "Expected revenue trends to be empty"
+    # 2. Validate overallMetrics
+    overall = data["overallMetrics"]
+    assert set(overall.keys()) == {"revenue", "occupancy", "bookings"}
+    assert set(overall["revenue"].keys()) == {"total", "perBooking"}
+    assert set(overall["bookings"].keys()) == {"active", "percentageActive", "total"}
+    assert isinstance(overall["occupancy"]["overallRate"], (str, float))
 
-    occupancy = overall_metrics.get("occupancy", {})
-    assert (
-        occupancy.get("overallRate", 1) == 0
-    ), "Expected overall occupancy rate to be 0"
-    assert occupancy.get("popularTimes", [1]) == [], "Expected popularTimes to be empty"
+    # 3. Validate bookingMetrics
+    booking_metrics = data["bookingMetrics"]
+    assert set(booking_metrics.keys()) == {"stats", "recentBookings"}
 
-    bookings = overall_metrics.get("bookings", {})
-    assert bookings.get("active", 1) == 0, "Expected active bookings to be 0"
-    assert bookings.get("total", 1) == 0, "Expected total bookings to be 0"
-    assert bookings.get("percentageActive", 1) == 0, "Expected percentageActive to be 0"
+    # Check stats fields
+    stats = booking_metrics["stats"]
+    expected_stat_fields = {
+        "active",
+        "avgDuration",
+        "canceled",
+        "completed",
+        "completionRate",
+        "total",
+    }
+    assert set(stats.keys()) == expected_stat_fields
 
-    # Validate 'revenueMetrics' contents
-    for key in ["monthlyRevenue", "dailyRevenue", "hourlyRevenue", "revenueBySpot"]:
-        metric = revenue_metrics.get(key, [1])
-        assert isinstance(metric, list), f"'{key}' should be a list"
-        assert len(metric) == 0, f"Expected '{key}' to be empty"
+    # Check recentBookings structure
+    if booking_metrics["recentBookings"]:  # If there are any bookings
+        booking = booking_metrics["recentBookings"][0]
+        expected_booking_fields = {
+            "carDetails",
+            "duration",
+            "endTime",
+            "id",
+            "price",
+            "renterName",
+            "spotId",
+            "spotName",
+            "startTime",
+            "status",
+            "time_status",
+        }
+        assert set(booking.keys()) == expected_booking_fields
+        assert set(booking["carDetails"].keys()) == {
+            "color",
+            "make",
+            "model",
+            "plate",
+            "state",
+        }
 
-    # Validate 'bookingMetrics' contents
-    stats = booking_metrics.get("stats", {})
-    for stat_key in [
+    # 4. Validate revenueMetrics
+    revenue_metrics = data["revenueMetrics"]
+    assert set(revenue_metrics.keys()) == {"historicalRevenue", "upcomingRevenue"}
+
+    # Check historicalRevenue structure
+    for entry in revenue_metrics["historicalRevenue"]:
+        assert set(entry.keys()) == {"actual", "timestamp"}
+        assert isinstance(entry["actual"], (int, float))
+        assert isinstance(entry["timestamp"], str)
+
+    # Check upcomingRevenue structure
+    for entry in revenue_metrics["upcomingRevenue"]:
+        assert set(entry.keys()) == {"potential", "timestamp"}
+        assert isinstance(entry["potential"], (int, float))
+        assert isinstance(entry["timestamp"], str)
+
+    # 5. Validate spotPerformance
+    for spot_id, performance in data["spotPerformance"].items():
+        expected_performance_fields = {
+            "activeBookings",
+            "averageBookingLength",
+            "canceledBookings",
+            "completedBookings",
+            "occupancyRate",
+            "popularDays",
+            "popularHours",
+            "totalBookings",
+            "totalRevenue",
+        }
+        assert set(performance.keys()) == expected_performance_fields
+
+        # Check popularHours structure
+        for hour in performance["popularHours"]:
+            assert set(hour.keys()) == {"hour", "bookings"}
+            assert 0 <= hour["hour"] <= 23
+
+        # Check popularDays structure
+        for day in performance["popularDays"]:
+            assert set(day.keys()) == {"day", "bookings"}
+            assert day["day"] in {
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday",
+            }
+
+    # 6. Validate upcomingEarnings
+    upcoming = data["upcomingEarnings"]
+    assert set(upcoming.keys()) == {"reservations", "total"}
+    if upcoming["reservations"]:
+        reservation = upcoming["reservations"][0]
+        assert set(reservation.keys()) == {
+            "spotName",
+            "startTime",
+            "endTime",
+            "earnings",
+        }
+
+    # 7. Validate ratingMetrics
+    rating_metrics = data["ratingMetrics"]
+    assert set(rating_metrics.keys()) == {
+        "averageRatings",
+        "totalRatings",
+        "ratingsBySpot",
+    }
+
+    # Check averageRatings structure
+    assert set(rating_metrics["averageRatings"].keys()) == {
+        "availability",
+        "cleanliness",
+        "total",
+    }
+
+    # Check ratingsBySpot structure
+    if rating_metrics["ratingsBySpot"]:
+        spot_rating = rating_metrics["ratingsBySpot"][0]
+        expected_spot_rating_fields = {
+            "availabilityRating",
+            "cleanlinessRating",
+            "ratingCount",
+            "ratingDistribution",
+            "recentReviews",
+            "spotId",
+            "spotName",
+            "totalRating",
+        }
+        assert set(spot_rating.keys()) == expected_spot_rating_fields
+
+        # Check rating distribution structure
+        if spot_rating["ratingDistribution"]:
+            distribution = spot_rating["ratingDistribution"][0]
+            assert set(distribution.keys()) == {"count", "percentage", "stars"}
+
+        # Check recent reviews structure
+        if spot_rating["recentReviews"]:
+            review = spot_rating["recentReviews"][0]
+            assert set(review.keys()) == {"rating", "daysAgo", "isVerified"}
+
+
+def test_analytics_with_reservations(client: FlaskClient) -> None:
+    """Test analytics data with varied reservation patterns."""
+    owner_token, renter_token, scenario_data = setup_analytics_scenario(
+        client, num_spots=1, reservations_per_spot=5, days_of_history=30
+    )
+    space_id = str(scenario_data["spot_ids"][0])  # type: ignore
+
+    # Add reservations
+    base_time = datetime.now(timezone.utc) - timedelta(days=21)
+    weekend_reservations = generate_varied_reservation_pattern(
+        client, renter_token, space_id, "weekend_heavy", base_time, 5
+    )
+
+    peak_base_time = datetime.now(timezone.utc) - timedelta(days=7)
+    peak_reservations = generate_varied_reservation_pattern(
+        client, renter_token, space_id, "peak_hours", peak_base_time, 5
+    )
+
+    # Submit ratings from different users
+    test_ratings = [(5, 4), (4, 5), (3, 4), (4, 3), (5, 5)]
+
+    for i, (availability, cleanliness) in enumerate(test_ratings):
+        # Create a new renter for each rating
+        renter_email = f"rater_{i}_{uuid.uuid4().hex}@example.com"
+        rater_token = create_test_user(client, email=renter_email)
+
+        response = client.post(
+            f"/api/unstable/parking-spaces/{space_id}/rate",
+            headers={"Authorization": f"Bearer {rater_token}"},
+            json={
+                "availability_rating": availability,
+                "cleanliness_rating": cleanliness,
+            },
+        )
+        assert response.status_code == 200
+        rating_data = response.get_json()
+        print(f"Created rating from {renter_email}: {rating_data}")
+
+    # Get analytics data
+    response = client.get(
+        "/api/unstable/analytics/dashboard",
+        headers={"Authorization": f"Bearer {owner_token}"},
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+
+    # Print debug info
+    spot_data = data["spotPerformance"][str(space_id)]
+    rating_metrics = data["ratingMetrics"]
+    print(f"\nRating metrics: {rating_metrics}")
+
+    # Validate ratings
+    assert rating_metrics["totalRatings"] == len(
+        test_ratings
+    ), f"Expected {len(test_ratings)} ratings, got {rating_metrics['totalRatings']}"
+
+    # Validate booking volumes
+    initial_bookings = 5
+    weekend_count = len(weekend_reservations)
+    peak_count = len(peak_reservations)
+    total_expected = initial_bookings + weekend_count + peak_count
+
+    assert spot_data["totalBookings"] == total_expected, (
+        f"Mismatch in bookings. Got {spot_data['totalBookings']}, "
+        f"Expected: {total_expected}"
+    )
+
+    # Time pattern validation remains the same...
+    peak_hours = sorted(hour["hour"] for hour in spot_data["popularHours"])
+    popular_days = [day["day"] for day in spot_data["popularDays"]]
+
+    assert any(
+        9 <= hour <= 17 for hour in peak_hours
+    ), f"No business hours ({peak_hours}) found in peak hours"
+    assert any(
+        day in ["Saturday", "Sunday"] for day in popular_days
+    ), f"No weekend days found in {popular_days}"
+
+
+def test_analytics_with_no_data(client: FlaskClient) -> None:
+    """Test that the analytics endpoint returns zeros/empty values with no data."""
+    owner_token = create_test_user(
+        client, email=f"owner_{uuid.uuid4().hex}@example.com"
+    )
+    space_id = create_test_parking_space(client, token=owner_token)
+
+    response = client.get(
+        "/api/unstable/analytics/dashboard",
+        headers={"Authorization": f"Bearer {owner_token}"},
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data is not None
+
+    # Validate zero metrics
+    overall = data["overallMetrics"]
+    assert overall["revenue"]["total"] == 0
+    assert overall["revenue"]["perBooking"] == 0
+    assert overall["occupancy"]["overallRate"] == 0
+    assert overall["bookings"]["total"] == 0
+    assert overall["bookings"]["active"] == 0
+    assert overall["bookings"]["percentageActive"] == 0
+
+    # Validate empty booking metrics
+    booking_stats = data["bookingMetrics"]["stats"]
+    expected_zero_stats = [
         "total",
         "active",
         "completed",
         "canceled",
         "avgDuration",
         "completionRate",
-    ]:
-        assert stats.get(stat_key, 1) == 0, f"Expected '{stat_key}' to be 0"
-    recent_bookings = booking_metrics.get("recentBookings", [1])
-    assert isinstance(recent_bookings, list), "'recentBookings' should be a list"
-    assert len(recent_bookings) == 0, "Expected 'recentBookings' to be empty"
+    ]
+    for stat in expected_zero_stats:
+        assert booking_stats[stat] == 0, f"Expected {stat} to be 0"
 
-    # Validate 'spotPerformance' contents
-    assert isinstance(spot_performance, dict), "spotPerformance should be a dictionary"
-    assert len(spot_performance) == 0, "Expected 'spotPerformance' to be empty"
+    assert len(data["bookingMetrics"]["recentBookings"]) == 0
 
-    # Validate 'upcomingEarnings' contents
-    assert (
-        upcoming_earnings.get("total", 1) == 0
-    ), "Expected total upcoming earnings to be 0"
-    reservations = upcoming_earnings.get("reservations", [1])
-    assert isinstance(reservations, list), "'reservations' should be a list"
-    assert len(reservations) == 0, "Expected 'reservations' to be empty"
+    # Validate spot performance
+    spot_data = data["spotPerformance"][str(space_id)]
+    assert spot_data["totalBookings"] == 0
+    assert spot_data["totalRevenue"] == 0
+    assert spot_data["occupancyRate"] == 0
+    assert len(spot_data["popularHours"]) == 0
+    assert len(spot_data["popularDays"]) == 0
+
+    # Validate rating metrics
+    rating_metrics = data["ratingMetrics"]
+    assert rating_metrics["totalRatings"] == 0
+    assert rating_metrics["averageRatings"]["total"] == 0
 
 
 def test_analytics_with_single_parking_space(client: FlaskClient) -> None:
@@ -238,83 +398,6 @@ def test_analytics_with_single_parking_space(client: FlaskClient) -> None:
     assert spot_data["canceledBookings"] == 0, "Expected canceledBookings to be 0"
     assert spot_data["popularHours"] == [], "Expected popularHours to be empty"
     assert spot_data["popularDays"] == [], "Expected popularDays to be empty"
-
-
-@pytest.mark.skip(reason="")
-def test_analytics_with_reservations(client: FlaskClient) -> None:
-    """Test analytics data when there are reservations."""
-    # Create an owner and a renter
-    owner_email = f"owner_{uuid.uuid4().hex}@example.com"
-    renter_email = f"renter_{uuid.uuid4().hex}@example.com"
-    owner_token = create_test_user(client, email=owner_email)
-    renter_token = create_test_user(client, email=renter_email)
-
-    # Create a parking space
-    space_id = create_test_parking_space(client, token=owner_token)
-
-    # Create a car for the renter
-    car_id = create_test_car(client, token=renter_token)
-
-    # Create reservations
-    num_reservations = 5
-    reservation_ids = []
-    for i in range(num_reservations):
-        start_time = datetime.now(timezone.utc) - timedelta(days=i + 1)
-        end_time = start_time + timedelta(hours=2)
-        reservation_id = create_test_reservation_at_time(
-            client,
-            token=renter_token,
-            space_id=space_id,
-            start_time=start_time,
-            end_time=end_time,
-            car_id=car_id,
-        )
-        reservation_ids.append(reservation_id)
-
-    # Mark reservations as completed
-    mark_reservations_completed(client, reservation_ids)
-
-    # Make a GET request to the analytics endpoint
-    response = client.get(
-        "/api/unstable/analytics/dashboard",
-        headers={"Authorization": f"Bearer {owner_token}"},
-    )
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data is not None
-
-    # Check that the overallMetrics reflect the reservations
-    overall_metrics = data.get("overallMetrics", {})
-    total_bookings = overall_metrics.get("bookings", {}).get("total", 0)
-    assert (
-        total_bookings == num_reservations
-    ), f"Expected total bookings to be {num_reservations}"
-
-    total_revenue = overall_metrics.get("revenue", {}).get("total", 0)
-    assert total_revenue > 0, "Expected total revenue to be greater than 0"
-
-    # Validate 'bookingMetrics' stats
-    booking_stats = data.get("bookingMetrics", {}).get("stats", {})
-    assert (
-        booking_stats.get("total", 0) == num_reservations
-    ), f"Expected total bookings to be {num_reservations}"
-    assert (
-        booking_stats.get("completed", 0) == num_reservations
-    ), f"Expected completed bookings to be {num_reservations}"
-    assert booking_stats.get("active", 0) == 0, "Expected active bookings to be 0"
-
-    # Validate 'spotPerformance' data
-    spot_performance = data.get("spotPerformance", {})
-    assert (
-        space_id in spot_performance
-    ), f"Space ID {space_id} not found in spotPerformance"
-    spot_data = spot_performance[space_id]
-    assert (
-        spot_data["totalBookings"] == num_reservations
-    ), f"Expected totalBookings to be {num_reservations}"
-    assert (
-        spot_data["totalRevenue"] == total_revenue
-    ), "Expected totalRevenue to match overall revenue"
 
 
 def test_analytics_with_time_filter(client: FlaskClient) -> None:
@@ -439,7 +522,6 @@ def test_analytics_with_invalid_time_filter(client: FlaskClient) -> None:
     assert "err" in data, "Expected error message in response"
 
 
-@pytest.mark.skip(reason="")
 def test_analytics_with_spot_id_filter(client: FlaskClient) -> None:
     """Test the analytics endpoint with a specific parking space (spot_id) filter."""
     # Create an owner and a renter
@@ -561,3 +643,259 @@ def test_analytics_with_no_auth(client: FlaskClient) -> None:
     ), f"Expected status code 403, got {response.status_code}"
     data = response.get_json()
     assert "err" in data, "Expected error message in response"
+
+
+def test_analytics_response_strict(client: FlaskClient) -> None:
+    """Test analytics response including all metrics with exact values."""
+    owner_token, renter_token, scenario_data = setup_analytics_scenario(
+        client, num_spots=3, reservations_per_spot=5, days_of_history=30
+    )
+    assert isinstance(scenario_data["spot_ids"], list)
+    spot_ids = scenario_data["spot_ids"]
+    renter_id = get_user_id_from_token(client, renter_token)
+    car_id = create_test_car(client, renter_token)
+
+    # Add some upcoming reservations
+    now = datetime.now(timezone.utc)
+    upcoming_reservations = [
+        # 3 days from now, Spot 1 ($10/hr * 4 hours = $40)
+        {
+            "spot_id": spot_ids[0],
+            "start_time": now + timedelta(days=3),
+            "duration": timedelta(hours=4),
+            "expected_price": 40.0,
+        },
+        # 6 days from now, Spot 2 ($20/hr * 3 hours = $60)
+        {
+            "spot_id": spot_ids[1],
+            "start_time": now + timedelta(days=6),
+            "duration": timedelta(hours=3),
+            "expected_price": 60.0,
+        },
+        # 10 days from now, Spot 3 ($30/hr * 5 hours = $150) - should not be included in upcoming
+        {
+            "spot_id": spot_ids[2],
+            "start_time": now + timedelta(days=10),
+            "duration": timedelta(hours=5),
+            "expected_price": 150.0,
+        },
+    ]
+
+    # Insert the upcoming reservations
+
+    for res in upcoming_reservations:
+        assert isinstance(res["start_time"], datetime)
+        assert isinstance(res["duration"], timedelta)
+        insert_reservation_directly(
+            renter_id=renter_id,
+            space_id=str(res["spot_id"]),
+            car_id=car_id,
+            start_time=res["start_time"],
+            end_time=res["start_time"] + res["duration"],
+        )
+
+    # Add ratings from different users
+    test_ratings = [(5, 4), (4, 5), (3, 4)]
+    for i, (availability, cleanliness) in enumerate(test_ratings):
+        rater_token = create_test_user(
+            client, email=f"rater_{i}_{uuid.uuid4().hex}@example.com"
+        )
+        response = client.post(
+            f"/api/unstable/parking-spaces/{spot_ids[0]}/rate",
+            headers={"Authorization": f"Bearer {rater_token}"},
+            json={
+                "availability_rating": availability,
+                "cleanliness_rating": cleanliness,
+            },
+        )
+        assert response.status_code == 200
+
+    response = client.get(
+        "/api/unstable/analytics/dashboard",
+        headers={"Authorization": f"Bearer {owner_token}"},
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    print("\nFull response data:", json.dumps(data, indent=2))
+
+    # 1. Overall Metrics
+    overall = data["overallMetrics"]
+
+    # Revenue validation
+    revenue = overall["revenue"]
+    assert round(revenue["total"], 1) == 840.0
+    assert round(revenue["perBooking"], 1) == 56.0
+
+    # Bookings validation
+    bookings = overall["bookings"]
+    assert bookings["total"] == 17
+    assert bookings["active"] == 0
+    assert round(bookings["percentageActive"], 1) == 0.0
+
+    # Occupancy validation
+    assert round(float(overall["occupancy"]["overallRate"]), 10) == 1.9444444444
+
+    # 2. Booking Metrics
+    booking_metrics = data["bookingMetrics"]
+    stats = booking_metrics["stats"]
+
+    assert stats["total"] == 17
+    assert stats["active"] == 0
+    assert round(stats["avgDuration"], 1) == 2.9
+    assert stats["canceled"] == 0
+    assert stats["completed"] == 15
+    assert round(stats["completionRate"], 1) == 100.0
+
+    # Check recent bookings structure and values
+    recent = booking_metrics["recentBookings"]
+    assert len(recent) == 17
+    first_booking = recent[0]
+    assert first_booking["duration"] == 3.0
+    assert first_booking["price"] == 60.0
+    assert first_booking["status"] == "completed"
+    assert first_booking["time_status"] == "upcoming"
+
+    # 3. Revenue Metrics
+    revenue_metrics = data["revenueMetrics"]
+
+    # Historical revenue validation
+    historical = revenue_metrics["historicalRevenue"]
+    assert len(historical) == 31
+
+    now = datetime.now(timezone.utc)
+    timestamps = {
+        "entry_1": (now - timedelta(days=30)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ),
+        "entry_2": (now - timedelta(days=24)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ),
+        "entry_3": (now - timedelta(days=18)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ),
+        "entry_4": (now - timedelta(days=12)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ),
+        "entry_5": (now - timedelta(days=6)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ),
+    }
+
+    # Perform the assertions dynamically
+    entry_1 = next(
+        h for h in historical if h["timestamp"] == timestamps["entry_1"].isoformat()
+    )
+    assert round(entry_1["actual"], 1) == 120.0
+
+    entry_2 = next(
+        h for h in historical if h["timestamp"] == timestamps["entry_2"].isoformat()
+    )
+    assert round(entry_2["actual"], 1) == 180.0
+
+    entry_3 = next(
+        h for h in historical if h["timestamp"] == timestamps["entry_3"].isoformat()
+    )
+    assert round(entry_3["actual"], 1) == 240.0
+
+    entry_4 = next(
+        h for h in historical if h["timestamp"] == timestamps["entry_4"].isoformat()
+    )
+    assert round(entry_4["actual"], 1) == 120.0
+
+    entry_5 = next(
+        h for h in historical if h["timestamp"] == timestamps["entry_5"].isoformat()
+    )
+    assert round(entry_5["actual"], 1) == 180.0
+
+    # 4. Spot Performance
+    spot_performance = data["spotPerformance"]
+    assert len(spot_performance) == 3
+
+    # Check each spot's exact metrics
+    for spot_id, perf in spot_performance.items():
+        assert perf["totalBookings"] == 5
+        assert round(perf["averageBookingLength"], 1) == 2.8
+        assert perf["activeBookings"] == 0
+        assert round(perf["occupancyRate"], 10) == 1.9444444444
+
+        # All popular hours have exactly 5 bookings
+        for hour_data in perf["popularHours"]:
+            assert hour_data["bookings"] == 5
+
+        # All popular days have exactly 1 booking
+        for day_data in perf["popularDays"]:
+            assert day_data["bookings"] == 1
+
+    # Check specific spot revenues and completions
+    spot_1 = next(
+        sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 140.0
+    )
+    spot_2 = next(
+        sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 280.0
+    )
+    spot_3 = next(
+        sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 420.0
+    )
+
+    assert spot_1["completedBookings"] == 575
+    assert spot_2["completedBookings"] == 525
+    assert spot_3["completedBookings"] == 475
+
+    # 5. Rating Metrics
+    rating_metrics = data["ratingMetrics"]
+
+    avg_ratings = rating_metrics["averageRatings"]
+    assert round(avg_ratings["availability"], 1) == 4.0
+    assert round(avg_ratings["cleanliness"], 6) == 4.333333
+    assert round(avg_ratings["total"], 6) == 4.166667
+
+    assert rating_metrics["totalRatings"] == 3
+
+    # 6. Upcoming Earnings
+    upcoming = data["upcomingEarnings"]
+    assert len(upcoming["reservations"]) == 2  # Only within 7 days
+    expected_total = 100.0  # $40 + $60
+    assert round(upcoming["total"], 1) == expected_total
+
+    # Check individual upcoming reservations
+    reservations = sorted(upcoming["reservations"], key=lambda x: x["startTime"])
+
+    # 3-day reservation
+    assert round(reservations[0]["earnings"], 1) == 40.0
+    assert reservations[0]["spotName"] == "Test Spot 1"
+    start_time = datetime.fromisoformat(reservations[0]["startTime"])
+    assert abs((start_time - (now + timedelta(days=3))).total_seconds()) < 60
+
+    # 6-day reservation
+    assert round(reservations[1]["earnings"], 1) == 60.0
+    assert reservations[1]["spotName"] == "Test Spot 2"
+    start_time = datetime.fromisoformat(reservations[1]["startTime"])
+    assert abs((start_time - (now + timedelta(days=6))).total_seconds()) < 60
+
+    # Validate upcoming revenue in revenue metrics
+    upcoming_revenue = data["revenueMetrics"]["upcomingRevenue"]
+    assert len(upcoming_revenue) == 169
+
+    # Check specific upcoming hours
+    day_3_hour = now + timedelta(days=3)
+    day_3_hour = day_3_hour.replace(minute=0, second=0, microsecond=0)
+    day_3_entry = next(
+        u for u in upcoming_revenue if u["timestamp"] == day_3_hour.isoformat()
+    )
+    assert round(day_3_entry["potential"], 1) == 40.0
+
+    day_6_hour = now + timedelta(days=6)
+    day_6_hour = day_6_hour.replace(minute=0, second=0, microsecond=0)
+    day_6_entry = next(
+        u for u in upcoming_revenue if u["timestamp"] == day_6_hour.isoformat()
+    )
+    assert round(day_6_entry["potential"], 1) == 60.0
+
+    # Verify day 10 reservation is not included
+    day_10_hour = now + timedelta(days=10)
+    day_10_hour = day_10_hour.replace(minute=0, second=0, microsecond=0)
+    assert not any(
+        u
+        for u in upcoming_revenue
+        if u["timestamp"] == day_10_hour.isoformat() and u["potential"] > 0
+    )

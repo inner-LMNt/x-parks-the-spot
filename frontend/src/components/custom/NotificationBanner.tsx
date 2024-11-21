@@ -101,7 +101,7 @@ const NotificationBanner = () => {
           setRefreshKey((prevKey) => prevKey + 1) // Force re-render
         })
       }
-    }, 10000)
+    }, 1000000)
 
     return () => clearInterval(intervalId)
   }, [isLoggedIn, dispatch])
