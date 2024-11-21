@@ -747,7 +747,7 @@ def submit_rating(
 
 def get_user_rating(
     user_id: uuid.UUID, parking_space_id: uuid.UUID
-) -> Result[Dict[str, Any] | None, str]:
+) -> Result[Dict[str, Any], str]:
     """
     Fetches the availability and cleanliness ratings given by the user for a specific parking space.
 
@@ -771,7 +771,9 @@ def get_user_rating(
                 (parking_space_id, user_id),
             )
             rating = cur.fetchone()
-        return Ok(rating)
+            if rating is None:
+                return Err("No rating found")
+            return Ok(rating)
 
 
 def bookmark_spot(

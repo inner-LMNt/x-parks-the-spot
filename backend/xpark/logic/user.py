@@ -440,3 +440,16 @@ def handle_get_points(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
             if not result:
                 return Err("User not found")
             return Ok(result)
+
+
+def get_responsiveness_score(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                "SELECT responsiveness_score FROM users WHERE id = %s",
+                (user_id,),
+            )
+            result = cur.fetchone()
+            if not result:
+                return Err("User not found")
+            return Ok(result["responsiveness_score"])
