@@ -3,7 +3,6 @@ export const dynamic = "force-dynamic";
 
 import React, { useEffect } from "react"
 import { motion } from "framer-motion"
-import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { fetchOwnerReservations } from "@/features/owner-reservations/ownerReservationsSlice"
 import { getOwnerSpots } from "@/features/owner/ownerSlice"
@@ -82,23 +81,31 @@ const DashboardSkeleton = () => (
   </div>
 )
 
-export function OwnerDashboard() {
+export  function OwnerDashboard() {
   const dispatch = useAppDispatch()
   const router = useRouter()
   const { toast } = useToast()
-  const searchParams = useSearchParams();
+  //const searchParams = useSearchParams();
   const [timeFilter, setTimeFilter] =
     React.useState<keyof typeof TIME_FILTERS>("30_days")
-  const querySpotId = searchParams.get("spotId");
-  const queryTab = searchParams.get("tab");
+  //const querySpotId = searchParams.get("spotId");
+  //const queryTab = searchParams.get("tab");
 
   const [selectedTab, setSelectedTab] = React.useState(
-      queryTab || "revenue"
+       "revenue"
   );
   const [selectedSpotId, setSelectedSpotId] = React.useState<string | null>(
       null
   );
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const spotId = params.get("spotId");
+    const tab = params.get("tab");
+
+    setSelectedSpotId(spotId);
+    setSelectedTab(tab || "revenue");
+  }, []);
   const {
     paidSpots,
     pendingSpots,
