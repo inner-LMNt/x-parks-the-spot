@@ -12,12 +12,16 @@ from xpark.logic.parkingspace import (
     submit_rating,
     get_user_rating,
     award_points,
-    rate_renter,
+    bookmark_spot,
+    remove_bookmarked_spot,
 )
 from flask import request
 from result import Ok, Err
-from xpark.middleware.token_auth_middleware import require_logged_in_user
-from typing import Tuple, Any
+from xpark.middleware.token_auth_middleware import (
+    require_logged_in_user,
+    optional_logged_in_user,
+)
+from typing import Tuple, Any, Optional
 import uuid
 from flask.json import loads as load_json
 from typing import cast, Dict
@@ -117,10 +121,13 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
 
 
 @bp.get("<parking_space_id>")
-def get_parking_space_route(parking_space_id: str) -> Tuple[Any, int]:
+@optional_logged_in_user
+def get_parking_space_route(
+    token: Optional[str], user_id: Optional[uuid.UUID], parking_space_id: str
+) -> Tuple[Any, int]:
     parking_space_uuid = uuid.UUID(parking_space_id)
 
-    match get_parking_space(parking_space_uuid):
+    match get_parking_space(parking_space_uuid, user_id):
         case Ok(parking_space):
             return parking_space, 200
         case Err(e):
@@ -266,17 +273,27 @@ def get_user_rating_route(
             return {"err": e}, 400
 
 
-@bp.post("<parking_space_id>/rate-renter")
+@bp.post("<parking_space_id>/bookmark")
 @require_logged_in_user
-def rate_renter_route(parking_space_id: str, user_id: uuid.UUID) -> Tuple[Any, int]:
-    assert request.json is not None
-    match rate_renter(
-        parking_space_id=uuid.UUID(parking_space_id),
-        owner_id=user_id,
-        renter_id=uuid.UUID(request.json["renter_id"]),
-        score=request.json["score"],
-    ):
+def bookmark_spot_route(
+    parking_space_id: str, token: str, user_id: uuid.UUID
+) -> Tuple[Any, int]:
+    parking_space_uuid = uuid.UUID(parking_space_id)
+    match bookmark_spot(user_id, parking_space_uuid):
         case Ok(_):
-            return {}, 200
+            return {}, 204
         case Err(e):
-            return {"err", e}, 400
+            return {"err": e}, 409
+
+
+@bp.delete("<parking_space_id>/bookmark")
+@require_logged_in_user
+def delete_bookmark_spot_route(
+    parking_space_id: str, token: str, user_id: uuid.UUID
+) -> Tuple[Any, int]:
+    parking_space_uuid = uuid.UUID(parking_space_id)
+    match remove_bookmarked_spot(user_id, parking_space_uuid):
+        case Ok(_):
+            return {}, 204
+        case Err(e):
+            return {"err": e}, 404

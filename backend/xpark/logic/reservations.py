@@ -79,6 +79,7 @@ def get_user_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], st
                     car_info_id, 
                     renter_id,
                     status,
+                    EXISTS(SELECT 1 FROM bookmarked_spots WHERE user_id=%(user_id)s AND parking_space_id=reservations.parking_space_id) as is_bookmarked,
                     json_build_object(
                         'address',   parking_spaces.address,
                         'latitude',  ST_Y(location::geometry),
@@ -89,9 +90,9 @@ def get_user_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], st
                     reservations.updated_at
                 FROM reservations JOIN parking_spaces ON 
                     reservations.parking_space_id = parking_spaces.id
-                WHERE renter_id = %s
+                WHERE renter_id = %(user_id)s
             """,
-                (user_id,),
+                {"user_id": user_id},
             )
             return Ok(cur.fetchall())
 

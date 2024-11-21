@@ -7,6 +7,7 @@ from .search import bp as search_bp
 from .reservations import bp as reservations_bp
 from .cars import bp as cars_bp
 from .reports import bp as reports_bp
+from .bookmarks import bp as bookmarks_bp
 from xpark.middleware import CORS, RequireJSON
 
 bp = Blueprint("unstable", __name__, url_prefix="/api/unstable")
@@ -16,6 +17,7 @@ RequireJSON(bp)
 
 bp.register_blueprint(auth_bp)
 bp.register_blueprint(analytics_bp)
+bp.register_blueprint(bookmarks_bp)
 bp.register_blueprint(parking_space_bp)
 bp.register_blueprint(search_bp)
 bp.register_blueprint(reservations_bp)

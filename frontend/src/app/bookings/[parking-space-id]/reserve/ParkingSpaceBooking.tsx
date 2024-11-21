@@ -53,12 +53,14 @@ import AddCarModal from "@/components/custom/AddCarModal"
 import Link from "next/link"
 import ImageWrapper from "@/components/custom/ImageWrapper"
 import { RatingDisplay } from "@/components/custom/RatingDisplay"
+import { addBookmark, deleteBookmark } from "@/features/bookmarks/bookmarkSlice"
 
 /**
  * **Booking Page Component**
  */
 export default function ParkingSpaceBooking() {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isBookmarked, setIsBookmarked] = useState(false)
   const [isAddCarModalOpen, setIsAddCarModalOpen] = useState(false) // State to control modal
   const [showFullImage, setShowFullImage] = useState(false)
   const params = useParams()
@@ -119,6 +121,13 @@ export default function ParkingSpaceBooking() {
       setIsAddCarModalOpen(true)
     }
   }, [carLoading, carInfos.length])
+
+  /**
+   * **Open AddCarModal if No Cars Exist**
+   */
+  useEffect(() => {
+    setIsBookmarked(parkingSpace.is_bookmarked)
+  }, [parkingSpace])
 
   /**
    * **Handle Booking Errors**
@@ -632,6 +641,22 @@ export default function ParkingSpaceBooking() {
               {isSubmitting ? "Submitting..." : "Book Now"}
             </Button>
           </form>
+          <Button
+            variant="outline"
+            className="w-full mt-4"
+            size="lg"
+            onClick={() => {
+              if (isBookmarked) {
+                dispatch(deleteBookmark(booking.parking_space_id)).unwrap()
+                setIsBookmarked(false)
+              } else {
+                dispatch(addBookmark(booking.parking_space_id)).unwrap()
+                setIsBookmarked(true)
+              }
+            }}
+          >
+            {isBookmarked ? "Remove Bookmark" : "Bookmark for Later"}
+          </Button>
         </CardContent>
       </Card>
 

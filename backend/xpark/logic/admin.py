@@ -9,6 +9,235 @@ from result import Result, Ok, Err
 import uuid
 
 
+def handle_ban_user(ban_user_id: uuid.UUID, rationale: str) -> Result[None, str]:
+    """
+    Ban a user and perform cascading effects as described.
+    """
+    try:
+        with DB.pool.connection() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                # Verify the user exists and is not already deleted/banned
+                cur.execute(
+                    """
+                    SELECT email, name, deleted_at, is_banned
+                    FROM users WHERE id = %s
+                    """,
+                    (str(ban_user_id),),
+                )
+                banned_user = cur.fetchone()
+
+                if not banned_user:
+                    return Err("User not found.")
+                if banned_user["deleted_at"]:
+                    return Err("Cannot ban a user who has been deleted.")
+                if banned_user.get("is_banned", False):
+                    return Err("User is already banned.")
+
+                # Fetch reservations to notify users/owners
+                cur.execute(
+                    """
+                    SELECT r.id, ps.name AS parking_space_name, ps.owner, u.email AS owner_email
+                    FROM reservations r
+                    JOIN parking_spaces ps ON r.parking_space_id = ps.id
+                    JOIN users u ON ps.owner = u.id
+                    WHERE r.renter_id = %s AND r.status = 'booked'
+                    """,
+                    (str(ban_user_id),),
+                )
+                future_reservations = cur.fetchall()
+
+                for reservation in future_reservations:
+                    send_email(
+                        to=reservation["owner_email"],
+                        subject="Reservation Cancellation",
+                        content=generate_templated_email(
+                            "reservation_cancellation",
+                            parking_space_name=reservation[
+                                "parking_space_name"
+                            ],  # Use the name here
+                            reason="The renter has been banned.",
+                        ),
+                    )
+
+                # Cancel future reservations on user's owned parking spaces
+                cur.execute(
+                    """
+                    SELECT
+                        r.id,
+                        r.renter_id,
+                        lower(r.time) AS start_time,
+                        upper(r.time) AS end_time,
+                        u.email AS renter_email,
+                        ps.name AS parking_space_name
+                    FROM reservations r
+                    JOIN users u ON r.renter_id = u.id
+                    JOIN parking_spaces ps ON r.parking_space_id = ps.id
+                    WHERE ps.owner = %s
+                    AND r.status = 'booked';
+                    """,
+                    (str(ban_user_id),),
+                )
+                future_rentals = cur.fetchall()
+
+                for rental in future_rentals:
+                    send_email(
+                        to=rental["renter_email"],
+                        subject="Reservation Cancellation",
+                        content=generate_templated_email(
+                            "reservation_owner_ban",
+                            parking_space_name=rental["parking_space_name"],
+                            start_time=rental["start_time"],
+                            end_time=rental["end_time"],
+                        ),
+                    )
+
+                # Mark the user as banned and soft-deleted
+                cur.execute(
+                    """
+                    UPDATE users
+                    SET is_banned = TRUE,
+                        deleted_at = NOW()
+                    WHERE id = %s
+                    """,
+                    (str(ban_user_id),),
+                )
+
+                # Delete parking spaces owned by the banned user
+                cur.execute(
+                    """
+                    DELETE FROM parking_spaces
+                    WHERE owner = %s
+                    """,
+                    (str(ban_user_id),),
+                )
+
+                # Delete all tokens for the user
+                cur.execute(
+                    """
+                    DELETE FROM user_tokens
+                    WHERE user_id = %s
+                    """,
+                    (str(ban_user_id),),
+                )
+
+                # Remove user's reports
+                cur.execute(
+                    """
+                    DELETE FROM reports WHERE user_id = %s
+                    """,
+                    (str(ban_user_id),),
+                )
+
+        conn.commit()
+
+        # Notify the banned user
+        send_email(
+            to=banned_user["email"],
+            subject="Your Account Has Been Banned",
+            content=generate_templated_email(
+                "user_banned",
+                name=banned_user["name"],
+                rationale=rationale,
+            ),
+        )
+
+        return Ok(None)
+
+    except Exception as e:
+        return Err(f"Database or email operation failed: {str(e)}")
+
+
+def fetch_user_details(user_id: uuid.UUID) -> Result[Dict[str, Any], str]:
+    """
+    Fetch user details including past bookings, parking spaces, and reports.
+    """
+    try:
+        with DB.pool.connection() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                # Fetch user basic information
+                cur.execute(
+                    """
+                    SELECT id, name, email
+                    FROM users
+                    WHERE id = %s
+                    """,
+                    (str(user_id),),
+                )
+                user_info = cur.fetchone()
+                if not user_info:
+                    return Err("User not found")
+
+                # Fetch user past bookings
+                cur.execute(
+                    """
+                    SELECT
+                        reservations.id,
+                        reservations.status,
+                        LOWER(reservations.time) AS start_time,
+                        UPPER(reservations.time) AS end_time,
+                        reservations.price AS cost,
+                        parking_spaces.name AS parking_space_name,
+                        parking_spaces.address AS parking_space_address
+                    FROM reservations
+                    JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                    WHERE reservations.renter_id = %s
+                    ORDER BY reservations.created_at DESC
+                    """,
+                    (str(user_id),),
+                )
+                past_bookings = cur.fetchall()
+
+                # Fetch user parking spaces
+                cur.execute(
+                    """
+                    SELECT
+                        id,
+                        name,
+                        address,
+                        verification_status,
+                        created_at
+                    FROM parking_spaces
+                    WHERE owner = %s
+                    ORDER BY created_at DESC
+                    """,
+                    (str(user_id),),
+                )
+                parking_spaces = cur.fetchall()
+
+                # Fetch user reports
+                cur.execute(
+                    """
+                    SELECT
+                        reports.id,
+                        reports.description,
+                        reports.type,
+                        reports.status,
+                        reports.created_at,
+                        reports.updated_at
+                    FROM reports
+                    WHERE reports.user_id = %s
+                    ORDER BY reports.created_at DESC
+                    """,
+                    (str(user_id),),
+                )
+                reports = cur.fetchall()
+
+        # Aggregate all fetched data into a single object
+        user_details = {
+            "id": user_info["id"],
+            "name": user_info["name"],
+            "email": user_info["email"],
+            "pastBookings": past_bookings,
+            "parkingSpaces": parking_spaces,
+            "reports": reports,
+        }
+
+        return Ok(user_details)
+
+    except Exception as e:
+        return Err(f"Failed to fetch user details: {str(e)}")
+
+
 def get_all_cancellations() -> Result[List[Dict[str, Any]], str]:
     """
     Fetch all cancellations from the reservations table where status is 'canceled'.
@@ -136,6 +365,7 @@ def get_all_conflicts() -> Result[List[Dict[str, Any]], str]:
                     reports.id,
                     reports.reservation_id,
                     reports.user_id,
+                    reporters.name AS reporter_name,
                     reports.description,
                     reports.type,
                     reports.status,
@@ -149,7 +379,9 @@ def get_all_conflicts() -> Result[List[Dict[str, Any]], str]:
                     reports.created_at,
                     reports.updated_at,
                     owners.name AS owner_name,
+                    owners.id AS owner_id,
                     renters.name AS renter_name,
+                    renters.id AS renter_id,
                     parking_spaces.name AS parking_space_name,
                     parking_spaces.address AS parking_space_address,
                     LOWER(reservations.time) AS start_time,
@@ -160,6 +392,7 @@ def get_all_conflicts() -> Result[List[Dict[str, Any]], str]:
                 LEFT JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
                 LEFT JOIN users AS owners ON parking_spaces.owner = owners.id
                 LEFT JOIN users AS renters ON reservations.renter_id = renters.id
+                LEFT JOIN users AS reporters ON reports.user_id = reporters.id
                 WHERE reports.status != 'resolved' -- Only get non-resolved reports
                 ORDER BY reports.created_at DESC
                 """

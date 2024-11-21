@@ -418,7 +418,7 @@ def test_force_cancel_reservation(client: FlaskClient) -> None:
     )
 
     response = client.post(
-        f"/api/unstable/reservations/force-cancel/{reservation_id}",
+        f"/api/unstable/reservations/{reservation_id}/force-cancel",
         headers={"Authorization": f"Bearer {owner_token}"},
     )
     assert response.status_code == 200
@@ -430,6 +430,7 @@ def test_force_cancel_reservation(client: FlaskClient) -> None:
     )
     assert response.status_code == 200
     assert response.get_json()["status"] == "canceled"
+
 
 def test_unauthorized_force_cancel(client: FlaskClient) -> None:
     """Test force-cancel a reservation"""
@@ -445,7 +446,7 @@ def test_unauthorized_force_cancel(client: FlaskClient) -> None:
     )
 
     response = client.post(
-        f"/api/unstable/reservations/force-cancel/{reservation_id}",
+        f"/api/unstable/reservations/{reservation_id}/force-cancel",
         headers={"Authorization": f"Bearer {unauthorized_token}"},
     )
     assert response.status_code == 403
