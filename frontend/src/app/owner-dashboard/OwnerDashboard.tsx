@@ -94,9 +94,8 @@ export default function OwnerDashboard() {
   const [selectedTab, setSelectedTab] = React.useState(
       queryTab || "revenue"
   );
-
   const [selectedSpotId, setSelectedSpotId] = React.useState<string | null>(
-      querySpotId
+      null
   );
 
   const {
@@ -152,6 +151,15 @@ export default function OwnerDashboard() {
     selectedSpotId,
     toast,
   ])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const spotId = params.get("spotId");
+    const tab = params.get("tab");
+
+    setSelectedSpotId(spotId);
+    setSelectedTab(tab || "revenue");
+  }, []);
 
   // Initial data fetch
   useEffect(() => {
