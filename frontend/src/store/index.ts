@@ -9,12 +9,14 @@ import reservationCarReducer from "@/features/cars/reservationCarSlice"
 import addReducer from "@/features/add/addSlice"
 import adminReducer from "@/features/admin/adminSlice" // Import admin slice
 import ownerReservationsReducer from "@/features/owner-reservations/ownerReservationsSlice"
+import reservationCancellationReducer from "@/features/owner-reservations/reservationCancellationSlice"
 import reportReducer from "@/features/reports/reportSlice"
 import reportDetailsReducer from "@/features/reports/reportDetailsSlice"
 import dashboardAnalyticsReducer from "@/features/dashboard-analytics/dashboardAnalyticsSlice"
 import { customMiddleware } from "./middleware" // Import your custom middleware
 import throttle from "lodash.throttle"
 import { saveState, loadState } from "./localStorage"
+import bookmarkReducer from "@/features/bookmarks/bookmarkSlice"
 import ownerSlice from "@/features/owner/ownerSlice"
 import dashboardAnalyticsSlice from "@/features/dashboard-analytics/dashboardAnalyticsSlice"
 
@@ -35,8 +37,10 @@ export const createStore = (preloadedState?: Partial<RootState>) => {
       reports: reportReducer,
       reportDetails: reportDetailsReducer,
       ownerReservations: ownerReservationsReducer,
+      reservationCancellations: reservationCancellationReducer,
       reservationCar: reservationCarReducer,
       dashboardAnalytics: dashboardAnalyticsReducer,
+      bookmarks: bookmarkReducer,
     },
     // @ts-ignore
     middleware: (getDefaultMiddleware) =>

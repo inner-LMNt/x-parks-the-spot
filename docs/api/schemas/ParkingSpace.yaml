@@ -11,6 +11,9 @@ properties:
     type: boolean
   is_taken:
     type: boolean
+  is_bookmarked:
+    type: boolean
+    nullable: true
   owner_id:
     type: string
     format: uuid

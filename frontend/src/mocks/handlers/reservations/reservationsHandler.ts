@@ -145,6 +145,7 @@ export const createReservationHandler = http.post<
     car_info_id: "car_id",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    is_bookmarked: false,
   }
 
   reservations.push(newReservation)
