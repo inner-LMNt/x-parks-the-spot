@@ -768,3 +768,21 @@ def get_user_rating(
             )
             rating = cur.fetchone()
         return Ok(rating)
+
+
+def rate_renter(
+    parking_space_id: uuid.UUID, owner_id: uuid.UUID, renter_id: uuid.UUID, score: int
+) -> Result[None, None]:
+    # FIXME: verify that the owner is actually allowed to rate the renter and it's not just any person
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+            INSERT INTO renter_ratings (renter_id, rater_id, score)
+            VALUES (%(renter_id)s, %(rater_id)s, %(score)s)
+            ON CONFLICT (renter_id, rater_id) DO UPDATE
+            SET score = %(score)s
+            """,
+                {"renter_id": renter_id, "owner_id": owner_id, "score": score},
+            )
+            return Ok(None)

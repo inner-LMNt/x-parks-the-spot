@@ -12,6 +12,7 @@ from xpark.logic.parkingspace import (
     submit_rating,
     get_user_rating,
     award_points,
+    rate_renter,
 )
 from flask import request
 from result import Ok, Err
@@ -263,3 +264,19 @@ def get_user_rating_route(
             return data, 200
         case Err(e):
             return {"err": e}, 400
+
+
+@bp.post("<parking_space_id>/rate-renter")
+@require_logged_in_user
+def rate_renter_route(parking_space_id: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    assert request.json is not None
+    match rate_renter(
+        parking_space_id=uuid.UUID(parking_space_id),
+        owner_id=user_id,
+        renter_id=uuid.UUID(request.json["renter_id"]),
+        score=request.json["score"],
+    ):
+        case Ok(_):
+            return {}, 200
+        case Err(e):
+            return {"err", e}, 400
