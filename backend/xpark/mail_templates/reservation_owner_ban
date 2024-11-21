@@ -1,0 +1,18 @@
+Hi,
+
+We regret to inform you that your reservation for the parking space "$parking_space_name" has been canceled due to the following reason:
+
+Reason:
+"The owner of this parking space has been banned from our platform."
+
+Reservation Details:
+- Start Time: $start_time
+- End Time: $end_time
+
+We apologize for the inconvenience caused and encourage you to book another parking space using our platform.
+
+
+Thank you for using XPark.
+
+Best regards,
+The XPark Team

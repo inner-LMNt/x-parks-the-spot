@@ -39,6 +39,7 @@ interface UserState {
   badges: number[]
   transactions: any[]
   active_raffle_tickets: number
+  score: number
 }
 
 const initialState: UserState = {
@@ -59,6 +60,7 @@ const initialState: UserState = {
   badges: [],
   transactions: [],
   active_raffle_tickets: 0,
+  score: 5,
 }
 
 /**
@@ -358,6 +360,18 @@ export const get_raffle_tickets = createAsyncThunk<
     return response.data.tickets.count
   } catch (error: any) {
     return rejectWithValue("Failed to get raffle tickets")
+
+export const get_score = createAsyncThunk<
+  { score: number } | null,
+  void,
+  { rejectValue: string }
+>("user/get_score", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("auth/score")
+    console.log("data", response.data)
+    return response.data.score
+  } catch (error: any) {
+    return rejectWithValue("Failed to get score")
   }
 })
 
@@ -384,6 +398,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof get_badge_list.pending
           | typeof buy_raffle_ticket.pending
           | typeof get_raffle_tickets.pending
+          | typeof get_score.pending
         > => action.type.endsWith("/pending"),
         (state) => {
           state.loading = true
@@ -408,6 +423,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof get_badge_list.rejected
           | typeof buy_raffle_ticket.rejected
           | typeof get_raffle_tickets.rejected
+          | typeof get_score.rejected
         > => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false
@@ -544,6 +560,12 @@ const userSlice = createSlice<UserState, {}, "user">({
         state.loading = false
         console.log("action.payload", action.payload)
         state.active_raffle_tickets = action.payload
+        
+      .addMatcher(isAnyOf(get_score.fulfilled), (state, action) => {
+        state.loading = false
+        console.log(`score! ${action.payload}`)
+        //@ts-ignore
+        state.score = action.payload
       })
   },
 })

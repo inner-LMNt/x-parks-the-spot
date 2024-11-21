@@ -19,6 +19,7 @@ from xpark.logic.user import (
     handle_get_badge_list,
     handle_buy_raffle_ticket,
     handle_get_raffle_tickets,
+    get_responsiveness_score,
 )
 
 
@@ -169,6 +170,16 @@ def get_user_location(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return location, 200
         case Err(e):
             return {"err": e}, 404
+
+
+@bp.get("score")
+@require_logged_in_user
+def get_score(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match get_responsiveness_score(user_id):
+        case Ok(score):
+            return {"score": score}, 200
+        case Err(e):
+            return {"err", e}, 500
 
 
 @bp.get("points")

@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   get_user_location,
   get_points,
+  get_score,
   get_badge_list,
   get_raffle_tickets,
 } from "@/features/user/userSlice"
@@ -35,6 +36,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from "react"
+import { RatingStars } from "@/components/custom/RatingDisplay"
 
 function ProfileStats({ label, value }: { label: string; value: number }) {
   return (
@@ -119,6 +122,7 @@ export default function ProfilePage() {
   const [timeRemaining, setTimeRemaining] = useState(
     getTimeRemaining(getEndOfMonth()),
   )
+  const score = useAppSelector((state) => state.user.score)
 
   const handleLogout = async () => {
     await dispatch(logout())
@@ -171,6 +175,7 @@ export default function ProfilePage() {
   useEffect(() => {
     dispatch(get_user_location())
     dispatch(get_points())
+    dispatch(get_score())
     dispatch(get_badge_list())
     dispatch(get_raffle_tickets())
     setDomLoaded(true)
@@ -181,10 +186,11 @@ export default function ProfilePage() {
   }, [userBadges])
 
   useEffect(() => {
+    setDomLoaded(true)
     const interval = setInterval(() => {
       setTimeRemaining(getTimeRemaining(getEndOfMonth()))
     }, 1000)
-
+    
     return () => clearInterval(interval)
   }, [])
 
@@ -252,6 +258,8 @@ export default function ProfilePage() {
             <h1 className="text-2xl md:text-3xl font-bold mb-1">
               {userProfile.username}
             </h1>
+            <RatingStars rating={score} />
+            <div className="h-3"></div>
             <p className="text-lg md:text-xl text-gray-600 mb-4">
               Total Points: {totalPoints}
             </p>

@@ -9,12 +9,58 @@ from xpark.logic.admin import (
     admin_delete_paid_parking_space,
     get_raffle_entries,
     perform_raffle,
+    handle_ban_user,
+    fetch_user_details,
 )
 from flask import request, jsonify
 from result import Ok, Err
 from typing import Any, Tuple
 from xpark.middleware.token_auth_middleware import require_admin
 import uuid
+
+
+@bp.post("ban-user")
+@require_admin
+def ban_user_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    """
+    Ban a user and handle cascading effects.
+    """
+    try:
+        data = request.get_json()
+        ban_user_id = data.get("userId")
+        rationale = data.get("rationale")
+
+        ban_user_uuid = uuid.UUID(ban_user_id)
+
+        result = handle_ban_user(ban_user_uuid, rationale)
+
+        if result.is_ok():
+            return jsonify({"message": "User has been banned successfully"}), 200
+        else:
+            return {"error": f"Ban operation failed: {result.unwrap_err()}"}, 400
+
+    except Exception as e:
+        return {"error": f"Unexpected server error: {str(e)}"}, 500
+
+
+@bp.get("user-details/<user>")
+@require_admin
+def fetch_user_details_route(
+    token: str, user_id: uuid.UUID, user: str
+) -> Tuple[Any, int]:
+    """
+    Fetch user details including past bookings, parking spaces, and reports.
+    """
+    try:
+        user_uuid = uuid.UUID(user)
+    except ValueError:
+        return {"error": "Invalid user ID format"}, 400
+
+    result = fetch_user_details(user_uuid)
+    if result.is_ok():
+        return jsonify(result.unwrap()), 200
+    else:
+        return {"error": result.unwrap_err()}, 400
 
 
 @bp.get("get-conflicts")
