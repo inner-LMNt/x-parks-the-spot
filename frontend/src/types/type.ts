@@ -27,6 +27,7 @@ export type UserUpdateRequest = components["schemas"]["UserUpdateRequest"];
 export type NotificationPreferences =
   components["schemas"]["NotificationPreferences"];
 export type CarInfo = components["schemas"]["CarInfo"];
+export type Bookmark = components["schemas"]["Bookmark"];
 export type RenterProfile = components["schemas"]["RenterProfile"];
 export type OwnerProfile = components["schemas"]["OwnerProfile"];
 export type SpotFinderProfile = components["schemas"]["SpotFinderProfile"];

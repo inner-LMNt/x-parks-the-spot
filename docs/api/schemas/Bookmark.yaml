@@ -1,0 +1,13 @@
+type: object
+required:
+  - parking_space_id
+  - name
+  - location
+properties:
+  parking_space_id:
+    type: string
+    format: uuid
+  name:
+    type: string
+  location:
+    $ref: './Location.yaml'
