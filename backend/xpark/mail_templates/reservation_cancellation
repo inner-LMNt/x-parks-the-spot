@@ -1,0 +1,10 @@
+Hello,
+
+This is to inform you that a reservation for your parking space with the name $parking_space_name has been canceled due to the following reason:
+
+$reason
+
+We apologize for the inconvenience. If you have any questions, please contact support.
+
+Best regards,
+The ParkingPass Team

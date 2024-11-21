@@ -16,12 +16,23 @@ interface Conflict {
   parking_space_address: string
   start_time: string
   end_time: string
+  owner_id: string
+  reporter_id: string
+  reporter_name: string
 }
-
+interface UserDetails {
+  id: string
+  name: string
+  email: string
+  pastBookings: any[]
+  parkingSpaces: any[]
+  reports: any[]
+}
 interface AdminState {
   pendingSpots: ParkingSpace[]
   conflicts: Conflict[]
   cancellations: Conflict[]
+  userDetails: UserDetails | null
   loading: boolean
   error: string | null
 }
@@ -30,9 +41,40 @@ const initialState: AdminState = {
   pendingSpots: [],
   conflicts: [],
   cancellations: [],
+  userDetails: null,
   loading: false,
   error: null,
 }
+
+// Async thunk to fetch user details
+export const fetchUserDetails = createAsyncThunk<
+  UserDetails,
+  string,
+  { rejectValue: string }
+>("admin/fetchUserDetails", async (userId, { rejectWithValue }) => {
+  try {
+    const response = await axios.get(`/admin/user-details/${userId}`)
+    return response.data
+  } catch (error: any) {
+    console.error("Error fetching user details:", error)
+    return rejectWithValue(
+      error.response?.data?.error || "Failed to fetch user details",
+    )
+  }
+})
+
+// Ban user
+export const banUser = createAsyncThunk<
+  void, // No return value needed
+  { userId: string; rationale: string }, // Arguments passed to the thunk
+  { rejectValue: string }
+>("ban/banUser", async ({ userId, rationale }, { rejectWithValue }) => {
+  try {
+    await axios.post(`/admin/ban-user`, { userId, rationale })
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.error || "Failed to ban user")
+  }
+})
 
 // Async thunk to update a conflict response
 export const updateConflictResponse = createAsyncThunk<
@@ -181,6 +223,62 @@ const adminSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+      .addCase(verifyParkingSpot.pending, (state: AdminState) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(
+        verifyParkingSpot.fulfilled,
+        (state: AdminState, action: any) => {
+          state.loading = false
+          const updatedSpot = action.payload
+          state.pendingSpots = state.pendingSpots.map((spot) =>
+            spot.id === updatedSpot.id ? updatedSpot : spot,
+          )
+        },
+      )
+      .addCase(verifyParkingSpot.rejected, (state: AdminState, action: any) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
+      .addCase(deleteParkingSpace.pending, (state: AdminState) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(deleteParkingSpace.fulfilled, (state: AdminState, action) => {
+        state.loading = false
+      })
+      .addCase(deleteParkingSpace.rejected, (state: AdminState, action) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
+      // Fetch user details
+      .addCase(fetchUserDetails.pending, (state: AdminState) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(fetchUserDetails.fulfilled, (state: AdminState, action: any) => {
+        state.loading = false
+        state.userDetails = action.payload // Assign API response directly
+      })
+      .addCase(fetchUserDetails.rejected, (state: AdminState, action: any) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
+
+      // Ban user
+      .addCase(banUser.pending, (state: AdminState) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(banUser.fulfilled, (state: AdminState) => {
+        state.loading = false
+      })
+      .addCase(banUser.rejected, (state: AdminState, action: any) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
+
       // Handle updateConflictResponse
       .addCase(updateConflictResponse.pending, (state: AdminState) => {
         state.loading = true
@@ -270,36 +368,6 @@ const adminSlice = createSlice({
           state.error = action.payload as string
         },
       )
-      // Handle verifyParkingSpot
-      .addCase(verifyParkingSpot.pending, (state: AdminState) => {
-        state.loading = true
-        state.error = null
-      })
-      .addCase(
-        verifyParkingSpot.fulfilled,
-        (state: AdminState, action: any) => {
-          state.loading = false
-          const updatedSpot = action.payload
-          state.pendingSpots = state.pendingSpots.map((spot) =>
-            spot.id === updatedSpot.id ? updatedSpot : spot,
-          )
-        },
-      )
-      .addCase(verifyParkingSpot.rejected, (state: AdminState, action: any) => {
-        state.loading = false
-        state.error = action.payload as string
-      })
-      .addCase(deleteParkingSpace.pending, (state: AdminState) => {
-        state.loading = true
-        state.error = null
-      })
-      .addCase(deleteParkingSpace.fulfilled, (state: AdminState, action) => {
-        state.loading = false
-      })
-      .addCase(deleteParkingSpace.rejected, (state: AdminState, action) => {
-        state.loading = false
-        state.error = action.payload as string
-      })
   },
 })
 
