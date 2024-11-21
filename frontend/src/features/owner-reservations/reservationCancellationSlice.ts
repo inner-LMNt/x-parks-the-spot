@@ -21,7 +21,7 @@ export const forceCancelReservation = createAsyncThunk<
   "reservations/forceCancelReservation",
   async (reservationId, { rejectWithValue }) => {
     try {
-      await axios.post(`/reservations/force-cancel/${reservationId}`)
+      await axios.post(`/reservations/${reservationId}/force-cancel`)
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.error || "Failed to cancel reservation",

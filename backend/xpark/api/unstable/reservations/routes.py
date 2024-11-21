@@ -161,7 +161,7 @@ def get_owner_reservations_route(token: str, user_id: uuid.UUID) -> Tuple[Any, i
             return {"err": e}, 500
 
 
-@bp.post("force-cancel/<reservation_id>")
+@bp.post("<reservation_id>/force-cancel")
 @require_logged_in_user
 def force_cancel_reservation_route(
     reservation_id: str, token: str, user_id: uuid.UUID
