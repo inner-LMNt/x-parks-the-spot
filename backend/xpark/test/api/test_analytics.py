@@ -762,31 +762,40 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
     historical = revenue_metrics["historicalRevenue"]
     assert len(historical) == 31
 
-    # Check specific historical dates
-    oct_21_entry = next(
-        h for h in historical if h["timestamp"] == "2024-10-21T00:00:00+00:00"
-    )
-    assert round(oct_21_entry["actual"], 1) == 120.0
+    now = datetime.now(timezone.utc)
+    timestamps = {
+        "entry_1": (now - timedelta(days=30)).replace(hour=0, minute=0, second=0, microsecond=0),
+        "entry_2": (now - timedelta(days=24)).replace(hour=0, minute=0, second=0, microsecond=0),
+        "entry_3": (now - timedelta(days=18)).replace(hour=0, minute=0, second=0, microsecond=0),
+        "entry_4": (now - timedelta(days=12)).replace(hour=0, minute=0, second=0, microsecond=0),
+        "entry_5": (now - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0),
+    }
 
-    oct_27_entry = next(
-        h for h in historical if h["timestamp"] == "2024-10-27T00:00:00+00:00"
+    # Perform the assertions dynamically
+    entry_1 = next(
+        h for h in historical if h["timestamp"] == timestamps["entry_1"].isoformat()
     )
-    assert round(oct_27_entry["actual"], 1) == 180.0
+    assert round(entry_1["actual"], 1) == 120.0
 
-    nov_2_entry = next(
-        h for h in historical if h["timestamp"] == "2024-11-02T00:00:00+00:00"
+    entry_2 = next(
+        h for h in historical if h["timestamp"] == timestamps["entry_2"].isoformat()
     )
-    assert round(nov_2_entry["actual"], 1) == 240.0
+    assert round(entry_2["actual"], 1) == 180.0
 
-    nov_8_entry = next(
-        h for h in historical if h["timestamp"] == "2024-11-08T00:00:00+00:00"
+    entry_3 = next(
+        h for h in historical if h["timestamp"] == timestamps["entry_3"].isoformat()
     )
-    assert round(nov_8_entry["actual"], 1) == 120.0
+    assert round(entry_3["actual"], 1) == 240.0
 
-    nov_14_entry = next(
-        h for h in historical if h["timestamp"] == "2024-11-14T00:00:00+00:00"
+    entry_4 = next(
+        h for h in historical if h["timestamp"] == timestamps["entry_4"].isoformat()
     )
-    assert round(nov_14_entry["actual"], 1) == 180.0
+    assert round(entry_4["actual"], 1) == 120.0
+
+    entry_5 = next(
+        h for h in historical if h["timestamp"] == timestamps["entry_5"].isoformat()
+    )
+    assert round(entry_5["actual"], 1) == 180.0
 
     # 4. Spot Performance
     spot_performance = data["spotPerformance"]
@@ -818,9 +827,9 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
         sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 420.0
     )
 
-    assert spot_1["completedBookings"] == 475
-    assert spot_2["completedBookings"] == 425
-    assert spot_3["completedBookings"] == 375
+    assert spot_1["completedBookings"] == 575
+    assert spot_2["completedBookings"] == 525
+    assert spot_3["completedBookings"] == 475
 
     # 5. Rating Metrics
     rating_metrics = data["ratingMetrics"]

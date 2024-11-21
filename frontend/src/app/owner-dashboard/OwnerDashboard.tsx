@@ -8,7 +8,7 @@ import { getOwnerSpots } from "@/features/owner/ownerSlice"
 import { fetchDashboardAnalytics } from "@/features/dashboard-analytics/dashboardAnalyticsSlice"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import {ArrowLeft, FileWarning} from "lucide-react"
+import { ArrowLeft, FileWarning } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import {
@@ -181,9 +181,9 @@ export default function OwnerDashboard() {
           </Button>
 
           <Button
-              variant="ghost"
-              className="absolute right-4 flex items-center text-gray-800"
-              onClick={() => router.push("/reports")}
+            variant="ghost"
+            className="absolute right-4 flex items-center text-gray-800"
+            onClick={() => router.push("/reports")}
           >
             <FileWarning className="w-5 h-5 mr-1" />
             Report
