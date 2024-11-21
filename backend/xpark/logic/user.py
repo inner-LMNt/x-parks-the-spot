@@ -451,7 +451,9 @@ def handle_get_points(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
             return Ok(result)
 
 
-def handle_get_transaction_history(user_id: uuid.UUID) -> Result[list[Dict[str, int]], str]:
+def handle_get_transaction_history(
+    user_id: uuid.UUID,
+) -> Result[list[Dict[str, int]], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
