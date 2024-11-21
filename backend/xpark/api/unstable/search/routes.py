@@ -7,7 +7,6 @@ from flask import request
 from typing import Tuple, Any
 from datetime import datetime
 from result import Ok, Err
-import uuid
 
 
 @bp.post("")
@@ -48,3 +47,4 @@ def get_leaderboard() -> Tuple[Any, int]:
             return {"leaderboard": leaderboard}, 200
         case Err(e):
             return {"err": e}, 404
+    return {"err": "Unknown error"}, 500

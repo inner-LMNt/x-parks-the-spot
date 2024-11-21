@@ -611,6 +611,7 @@ def get_user_id_from_token(client: FlaskClient, token: str) -> str:
     assert type(user_id) is str
     return user_id
 
+
 def mark_reservations_completed(
     client: FlaskClient, reservation_ids: List[str]
 ) -> None:

@@ -26,7 +26,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
         mailer_connect()
 
     # Initialize S3 uploads
-    # from .utils.s3 import S3
+    from .utils.s3 import S3
 
     if Config.S3_ENABLED == "yes":
         S3.connect()

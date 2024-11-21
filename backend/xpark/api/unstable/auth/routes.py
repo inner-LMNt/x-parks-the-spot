@@ -197,7 +197,7 @@ def use_points_badge(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     assert request.json
     badge_id = request.json["badgeId"]
     match handle_buy_badge(user_id, badge_id):
-        case Ok(points):
+        case Ok(_):
             return {"message": "Badge bought successfully"}, 200
         case Err(e):
             return {"err": e}, 402  # placeholder to prevent 403 redirection
@@ -219,7 +219,7 @@ def use_points_raffle(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     assert request.json
     raffle_id = request.json["raffleId"]
     match handle_buy_raffle_ticket(user_id, raffle_id):
-        case Ok(result):
+        case Ok(_):
             return {"message": "Raffle bought successfully"}, 200
         case Err(e):
             return {"err": e}, 402  # placeholder to prevent 403 redirection
@@ -237,5 +237,5 @@ def get_raffle_list(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 
 @bp.get("/me")
 @require_logged_in_user
-def get_user_info_route(token: str, user_id: uuid.UUID):
-    return {"id": str(user_id)}, 200
+def get_user_info_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    return {"id": user_id}, 200

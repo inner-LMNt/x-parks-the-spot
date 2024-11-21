@@ -1,7 +1,7 @@
 from typing import Any, Optional
 from psycopg.rows import dict_row
 from xpark.utils.db import DB
-from result import Ok, Err
+from result import Ok, Result
 from datetime import datetime, timezone
 
 
@@ -123,7 +123,7 @@ def search_query(
             return parking_spaces
 
 
-def search_leaderboard() -> list[dict[str, Any]]:
+def search_leaderboard() -> Result[list[dict[str, Any]], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(

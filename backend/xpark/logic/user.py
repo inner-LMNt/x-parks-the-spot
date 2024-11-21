@@ -451,7 +451,7 @@ def handle_get_points(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
             return Ok(result)
 
 
-def handle_get_transaction_history(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
+def handle_get_transaction_history(user_id: uuid.UUID) -> Result[list[Dict[str, int]], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
@@ -536,7 +536,7 @@ def handle_buy_badge(user_id: uuid.UUID, badge_id: int) -> Result[None, str]:
             return Ok(None)
 
 
-def handle_get_badge_list(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
+def handle_get_badge_list(user_id: uuid.UUID) -> Result[list[int], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
@@ -547,8 +547,7 @@ def handle_get_badge_list(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
             if not result:
                 return Err("User not found")
 
-            result = list(map(int, result["badges"]))
-            return Ok(result)
+            return Ok(result["badges"])
 
 
 def handle_buy_raffle_ticket(user_id: uuid.UUID, raffle_id: int) -> Result[None, str]:
