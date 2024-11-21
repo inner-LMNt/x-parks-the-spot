@@ -189,7 +189,7 @@ export default function OwnerDashboard() {
             Report
           </Button>
 
-          {loading ? (
+          {analyticsLoading ? (
             <HeaderSkeleton />
           ) : (
             <>

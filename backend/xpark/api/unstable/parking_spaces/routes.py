@@ -14,6 +14,7 @@ from xpark.logic.parkingspace import (
     award_points,
     bookmark_spot,
     remove_bookmarked_spot,
+    get_user_ratings,
 )
 from flask import request
 from result import Ok, Err
@@ -269,6 +270,21 @@ def get_user_rating_route(
     match get_user_rating(user_id, parking_space_uuid):
         case Ok(data):
             return data, 200
+        case Err(e):
+            return {"err": e}, 400
+
+
+@bp.get("user-ratings")
+@require_logged_in_user
+def get_user_ratings_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    """
+    Endpoint to fetch the logged-in user's rating for a specific parking space.
+
+    URL: GET /parking-spaces/<parking_space_id>/user-rating
+    """
+    match get_user_ratings(user_id):
+        case Ok(data):
+            return {"ratings": data}, 200
         case Err(e):
             return {"err": e}, 400
 
