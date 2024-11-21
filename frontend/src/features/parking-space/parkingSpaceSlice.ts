@@ -423,20 +423,6 @@ const parkingSpaceSlice = createSlice({
       .addCase(submitRating.rejected, (state: ParkingSpaceState, action) => {
         state.error = "Failed to submit rating"
       })
-      },
-    )
-
-    builder.addCase(
-      resetParkingSpaceState.fulfilled,
-      (state: ParkingSpaceState) => {
-        state.parkingSpace = null
-        state.lockStatus = "idle"
-        state.lockExpiresAt = null
-        state.error = null
-        state.loading = false
-        state.pointsAwarded = false
-      },
-    )
   },
 })
 
