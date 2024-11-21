@@ -372,10 +372,12 @@ const AdminReportsPage = () => {
 
     dispatch(fetchUserDetails(userId))
         .unwrap()
+        //@ts-ignore
         .then((userDetail) => {
           console.log("API returned user details:", userDetail); // Logs correct data
           setUserDetails(userDetail); // Schedule state update
         })
+        //@ts-ignore
         .catch((error) => {
           console.error("Failed to fetch user details:", error);
         });
@@ -537,7 +539,8 @@ const AdminReportsPage = () => {
           <DialogHeader>
             <DialogTitle>User Information</DialogTitle>
           </DialogHeader>
-          {selectedUserId ? (
+
+          {selectedUserId && userDetails  ? (
               <UserInfo userId={selectedUserId} userDetails={userDetails} />
           ) : (
               <p>No user selected.</p>

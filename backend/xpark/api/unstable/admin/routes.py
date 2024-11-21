@@ -16,6 +16,28 @@ from typing import Any, Tuple
 from xpark.middleware.token_auth_middleware import require_admin
 import uuid
 
+@bp.post("ban-user")
+@require_admin
+def ban_user_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    """
+    Ban a user and handle cascading effects.
+    """
+    try:
+        data = request.get_json()
+        ban_user_id = data.get("userId")
+        rationale = data.get("rationale")
+
+        ban_user_uuid = uuid.UUID(ban_user_id)
+
+        result = handle_ban_user(ban_user_uuid, rationale)
+
+        if result.is_ok():
+            return jsonify({"message": "User has been banned successfully"}), 200
+        else:
+            return {"error": f"Ban operation failed: {result.unwrap_err()}"}, 400
+
+    except Exception as e:
+        return {"error": f"Unexpected server error: {str(e)}"}, 500
 
 
 @bp.get("user-details/<user>")

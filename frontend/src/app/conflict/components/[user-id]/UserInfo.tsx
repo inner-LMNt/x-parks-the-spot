@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAppDispatch } from "@/store/hooks";
 import { banUser } from "@/features/admin/adminSlice";
+import { toast } from "@/hooks/use-toast";
 
 interface UserDetails {
   id: string;
@@ -26,19 +27,31 @@ const UserInfo: React.FC<{ userId: string; userDetails?: UserDetails }> = ({
 
   const handleBanUser = () => {
     if (banRationale.trim() === "") {
-      alert("Please enter a rationale for banning the user.");
+      toast({
+        title: "Error",
+        description: "Please enter a rationale for banning the user.",
+        variant: "destructive",
+      });
       return;
     }
 
-    // Dispatch ban user action
     dispatch(banUser({ userId, rationale: banRationale }))
         .unwrap()
         .then(() => {
-          alert("User banned successfully.");
+          toast({
+            title: "Success",
+            description: "User banned successfully.",
+            variant: "success",
+          });
           setIsBanDialogOpen(false); // Close the modal
         })
+        //@ts-ignore
         .catch((error) => {
-          alert(`Failed to ban user: ${error}`);
+          toast({
+            title: "Error",
+            description: `Failed to ban user: ${error}`,
+            variant: "destructive",
+          });
         });
   };
 
@@ -46,11 +59,10 @@ const UserInfo: React.FC<{ userId: string; userDetails?: UserDetails }> = ({
       <div className="flex items-center justify-center">
         <Card className="shadow-md border border-gray-200">
           <CardHeader>
-            <CardTitle className="text-xl font-semibold">
+            <CardTitle className="text-xl font-semibold text-gray-700">
               {userDetails?.name || "User Name"}
             </CardTitle>
-            <p className="text-gray-600">{userDetails?.email || "User Email"}</p>
-            {/* Ban User Button */}
+            <p className="text-gray-700">{userDetails?.email || "User Email"}</p>
             <Button
                 className="mt-4 bg-red-500 text-white hover:bg-red-600"
                 onClick={() => setIsBanDialogOpen(true)}
@@ -59,12 +71,17 @@ const UserInfo: React.FC<{ userId: string; userDetails?: UserDetails }> = ({
             </Button>
           </CardHeader>
           <CardContent className="mt-4">
-            {/* Tabs */}
             <Tabs defaultValue="pastBookings">
               <TabsList>
-                <TabsTrigger value="pastBookings">Past Bookings</TabsTrigger>
-                <TabsTrigger value="parkingSpaces">Parking Spaces</TabsTrigger>
-                <TabsTrigger value="reports">Reports</TabsTrigger>
+                <TabsTrigger value="pastBookings" className="text-gray-700">
+                  Past Bookings
+                </TabsTrigger>
+                <TabsTrigger value="parkingSpaces" className="text-gray-700">
+                  Parking Spaces
+                </TabsTrigger>
+                <TabsTrigger value="reports" className="text-gray-700">
+                  Reports
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="pastBookings">
@@ -75,8 +92,16 @@ const UserInfo: React.FC<{ userId: string; userDetails?: UserDetails }> = ({
                               key={booking.id}
                               className="p-3 border-b border-gray-200 hover:bg-gray-50"
                           >
-                            <p className="text-gray-800 font-medium">{booking.name}</p>
-                            <p className="text-sm text-gray-500">Booking ID: {booking.id}</p>
+                            <p className="text-blue-600 font-medium">
+                              {booking.parking_space_name || "Unnamed Parking Space"}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              <span>Start: {new Date(booking.start_time).toLocaleString()}</span>
+                              <br />
+                              <span>End: {new Date(booking.end_time).toLocaleString()}</span>
+                              <br />
+                              <span>Cost: ${booking.cost || "N/A"}</span>
+                            </p>
                           </div>
                       ))
                   ) : (
@@ -93,8 +118,14 @@ const UserInfo: React.FC<{ userId: string; userDetails?: UserDetails }> = ({
                               key={space.id}
                               className="p-3 border-b border-gray-200 hover:bg-gray-50"
                           >
-                            <p className="text-gray-800 font-medium">{space.name}</p>
-                            <p className="text-sm text-gray-500">Space ID: {space.id}</p>
+                            <p className="text-blue-600 font-medium">{space.name || "Unnamed Space"}</p>
+                            <p className="text-sm text-gray-500">
+                              <span>Address: {space.address || "N/A"}</span>
+                              <br />
+                              <span> Verification: {space.verification_status || "Unknown"}</span>
+                              <br />
+                              <span>Created At: {new Date(space.created_at).toLocaleDateString()}</span>
+                            </p>
                           </div>
                       ))
                   ) : (
@@ -102,6 +133,7 @@ const UserInfo: React.FC<{ userId: string; userDetails?: UserDetails }> = ({
                   )}
                 </ScrollArea>
               </TabsContent>
+
 
               <TabsContent value="reports">
                 <ScrollArea className="h-48">
@@ -111,10 +143,16 @@ const UserInfo: React.FC<{ userId: string; userDetails?: UserDetails }> = ({
                               key={report.id}
                               className="p-3 border-b border-gray-200 hover:bg-gray-50"
                           >
-                            <p className="text-gray-800 font-medium">
-                              {report.description || "Report"}
+                            <p className="text-blue-600 font-medium">{report.type || "Unknown Report"}</p>
+                            <p className="text-sm text-gray-500">
+                              <span>Status: {report.status || "Pending"}</span>
+                              <br />
+                              <span>Description: {report.description || "No details provided"}</span>
+                              <br />
+                              <span>Created At: {new Date(report.created_at).toLocaleDateString()}</span>
+                              <br />
+                              <span>Updated At: {new Date(report.updated_at).toLocaleDateString()}</span>
                             </p>
-                            <p className="text-sm text-gray-500">Report ID: {report.id}</p>
                           </div>
                       ))
                   ) : (
@@ -122,22 +160,22 @@ const UserInfo: React.FC<{ userId: string; userDetails?: UserDetails }> = ({
                   )}
                 </ScrollArea>
               </TabsContent>
+
             </Tabs>
           </CardContent>
         </Card>
 
-        {/* Ban User Modal */}
         <Dialog open={isBanDialogOpen} onOpenChange={setIsBanDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Ban User</DialogTitle>
+              <DialogTitle className="text-xl font-bold text-gray-700">Ban User</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
             <textarea
                 value={banRationale}
                 onChange={(e) => setBanRationale(e.target.value)}
                 placeholder="Enter a rationale for banning the user..."
-                className="w-full p-3 border border-gray-300 rounded-md"
+                className="w-full p-3 border border-gray-300 rounded-md text-gray-700"
             />
               <Button
                   className="w-full bg-red-500 text-white hover:bg-red-600"

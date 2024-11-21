@@ -53,7 +53,6 @@ export const fetchUserDetails = createAsyncThunk<
   { rejectValue: string }
 >("admin/fetchUserDetails", async (userId, { rejectWithValue }) => {
   try {
-    console.log(userId)
     const response = await axios.get(`/admin/user-details/${userId}`);
     return response.data;
   } catch (error: any) {
@@ -66,14 +65,16 @@ export const fetchUserDetails = createAsyncThunk<
 
 // Ban user
 export const banUser = createAsyncThunk<
-  void,
-  { userId: string; rationale: string },
-  { rejectValue: string }
->("admin/banUser", async ({ userId, rationale }, { rejectWithValue }) => {
+    void, // No return value needed
+    { userId: string; rationale: string }, // Arguments passed to the thunk
+    { rejectValue: string }
+>("ban/banUser", async ({ userId, rationale }, { rejectWithValue }) => {
   try {
     await axios.post(`/admin/ban-user`, { userId, rationale });
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.error || "Failed to ban user");
+    return rejectWithValue(
+        error.response?.data?.error || "Failed to ban user"
+    );
   }
 });
 
