@@ -6,6 +6,7 @@ interface SearchState {
   loading: boolean;
   error: string | null;
   spots: ParkingSpace[];
+  rerouteSpots: ParkingSpace[];
   leaderboard: LeaderboardUser[];
 }
 
@@ -13,6 +14,7 @@ const initialState: SearchState = {
   loading: false,
   error: null,
   spots: [],
+  rerouteSpots: [],
   leaderboard: [],
 };
 
@@ -42,6 +44,20 @@ export const searchLeaderboard = createAsyncThunk<
   }
 });
 
+export const searchRerouteSpots = createAsyncThunk<
+  SearchResponse,
+  SearchRequest,
+  { rejectValue: string }
+>("search/rerouteSpots", async (searchRequest, { rejectWithValue }) => {
+  try {
+    const response = await axios.post<SearchResponse>("/search", searchRequest)
+    return response.data
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.message || "Search failed")
+  }
+})
+
+
 const searchSlice = createSlice({
   name: "search",
   initialState,
@@ -70,11 +86,23 @@ const searchSlice = createSlice({
       })
       .addCase(searchLeaderboard.fulfilled, (state: SearchState, action: any) => {
         state.loading = false;
-        state.leaderboard = action.payload.leaderboard;
+        state.leaderboard = action.payload;
       })
       .addCase(searchLeaderboard.rejected, (state: SearchState, action: any) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      .addCase(searchRerouteSpots.pending, (state: SearchState) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(searchRerouteSpots.fulfilled, (state: SearchState, action: any) => {
+        state.loading = false
+        state.spots = action.payload
+      })
+      .addCase(searchRerouteSpots.rejected, (state: SearchState, action) => {
+        state.loading = false
+        state.error = action.payload as string
       })
       .addMatcher(
         (action: { type: string }): action is { type: "search/resetSpots" } =>

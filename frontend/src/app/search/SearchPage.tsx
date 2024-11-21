@@ -27,8 +27,8 @@ import {
   DirectionsRenderer,
   InfoWindow,
 } from "@react-google-maps/api"
-import { markSpotTaken } from "@/features/parking-space/parkingSpaceSlice"
-import { searchSpots } from "@/features/search/searchSlice"
+import { markSpotTaken, fetchParkingSpace } from "@/features/parking-space/parkingSpaceSlice"
+import { searchSpots, searchRerouteSpots } from "@/features/search/searchSlice"
 import { usePathname, useRouter } from "next/navigation"
 import {
   ArrowDown,
@@ -66,6 +66,7 @@ export default function SearchPage() {
   const dispatch = useAppDispatch()
 
   const parkingSpots = useAppSelector((state) => state.search.spots)
+  const rerouteSpots = useAppSelector((state) => state.search.rerouteSpots)
 
   const [domLoaded, setDomLoaded] = useState(false)
   const [userLocation, setUserLocation] =
@@ -73,6 +74,7 @@ export default function SearchPage() {
   const [selectedLocation, setSelectedLocation] =
     useState<google.maps.LatLngLiteral | null>(null)
   const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null)
+  const destinationSpot = useAppSelector((state) => state.parkingSpace.parkingSpace)
   const [directions, setDirections] =
     useState<google.maps.DirectionsResult | null>(null)
   const [searchRadius, setSearchRadius] = useState<number>(5)
@@ -88,6 +90,7 @@ export default function SearchPage() {
   const [navigationMode, setNavigationMode] = useState(false)
   const [reachedDestination, setReachedDestination] = useState(false)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
+  const [realStepIndex, setRealStepIndex] = useState(0)
   const [iconScale, setIconScale] = useState<google.maps.Size | null>(null)
   const [showImageModal, setShowImageModal] = useState(false)
   const navigationCardRef = useRef<HTMLDivElement>(null)
@@ -109,6 +112,7 @@ export default function SearchPage() {
     { value: "accessible", label: "Accessible" },
     // Add more options as needed
   ]
+  const [searchRequest, setSearchRequest] = useState<any>()
 
   // New States for Filter Selection
   const [selectedFilters, setSelectedFilters] = useState<string[]>([])
@@ -128,6 +132,7 @@ export default function SearchPage() {
   const [photoTimestamp, setPhotoTimestamp] = useState<string | null>(null)
   const [photoLocation, setPhotoLocation] = useState<string | null>(null)
   const [driverArriveOpen, setDriverArriveOpen] = useState(false)
+  const [showTakenSpotModal, setShowTakenSpotModal] = useState(false)
 
   const openDriverArriveDialog = () => {
     setDriverArriveOpen(true)
@@ -419,6 +424,7 @@ export default function SearchPage() {
     }
 
     try {
+      setSearchRequest(request)
       await dispatch(searchSpots(request))
       setIsSearchOpen(false)
     } catch (error) {
@@ -625,7 +631,7 @@ export default function SearchPage() {
 
       // Update the step index only if a closer step is found
       if (closestStepIndex > currentStepIndex) {
-        setCurrentStepIndex(closestStepIndex)
+        setRealStepIndex(closestStepIndex)
       }
     }
   }
@@ -817,6 +823,29 @@ export default function SearchPage() {
     //setSelectedFeatures([]);
     setPaidStatus([])
   }
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (navigationMode && selectedSpot) {
+        console.log('ssdfdsfdselectedSpot:', selectedSpot)
+        dispatch(fetchParkingSpace(selectedSpot.id))
+        console.log("Destination spot:", destinationSpot)
+      }
+    }, 10000)
+
+    return () => clearInterval(intervalId)
+  }, [selectedSpot, navigationMode, dispatch])
+
+  useEffect(() => {
+    if (selectedSpot && destinationSpot && destinationSpot.is_taken) {
+      dispatch(searchRerouteSpots(searchRequest))
+      setReachedDestination(false)
+      setNavigationMode(false)
+      setDirections(null)
+      setSelectedSpot(null)
+      setShowTakenSpotModal(true)
+    }
+  }, [destinationSpot])
 
   return (
     domLoaded && (
@@ -1091,32 +1120,6 @@ export default function SearchPage() {
                       </div>
                     )}
 
-                    {/*{selectedFilters.includes('features') && (*/}
-                    {/*    <div className="flex flex-col mb-4">*/}
-                    {/*      <Label htmlFor="features" className="text-sm mb-1">Features:</Label>*/}
-                    {/*      <div className="bg-white shadow-lg rounded-lg mt-2 p-4">*/}
-                    {/*        {featuresOptions.map(({ value, label }) => (*/}
-                    {/*            <label key={value} className="flex items-center mb-2">*/}
-                    {/*              <input*/}
-                    {/*                  type="checkbox"*/}
-                    {/*                  value={value}*/}
-                    {/*                  checked={selectedFeatures.includes(value)}*/}
-                    {/*                  onChange={(e) => {*/}
-                    {/*                    setSelectedFeatures(*/}
-                    {/*                        e.target.checked*/}
-                    {/*                            ? [...selectedFeatures, value]*/}
-                    {/*                            : selectedFeatures.filter((feature) => feature !== value)*/}
-                    {/*                    );*/}
-                    {/*                  }}*/}
-                    {/*                  className="mr-2"*/}
-                    {/*              />*/}
-                    {/*              <span className="text-sm">{label}</span>*/}
-                    {/*            </label>*/}
-                    {/*        ))}*/}
-                    {/*      </div>*/}
-                    {/*    </div>*/}
-                    {/*)}*/}
-
                     {selectedFilters.includes("paidStatus") && (
                       <div className="flex flex-col mb-4">
                         <Label className="text-sm mb-1">Paid Status:</Label>
@@ -1339,8 +1342,8 @@ export default function SearchPage() {
                         )}
                         {(!selectedSpot.verification_status ||
                           selectedSpot.verification_status === "rejected") && (
-                          <ShieldX className="w-4 h-4 text-red-500" />
-                        )}
+                            <ShieldX className="w-4 h-4 text-red-500" />
+                          )}
                       </div>
 
                       {selectedSpot.photos?.[0] && (
@@ -1636,9 +1639,8 @@ export default function SearchPage() {
         {/* navigation stuff */}
         <div
           ref={navigationCardRef}
-          className={`fixed bottom-0 left-0 w-full bg-gray-100 p-4 transition-transform duration-300 transform ${
-            navigationMode ? "translate-y-0" : "translate-y-full"
-          }`}
+          className={`fixed bottom-0 left-0 w-full bg-gray-100 p-4 transition-transform duration-300 transform ${navigationMode ? "translate-y-0" : "translate-y-full"
+            }`}
           style={{ bottom: isLoggedIn ? "64px" : "0", height: "auto" }}
         >
           <Card className="shadow-sm">
@@ -1728,7 +1730,7 @@ export default function SearchPage() {
                         Next
                       </button>
                       <button
-                        onClick={() => setCurrentStepIndex(0)}
+                        onClick={() => setCurrentStepIndex(realStepIndex)}
                         className="px-3 py-2 bg-green-500 text-white text-sm font-semibold rounded hover:bg-green-700 focus:outline-none"
                       >
                         Current
@@ -1743,6 +1745,31 @@ export default function SearchPage() {
               )}
             </CardContent>
           </Card>
+        </div>
+        <div className={`fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-75 ${showTakenSpotModal ? 'block' : 'hidden'}`}>
+          <div className="relative bg-white rounded-lg shadow-xl">
+            <button
+              className="absolute top-2 right-2 p-2 bg-gray-200 rounded-full text-gray-600 hover:bg-gray-300 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400"
+              onClick={() => setShowTakenSpotModal(false)}
+            >
+              <span className="text-xl">&times;</span>
+            </button>
+            <div className="p-6">
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold">Spot Taken</h2>
+                <p className="text-gray-600">The spot you are navigating to is marked as taken.</p>
+              </div>
+              {rerouteSpots && rerouteSpots.length > 0 ? (
+                <ul className="list-disc pl-5">
+                  {rerouteSpots.map((spot: ParkingSpace) => (
+                    <li key={spot.id}>{spot.name || "Unnamed Parking Space"}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-600">No available spots found within 1 mile radius.</p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     )
