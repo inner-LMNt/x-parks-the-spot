@@ -1,15 +1,17 @@
+"use client"
+
 import React, { useState, useEffect } from "react"
 import { Star } from "lucide-react"
-import { useDispatch } from "react-redux"
 import {
   submitRating,
   fetchParkingSpace,
-  fetchUserRating,
+  fetchUserRatings,
+  selectUserRatingForSpace,
 } from "@/features/parking-space/parkingSpaceSlice"
 import { toast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { useAppSelector } from "@/store/hooks"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 
 const StarRatingInput = ({
   value,
@@ -17,11 +19,12 @@ const StarRatingInput = ({
   disabled,
   originalValue,
 }: {
-  value: number
+  value: number | null
   onChange: (rating: number) => void
   disabled?: boolean
   originalValue: number
 }) => {
+  value = value ?? 0
   const [hoverValue, setHoverValue] = useState<number | null>(null)
 
   const handleStarClick = (rating: number) => {
@@ -58,60 +61,58 @@ const StarRatingInput = ({
 }
 
 const RatingSelector = ({ parkingSpaceId }: { parkingSpaceId: string }) => {
-  const dispatch = useDispatch()
-  const userRating = useAppSelector((state) => state.parkingSpace.userRating)
-  const [availabilityRating, setAvailabilityRating] = useState(0)
-  const [cleanlinessRating, setCleanlinessRating] = useState(0)
+  const dispatch = useAppDispatch()
+  const userRating = useAppSelector((state) =>
+    selectUserRatingForSpace(state, parkingSpaceId),
+  )
+  const [availabilityRating, setAvailabilityRating] = useState(
+    userRating.availability_rating,
+  )
+  const [cleanlinessRating, setCleanlinessRating] = useState(
+    userRating.cleanliness_rating,
+  )
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
   const [hasChanges, setHasChanges] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
       // @ts-ignore
       const result = await dispatch(fetchParkingSpace(parkingSpaceId))
-
       if (fetchParkingSpace.rejected.match(result)) {
         toast({
           title: "Error",
           description: "Failed to load parking space.",
           variant: "destructive",
         })
-        setIsLoading(false)
-        return
       }
+
+      // Fetch all user ratings at once
       // @ts-ignore
-      const result2 = await dispatch(fetchUserRating(parkingSpaceId))
-      if (fetchUserRating.rejected.match(result2)) {
+      const ratingsResult = await dispatch(fetchUserRatings())
+      if (fetchUserRatings.rejected.match(ratingsResult)) {
         toast({
           title: "Error",
-          description: "Failed to load user rating.",
+          description: "Failed to load user ratings.",
           variant: "destructive",
         })
-        setIsLoading(false)
-        return
       }
-      setIsLoading(false)
     }
 
     fetchData()
   }, [dispatch, parkingSpaceId])
 
-  // Update local state when userRating changes
-  useEffect(() => {
-    if (userRating) {
-      setAvailabilityRating(userRating.availabilityRating ?? 0)
-      setCleanlinessRating(userRating.cleanlinessRating ?? 0)
-    }
-  }, [userRating])
-
   // Check for changes whenever ratings are updated
   useEffect(() => {
     const hasRatingChanges =
-      availabilityRating !== (userRating?.availabilityRating ?? 0) ||
-      cleanlinessRating !== (userRating?.cleanlinessRating ?? 0)
+      availabilityRating !== (userRating?.availability_rating ?? 0) ||
+      cleanlinessRating !== (userRating?.cleanliness_rating ?? 0)
     setHasChanges(hasRatingChanges)
-  }, [availabilityRating, cleanlinessRating, userRating])
+  }, [availabilityRating, cleanlinessRating])
+
+  useEffect(() => {
+    setAvailabilityRating(userRating.availability_rating)
+    setCleanlinessRating(userRating.cleanliness_rating)
+  }, [userRating])
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
@@ -144,12 +145,8 @@ const RatingSelector = ({ parkingSpaceId }: { parkingSpaceId: string }) => {
   }
 
   const handleReset = () => {
-    setAvailabilityRating(userRating?.availabilityRating ?? 0)
-    setCleanlinessRating(userRating?.cleanlinessRating ?? 0)
-  }
-
-  if (isLoading) {
-    return <div className="mt-4 text-sm text-gray-600">Loading ratings...</div>
+    setAvailabilityRating(userRating?.availability_rating ?? 0)
+    setCleanlinessRating(userRating?.cleanliness_rating ?? 0)
   }
 
   return (
@@ -165,7 +162,7 @@ const RatingSelector = ({ parkingSpaceId }: { parkingSpaceId: string }) => {
             value={availabilityRating}
             onChange={setAvailabilityRating}
             disabled={isSubmitting}
-            originalValue={userRating?.availabilityRating ?? 0}
+            originalValue={userRating?.availability_rating ?? 0}
           />
         </div>
 
@@ -177,7 +174,7 @@ const RatingSelector = ({ parkingSpaceId }: { parkingSpaceId: string }) => {
             value={cleanlinessRating}
             onChange={setCleanlinessRating}
             disabled={isSubmitting}
-            originalValue={userRating?.cleanlinessRating ?? 0}
+            originalValue={userRating?.cleanliness_rating ?? 0}
           />
         </div>
       </div>

@@ -628,8 +628,8 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                 SELECT 
                     COALESCE(AVG(r.availability_rating), 0) AS avg_availability_rating,
                     COALESCE(AVG(r.cleanliness_rating), 0) AS avg_cleanliness_rating,
-                    COALESCE(AVG(r.total_rating), 0) AS avg_total_rating,
-                    COUNT(*) AS total_ratings
+                    COALESCE(AVG(NULLIF(r.availability_rating + r.cleanliness_rating, 0) / 2.0), 0) AS avg_overall_rating,
+                    COUNT(*) AS total_ratings                    
                 FROM ratings r
                 JOIN parking_spaces ps ON r.parking_space_id = ps.id
                 WHERE ps.owner = %s 
@@ -654,7 +654,7 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                     ps.name AS spot_name,
                     COALESCE(AVG(r.availability_rating), 0) AS avg_availability_rating,
                     COALESCE(AVG(r.cleanliness_rating), 0) AS avg_cleanliness_rating,
-                    COALESCE(AVG(r.total_rating), 0) AS avg_total_rating,
+                    COALESCE(AVG(NULLIF(r.availability_rating + r.cleanliness_rating, 0) / 2.0), 0) AS avg_total_rating,
                     COUNT(r.id) AS rating_count
                 FROM parking_spaces ps
                 LEFT JOIN ratings r 
@@ -676,7 +676,7 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                 cur.execute(
                     """
                         SELECT 
-                            FLOOR(r.total_rating)::int AS stars,
+                            FLOOR(NULLIF(r.availability_rating + r.cleanliness_rating, 0) / 2.0)::int AS stars,
                             COUNT(*) AS count
                         FROM ratings r
                         WHERE r.parking_space_id = %s 
@@ -692,7 +692,7 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                 rating_distribution = []
                 for row in rating_distribution_rows:
                     stars = row["stars"]
-                    count = row["count"]  # This was incorrectly indented
+                    count = row["count"]
                     percentage = (
                         (count / total_ratings) * 100 if total_ratings > 0 else 0
                     )
@@ -700,43 +700,45 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                         {"stars": stars, "count": count, "percentage": percentage}
                     )
 
-            # Get recent reviews
-            cur.execute(
-                """
-            SELECT 
-                r.total_rating AS rating,
-                EXTRACT(DAY FROM NOW() - r.updated_at) AS days_ago,
-                TRUE AS is_verified
-            FROM ratings r
-            WHERE r.parking_space_id = %s 
-              AND r.updated_at > %s 
-              AND r.updated_at < %s
-            ORDER BY r.updated_at DESC
-            LIMIT 5
-            """,
-                [spot_row["spot_id"], start_date, end_date],
-            )
-            recent_reviews = cur.fetchall()
+                # Get recent reviews
+                cur.execute(
+                    """
+                SELECT 
+                    NULLIF(r.availability_rating + r.cleanliness_rating, 0) / 2.0 AS rating,
+                    EXTRACT(DAY FROM NOW() - r.updated_at) AS days_ago,
+                    TRUE AS is_verified
+                FROM ratings r
+                WHERE r.parking_space_id = %s 
+                  AND r.updated_at > %s 
+                  AND r.updated_at < %s
+                ORDER BY r.updated_at DESC
+                LIMIT 5
+                """,
+                    [spot_row["spot_id"], start_date, end_date],
+                )
+                recent_reviews = cur.fetchall()
 
-            ratings_by_spot.append(
-                {
-                    "spotId": spot_id_str,
-                    "spotName": spot_row["spot_name"],
-                    "availabilityRating": float(spot_row["avg_availability_rating"]),
-                    "cleanlinessRating": float(spot_row["avg_cleanliness_rating"]),
-                    "totalRating": float(spot_row["avg_total_rating"]),
-                    "ratingCount": spot_row["rating_count"],
-                    "ratingDistribution": rating_distribution,
-                    "recentReviews": [
-                        {
-                            "rating": review["rating"],
-                            "daysAgo": int(review["days_ago"]),
-                            "isVerified": review["is_verified"],
-                        }
-                        for review in recent_reviews
-                    ],
-                }
-            )
+                ratings_by_spot.append(
+                    {
+                        "spotId": spot_id_str,
+                        "spotName": spot_row["spot_name"],
+                        "availabilityRating": float(
+                            spot_row["avg_availability_rating"]
+                        ),
+                        "cleanlinessRating": float(spot_row["avg_cleanliness_rating"]),
+                        "totalRating": float(spot_row["avg_total_rating"]),
+                        "ratingCount": spot_row["rating_count"],
+                        "ratingDistribution": rating_distribution,
+                        "recentReviews": [
+                            {
+                                "rating": review["rating"],
+                                "daysAgo": int(review["days_ago"]),
+                                "isVerified": review["is_verified"],
+                            }
+                            for review in recent_reviews
+                        ],
+                    }
+                )
 
             rating_metrics = {
                 "averageRatings": {
@@ -746,7 +748,7 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                     "cleanliness": float(
                         overall_ratings.get("avg_cleanliness_rating", 0)
                     ),
-                    "total": float(overall_ratings.get("avg_total_rating", 0)),
+                    "total": float(overall_ratings.get("avg_overall_rating", 0)),
                 },
                 "totalRatings": overall_ratings.get("total_ratings", 0),
                 "ratingsBySpot": ratings_by_spot,

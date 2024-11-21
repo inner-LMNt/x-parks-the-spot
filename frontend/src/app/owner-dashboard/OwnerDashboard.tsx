@@ -211,7 +211,7 @@ export function OwnerDashboard() {
             Report
           </Button>
 
-          {loading ? (
+          {analyticsLoading ? (
             <HeaderSkeleton />
           ) : (
             <>
