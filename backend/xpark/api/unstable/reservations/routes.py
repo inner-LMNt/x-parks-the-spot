@@ -171,6 +171,8 @@ def force_cancel_reservation_route(
         case Ok(_):
             return {"message": "Reservation canceled successfully."}, 200
         case Err(e):
+            if "not authorized" in e:
+                return {"err": e}, 403
             if "not found" in e:
                 return {"err": e}, 404
             return {"err": e}, 400

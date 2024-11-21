@@ -423,3 +423,37 @@ def test_force_cancel_reservation(client: FlaskClient) -> None:
     )
     assert response.status_code == 200
     assert response.get_json()["message"] == "Reservation canceled successfully."
+
+    response = client.get(
+        f"/api/unstable/reservations/{reservation_id}",
+        headers={"Authorization": f"Bearer {renter_token}"},
+    )
+    assert response.status_code == 200
+    assert response.get_json()["status"] == "canceled"
+
+def test_unauthorized_force_cancel(client: FlaskClient) -> None:
+    """Test force-cancel a reservation"""
+    renter_token = create_test_user(client, "renter@example.com")
+    owner_token = create_test_user(client, "owner@example.com")
+    unauthorized_token = create_test_user(client, "unathorized@example.com")
+    space_id = create_test_parking_space(client, owner_token)
+
+    start_time = datetime.now(timezone.utc) + timedelta(hours=30)
+    end_time = start_time + timedelta(hours=40)
+    reservation_id = create_test_reservation_at_time(
+        client, renter_token, space_id, start_time=start_time, end_time=end_time
+    )
+
+    response = client.post(
+        f"/api/unstable/reservations/force-cancel/{reservation_id}",
+        headers={"Authorization": f"Bearer {unauthorized_token}"},
+    )
+    assert response.status_code == 403
+    assert response.get_json()["err"] == "Force cancellation not authorized"
+
+    response = client.get(
+        f"/api/unstable/reservations/{reservation_id}",
+        headers={"Authorization": f"Bearer {renter_token}"},
+    )
+    assert response.status_code == 200
+    assert response.get_json()["status"] != "canceled"

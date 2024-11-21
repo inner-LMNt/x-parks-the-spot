@@ -598,7 +598,9 @@ def force_cancel_reservation_logic(user_id: uuid.UUID, reservation_id: uuid.UUID
                 """,
                 (reservation_id, user_id),
             )
-            # Retrieve reservation details
+
+            if cur.rowcount == 0:
+                return Err("Force cancellation not authorized")
 
             # Send cancellation email to renter
             email_content = generate_templated_email(
