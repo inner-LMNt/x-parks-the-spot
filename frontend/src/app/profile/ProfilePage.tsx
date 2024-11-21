@@ -188,7 +188,7 @@ export default function ProfilePage() {
     const interval = setInterval(() => {
       setTimeRemaining(getTimeRemaining(getEndOfMonth()))
     }, 1000)
-    
+
     return () => clearInterval(interval)
   }, [])
 

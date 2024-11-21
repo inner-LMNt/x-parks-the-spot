@@ -552,7 +552,7 @@ const userSlice = createSlice<UserState, {}, "user">({
         console.log("action.payload", action.payload)
         state.active_raffle_tickets = action.payload
       })
-        
+
       .addMatcher(isAnyOf(get_score.fulfilled), (state, action) => {
         state.loading = false
         console.log(`score! ${action.payload}`)
