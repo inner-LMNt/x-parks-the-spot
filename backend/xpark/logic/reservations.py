@@ -10,7 +10,7 @@ import psycopg
 from psycopg import Cursor
 from psycopg.rows import DictRow
 
-from xpark.utils.mailer import send_email
+from xpark.utils.mailer import send_email, generate_templated_email
 
 
 class ReservationStatus(Enum):
@@ -563,3 +563,54 @@ def get_owner_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], s
                 (user_id,),
             )
             return Ok(cur.fetchall())
+
+def force_cancel_reservation_logic(user_id, reservation_uuid):
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT 
+                    parking_spaces.name AS parking_space_name,
+                    LOWER(reservations.time) AS start_time,
+                    UPPER(reservations.time) AS end_time,
+                    users.email AS renter_email,
+                    users.name AS renter_name
+                FROM reservations
+                JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                JOIN users ON reservations.renter_id = users.id
+                WHERE reservations.id = %s
+                """,
+                (reservation_uuid,),
+            )
+            reservation = cur.fetchone()
+
+            if not reservation:
+                return Err("Reservation not found")
+
+            cur.execute(
+                """
+                UPDATE reservations
+                SET status = 'canceled'
+                WHERE id = %s AND parking_space_id IN (
+                    SELECT id FROM parking_spaces WHERE owner = %s
+                )
+                """,
+                (reservation_uuid, user_id),
+            )
+            # Retrieve reservation details
+
+            # Send cancellation email to renter
+            email_content = generate_templated_email(
+                "reservation_force_canceled",
+                name=reservation["renter_name"],
+                parking_space_name=reservation["parking_space_name"],
+                start_time=reservation["start_time"].strftime("%Y-%m-%d %H:%M %Z"),
+                end_time=reservation["end_time"].strftime("%Y-%m-%d %H:%M %Z"),
+            )
+            send_email(
+                to=reservation["renter_email"],
+                subject="Your Parking Reservation Has Been Canceled",
+                content=email_content,
+            )
+
+            return Ok(None)

@@ -46,6 +46,7 @@ const reservationCancellationSlice = createSlice({
             })
             .addCase(forceCancelReservation.fulfilled, (state: CancellationState) => {
                 state.loading = false
+                state.error = null
                 state.success = true
             })
             .addCase(forceCancelReservation.rejected, (state: CancellationState, action: any) => {
