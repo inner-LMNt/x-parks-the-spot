@@ -183,7 +183,7 @@ export default function ShopPage() {
       {activeTab === "shop" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {shopItems.map((item) => {
-            const isDisabled = badgeList.includes(item.id)
+            const isDisabled = badgeList.includes(String(item.id))
 
             return (
               <Card key={item.id} className="flex flex-col">

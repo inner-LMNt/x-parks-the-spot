@@ -94,14 +94,16 @@ const NotificationBanner = () => {
   }
 
   useEffect(() => {
-    dispatch(get_notification_time())
+    if (isLoggedIn) {
+      dispatch(get_notification_time())
+    }
     const intervalId = setInterval(() => {
       if (isLoggedIn) {
         dispatch(fetchUserReservationsTimes()).then(() => {
           setRefreshKey((prevKey) => prevKey + 1) // Force re-render
         })
       }
-    }, 1000000)
+    }, 20000)
 
     return () => clearInterval(intervalId)
   }, [isLoggedIn, dispatch])

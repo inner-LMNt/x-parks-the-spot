@@ -8,7 +8,6 @@ import {
   get_points,
   get_badge_list,
   get_raffle_tickets,
-  buy_badge,
 } from "@/features/user/userSlice"
 import {
   Settings,
@@ -19,6 +18,7 @@ import {
   Car,
   Ticket,
   Bookmark,
+  Award,
 } from "lucide-react" // Imported FileWarning
 import { logout } from "@/features/user/userSlice"
 import { Button } from "@/components/ui/button"
@@ -54,11 +54,7 @@ function AchievementCard({
 }) {
   return (
     <div className="flex flex-col items-center">
-      <div
-        className={`w-12 h-12 rounded-full mb-2 ${colorClass} drop-shadow-lg`}
-        role="img"
-        aria-label={label}
-      ></div>
+      <Award className={`w-12 h-12 mb-2 ${colorClass} drop-shadow-lg`} />
       <p className="text-xs text-gray-600">{label}</p>
     </div>
   )
@@ -194,9 +190,9 @@ export default function ProfilePage() {
 
   const badgeDetails: { [key: string]: { colorClass: string; label: string } } =
     {
-      "1": { colorClass: "bg-yellow-600", label: "Bronze Badge" },
-      "2": { colorClass: "bg-gray-400", label: "Silver Badge" },
-      "3": { colorClass: "bg-yellow-300", label: "Gold Badge" },
+      "1": { colorClass: "text-yellow-600", label: "Bronze Badge" },
+      "2": { colorClass: "text-gray-400", label: "Silver Badge" },
+      "3": { colorClass: "text-yellow-300", label: "Gold Badge" },
     }
 
   return (

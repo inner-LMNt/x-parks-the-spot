@@ -523,20 +523,20 @@ def perform_raffle() -> Result[List[Dict[str, Any]], str]:
                     """
                     UPDATE points_transaction
                     SET status = 'inactive'
-                    WHERE user_id = %s AND description LIKE 'Raffle ticket purchase%%'
-                    """,
-                    (winner["user_id"],),
+                    WHERE status = 'active' AND description LIKE 'Raffle ticket purchase%%'
+                    """
                 )
 
                 # Can someone figure this out?
-                # send_email(
-                #     to=winner["email"],
-                #     subject="Congratulations! You've Won the XPark Raffle",
-                #     content=generate_templated_email(
-                #         "raffle_winner",
-                #         name=winner["username"],
-                #     ),
-                # )
+                send_email(
+                    to=winner["email"],
+                    subject="Congratulations! You've Won the XPark Raffle",
+                    content=generate_templated_email(
+                        "raffle_winner",
+                        name=winner["username"],
+                        amount="$10"
+                    ),
+                )
 
                 return Ok([winner])
     except Exception as e:
