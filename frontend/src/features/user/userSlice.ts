@@ -417,7 +417,6 @@ const userSlice = createSlice<UserState, {}, "user">({
           | typeof register_acc.rejected
           | typeof logout.rejected
           | typeof reset_password.rejected
-          // | typeof update_notification_time.rejected
           | typeof get_user_name.rejected
           | typeof get_points.rejected
           | typeof get_transactions.rejected
@@ -516,16 +515,6 @@ const userSlice = createSlice<UserState, {}, "user">({
         state.loading = false
         state.userState = action.meta.arg.state
         state.userCity = action.meta.arg.city
-      })
-      .addMatcher(isAnyOf(get_user_location.fulfilled), (state, action) => {
-        state.loading = false
-        state.userState = action.payload?.state || null
-        state.userCity = action.payload?.city || null
-      })
-
-      .addMatcher(isAnyOf(get_notification_time.fulfilled), (state, action) => {
-        state.loading = false
-        state.notificationTime = action.payload
       })
 
       .addMatcher(isAnyOf(get_points.fulfilled), (state, action) => {
