@@ -183,7 +183,7 @@ export default function ShopPage() {
       {activeTab === "shop" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {shopItems.map((item) => {
-            const isDisabled = badgeList.includes(item.id);
+            const isDisabled = badgeList.includes(item.id)
 
             return (
               <Card key={item.id} className="flex flex-col">
@@ -237,44 +237,48 @@ export default function ShopPage() {
                         ? handlePurchaseBadge(item)
                         : handlePurchaseRaffle(item)
                       dispatch(get_points())
-                      }
-                    }
+                    }}
                     disabled={isDisabled}
-                    className={isDisabled ? "opacity-50 cursor-not-allowed" : ""}
+                    className={
+                      isDisabled ? "opacity-50 cursor-not-allowed" : ""
+                    }
                   >
                     {isDisabled ? "Purchased" : "Purchase"}
                   </Button>
                 </CardFooter>
               </Card>
-            );
+            )
           })}
         </div>
       )}
       {activeTab === "transactions" && (
         <div className="grid grid-cols-1 gap-6">
-          {transactions.slice().reverse().map((transaction: any, index: number) => (
-            <Card key={index} className="flex flex-col">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  {transaction.transaction_type === "spend" ? (
-                    <ArrowDownCircle className="h-6 w-6 text-grey-500" />
-                  ) : (
-                    <ArrowUpCircle className="h-6 w-6 text-grey-500" />
-                  )}
-                  {transaction.description}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex justify-between items-center">
-                <div className="text-lg font-semibold text-gray-800">
-                  {transaction.points_amount} Points
-                </div>
-                <div className="text-sm text-gray-600">
-                  Balance After Transaction:{" "}
-                  {transaction.balance_after_transaction}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {transactions
+            .slice()
+            .reverse()
+            .map((transaction: any, index: number) => (
+              <Card key={index} className="flex flex-col">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {transaction.transaction_type === "spend" ? (
+                      <ArrowDownCircle className="h-6 w-6 text-grey-500" />
+                    ) : (
+                      <ArrowUpCircle className="h-6 w-6 text-grey-500" />
+                    )}
+                    {transaction.description}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex justify-between items-center">
+                  <div className="text-lg font-semibold text-gray-800">
+                    {transaction.points_amount} Points
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Balance After Transaction:{" "}
+                    {transaction.balance_after_transaction}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
         </div>
       )}
     </div>

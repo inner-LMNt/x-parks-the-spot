@@ -100,13 +100,13 @@ export default function LeaderboardComponent() {
 
   const filteredUsers = Array.isArray(users)
     ? users
-      .filter(
-        (user: LeaderboardUser) =>
-          user.state !== "None" &&
-          (selectedState === "All States" ||
-            stateDictionary[user.state] === selectedState),
-      )
-      .sort((a: LeaderboardUser, b: LeaderboardUser) => b.points - a.points)
+        .filter(
+          (user: LeaderboardUser) =>
+            user.state !== "None" &&
+            (selectedState === "All States" ||
+              stateDictionary[user.state] === selectedState),
+        )
+        .sort((a: LeaderboardUser, b: LeaderboardUser) => b.points - a.points)
     : []
 
   useEffect(() => {
