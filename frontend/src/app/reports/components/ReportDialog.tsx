@@ -50,7 +50,7 @@ export const ReportDialog: React.FC<{
             onClick={onClose}
             aria-label="Close Report Dialog"
           >
-            <X className="h-6 w-6" />
+            <X className="h-6 w-6" data-testid="Close Report Dialog" />
           </button>
         </div>
 
