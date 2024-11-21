@@ -564,7 +564,8 @@ def get_owner_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], s
             )
             return Ok(cur.fetchall())
 
-def force_cancel_reservation_logic(user_id, reservation_uuid):
+
+def force_cancel_reservation_logic(user_id: uuid.UUID, reservation_id: uuid.UUID) -> Result[None, str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
@@ -580,7 +581,7 @@ def force_cancel_reservation_logic(user_id, reservation_uuid):
                 JOIN users ON reservations.renter_id = users.id
                 WHERE reservations.id = %s
                 """,
-                (reservation_uuid,),
+                (reservation_id,),
             )
             reservation = cur.fetchone()
 
@@ -595,7 +596,7 @@ def force_cancel_reservation_logic(user_id, reservation_uuid):
                     SELECT id FROM parking_spaces WHERE owner = %s
                 )
                 """,
-                (reservation_uuid, user_id),
+                (reservation_id, user_id),
             )
             # Retrieve reservation details
 
