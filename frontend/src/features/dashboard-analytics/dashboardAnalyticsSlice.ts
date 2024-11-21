@@ -1,50 +1,45 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import axios from "@/api/axiosInstance"
 
-interface DashboardAnalytics {
+export interface FetchReservationsParams {
+  timeFilter?: "7_days" | "30_days" | "1_year"
+  spotId?: string | null
+}
+
+export interface DashboardAnalytics {
   overallMetrics: {
     revenue: {
       total: number
       perBooking: number
-      trends: Array<{
-        date: string // Month and Year
-        revenue: number
-      }>
+      projectedNext7Days: number
+      periodOverPeriodGrowth: number
     }
     occupancy: {
       overallRate: number
-      popularTimes: Array<{
-        hour: number
-        bookings: number
-      }>
     }
     bookings: {
-      active: number
       total: number
+      active: number
       percentageActive: number
     }
   }
   revenueMetrics: {
-    monthlyRevenue: Array<{
-      month: string
-      revenue: number
-      bookings: number
+    historicalRevenue: Array<{
+      timestamp: string
+      actual: number
+      projected: number
+      bookingCount: number
+      avgBookingValue: number
+      cumulativeRevenue: number
+      periodOverPeriodGrowth: number
     }>
-    dailyRevenue: Array<{
-      date: string
-      revenue: number
-    }>
-    hourlyRevenue: Array<{
-      hour: number
-      revenue: number
-    }>
-    revenueBySpot: Array<{
-      spotId: string
-      spotName: string
-      revenue: number
-      bookings: number
-      occupancyRate: number
-      basePrice: number
+    upcomingRevenue: Array<{
+      timestamp: string
+      confirmed: number
+      potential: number
+      bookingCount: number
+      spotUtilization: number
+      availableSpots: number
     }>
   }
   bookingMetrics: {
@@ -63,14 +58,16 @@ interface DashboardAnalytics {
       renterName: string
       startTime: string
       endTime: string
-      status: "active" | "completed" | "canceled"
+      status: string
+      time_status: "upcoming" | "current" | "past"
       price: number
       duration: number
       carDetails: {
         make: string
         model: string
-        year: number
         color: string
+        plate: string
+        state: string
       }
     }>
   }
@@ -91,10 +88,36 @@ interface DashboardAnalytics {
   upcomingEarnings: {
     total: number
     reservations: Array<{
-      spot_name: string
-      start_time: string
-      end_time: string
+      spotName: string
+      startTime: string
+      endTime: string
       earnings: number
+    }>
+  }
+  ratingMetrics: {
+    averageRatings: {
+      availability: number
+      cleanliness: number
+      total: number
+    }
+    totalRatings: number
+    ratingsBySpot: Array<{
+      spotId: string
+      spotName: string
+      availabilityRating: number
+      cleanlinessRating: number
+      totalRating: number
+      ratingCount: number
+      ratingDistribution: Array<{
+        stars: number
+        count: number
+        percentage: number
+      }>
+      recentReviews: Array<{
+        rating: number
+        daysAgo: number
+        isVerified: boolean
+      }>
     }>
   }
 }
@@ -112,22 +135,44 @@ const initialState: DashboardAnalyticsState = {
 }
 
 // Fetch all dashboard analytics in a single call
-export const fetchDashboardAnalytics = createAsyncThunk<any, any>(
+export const fetchDashboardAnalytics = createAsyncThunk(
   "dashboardAnalytics/fetchDashboardAnalytics",
-  async ({ timeFilter = "30_days", spotId = null }, { rejectWithValue }) => {
+  async (
+    {
+      timeFilter = "30_days",
+      spotId = null,
+    }: { timeFilter?: string; spotId?: string | null } = {},
+    { rejectWithValue },
+  ) => {
     try {
       const params = new URLSearchParams()
       params.append("time_filter", timeFilter)
       if (spotId) {
         params.append("spot_id", spotId)
       }
-      const response = await axios.get(
+      const response = await axios.get<DashboardAnalytics>(
         `/analytics/dashboard?${params.toString()}`,
       )
-      return response.data
+      const data = response.data
+
+      console.log("Fetched Dashboard Analytics:", data)
+
+      // Transform 'upcomingEarnings.reservations' if necessary
+      if (data.upcomingEarnings && data.upcomingEarnings.reservations) {
+        data.upcomingEarnings.reservations =
+          data.upcomingEarnings.reservations.map((reservation) => ({
+            spotName: reservation.spotName,
+            startTime: reservation.startTime,
+            endTime: reservation.endTime,
+            earnings: reservation.earnings,
+          }))
+      }
+
+      return data
     } catch (error: any) {
+      console.error("Error fetching dashboard analytics:", error)
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch dashboard analytics",
+        error.response?.data?.err || "Failed to fetch dashboard analytics",
       )
     }
   },
