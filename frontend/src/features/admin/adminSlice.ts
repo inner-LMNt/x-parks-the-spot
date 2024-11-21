@@ -18,10 +18,19 @@ interface Conflict {
   end_time: string
 }
 
+interface RaffleEntry {
+  user_id: string
+  username: string
+  email: string
+  tickets: number
+}
+
 interface AdminState {
   pendingSpots: ParkingSpace[]
   conflicts: Conflict[]
   cancellations: Conflict[]
+  raffleEntries: RaffleEntry[]
+  raffleResult: RaffleEntry[]
   loading: boolean
   error: string | null
 }
@@ -30,6 +39,8 @@ const initialState: AdminState = {
   pendingSpots: [],
   conflicts: [],
   cancellations: [],
+  raffleEntries: [],
+  raffleResult: [],
   loading: false,
   error: null,
 }
@@ -136,6 +147,7 @@ export const verifyParkingSpot = createAsyncThunk<
   }
 })
 
+// Async thunk to delete a parking space
 export const deleteParkingSpace = createAsyncThunk<
   string,
   any,
@@ -175,6 +187,38 @@ export const deleteParkingSpace = createAsyncThunk<
   },
 )
 
+// Async thunk to fetch raffle entries
+export const getRaffleEntries = createAsyncThunk<
+  { raffleEntries: RaffleEntry[] },
+  void,
+  { rejectValue: string }
+>("admin/getRaffleEntries", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("/admin/get-raffle-entries")
+    return response.data
+  } catch (error: any) {
+    return rejectWithValue(
+      error.response?.data?.error || "Failed to get raffle entries",
+    )
+  }
+})
+
+// Async thunk to perform raffle
+export const performRaffle = createAsyncThunk<
+  { raffleResult: RaffleEntry[] },
+  void,
+  { rejectValue: string }
+>("admin/performRaffle", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.post("/admin/perform-raffle")
+    return response.data
+  } catch (error: any) {
+    return rejectWithValue(
+      error.response?.data?.error || "Failed to perform raffle",
+    )
+  }
+})
+
 const adminSlice = createSlice({
   name: "admin",
   initialState,
@@ -211,7 +255,7 @@ const adminSlice = createSlice({
       })
       .addCase(getAllConflicts.fulfilled, (state: AdminState, action: any) => {
         state.loading = false
-        state.conflicts = action.payload
+        state.conflicts = action.payload.conflicts
       })
       .addCase(getAllConflicts.rejected, (state: AdminState, action: any) => {
         state.loading = false
@@ -224,7 +268,7 @@ const adminSlice = createSlice({
       })
       .addCase(getCancelled.fulfilled, (state: AdminState, action: any) => {
         state.loading = false
-        state.cancellations = action.payload
+        state.cancellations = action.payload.cancellations
       })
       .addCase(getCancelled.rejected, (state: AdminState, action: any) => {
         state.loading = false
@@ -289,6 +333,7 @@ const adminSlice = createSlice({
         state.loading = false
         state.error = action.payload as string
       })
+      // Handle deleteParkingSpace
       .addCase(deleteParkingSpace.pending, (state: AdminState) => {
         state.loading = true
         state.error = null
@@ -297,6 +342,35 @@ const adminSlice = createSlice({
         state.loading = false
       })
       .addCase(deleteParkingSpace.rejected, (state: AdminState, action) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
+      // Handle getRaffleEntries
+      .addCase(getRaffleEntries.pending, (state: AdminState) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(
+        getRaffleEntries.fulfilled,
+        (state: AdminState, action: any) => {
+          state.loading = false
+          state.raffleEntries = action.payload
+        },
+      )
+      .addCase(getRaffleEntries.rejected, (state: AdminState, action: any) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
+      // Handle performRaffle
+      .addCase(performRaffle.pending, (state: AdminState) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(performRaffle.fulfilled, (state: AdminState, action: any) => {
+        state.loading = false
+        state.raffleResult = action.payload
+      })
+      .addCase(performRaffle.rejected, (state: AdminState, action: any) => {
         state.loading = false
         state.error = action.payload as string
       })

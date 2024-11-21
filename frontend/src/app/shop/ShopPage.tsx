@@ -15,6 +15,20 @@ const shopItems = [
   { id: 4, name: "Raffle Ticket - $10 xPark Gift Card", type: "ticket", icon: Ticket, color: "blue", points: 750 },
 ]
 
+function getTimeRemaining(endTime: Date) {
+  const total = Date.parse(endTime.toString()) - Date.parse(new Date().toString());
+  const seconds = Math.floor((total / 1000) % 60);
+  const minutes = Math.floor((total / 1000 / 60) % 60);
+  const hours = Math.floor((total / (1000 * 60 * 60)) % 24);
+  const days = Math.floor(total / (1000 * 60 * 60 * 24));
+  return { total, days, hours, minutes, seconds };
+}
+
+function getEndOfMonth() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+}
+
 export default function ShopPage() {
   const dispatch = useAppDispatch();
   const userPoints = useAppSelector((state) => state.user.current_points);
@@ -22,6 +36,7 @@ export default function ShopPage() {
   const tickets = useAppSelector((state) => state.user.active_raffle_tickets);
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState('shop');
+  const [timeRemaining, setTimeRemaining] = useState(getTimeRemaining(getEndOfMonth()));
 
   const handlePurchaseRaffle = (item: typeof shopItems[0]) => {
     dispatch(buy_raffle_ticket({ raffleId: item.id }))
@@ -73,6 +88,12 @@ export default function ShopPage() {
     dispatch(get_transactions())
     dispatch(get_points())
     dispatch(get_raffle_tickets())
+
+    const interval = setInterval(() => {
+      setTimeRemaining(getTimeRemaining(getEndOfMonth()));
+    }, 1000);
+
+    return () => clearInterval(interval);
   }, [dispatch])
 
   return (
@@ -114,14 +135,30 @@ export default function ShopPage() {
                     <span className="text-lg font-semibold text-gray-800">{item.points} Points</span>
                   </Card>
                 </div>
-                <CardDescription>{item.type === "badge" ? "Exclusive Badge" : `Raffle Entry - You currently have ${tickets} tickets`}</CardDescription>
+                <CardDescription>
+                  {item.type === "badge" ? "Exclusive Badge" : (
+                    <span>
+                      Raffle Entry - <strong>You currently have {tickets} tickets</strong>
+                    </span>
+                  )}
+                </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
                 <p className="text-sm text-muted-foreground">
                   {item.type === "badge"
                     ? "Show off your parking expertise with this exclusive badge!"
-                    : "Enter for a chance to win!"}
+                    : "Enter for a chance to win! Buy more tickets to increase your chances."}
                 </p>
+                {item.type === "ticket" && (
+                  <div className="mt-4 text-left">
+                    <p className="text-sm text-gray-600">
+                      Tickets are drawn at the end of each month.
+                    </p>
+                    <div className="text-xl font-semibold text-gray-800">
+                      {timeRemaining.days}d {timeRemaining.hours}h {timeRemaining.minutes}m {timeRemaining.seconds}s
+                    </div>
+                  </div>
+                )}
               </CardContent>
               <CardFooter className="flex justify-between items-center">
                 <Button onClick={() => (item.id >= 1 && item.id <= 3 ? handlePurchaseBadge(item) : handlePurchaseRaffle(item))}>

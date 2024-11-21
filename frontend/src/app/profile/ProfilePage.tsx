@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { get_user_location, get_points, get_badge_list, buy_badge } from '@/features/user/userSlice';
-import { Settings, ArrowUpCircle, ArrowDownCircle, LogOut, FileWarning, Car } from 'lucide-react';
+import { get_user_location, get_points, get_badge_list, get_raffle_tickets, buy_badge } from '@/features/user/userSlice';
+import { Settings, ArrowUpCircle, ArrowDownCircle, LogOut, FileWarning, Car, Ticket } from 'lucide-react';
 import { logout } from '@/features/user/userSlice';
 import { Button } from "@/components/ui/button";
 import {
@@ -70,6 +70,20 @@ function CommentCard({
     );
 }
 
+function getTimeRemaining(endTime: Date) {
+    const total = Date.parse(endTime.toString()) - Date.parse(new Date().toString());
+    const seconds = Math.floor((total / 1000) % 60);
+    const minutes = Math.floor((total / 1000 / 60) % 60);
+    const hours = Math.floor((total / (1000 * 60 * 60)) % 24);
+    const days = Math.floor(total / (1000 * 60 * 60 * 24));
+    return { total, days, hours, minutes, seconds };
+}
+
+function getEndOfMonth() {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+}
+
 export default function ProfilePage() {
     const dispatch = useAppDispatch();
     const isLoggedIn = useAppSelector((state: any) => state.user.isLoggedIn);
@@ -81,7 +95,9 @@ export default function ProfilePage() {
     const currentPoints = useAppSelector((state) => state.user.current_points);
     const totalPoints = useAppSelector((state) => state.user.total_points);
     const userBadges = useAppSelector((state) => state.user.badges) || [];
+    const raffleTickets = useAppSelector((state) => state.user.active_raffle_tickets);
     const [badges, setBadges] = useState(userBadges);
+    const [timeRemaining, setTimeRemaining] = useState(getTimeRemaining(getEndOfMonth()));
 
     const handleLogout = async () => {
         await dispatch(logout());
@@ -117,6 +133,7 @@ export default function ProfilePage() {
         dispatch(get_user_location());
         dispatch(get_points());
         dispatch(get_badge_list());
+        dispatch(get_raffle_tickets());
         setDomLoaded(true);
     }, [dispatch]);
 
@@ -124,6 +141,13 @@ export default function ProfilePage() {
         setBadges(userBadges);
     }, [userBadges]);
 
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTimeRemaining(getTimeRemaining(getEndOfMonth()));
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     const badgeDetails: { [key: string]: { colorClass: string; label: string } } = {
         '1': { colorClass: "bg-yellow-600", label: "Bronze Badge" },
@@ -208,6 +232,22 @@ export default function ProfilePage() {
                             ) : (
                                 <p className="text-sm text-gray-600">No badges yet.</p>
                             )}
+                        </div>
+                    </div>
+
+                    <div className="text-left mb-6">
+                        <h2 className="text-lg font-semibold mb-4">Raffle Tickets</h2>
+                        <div className="flex items-center gap-2">
+                            <Ticket className="h-6 w-6 text-blue-500" />
+                            <p className="text-lg font-semibold text-gray-800">{raffleTickets} Tickets</p>
+                        </div>
+                        <div className="mt-2 text-left">
+                            <p className="text-sm text-gray-600">
+                                Tickets are drawn at the end of each month.
+                            </p>
+                            <div className="text-xl font-semibold text-gray-800">
+                                {timeRemaining.days}d {timeRemaining.hours}h {timeRemaining.minutes}m {timeRemaining.seconds}s
+                            </div>
                         </div>
                     </div>
 
