@@ -252,6 +252,23 @@ export default function MySpotsPage() {
                   </Button>
                 </div>
               )}
+
+              {/* Redirect Button for Analytics */}
+              {spot.is_paid && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex justify-center items-center mt-4 w-full"
+                  onClick={() =>
+                    router.push(
+                      `/owner-dashboard?spotId=${spot.id}&tab=bookings`,
+                    )
+                  }
+                >
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  View Spot Analytics
+                </Button>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -281,7 +298,7 @@ export default function MySpotsPage() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <div className="flex items-center justify-center gap-3 w-full sm:w-auto">
                     <Link href="/owner-dashboard" className="w-full sm:w-auto">
                       <Button
                         variant="outline"
