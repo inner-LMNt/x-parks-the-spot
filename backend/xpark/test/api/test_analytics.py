@@ -831,15 +831,10 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
             assert day_data["bookings"] == 1
 
     # Check specific spot revenues and completions
-    spot_1 = next(
-        sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 140.0
-    )
-    spot_2 = next(
-        sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 280.0
-    )
-    spot_3 = next(
-        sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 420.0
-    )
+    # spot_1=, spot2=, spot3= if you want to restore completedBookings assertions
+    next(sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 140.0)
+    next(sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 280.0)
+    next(sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 420.0)
 
     # assert spot_1["completedBookings"] == 575
     # assert spot_2["completedBookings"] == 525
