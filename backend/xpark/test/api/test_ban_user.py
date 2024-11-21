@@ -8,6 +8,7 @@ from ..utils.utils import (
 )
 from typing import Any
 
+
 def test_ban_user_success(client: FlaskClient, mocker: Any) -> None:
     """Test banning a user with all cascading effects."""
 
@@ -47,7 +48,9 @@ def test_ban_user_success(client: FlaskClient, mocker: Any) -> None:
     assert login_response.status_code == 401, "Banned user was able to log in"
 
 
-def test_ban_user_cancel_future_reservations(client: FlaskClient, mocker: MockerFixture) -> None:
+def test_ban_user_cancel_future_reservations(
+    client: FlaskClient, mocker: MockerFixture
+) -> None:
     """Test banning a user with future reservation cancellations."""
 
     # Create admin, user to be banned, and renter
@@ -85,7 +88,10 @@ def test_ban_user_cancel_future_reservations(client: FlaskClient, mocker: Mocker
     )
     assert reservation_response.status_code == 404
 
-def test_ban_user_admin_spots_deleted(client: FlaskClient, mocker: MockerFixture) -> None:
+
+def test_ban_user_admin_spots_deleted(
+    client: FlaskClient, mocker: MockerFixture
+) -> None:
     """Test that all spots owned by the banned admin are deleted."""
 
     # Create an admin and a user
@@ -123,7 +129,9 @@ def test_ban_user_admin_spots_deleted(client: FlaskClient, mocker: MockerFixture
         assert response.status_code == 404, f"Parking space {space_id} was not deleted."
 
 
-def test_ban_user_reservations_canceled(client: FlaskClient, mocker: MockerFixture) -> None:
+def test_ban_user_reservations_canceled(
+    client: FlaskClient, mocker: MockerFixture
+) -> None:
     """Test that all future reservations made by the banned user are canceled."""
 
     # Create admin, user to be banned, and parking space owners
@@ -139,7 +147,6 @@ def test_ban_user_reservations_canceled(client: FlaskClient, mocker: MockerFixtu
 
     # Create a reservation for the banned user
     reservation_id = create_test_reservation(client, banned_user_token, space_id)
-
 
     # Ban the user
     response = client.post(
@@ -189,7 +196,6 @@ def test_ban_user_notifications(client: FlaskClient, mocker: MockerFixture) -> N
     assert response.status_code == 200
 
 
-
 def test_ban_user_cannot_log_in(client: FlaskClient, mocker: MockerFixture) -> None:
     """Test that a banned user cannot log in and receives a rationale email."""
 
@@ -218,7 +224,10 @@ def test_ban_user_cannot_log_in(client: FlaskClient, mocker: MockerFixture) -> N
     )
     assert login_response.status_code == 401, "Banned user was able to log in"
 
-def test_ban_user_reservations_owned_by_banned_user(client: FlaskClient, mocker: MockerFixture) -> None:
+
+def test_ban_user_reservations_owned_by_banned_user(
+    client: FlaskClient, mocker: MockerFixture
+) -> None:
     """Test canceling reservations on spaces owned by a banned user."""
     admin_token = create_test_user(client, "admin@example.com")
     owner_token = create_test_user(client, "owner@example.com")

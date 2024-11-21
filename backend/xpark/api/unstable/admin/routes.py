@@ -16,6 +16,7 @@ from typing import Any, Tuple
 from xpark.middleware.token_auth_middleware import require_admin
 import uuid
 
+
 @bp.post("ban-user")
 @require_admin
 def ban_user_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:

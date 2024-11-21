@@ -8,6 +8,7 @@ from xpark.utils.db import DB
 from result import Result, Ok, Err
 import uuid
 
+
 def handle_ban_user(ban_user_id: uuid.UUID, rationale: str) -> Result[None, str]:
     """
     Ban a user and perform cascading effects as described.
@@ -51,11 +52,12 @@ def handle_ban_user(ban_user_id: uuid.UUID, rationale: str) -> Result[None, str]
                         subject="Reservation Cancellation",
                         content=generate_templated_email(
                             "reservation_cancellation",
-                            parking_space_name=reservation["parking_space_name"],  # Use the name here
+                            parking_space_name=reservation[
+                                "parking_space_name"
+                            ],  # Use the name here
                             reason="The renter has been banned.",
                         ),
                     )
-
 
                 # Cancel future reservations on user's owned parking spaces
                 cur.execute(
@@ -88,7 +90,6 @@ def handle_ban_user(ban_user_id: uuid.UUID, rationale: str) -> Result[None, str]
                             end_time=rental["end_time"],
                         ),
                     )
-
 
                 # Mark the user as banned and soft-deleted
                 cur.execute(
@@ -144,8 +145,6 @@ def handle_ban_user(ban_user_id: uuid.UUID, rationale: str) -> Result[None, str]
 
     except Exception as e:
         return Err(f"Database or email operation failed: {str(e)}")
-
-
 
 
 def fetch_user_details(user_id: uuid.UUID) -> Result[Dict[str, Any], str]:
@@ -237,7 +236,6 @@ def fetch_user_details(user_id: uuid.UUID) -> Result[Dict[str, Any], str]:
 
     except Exception as e:
         return Err(f"Failed to fetch user details: {str(e)}")
-
 
 
 def get_all_cancellations() -> Result[List[Dict[str, Any]], str]:
