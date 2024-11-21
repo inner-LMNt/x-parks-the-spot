@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { format, parseISO } from "date-fns"
+import BookingDetailCard from "./BookingDetailCard";
 
 interface BookingStats {
   total: number
@@ -69,6 +70,9 @@ interface BookingsTabProps {
 }
 
 export default function BookingsTab({ bookingMetrics }: BookingsTabProps) {
+
+  const [selectedBooking, setSelectedBooking] = useState<BookingDetails | null>(null);
+
   const [statusFilter, setStatusFilter] = useState<
     "all" | "upcoming" | "current" | "past" | "canceled"
   >("all")
@@ -95,6 +99,14 @@ export default function BookingsTab({ bookingMetrics }: BookingsTabProps) {
       exit={{ opacity: 0, y: -20 }}
       className="space-y-6"
     >
+      {selectedBooking && (
+          <BookingDetailCard
+              isOpen={!!selectedBooking}
+              onClose={() => setSelectedBooking(null)}
+              booking={selectedBooking}
+          />
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-center">
         <h2 className="text-2xl font-bold text-slate-950">Bookings Overview</h2>
         {/* @ts-ignore */}
@@ -189,10 +201,9 @@ export default function BookingsTab({ bookingMetrics }: BookingsTabProps) {
               <TableBody>
                 {filteredBookings.map((booking) => (
                   <TableRow
-                    key={booking.id}
-                    className={
-                      booking.time_status === "current" ? "bg-blue-50" : ""
-                    }
+                      key={booking.id}
+                      className={`${booking.time_status === "current" ? "bg-blue-50" : ""} cursor-pointer hover:bg-gray-50`}
+                      onClick={() => setSelectedBooking(booking)}
                   >
                     <TableCell>
                       <div className="space-y-1">

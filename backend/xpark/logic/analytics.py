@@ -588,7 +588,6 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                         'state', car_state
                     ) AS "carDetails"
                 FROM reservation_details
-                WHERE spot_booking_rank <= 10
                 ORDER BY start_time DESC
             """
             cur.execute(recent_bookings_query, recent_params)
@@ -814,12 +813,16 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                                 "spotId": str(booking["spotId"]),
                                 "spotName": booking["spotName"],
                                 "renterName": booking["renterName"],
+                                "renterEmail": booking["renterEmail"],
                                 "startTime": booking["startTime"].isoformat(),
                                 "endTime": booking["endTime"].isoformat(),
                                 "status": booking["status"],
                                 "time_status": booking["timeStatus"],
                                 "price": float(booking["price"]),
                                 "duration": float(booking["duration"]),
+                                "isMultiDay": booking["isMultiDay"],
+                                "daysDuration": booking["daysDuration"],
+                                "rentalCount": booking["rentalCount"],
                                 "carDetails": booking["carDetails"],
                             }
                             for booking in recent_bookings_rows
