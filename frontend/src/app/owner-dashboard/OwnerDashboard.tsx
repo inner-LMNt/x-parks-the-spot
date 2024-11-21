@@ -1,5 +1,5 @@
 "use client"
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
 import React, { useEffect } from "react"
 import { motion } from "framer-motion"
@@ -81,7 +81,7 @@ const DashboardSkeleton = () => (
   </div>
 )
 
-export  function OwnerDashboard() {
+export function OwnerDashboard() {
   const dispatch = useAppDispatch()
   const router = useRouter()
   const { toast } = useToast()
@@ -91,21 +91,19 @@ export  function OwnerDashboard() {
   //const querySpotId = searchParams.get("spotId");
   //const queryTab = searchParams.get("tab");
 
-  const [selectedTab, setSelectedTab] = React.useState(
-       "revenue"
-  );
+  const [selectedTab, setSelectedTab] = React.useState("revenue")
   const [selectedSpotId, setSelectedSpotId] = React.useState<string | null>(
-      null
-  );
+    null,
+  )
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const spotId = params.get("spotId");
-    const tab = params.get("tab");
+    const params = new URLSearchParams(window.location.search)
+    const spotId = params.get("spotId")
+    const tab = params.get("tab")
 
-    setSelectedSpotId(spotId);
-    setSelectedTab(tab || "revenue");
-  }, []);
+    setSelectedSpotId(spotId)
+    setSelectedTab(tab || "revenue")
+  }, [])
   const {
     paidSpots,
     pendingSpots,
@@ -161,13 +159,13 @@ export  function OwnerDashboard() {
   ])
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const spotId = params.get("spotId");
-    const tab = params.get("tab");
+    const params = new URLSearchParams(window.location.search)
+    const spotId = params.get("spotId")
+    const tab = params.get("tab")
 
-    setSelectedSpotId(spotId);
-    setSelectedTab(tab || "revenue");
-  }, []);
+    setSelectedSpotId(spotId)
+    setSelectedTab(tab || "revenue")
+  }, [])
 
   // Initial data fetch
   useEffect(() => {
