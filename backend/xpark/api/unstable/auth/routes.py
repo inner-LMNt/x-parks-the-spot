@@ -223,7 +223,7 @@ def use_points_raffle(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return {"message": "Raffle bought successfully"}, 200
         case Err(e):
             return {"err": e}, 402  # placeholder to prevent 403 redirection
-        
+
 
 @bp.get("raffle-tickets")
 @require_logged_in_user
@@ -233,6 +233,7 @@ def get_raffle_list(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
             return {"tickets": tickets}, 200
         case Err(e):
             return {"err": e}, 403
+
 
 @bp.get("/me")
 @require_logged_in_user

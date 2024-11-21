@@ -1,13 +1,18 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "../../api/axiosInstance";
-import { ParkingSpace, SearchRequest, SearchResponse, LeaderboardUser } from "@/types/type";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
+import axios from "../../api/axiosInstance"
+import {
+  ParkingSpace,
+  SearchRequest,
+  SearchResponse,
+  LeaderboardUser,
+} from "@/types/type"
 
 interface SearchState {
-  loading: boolean;
-  error: string | null;
-  spots: ParkingSpace[];
-  rerouteSpots: ParkingSpace[];
-  leaderboard: LeaderboardUser[];
+  loading: boolean
+  error: string | null
+  spots: ParkingSpace[]
+  rerouteSpots: ParkingSpace[]
+  leaderboard: LeaderboardUser[]
 }
 
 const initialState: SearchState = {
@@ -16,7 +21,7 @@ const initialState: SearchState = {
   spots: [],
   rerouteSpots: [],
   leaderboard: [],
-};
+}
 
 export const searchSpots = createAsyncThunk<
   SearchResponse,
@@ -37,12 +42,14 @@ export const searchLeaderboard = createAsyncThunk<
   { rejectValue: string }
 >("search/leaderboard", async (_, { rejectWithValue }) => {
   try {
-    const response = await axios.get<LeaderboardUser[]>("/search/leaderboard");
-    return response.data;
+    const response = await axios.get<LeaderboardUser[]>("/search/leaderboard")
+    return response.data
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Leaderboard fetch failed");
+    return rejectWithValue(
+      error.response?.data?.message || "Leaderboard fetch failed",
+    )
   }
-});
+})
 
 export const searchRerouteSpots = createAsyncThunk<
   SearchResponse,
@@ -57,7 +64,6 @@ export const searchRerouteSpots = createAsyncThunk<
     return rejectWithValue(error.response?.data?.message || "Search failed")
   }
 })
-
 
 const searchSlice = createSlice({
   name: "search",
@@ -82,25 +88,34 @@ const searchSlice = createSlice({
         state.error = action.payload as string
       })
       .addCase(searchLeaderboard.pending, (state: SearchState) => {
-        state.loading = true;
-        state.error = null;
+        state.loading = true
+        state.error = null
       })
-      .addCase(searchLeaderboard.fulfilled, (state: SearchState, action: any) => {
-        state.loading = false;
-        state.leaderboard = action.payload;
-      })
-      .addCase(searchLeaderboard.rejected, (state: SearchState, action: any) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      })
+      .addCase(
+        searchLeaderboard.fulfilled,
+        (state: SearchState, action: any) => {
+          state.loading = false
+          state.leaderboard = action.payload
+        },
+      )
+      .addCase(
+        searchLeaderboard.rejected,
+        (state: SearchState, action: any) => {
+          state.loading = false
+          state.error = action.payload as string
+        },
+      )
       .addCase(searchRerouteSpots.pending, (state: SearchState) => {
         state.loading = true
         state.error = null
       })
-      .addCase(searchRerouteSpots.fulfilled, (state: SearchState, action: any) => {
-        state.loading = false
-        state.rerouteSpots = action.payload
-      })
+      .addCase(
+        searchRerouteSpots.fulfilled,
+        (state: SearchState, action: any) => {
+          state.loading = false
+          state.rerouteSpots = action.payload
+        },
+      )
       .addCase(searchRerouteSpots.rejected, (state: SearchState, action) => {
         state.loading = false
         state.error = action.payload as string

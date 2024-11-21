@@ -593,7 +593,7 @@ def handle_buy_raffle_ticket(user_id: uuid.UUID, raffle_id: int) -> Result[None,
             )
 
             return Ok(None)
-        
+
 
 def handle_get_raffle_tickets(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
     # Right now, only accounting for 1 raffle prize
@@ -606,7 +606,7 @@ def handle_get_raffle_tickets(user_id: uuid.UUID) -> Result[Dict[str, int], str]
                 WHERE user_id = %s AND description LIKE %s
                 AND status = 'active'
                 """,
-                (user_id, 'Raffle ticket purchase%'),
+                (user_id, "Raffle ticket purchase%"),
             )
             result = cur.fetchone()
             if not result:

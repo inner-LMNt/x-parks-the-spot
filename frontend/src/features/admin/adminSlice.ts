@@ -350,13 +350,10 @@ const adminSlice = createSlice({
         state.loading = true
         state.error = null
       })
-      .addCase(
-        getRaffleEntries.fulfilled,
-        (state: AdminState, action: any) => {
-          state.loading = false
-          state.raffleEntries = action.payload
-        },
-      )
+      .addCase(getRaffleEntries.fulfilled, (state: AdminState, action: any) => {
+        state.loading = false
+        state.raffleEntries = action.payload
+      })
       .addCase(getRaffleEntries.rejected, (state: AdminState, action: any) => {
         state.loading = false
         state.error = action.payload as string

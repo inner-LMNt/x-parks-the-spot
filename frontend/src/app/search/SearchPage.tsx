@@ -27,7 +27,11 @@ import {
   DirectionsRenderer,
   InfoWindow,
 } from "@react-google-maps/api"
-import { markSpotTaken, fetchParkingSpace, resetParkingSpaceState } from "@/features/parking-space/parkingSpaceSlice"
+import {
+  markSpotTaken,
+  fetchParkingSpace,
+  resetParkingSpaceState,
+} from "@/features/parking-space/parkingSpaceSlice"
 import { searchSpots, searchRerouteSpots } from "@/features/search/searchSlice"
 import { usePathname, useRouter } from "next/navigation"
 import {
@@ -74,7 +78,9 @@ export default function SearchPage() {
   const [selectedLocation, setSelectedLocation] =
     useState<google.maps.LatLngLiteral | null>(null)
   const [selectedSpot, setSelectedSpot] = useState<ParkingSpace | null>(null)
-  const destinationSpot = useAppSelector((state) => state.parkingSpace.parkingSpace)
+  const destinationSpot = useAppSelector(
+    (state) => state.parkingSpace.parkingSpace,
+  )
   const [directions, setDirections] =
     useState<google.maps.DirectionsResult | null>(null)
   const [searchRadius, setSearchRadius] = useState<number>(5)
@@ -1346,8 +1352,8 @@ export default function SearchPage() {
                         )}
                         {(!selectedSpot.verification_status ||
                           selectedSpot.verification_status === "rejected") && (
-                            <ShieldX className="w-4 h-4 text-red-500" />
-                          )}
+                          <ShieldX className="w-4 h-4 text-red-500" />
+                        )}
                       </div>
 
                       {selectedSpot.photos?.[0] && (
@@ -1643,8 +1649,9 @@ export default function SearchPage() {
         {/* navigation stuff */}
         <div
           ref={navigationCardRef}
-          className={`fixed bottom-0 left-0 w-full bg-gray-100 p-4 transition-transform duration-300 transform ${navigationMode ? "translate-y-0" : "translate-y-full"
-            }`}
+          className={`fixed bottom-0 left-0 w-full bg-gray-100 p-4 transition-transform duration-300 transform ${
+            navigationMode ? "translate-y-0" : "translate-y-full"
+          }`}
           style={{ bottom: isLoggedIn ? "64px" : "0", height: "auto" }}
         >
           <Card className="shadow-sm">
@@ -1751,7 +1758,9 @@ export default function SearchPage() {
             </CardContent>
           </Card>
         </div>
-        <div className={`fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-75 ${showTakenSpotModal ? 'block' : 'hidden'}`}>
+        <div
+          className={`fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-75 ${showTakenSpotModal ? "block" : "hidden"}`}
+        >
           <div className="relative bg-white rounded-lg shadow-xl">
             <button
               className="absolute top-2 right-2 p-2 bg-gray-200 rounded-full text-gray-600 hover:bg-gray-300 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400"
@@ -1762,21 +1771,30 @@ export default function SearchPage() {
             <div className="p-6">
               <div className="mb-4">
                 <h2 className="text-xl font-semibold">Spot Taken</h2>
-                <p className="text-gray-600">The spot you are navigating to is marked as taken.</p>
+                <p className="text-gray-600">
+                  The spot you are navigating to is marked as taken.
+                </p>
               </div>
               {rerouteSpots && rerouteSpots.length > 0 ? (
                 <>
                   <div className="mb-4">
-                    <p className="text-lg font-semibold">Here are some alternatives within 1 km:</p>
+                    <p className="text-lg font-semibold">
+                      Here are some alternatives within 1 km:
+                    </p>
                   </div>
                   <ul className="space-y-4">
                     {rerouteSpots.map((spot: ParkingSpace) => (
-                      <li key={spot.id} className="bg-white rounded-lg shadow-md p-4">
+                      <li
+                        key={spot.id}
+                        className="bg-white rounded-lg shadow-md p-4"
+                      >
                         <div className="mb-2">
-                          <strong>Name:</strong> {spot.name || "Unnamed Parking Space"}
+                          <strong>Name:</strong>{" "}
+                          {spot.name || "Unnamed Parking Space"}
                         </div>
                         <div className="mb-2">
-                          <strong>Location:</strong> {spot.location.latitude}, {spot.location.longitude}
+                          <strong>Location:</strong> {spot.location.latitude},{" "}
+                          {spot.location.longitude}
                         </div>
                         {spot.location.address && (
                           <div className="mb-2">
@@ -1786,12 +1804,12 @@ export default function SearchPage() {
                         <button
                           className="mt-2 px-3 py-2 bg-blue-500 text-white text-sm font-semibold rounded hover:bg-blue-700 focus:outline-none"
                           onClick={() => {
-                            setSelectedSpot(spot);
+                            setSelectedSpot(spot)
                             setMapCenter({
                               lat: spot.location.latitude,
                               lng: spot.location.longitude,
-                            });
-                            setShowTakenSpotModal(false);
+                            })
+                            setShowTakenSpotModal(false)
                           }}
                         >
                           Select Spot
@@ -1801,7 +1819,9 @@ export default function SearchPage() {
                   </ul>
                 </>
               ) : (
-                <p className="text-gray-600">No available spots found within 1 km radius.</p>
+                <p className="text-gray-600">
+                  No available spots found within 1 km radius.
+                </p>
               )}
             </div>
           </div>

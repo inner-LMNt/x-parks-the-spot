@@ -23,9 +23,12 @@ interface RaffleEntry {
 
 export const RafflePage = () => {
   const dispatch = useAppDispatch()
-  const { raffleEntries = [], loading, error, raffleResult } = useAppSelector(
-    (state) => state.admin,
-  )
+  const {
+    raffleEntries = [],
+    loading,
+    error,
+    raffleResult,
+  } = useAppSelector((state) => state.admin)
   const { toast } = useToast()
   const [isRafflePerformed, setIsRafflePerformed] = useState(false)
 
@@ -100,7 +103,9 @@ export const RafflePage = () => {
           </div>
 
           {raffleEntries.length === 0 ? (
-            <p className="text-center text-black">No raffle entries available.</p>
+            <p className="text-center text-black">
+              No raffle entries available.
+            </p>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {raffleEntries.map((entry: RaffleEntry) => (
@@ -141,7 +146,10 @@ export const RafflePage = () => {
             transition={{ duration: 0.5 }}
             className="bg-white shadow-md rounded-lg p-6 mb-8"
           >
-            <h2 className="text-2xl font-bold mb-4 text-black">Most Recent Raffle Result</h2> {/* Only stored locally for now */}
+            <h2 className="text-2xl font-bold mb-4 text-black">
+              Most Recent Raffle Result
+            </h2>{" "}
+            {/* Only stored locally for now */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {raffleResult.map((winner: RaffleEntry) => (
                 <motion.div

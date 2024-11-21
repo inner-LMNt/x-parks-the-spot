@@ -49,16 +49,19 @@ interface LocationFormData {
 }
 
 export default function SettingsPage() {
-    const dispatch = useAppDispatch();
-    const router = useRouter();
-    const [accountDeleted, setAccountDeleted] = useState(false);
-    const [errorMessage, setErrorMessage] = useState('');
-    const [notificationTime, setNotificationTime] = useState('');
-    const [isNotificationDialogOpen, setIsNotificationDialogOpen] = useState(false);
-    const { toast } = useToast();
-    const userNotificationTime = useAppSelector((state) => state.user.notificationTime);
-    const userLocation = useAppSelector((state) => state.user.userLocation);
-    const [domLoaded, setDomLoaded] = useState(false);
+  const dispatch = useAppDispatch()
+  const router = useRouter()
+  const [accountDeleted, setAccountDeleted] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
+  const [notificationTime, setNotificationTime] = useState("")
+  const [isNotificationDialogOpen, setIsNotificationDialogOpen] =
+    useState(false)
+  const { toast } = useToast()
+  const userNotificationTime = useAppSelector(
+    (state) => state.user.notificationTime,
+  )
+  const userLocation = useAppSelector((state) => state.user.userLocation)
+  const [domLoaded, setDomLoaded] = useState(false)
 
   useEffect(() => {
     setDomLoaded(true)

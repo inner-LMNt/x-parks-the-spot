@@ -1,2 +1,2 @@
-import ShopPage from './ShopPage';
+import ShopPage from "./ShopPage"
 export default ShopPage

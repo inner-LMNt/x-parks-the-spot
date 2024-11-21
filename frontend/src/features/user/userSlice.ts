@@ -105,10 +105,10 @@ export const updateSpot = createAsyncThunk(
       return response.data
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to update spot status"
+        error.response?.data?.message || "Failed to update spot status",
       )
     }
-  }
+  },
 )
 
 export const request_delete_account = createAsyncThunk<
@@ -141,7 +141,7 @@ export const register_acc = createAsyncThunk<
   try {
     const response = await axios.post<AuthResponse>(
       "auth/register",
-      credentials
+      credentials,
     )
     return response.data
   } catch (error: any) {
@@ -184,7 +184,7 @@ export const reset_password = createAsyncThunk<
       }
       return rejectWithValue("Password reset failed")
     }
-  }
+  },
 )
 
 export const reset_request = createAsyncThunk<
@@ -216,7 +216,7 @@ export const get_user_name = createAsyncThunk<
   } catch (error: any) {
     console.log("error", error)
     return rejectWithValue(
-      error.response?.data?.err || "Failed to get user name"
+      error.response?.data?.err || "Failed to get user name",
     )
   }
 })
@@ -236,7 +236,7 @@ export const update_notification_time = createAsyncThunk<
     } catch (error: any) {
       return rejectWithValue("Failed to update notification time")
     }
-  }
+  },
 )
 
 export const get_notification_time = createAsyncThunk<
@@ -302,7 +302,7 @@ export const get_transactions = createAsyncThunk<
     return response.data.transactions
   } catch (error: any) {
     return rejectWithValue(
-      error.response?.data?.err || "Failed to get transactions"
+      error.response?.data?.err || "Failed to get transactions",
     )
   }
 })
@@ -343,7 +343,7 @@ export const buy_raffle_ticket = createAsyncThunk<
     return response.data
   } catch (error: any) {
     return rejectWithValue(
-      error.response?.data?.err || "Failed to buy raffle ticket"
+      error.response?.data?.err || "Failed to buy raffle ticket",
     )
   }
 })
@@ -370,7 +370,7 @@ const userSlice = createSlice<UserState, {}, "user">({
     builder
       .addMatcher(
         (
-          action: UnknownAction
+          action: UnknownAction,
         ): action is ReturnType<
           | typeof login.pending
           | typeof register_acc.pending
@@ -388,13 +388,13 @@ const userSlice = createSlice<UserState, {}, "user">({
         (state) => {
           state.loading = true
           state.error = null
-        }
+        },
       )
 
       // Handle all rejected actions
       .addMatcher(
         (
-          action: UnknownAction
+          action: UnknownAction,
         ): action is ReturnType<
           | typeof login.rejected
           | typeof register_acc.rejected
@@ -416,11 +416,11 @@ const userSlice = createSlice<UserState, {}, "user">({
           // parse it as a json string and back to json to get the field out
 
           const actionmessage = JSON.parse(
-            JSON.stringify(action, null, 2)
+            JSON.stringify(action, null, 2),
           ).payload
           state.error = actionmessage || "An error occurred"
           state.loading = false
-        }
+        },
       )
 
       // Handle fulfilled actions for login and register_acc
@@ -431,7 +431,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           state.isLoggedIn = true
           state.access_token = action.payload.access_token || null
           state.name = action.payload.name || null
-        }
+        },
       )
 
       // Handle fulfilled actions for logout and reset
@@ -441,7 +441,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           state.loading = false
           state.isLoggedIn = false
           state.access_token = null
-        }
+        },
       )
 
       .addMatcher(
@@ -450,7 +450,7 @@ const userSlice = createSlice<UserState, {}, "user">({
         (state) => {
           state.error = null
           state.loading = false
-        }
+        },
       )
       .addMatcher(
         (action: { type: string }): action is { type: "user/errorReset" } =>
@@ -461,7 +461,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           state.access_token = null
           state.isLoggedIn = false
           state.name = null
-        }
+        },
       )
 
       .addMatcher(
@@ -473,7 +473,7 @@ const userSlice = createSlice<UserState, {}, "user">({
           state.access_token = null
           state.isLoggedIn = false
           state.name = null
-        }
+        },
       )
 
       .addMatcher(isAnyOf(get_user_name.fulfilled), (state, action) => {
@@ -486,7 +486,7 @@ const userSlice = createSlice<UserState, {}, "user">({
         (state, action) => {
           state.loading = false
           state.notificationTime = action.meta.arg.notificationTime
-        }
+        },
       )
 
       .addMatcher(isAnyOf(get_notification_time.fulfilled), (state, action) => {

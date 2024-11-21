@@ -16,11 +16,7 @@ from xpark.test.utils.utils import (
 )
 
 
-<<<<<<< HEAD
-def test_basic_analytics_response_structure(client: FlaskClient):
-=======
 def test_basic_analytics_response_structure(client: FlaskClient) -> None:
->>>>>>> origin/main
     """Test that the analytics endpoint returns the expected data structure and contents."""
     # Create an owner user
     owner_email = f"owner_{uuid.uuid4().hex}@example.com"
@@ -115,10 +111,6 @@ def test_basic_analytics_response_structure(client: FlaskClient) -> None:
     assert isinstance(
         upcoming_earnings["reservations"], list
     ), "'reservations' should be a list"
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/main
 
 
 def test_analytics_with_no_data(client: FlaskClient) -> None:
@@ -194,11 +186,7 @@ def test_analytics_with_no_data(client: FlaskClient) -> None:
     assert len(reservations) == 0, "Expected 'reservations' to be empty"
 
 
-<<<<<<< HEAD
-def test_analytics_with_single_parking_space(client: FlaskClient):
-=======
 def test_analytics_with_single_parking_space(client: FlaskClient) -> None:
->>>>>>> origin/main
     """Test analytics data when there is a single parking space and no reservations."""
     # Create an owner user
     owner_email = f"owner_{uuid.uuid4().hex}@example.com"
@@ -252,12 +240,8 @@ def test_analytics_with_single_parking_space(client: FlaskClient) -> None:
     assert spot_data["popularDays"] == [], "Expected popularDays to be empty"
 
 
-<<<<<<< HEAD
-def test_analytics_with_reservations(client: FlaskClient):
-=======
 @pytest.mark.skip(reason="")
 def test_analytics_with_reservations(client: FlaskClient) -> None:
->>>>>>> origin/main
     """Test analytics data when there are reservations."""
     # Create an owner and a renter
     owner_email = f"owner_{uuid.uuid4().hex}@example.com"
@@ -331,10 +315,6 @@ def test_analytics_with_reservations(client: FlaskClient) -> None:
     assert (
         spot_data["totalRevenue"] == total_revenue
     ), "Expected totalRevenue to match overall revenue"
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/main
 
 
 def test_analytics_with_time_filter(client: FlaskClient) -> None:
@@ -438,10 +418,6 @@ def test_analytics_with_time_filter(client: FlaskClient) -> None:
     assert (
         total_bookings_1_year == expected_bookings_1_year
     ), f"Expected {expected_bookings_1_year} bookings for 1_year, got {total_bookings_1_year}"
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/main
 
 
 def test_analytics_with_invalid_time_filter(client: FlaskClient) -> None:
@@ -463,12 +439,8 @@ def test_analytics_with_invalid_time_filter(client: FlaskClient) -> None:
     assert "err" in data, "Expected error message in response"
 
 
-<<<<<<< HEAD
-def test_analytics_with_spot_id_filter(client: FlaskClient):
-=======
 @pytest.mark.skip(reason="")
 def test_analytics_with_spot_id_filter(client: FlaskClient) -> None:
->>>>>>> origin/main
     """Test the analytics endpoint with a specific parking space (spot_id) filter."""
     # Create an owner and a renter
     owner_email = f"owner_{uuid.uuid4().hex}@example.com"
@@ -532,10 +504,6 @@ def test_analytics_with_spot_id_filter(client: FlaskClient) -> None:
     assert (
         space_id_1 not in spot_performance_2
     ), f"Space ID {space_id_1} should not be in spotPerformance"
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/main
 
 
 def test_analytics_upcoming_earnings(client: FlaskClient) -> None:
@@ -583,10 +551,6 @@ def test_analytics_upcoming_earnings(client: FlaskClient) -> None:
     assert (
         len(reservations) == num_reservations
     ), f"Expected {num_reservations} upcoming reservations"
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/main
 
 
 def test_analytics_with_no_auth(client: FlaskClient) -> None:
