@@ -764,11 +764,21 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
 
     now = datetime.now(timezone.utc)
     timestamps = {
-        "entry_1": (now - timedelta(days=30)).replace(hour=0, minute=0, second=0, microsecond=0),
-        "entry_2": (now - timedelta(days=24)).replace(hour=0, minute=0, second=0, microsecond=0),
-        "entry_3": (now - timedelta(days=18)).replace(hour=0, minute=0, second=0, microsecond=0),
-        "entry_4": (now - timedelta(days=12)).replace(hour=0, minute=0, second=0, microsecond=0),
-        "entry_5": (now - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0),
+        "entry_1": (now - timedelta(days=30)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ),
+        "entry_2": (now - timedelta(days=24)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ),
+        "entry_3": (now - timedelta(days=18)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ),
+        "entry_4": (now - timedelta(days=12)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ),
+        "entry_5": (now - timedelta(days=6)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ),
     }
 
     # Perform the assertions dynamically
