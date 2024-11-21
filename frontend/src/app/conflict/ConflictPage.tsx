@@ -532,9 +532,9 @@ const AdminReportsPage = () => {
 
       {/* Modal */}
       <Dialog open={!!selectedUserId} onOpenChange={closeModal}>
-        <DialogContent>
+        <DialogContent className="w-[90vw] bg-white text-slate-950 rounded-lg">
           <DialogHeader>
-            <DialogTitle>User Information</DialogTitle>
+            <DialogTitle className="text-3xl">User Information</DialogTitle>
           </DialogHeader>
 
           {selectedUserId && userDetails ? (
