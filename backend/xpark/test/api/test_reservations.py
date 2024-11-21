@@ -431,6 +431,7 @@ def test_force_cancel_reservation(client: FlaskClient) -> None:
     assert response.status_code == 200
     assert response.get_json()["status"] == "canceled"
 
+
 def test_unauthorized_force_cancel(client: FlaskClient) -> None:
     """Test force-cancel a reservation"""
     renter_token = create_test_user(client, "renter@example.com")

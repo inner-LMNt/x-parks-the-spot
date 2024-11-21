@@ -565,7 +565,9 @@ def get_owner_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], s
             return Ok(cur.fetchall())
 
 
-def force_cancel_reservation_logic(user_id: uuid.UUID, reservation_id: uuid.UUID) -> Result[None, str]:
+def force_cancel_reservation_logic(
+    user_id: uuid.UUID, reservation_id: uuid.UUID
+) -> Result[None, str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
