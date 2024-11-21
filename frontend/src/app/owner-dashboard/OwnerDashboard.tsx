@@ -82,7 +82,7 @@ const DashboardSkeleton = () => (
   </div>
 )
 
-export default function OwnerDashboard() {
+export function OwnerDashboard() {
   const dispatch = useAppDispatch()
   const router = useRouter()
   const { toast } = useToast()
