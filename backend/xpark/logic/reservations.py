@@ -107,7 +107,6 @@ def calculate_booking_price(
     res = cur.fetchone()
     assert res
     price = res["price"]
-    assert type(price) is float
     delta = end_time - start_time
     hours = delta.days * 24 + delta.seconds / 3600
     return hours * price
