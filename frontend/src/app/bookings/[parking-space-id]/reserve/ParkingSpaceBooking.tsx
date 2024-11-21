@@ -54,6 +54,7 @@ import Link from "next/link"
 import ImageWrapper from "@/components/custom/ImageWrapper"
 import { RatingDisplay } from "@/components/custom/RatingDisplay"
 import { addBookmark, deleteBookmark } from "@/features/bookmarks/bookmarkSlice"
+import PaymentPage from "./Payment"
 
 /**
  * **Booking Page Component**
@@ -62,6 +63,8 @@ export default function ParkingSpaceBooking() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [isAddCarModalOpen, setIsAddCarModalOpen] = useState(false) // State to control modal
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false) // State to control modal
+  const [currentReservation, setCurrentReservation] = useState<Reservation>() // State to control modal
   const [showFullImage, setShowFullImage] = useState(false)
   const params = useParams()
   const parkingSpaceId = (params?.["parking-space-id"] as string) ?? "invalid"
@@ -250,12 +253,14 @@ export default function ParkingSpaceBooking() {
     const resultAction = await dispatch(bookParkingSpace(reservationRequest))
     if (bookParkingSpace.fulfilled.match(resultAction)) {
       // Booking successful
-      toast({
-        title: "Booking Successful",
-        description: "Your reservation has been confirmed.",
-        variant: "success",
-      })
-      router.push("/bookings")
+      // toast({
+      //   title: "Booking Successful",
+      //   description: "Your reservation has been confirmed.",
+      //   variant: "success",
+      // })
+      // router.push("/bookings")
+      setIsPaymentOpen(true)
+      setCurrentReservation(resultAction.payload)
     } else {
       // Booking failed
       const errormsg = useAppSelector((state) => state.reservations.error)
@@ -282,7 +287,7 @@ export default function ParkingSpaceBooking() {
     const start = new Date(booking.start_time)
     const end = new Date(booking.end_time)
     let hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
-    let price = hours * parkingSpace.pricing_info.base_price
+    let price = (hours * parkingSpace.pricing_info.base_price) / 100
 
     if (
       parkingSpace.pricing_info.dynamic_pricing &&
@@ -416,249 +421,257 @@ export default function ParkingSpaceBooking() {
    */
   return (
     <div className="container mx-auto p-4 max-w-md">
-      <Card className="shadow-lg">
-        <CardHeader className="pb-2 flex items-center">
-          <Button
-            variant="ghost"
-            onClick={() => router.push(previousUrl)}
-            className="mr-2"
-            aria-label="Go Back"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div className="flex flex-col space-y-1.5">
-            <CardTitle className="text-2xl">
-              {parkingSpace.location.address}
-            </CardTitle>
-            <p className="text-sm text-muted-foreground flex items-center">
-              <MapPin className="w-4 h-4 mr-1" />{" "}
-              {parkingSpace.location.address}
-            </p>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {parkingSpace.photos && (
-            <div
-              className="relative w-full h-48 my-2 shadow-md rounded-md cursor-pointer"
-              onClick={() => setShowFullImage(true)}
+      {!isPaymentOpen && (
+        <Card className="shadow-lg">
+          <CardHeader className="pb-2 flex items-center">
+            <Button
+              variant="ghost"
+              onClick={() => router.push(previousUrl)}
+              className="mr-2"
+              aria-label="Go Back"
             >
-              <ImageWrapper
-                src={parkingSpace.photos[0]} // Can be relative; ImageWrapper handles absolute URL
-                alt={parkingSpace.name || "Parking Spot Image"}
-                layout="fill"
-                objectFit="cover"
-                className="w-full h-48 object-cover rounded-md"
-              />
-            </div>
-          )}
-          {showFullImage && (
-            <div
-              className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center z-10"
-              onClick={() => setShowFullImage(false)}
-            >
-              <ImageWrapper
-                src={parkingSpace.photos[0]} // Can be relative; ImageWrapper handles absolute URL
-                alt={parkingSpace.name || "Parking Spot Image"}
-                layout="fill"
-                objectFit="contain"
-                className="max-w-full max-h-full"
-              />
-            </div>
-          )}
-          <div className="flex items-center justify-between mb-4">
-            <RatingDisplay parkingSpace={parkingSpace} />
-            <Badge variant="default">Available</Badge>
-          </div>
-          <Separator className="my-4" />
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center">
-                <DollarSign className="w-5 h-5 text-green-600 mr-1" />
-                <span className="font-semibold">
-                  ${parkingSpace.pricing_info?.base_price ?? "???"}/hour
-                </span>
-              </div>
-              <div className="flex items-center">
-                <Clock className="w-5 h-5 text-blue-500 mr-1" />
-                <span className="text-sm">See availability below</span>
-              </div>
-            </div>
-            <ScrollArea className="h-20 rounded-md border p-2">
-              <p className="text-sm text-muted-foreground">
-                {parkingSpace.cancellation_policy}
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <div className="flex flex-col space-y-1.5">
+              <CardTitle className="text-2xl">
+                {parkingSpace.location.address}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground flex items-center">
+                <MapPin className="w-4 h-4 mr-1" />{" "}
+                {parkingSpace.location.address}
               </p>
-            </ScrollArea>
-            <div>
-              <h3 className="font-semibold mb-2 text-sm">Features:</h3>
-              <div className="flex flex-wrap gap-2">
-                {parkingSpace.features?.map((feature: string) => (
-                  <Badge key={feature} variant="outline" className="text-xs">
-                    {feature}
-                  </Badge>
-                ))}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {parkingSpace.photos && (
+              <div
+                className="relative w-full h-48 my-2 shadow-md rounded-md cursor-pointer"
+                onClick={() => setShowFullImage(true)}
+              >
+                <ImageWrapper
+                  src={parkingSpace.photos[0]} // Can be relative; ImageWrapper handles absolute URL
+                  alt={parkingSpace.name || "Parking Spot Image"}
+                  layout="fill"
+                  objectFit="cover"
+                  className="w-full h-48 object-cover rounded-md"
+                />
+              </div>
+            )}
+            {showFullImage && (
+              <div
+                className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center z-10"
+                onClick={() => setShowFullImage(false)}
+              >
+                <ImageWrapper
+                  src={parkingSpace.photos[0]} // Can be relative; ImageWrapper handles absolute URL
+                  alt={parkingSpace.name || "Parking Spot Image"}
+                  layout="fill"
+                  objectFit="contain"
+                  className="max-w-full max-h-full"
+                />
+              </div>
+            )}
+            <div className="flex items-center justify-between mb-4">
+              <RatingDisplay parkingSpace={parkingSpace} />
+              <Badge variant="default">Available</Badge>
+            </div>
+            <Separator className="my-4" />
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <DollarSign className="w-5 h-5 text-green-600 mr-1" />
+                  <span className="font-semibold">
+                    ${(parkingSpace.pricing_info?.base_price ?? 0) / 100}/hour
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <Clock className="w-5 h-5 text-blue-500 mr-1" />
+                  <span className="text-sm">See availability below</span>
+                </div>
+              </div>
+              <ScrollArea className="h-20 rounded-md border p-2">
+                <p className="text-sm text-muted-foreground">
+                  {parkingSpace.cancellation_policy}
+                </p>
+              </ScrollArea>
+              <div>
+                <h3 className="font-semibold mb-2 text-sm">Features:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {parkingSpace.features?.map((feature: string) => (
+                    <Badge key={feature} variant="outline" className="text-xs">
+                      {feature}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              {/* Render All Availability Schedules */}
+              <div>
+                <h3 className="font-semibold mb-2 text-sm">Availability:</h3>
+                {renderAvailability()}
               </div>
             </div>
-            {/* Render All Availability Schedules */}
-            <div>
-              <h3 className="font-semibold mb-2 text-sm">Availability:</h3>
-              {renderAvailability()}
-            </div>
-          </div>
-        </CardContent>
-        <Separator className="my-2" />
-        {userReservations.length > 0 && (
-          <CardContent>
-            <h3 className="font-semibold mb-2 text-lg">
-              Your Previous Reservations:
-            </h3>
-            <div className="space-y-2">
-              {userReservations.map((reservation: Reservation) => (
-                <div
-                  key={reservation.id}
-                  className="text-sm border p-2 rounded-md text-wrap"
-                >
-                  <p>
-                    <strong>Start Time:</strong>{" "}
-                    {isValidDate(reservation.start_time)
-                      ? format(
+          </CardContent>
+          <Separator className="my-2" />
+          {userReservations.length > 0 && (
+            <CardContent>
+              <h3 className="font-semibold mb-2 text-lg">
+                Your Previous Reservations:
+              </h3>
+              <div className="space-y-2">
+                {userReservations.map((reservation: Reservation) => (
+                  <div
+                    key={reservation.id}
+                    className="text-sm border p-2 rounded-md text-wrap"
+                  >
+                    <p>
+                      <strong>Start Time:</strong>{" "}
+                      {isValidDate(reservation.start_time)
+                        ? format(
                           new Date(reservation.start_time as string),
                           "PPp",
                         )
-                      : "N/A"}
-                  </p>
-                  <p>
-                    <strong>End Time:</strong>{" "}
-                    {isValidDate(reservation.start_time) &&
-                    isValidDate(reservation.end_time)
-                      ? format(new Date(reservation.end_time as string), "PPp")
-                      : "N/A"}
-                  </p>
-                  <p>
-                    <strong>License Plate:</strong>{" "}
-                    {/* Should never need to reduce, but if id are same somehow, we reduce by licence plate */}
-                    {carInfos
-                      .filter(
-                        (carInfo: CarInfo) =>
-                          carInfo.id === reservation.car_info_id,
-                      )
-                      .reduce((a: CarInfo, b: CarInfo) =>
-                        a.license_plate > b.license_plate ? a : b,
-                      ).license_plate || "N/A"}
-                  </p>
+                        : "N/A"}
+                    </p>
+                    <p>
+                      <strong>End Time:</strong>{" "}
+                      {isValidDate(reservation.start_time) &&
+                        isValidDate(reservation.end_time)
+                        ? format(
+                          new Date(reservation.end_time as string),
+                          "PPp",
+                        )
+                        : "N/A"}
+                    </p>
+                    <p>
+                      <strong>License Plate:</strong>{" "}
+                      {/* Should never need to reduce, but if id are same somehow, we reduce by licence plate */}
+                      {carInfos
+                        .filter(
+                          (carInfo: CarInfo) =>
+                            carInfo.id === reservation.car_info_id,
+                        )
+                        .reduce((a: CarInfo, b: CarInfo) =>
+                          a.license_plate > b.license_plate ? a : b,
+                        ).license_plate || "N/A"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          )}
+          <Separator className="my-2" />
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="start_time" className="text-sm font-medium">
+                    Start Date & Time
+                  </Label>
+                  <div className="relative">
+                    {/* <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /> */}
+                    <Input
+                      id="start_time"
+                      name="start_time"
+                      type="datetime-local"
+                      value={booking.start_time}
+                      onChange={handleChange}
+                      className=""
+                      required
+                    />
+                  </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        )}
-        <Separator className="my-2" />
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="start_time" className="text-sm font-medium">
-                  Start Date & Time
-                </Label>
-                <div className="relative">
-                  {/* <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /> */}
-                  <Input
-                    id="start_time"
-                    name="start_time"
-                    type="datetime-local"
-                    value={booking.start_time}
-                    onChange={handleChange}
-                    className=""
-                    required
-                  />
+                <div className="space-y-2">
+                  <Label htmlFor="end_time" className="text-sm font-medium">
+                    End Date & Time
+                  </Label>
+                  <div className="relative">
+                    {/* <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /> */}
+                    <Input
+                      id="end_time"
+                      name="end_time"
+                      type="datetime-local"
+                      value={booking.end_time}
+                      onChange={handleChange}
+                      className=""
+                      min={
+                        booking.start_time ||
+                        new Date().toISOString().slice(0, 16)
+                      }
+                      required
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="end_time" className="text-sm font-medium">
-                  End Date & Time
-                </Label>
-                <div className="relative">
-                  {/* <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /> */}
-                  <Input
-                    id="end_time"
-                    name="end_time"
-                    type="datetime-local"
-                    value={booking.end_time}
-                    onChange={handleChange}
-                    className=""
-                    min={
-                      booking.start_time ||
-                      new Date().toISOString().slice(0, 16)
-                    }
-                    required
-                  />
-                </div>
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="car_info_id" className="text-sm font-medium">
-                Select Car
-              </Label>
-              <Select
-                name="car_info_id"
-                value={booking.car_info_id}
-                onValueChange={(value) =>
-                  setBooking((prev: ReservationCreateRequest) => ({
-                    ...prev,
-                    car_info_id: value,
-                  }))
-                }
-                required
+              <div className="space-y-2">
+                <Label htmlFor="car_info_id" className="text-sm font-medium">
+                  Select Car
+                </Label>
+                <Select
+                  name="car_info_id"
+                  value={booking.car_info_id}
+                  onValueChange={(value) =>
+                    setBooking((prev: ReservationCreateRequest) => ({
+                      ...prev,
+                      car_info_id: value,
+                    }))
+                  }
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your car" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {carInfos.map((car: CarInfo) => (
+                      <SelectItem
+                        key={car.id ?? "no-id"}
+                        value={car.id ?? "no-id"}
+                      >
+                        {`${car.color ? `${car.color} ` : ""}${car.make} ${car.model} (${car.license_plate})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="w-full flex justify-between items-center mt-4">
+                <div className="text-lg font-semibold">Total:</div>
+                <div className="text-2xl font-bold">
+                  ${calculateTotal().toFixed(2)}
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full mt-4"
+                size="lg"
+                disabled={isSubmitting}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your car" />
-                </SelectTrigger>
-                <SelectContent>
-                  {carInfos.map((car: CarInfo) => (
-                    <SelectItem
-                      key={car.id ?? "no-id"}
-                      value={car.id ?? "no-id"}
-                    >
-                      {`${car.color ? `${car.color} ` : ""}${car.make} ${car.model} (${car.license_plate})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="w-full flex justify-between items-center mt-4">
-              <div className="text-lg font-semibold">Total:</div>
-              <div className="text-2xl font-bold">
-                ${calculateTotal().toFixed(2)}
-              </div>
-            </div>
-
+                {isSubmitting ? "Submitting..." : "Book Now"}
+              </Button>
+            </form>
             <Button
-              type="submit"
+              variant="outline"
               className="w-full mt-4"
               size="lg"
-              disabled={isSubmitting}
+              onClick={() => {
+                if (isBookmarked) {
+                  dispatch(deleteBookmark(booking.parking_space_id)).unwrap()
+                  setIsBookmarked(false)
+                } else {
+                  dispatch(addBookmark(booking.parking_space_id)).unwrap()
+                  setIsBookmarked(true)
+                }
+              }}
             >
-              {isSubmitting ? "Submitting..." : "Book Now"}
+              {isBookmarked ? "Remove Bookmark" : "Bookmark for Later"}
             </Button>
-          </form>
-          <Button
-            variant="outline"
-            className="w-full mt-4"
-            size="lg"
-            onClick={() => {
-              if (isBookmarked) {
-                dispatch(deleteBookmark(booking.parking_space_id)).unwrap()
-                setIsBookmarked(false)
-              } else {
-                dispatch(addBookmark(booking.parking_space_id)).unwrap()
-                setIsBookmarked(true)
-              }
-            }}
-          >
-            {isBookmarked ? "Remove Bookmark" : "Bookmark for Later"}
-          </Button>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+      {isPaymentOpen && currentReservation && (
+        <PaymentPage reservation={currentReservation} />
+      )}
 
       {/* AddCarModal Component */}
       <AddCarModal

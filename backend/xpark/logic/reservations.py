@@ -5,18 +5,13 @@ from psycopg.rows import dict_row
 from xpark.utils.db import DB
 from result import Result, Ok, Err
 import datetime
-from enum import Enum
 import psycopg
 from psycopg import Cursor
 from psycopg.rows import DictRow
+from xpark.logic.payments import create_checkout_session
+import math
 
 from xpark.utils.mailer import send_email, generate_templated_email
-
-
-class ReservationStatus(Enum):
-    book = "booked"
-    cancel = "canceled"
-    complete = "completed"
 
 
 def check_if_available(
@@ -102,7 +97,7 @@ def calculate_booking_price(
     parking_space_id: uuid.UUID,
     start_time: datetime.datetime,
     end_time: datetime.datetime,
-) -> float:
+) -> int:
     cur.execute("SELECT price FROM parking_spaces WHERE id = %s", (parking_space_id,))
     res = cur.fetchone()
     assert res
@@ -110,7 +105,9 @@ def calculate_booking_price(
     assert type(price) is int
     delta = end_time - start_time
     hours = delta.days * 24 + delta.seconds / 3600
-    return hours * price
+    # Round down to get price
+    # In cents
+    return math.floor(hours * price)
 
 
 def create_reservation(
@@ -132,6 +129,8 @@ def create_reservation(
             if not check_if_available(conn, parking_space_id, start_time, end_time):
                 return Err("Spot not available")
             # Insert the reservation
+            price = calculate_booking_price(cur, parking_space_id, start_time, end_time)
+            checkout_secret = create_checkout_session(cur, user_id, price)
             cur.execute(
                 """
                 INSERT INTO reservations (
@@ -141,6 +140,7 @@ def create_reservation(
                     renter_id,
                     status,
                     price,
+                    checkout_secret,
                     created_at,
                     updated_at
                 ) VALUES (
@@ -148,12 +148,13 @@ def create_reservation(
                     TSTZRANGE(%(start_time)s, %(end_time)s, '[]'),
                     %(car_id)s,
                     %(user_id)s,
-                    'booked',
+                    'pending',
                     %(price)s,
+                    %(checkout_secret)s,
                     NOW(),
                     NOW()
                 )
-                RETURNING id, parking_space_id, lower(time) as start_time, upper(time) as end_time, car_info_id, status, created_at, updated_at
+                RETURNING id, parking_space_id, lower(time) as start_time, upper(time) as end_time, car_info_id, checkout_secret, status, created_at, updated_at
                 """,
                 {
                     "id": parking_space_id,
@@ -161,9 +162,8 @@ def create_reservation(
                     "end_time": end_time,
                     "car_id": car_info_id,
                     "user_id": user_id,
-                    "price": calculate_booking_price(
-                        cur, parking_space_id, start_time, end_time
-                    ),
+                    "price": price,
+                    "checkout_secret": checkout_secret,
                 },
             )
 

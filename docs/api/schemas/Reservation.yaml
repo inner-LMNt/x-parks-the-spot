@@ -14,6 +14,7 @@ required:
   - price
   - location
   - is_bookmarked
+  - checkout_secret
 properties:
   id:
     type: string
@@ -58,3 +59,5 @@ properties:
     $ref: './Location.yaml'
   is_bookmarked:
     type: boolean
+  checkout_secret:
+    type: string

@@ -209,7 +209,7 @@ export default function MySpotsPage() {
               {spot.is_paid && spot.pricing_info && (
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-lg font-bold">
-                    ${spot.pricing_info.base_price}/hour
+                    ${spot.pricing_info.base_price / 100}/hour
                   </p>
                   {getVerificationStatusIcon(spot)}{" "}
                   {/* Verification status icon */}

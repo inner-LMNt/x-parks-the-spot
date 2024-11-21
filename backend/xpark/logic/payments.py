@@ -1,15 +1,29 @@
 import stripe
 from xpark.config import Config
 from result import Ok, Err, Result
+import uuid
+from psycopg import Cursor
+from psycopg.rows import DictRow
 
 
-def create_checkout_session(price: int) -> str:
+def create_checkout_session(
+    cur: Cursor[DictRow], user_id: uuid.UUID, price: int
+) -> str:
+    # Get user email
+    # Check if the email already exists in the database
+    cur.execute("SELECT email FROM users WHERE id = %s", (user_id,))
+    email = cur.fetchone()
+    assert email
+    email = email["email"]
     session = stripe.checkout.Session.create(
         line_items=[
             {
                 "price_data": {
                     "currency": "usd",
                     "unit_amount": price,
+                    "product_data": {
+                        "name": "Parking Spot",
+                    },
                 },
                 "quantity": 1,
             }
@@ -17,7 +31,10 @@ def create_checkout_session(price: int) -> str:
         mode="payment",
         ui_mode="embedded",
         return_url=Config.BASE_HOST
-        + "/checkout/return?session_id={CHECKOUT_SESSION_ID}",  # the session ID is not a variable, but is instead going to be templated by stripe itself
+        + "/bookings?session_id={CHECKOUT_SESSION_ID}",  # the session ID is not a variable, but is instead going to be templated by stripe itself
+        # saved_payment_method_options={"payment_method_save": "enabled"},
+        customer_email=email,
+        # customer_creation="always",
     )
 
     assert session.client_secret
