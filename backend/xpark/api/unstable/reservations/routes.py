@@ -10,6 +10,8 @@ from xpark.logic.reservations import (
     cancel_reservation_logic,
     get_max_extension_time_logic,
     force_cancel_reservation_logic,
+    rate_renter,
+    get_rating,
 )
 from . import bp
 from flask import request
@@ -176,3 +178,35 @@ def force_cancel_reservation_route(
             if "not found" in e:
                 return {"err": e}, 404
             return {"err": e}, 400
+
+
+@bp.post("<reservation_id>/rate-renter")
+@require_logged_in_user
+def rate_renter_route(
+    token: str, reservation_id: str, user_id: uuid.UUID
+) -> Tuple[Any, int]:
+    assert request.json is not None
+    match rate_renter(
+        reservation_id=uuid.UUID(reservation_id),
+        owner_id=user_id,
+        score=request.json["score"],
+    ):
+        case Ok(_):
+            return {}, 200
+        case Err(e):
+            return {"err", e}, 400
+
+
+@bp.get("<reservation_id>/rate-renter")
+@require_logged_in_user
+def get_rating_route(
+    token: str, reservation_id: str, user_id: uuid.UUID
+) -> Tuple[Any, int]:
+    match get_rating(
+        reservation_id=uuid.UUID(reservation_id),
+        owner_id=user_id,
+    ):
+        case Ok(score):
+            return {"score": score}, 200
+        case Err(e):
+            return {"err": e}, 404

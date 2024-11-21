@@ -565,7 +565,9 @@ def get_owner_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], s
             return Ok(cur.fetchall())
 
 
-def force_cancel_reservation_logic(user_id: uuid.UUID, reservation_id: uuid.UUID) -> Result[None, str]:
+def force_cancel_reservation_logic(
+    user_id: uuid.UUID, reservation_id: uuid.UUID
+) -> Result[None, str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
@@ -617,3 +619,52 @@ def force_cancel_reservation_logic(user_id: uuid.UUID, reservation_id: uuid.UUID
             )
 
             return Ok(None)
+
+
+def rate_renter(
+    reservation_id: uuid.UUID, owner_id: uuid.UUID, score: int
+) -> Result[None, None]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+            INSERT INTO renter_ratings (renter_id, rater_id, responsiveness_score)
+            VALUES ((
+                SELECT renter_id FROM reservations JOIN parking_spaces
+                ON parking_space_id = parking_spaces.id
+                WHERE reservations.id = %(reservation_id)s
+                AND parking_spaces.owner = %(owner_id)s
+            ), %(owner_id)s, %(score)s)
+            ON CONFLICT (renter_id, rater_id) DO UPDATE
+            SET responsiveness_score = %(score)s
+            """,
+                {
+                    "owner_id": owner_id,
+                    "score": score,
+                    "reservation_id": reservation_id,
+                },
+            )
+            return Ok(None)
+
+
+def get_rating(reservation_id: uuid.UUID, owner_id: uuid.UUID) -> Result[int, str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+            SELECT responsiveness_score FROM renter_ratings
+            JOIN reservations ON renter_ratings.renter_id = reservations.renter_id
+            WHERE reservations.id = %(reservation_id)s
+            AND renter_ratings.rater_id = %(owner_id)s
+            """,
+                {
+                    "owner_id": owner_id,
+                    "reservation_id": reservation_id,
+                },
+            )
+            score = cur.fetchone()
+            if score is None:
+                return Ok(0)
+            if score.get("responsiveness_score") is None:
+                return Ok(0)
+            return Ok(score["responsiveness_score"])

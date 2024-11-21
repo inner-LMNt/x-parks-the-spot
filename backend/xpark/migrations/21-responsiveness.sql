@@ -2,9 +2,9 @@ ALTER TABLE users ADD COLUMN responsiveness_score INT CHECK (responsiveness_scor
 -- ALTER TABLE reservations ADD COLUMN responsiveness_score INT CHECK (responsiveness_score BETWEEN 1 AND 5);
 CREATE TABLE IF NOT EXISTS renter_ratings (
 	id SERIAL,
-	renter_id UUID,
-	rater_id UUID,
-	responsiveness_score INT CHECK (responsiveness_score BETWEEN 1 AND 5),
+	renter_id UUID NOT NULL,
+	rater_id UUID NOT NULL,
+	responsiveness_score INT CHECK (responsiveness_score BETWEEN 1 AND 5) NOT NULL,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
     FOREIGN KEY (renter_id) REFERENCES users(id) ON DELETE CASCADE,

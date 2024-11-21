@@ -210,4 +210,4 @@ const RatingSelector = ({ parkingSpaceId }: { parkingSpaceId: string }) => {
   )
 }
 
-export default RatingSelector
+export { RatingSelector, StarRatingInput }

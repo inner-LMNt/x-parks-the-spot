@@ -1,7 +1,8 @@
 "use client"
 
-import React, { useEffect } from "react"
+import React, { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { format, parseISO } from "date-fns"
 import {
   CalendarDays,
@@ -20,6 +21,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CancelReservationButton } from "./CancelReservationButton"
+import { rateRenter, getRating } from "@/features/owner/ownerSlice"
+import { StarRatingInput } from "@/components/custom/RatingSelector"
 
 interface BookingDetails {
   id: string
@@ -55,7 +58,10 @@ const BookingDetailCard = ({
   onClose,
   booking,
 }: BookingDetailCardProps) => {
-  const [isCarExpanded, setIsCarExpanded] = React.useState(false)
+  const [isCarExpanded, setIsCarExpanded] = useState(false)
+  const [rating, setRating] = useState(0)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const dispatch = useAppDispatch()
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -74,6 +80,27 @@ const BookingDetailCard = ({
     window.addEventListener("keydown", handleEscape)
     return () => window.removeEventListener("keydown", handleEscape)
   }, [onClose])
+
+  useEffect(() => {
+    //@ts-ignore
+    const fetchScore = async () => {
+      setIsSubmitting(true)
+
+      const resultAction = await dispatch(
+        getRating({ reservationId: booking.id }),
+      )
+      const { score } = resultAction.payload
+      setRating(score)
+      setIsSubmitting(false)
+    }
+    fetchScore()
+  }, [])
+
+  useEffect(() => {
+    if (rating != 0) {
+      dispatch(rateRenter({ reservationId: booking.id, score: rating }))
+    }
+  }, [rating])
 
   const getStatusBadgeVariant = (status: string, timeStatus: string) => {
     if (status === "canceled") return "destructive"
@@ -146,7 +173,7 @@ const BookingDetailCard = ({
                     {booking.status === "canceled"
                       ? "Canceled"
                       : booking.time_status.charAt(0).toUpperCase() +
-                        booking.time_status.slice(1)}
+                      booking.time_status.slice(1)}
                   </Badge>
                 </div>
               </CardHeader>
@@ -254,6 +281,19 @@ const BookingDetailCard = ({
                         </motion.div>
                       )}
                     </AnimatePresence>
+                  </div>
+
+                  {/* Rate Renter */}
+                  <div>
+                    <span className="font-medium">
+                      Rate Renter's Responsiveness
+                    </span>
+                    <StarRatingInput
+                      value={rating}
+                      onChange={setRating}
+                      disabled={isSubmitting}
+                      originalValue={rating}
+                    />
                   </div>
 
                   {/* Cancel Button */}

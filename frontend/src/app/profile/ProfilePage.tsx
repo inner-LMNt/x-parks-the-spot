@@ -226,6 +226,7 @@ export default function ProfilePage() {
               {userProfile.username}
             </h1>
             <RatingStars rating={score} />
+            <div className="h-3"></div>
             <p className="text-lg md:text-xl text-gray-600 mb-4">
               Total Points: {totalPoints}
             </p>

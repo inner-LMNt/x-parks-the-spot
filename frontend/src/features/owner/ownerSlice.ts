@@ -110,6 +110,44 @@ export const submitVerification = createAsyncThunk<
   },
 )
 
+// Async thunk to rate renter
+export const rateRenter = createAsyncThunk<
+  null,
+  { reservationId: string; score: number }, // Argument type
+  { rejectValue: string }
+>("owner/rateRenter", async ({ reservationId, score }, { rejectWithValue }) => {
+  try {
+    await axios.post(`reservations/${reservationId}/rate-renter`, {
+      score: score,
+    })
+    return null
+  } catch (error: any) {
+    if (error.status === 401) {
+      return rejectWithValue("Invalid email or password")
+    }
+    return rejectWithValue("Login failed")
+  }
+})
+
+export const getRating = createAsyncThunk<
+  number,
+  { reservationId: string }, // Argument type
+  { rejectValue: string }
+>("owner/getRating", async ({ reservationId }, { rejectWithValue }) => {
+  try {
+    const result = await axios.get(
+      `reservations/${reservationId}/rate-renter`,
+      {},
+    )
+    return result.data
+  } catch (error: any) {
+    if (error.status === 401) {
+      return rejectWithValue("Invalid email or password")
+    }
+    return rejectWithValue("Login failed")
+  }
+})
+
 const ownerSlice = createSlice({
   name: "owner",
   initialState,
@@ -197,6 +235,32 @@ const ownerSlice = createSlice({
       .addCase(submitVerification.rejected, (state: OwnerState, action) => {
         state.loading = false
         state.error = action.payload as string
+      })
+      // Handle rateRenter
+      .addCase(rateRenter.pending, (state: OwnerState) => {
+        // state.loading = true
+        state.error = null
+      })
+      .addCase(rateRenter.rejected, (state: OwnerState, action) => {
+        // state.loading = false
+        state.error = action.payload as string
+      })
+      .addCase(rateRenter.fulfilled, (state: OwnerState, action) => {
+        // state.loading = false
+        state.error = null
+      })
+      // Handle getRating
+      .addCase(getRating.pending, (state: OwnerState) => {
+        // state.loading = true
+        state.error = null
+      })
+      .addCase(getRating.rejected, (state: OwnerState, action) => {
+        // state.loading = false
+        state.error = action.payload as string
+      })
+      .addCase(getRating.fulfilled, (state: OwnerState, action) => {
+        // state.loading = false
+        state.error = null
       })
       // Handle updateParkingSpot
       .addCase(updateParkingSpot.pending, (state: OwnerState) => {

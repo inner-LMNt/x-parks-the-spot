@@ -27,7 +27,7 @@ import Link from "next/link"
 import { fetchUserCars, resetCarError } from "@/features/cars/carSlice"
 import { Button } from "@/components/ui/button"
 import DeleteReservationModal from "@/components/custom/DeleteReservationModal"
-import RatingSelector from "@/components/custom/RatingSelector"
+import { RatingSelector } from "@/components/custom/RatingSelector"
 import parkingSpaceSlice from "@/features/parking-space/parkingSpaceSlice"
 
 // SectionHeader Component
