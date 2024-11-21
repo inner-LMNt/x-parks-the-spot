@@ -23,12 +23,12 @@ export type PasswordResetConfirmRequest =
 export type User = components["schemas"]["User"]
 export type PublicUserProfile = components["schemas"]["PublicUserProfile"]
 export type UserUpdateRequest = components["schemas"]["UserUpdateRequest"]
-export type NotificationPreferences =
-  components["schemas"]["NotificationPreferences"]
-export type CarInfo = components["schemas"]["CarInfo"]
-export type RenterProfile = components["schemas"]["RenterProfile"]
-export type OwnerProfile = components["schemas"]["OwnerProfile"]
-export type SpotFinderProfile = components["schemas"]["SpotFinderProfile"]
+export type NotificationPreferences = components["schemas"]["NotificationPreferences"];
+export type CarInfo = components["schemas"]["CarInfo"];
+export type Bookmark = components["schemas"]["Bookmark"];
+export type RenterProfile = components["schemas"]["RenterProfile"];
+export type OwnerProfile = components["schemas"]["OwnerProfile"];
+export type SpotFinderProfile = components["schemas"]["SpotFinderProfile"];
 
 /**
  * **Parking Space Types**

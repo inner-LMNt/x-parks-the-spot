@@ -15,6 +15,7 @@ import dashboardAnalyticsReducer from "@/features/dashboard-analytics/dashboardA
 import { customMiddleware } from "./middleware" // Import your custom middleware
 import throttle from "lodash.throttle"
 import { saveState, loadState } from "./localStorage"
+import bookmarkReducer from "@/features/bookmarks/bookmarkSlice"
 import ownerSlice from "@/features/owner/ownerSlice"
 import dashboardAnalyticsSlice from "@/features/dashboard-analytics/dashboardAnalyticsSlice"
 
@@ -37,6 +38,7 @@ export const createStore = (preloadedState?: Partial<RootState>) => {
       ownerReservations: ownerReservationsReducer,
       reservationCar: reservationCarReducer,
       dashboardAnalytics: dashboardAnalyticsReducer,
+      bookmarks: bookmarkReducer,
     },
     // @ts-ignore
     middleware: (getDefaultMiddleware) =>

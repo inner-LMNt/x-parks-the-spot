@@ -16,6 +16,7 @@ const NavBarWrapper = () => {
     "/add",
     "/bookings",
     "/cars",
+    "/bookmarks",
   ]
 
   // Determine if the current path is in the list

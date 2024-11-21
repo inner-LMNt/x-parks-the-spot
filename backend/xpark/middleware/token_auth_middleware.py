@@ -65,3 +65,30 @@ def require_admin(
                 return {"err": e}, 401
 
     return wrapper
+
+
+def optional_logged_in_user(
+    next_fn: Callable[..., Tuple[Any, int]],
+) -> Callable[..., Tuple[Any, int]]:
+    @wraps(next_fn)
+    def wrapper(*args: Any, **kwargs: Any) -> Tuple[Any, int]:
+        # Extract the bearer auth
+        kwargs["user_id"] = None
+        kwargs["token"] = None
+        token_to_check = request.headers.get("Authorization")
+        if token_to_check is None:
+            return next_fn(*args, **kwargs)
+        token_to_check = token_to_check.strip()
+        # This token is prefixed with "Bearer", so we have to trim that
+        if not token_to_check.startswith("Bearer "):
+            return next_fn(*args, **kwargs)
+        token = token_to_check[7:]
+        match validate_token_and_refresh(token):
+            case Ok(user_id):
+                kwargs["user_id"] = user_id
+                kwargs["token"] = token
+                return next_fn(*args, **kwargs)
+            case Err(_):
+                return next_fn(*args, **kwargs)
+
+    return wrapper

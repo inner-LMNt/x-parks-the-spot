@@ -468,6 +468,57 @@ paths:
           description: Forbidden
         '404':
           description: Parking space not found
+  /parking-spaces/{id}/bookmark:
+    delete:
+      tags:
+        - Parking Spaces
+      summary: Remove bookmarked parking space
+      security:
+        - bearerAuth: []
+      paramters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Bookmark Deleted
+        '404':
+          description: Bookmark Doesn't Exist
+    post:
+      tags:
+        - Parking Spaces
+      summary: Bookmark parking space
+      paramters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Bookmark Set
+        '409':
+          description: Bookmark Already Set
+  /bookmarks:
+    get:
+      tags: 
+        - Parking Spaces
+      summary: Get all bookmarked spots
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of bookmarks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './schemas/Bookmark.yaml'
   /reservations:
     get:
       tags:

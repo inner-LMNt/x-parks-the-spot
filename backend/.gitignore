@@ -156,4 +156,4 @@ dmypy.json
 cython_debug/
 
 # Files
-.xpark/static/images/*
+xpark/static/images/*
