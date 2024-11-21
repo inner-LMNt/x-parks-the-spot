@@ -360,6 +360,8 @@ export const get_raffle_tickets = createAsyncThunk<
     return response.data.tickets.count
   } catch (error: any) {
     return rejectWithValue("Failed to get raffle tickets")
+  }
+})
 
 export const get_score = createAsyncThunk<
   { score: number } | null,
@@ -560,6 +562,7 @@ const userSlice = createSlice<UserState, {}, "user">({
         state.loading = false
         console.log("action.payload", action.payload)
         state.active_raffle_tickets = action.payload
+      })
         
       .addMatcher(isAnyOf(get_score.fulfilled), (state, action) => {
         state.loading = false

@@ -765,9 +765,7 @@ def perform_raffle() -> Result[List[Dict[str, Any]], str]:
                     to=winner["email"],
                     subject="Congratulations! You've Won the XPark Raffle",
                     content=generate_templated_email(
-                        "raffle_winner",
-                        name=winner["username"],
-                        amount="$10"
+                        "raffle_winner", name=winner["username"], amount="$10"
                     ),
                 )
 

@@ -614,6 +614,7 @@ def handle_get_raffle_tickets(user_id: uuid.UUID) -> Result[Dict[str, int], str]
                 return Err("User not found")
             return Ok(result)
 
+
 def get_responsiveness_score(user_id: uuid.UUID) -> Result[Dict[str, int], str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:

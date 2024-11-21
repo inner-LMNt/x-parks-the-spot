@@ -35,8 +35,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
-import { useState, useEffect } from "react"
 import { RatingStars } from "@/components/custom/RatingDisplay"
 
 function ProfileStats({ label, value }: { label: string; value: number }) {
