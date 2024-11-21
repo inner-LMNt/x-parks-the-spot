@@ -69,7 +69,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     dispatch(get_notification_time())
-  }, [dispatch])
+  }, [])
 
   // Initialize React Hook Form for delete account
   const {

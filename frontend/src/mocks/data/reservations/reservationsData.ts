@@ -21,6 +21,7 @@ export const reservations: Reservation[] = [
       latitude: 0,
       longitude: 0,
     },
+    is_bookmarked: false,
   },
   // Add more reservations as needed
 ]

@@ -35,6 +35,7 @@
           packages = with pkgs; [
             nodejs_22
             swagger-cli
+            nodePackages.prettier
           ];
         };
       }

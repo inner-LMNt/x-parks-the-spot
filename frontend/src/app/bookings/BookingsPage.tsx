@@ -21,6 +21,7 @@ import {
   ArrowRightCircle,
   Loader2,
   FileWarning,
+  Bookmark,
 } from "lucide-react"
 import { Avatar } from "@/components/ui/avatar"
 import Link from "next/link"
@@ -29,6 +30,11 @@ import { Button } from "@/components/ui/button"
 import DeleteReservationModal from "@/components/custom/DeleteReservationModal"
 import RatingSelector from "@/components/custom/RatingSelector"
 import parkingSpaceSlice from "@/features/parking-space/parkingSpaceSlice"
+import {
+  fetchUserBookmarks,
+  deleteBookmark,
+  addBookmark,
+} from "@/features/bookmarks/bookmarkSlice"
 
 // SectionHeader Component
 function SectionHeader({ title }: { title: string }) {
@@ -62,6 +68,8 @@ function ReservationCard({
   onCancel: (reservation: Reservation) => void
 }) {
   const router = useRouter()
+  const [isBookmarked, setIsBookmarked] = useState<boolean>(false)
+  const dispatch = useAppDispatch()
 
   const handleClick = () => {
     router.push(`/bookings/${reservation.parking_space_id}`)
@@ -83,6 +91,11 @@ function ReservationCard({
     )
   }, [reservation, car])
 
+  useEffect(() => {
+    dispatch(fetchUserBookmarks()).unwrap()
+    setIsBookmarked(reservation.is_bookmarked)
+  }, [reservation, dispatch])
+
   const now = new Date()
   const startTime = new Date(reservation.start_time ?? now)
   const isUpcoming = startTime > now && reservation.status !== "canceled"
@@ -99,11 +112,32 @@ function ReservationCard({
   return (
     <Card>
       <CardHeader className="flex justify-between items-center">
-        <CardTitle className="flex items-center text-lg font-medium text-gray-900">
-          <MapPin className="w-5 h-5 mr-2 text-blue-500" />
-          {reservation.name}
-        </CardTitle>
-        <Badge variant="secondary">{reservation.status}</Badge>
+        <div className="flex items-center justify-between w-full">
+          <CardTitle className="flex items-center text-lg font-medium text-gray-900">
+            <MapPin className="w-5 h-5 mr-2 text-blue-500" />
+            {reservation.name}
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">{reservation.status}</Badge>
+            <Button
+              variant={isBookmarked ? "default" : "secondary"}
+              size="sm"
+              onClick={() => {
+                if (isBookmarked) {
+                  dispatch(
+                    deleteBookmark(reservation.parking_space_id),
+                  ).unwrap()
+                  setIsBookmarked(false)
+                } else {
+                  dispatch(addBookmark(reservation.parking_space_id)).unwrap()
+                  setIsBookmarked(true)
+                }
+              }}
+            >
+              <Bookmark className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="flex items-center mb-2">

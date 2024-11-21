@@ -1,0 +1,7 @@
+type: object
+required:
+  - parking_spot_id
+properties:
+  parking_spot_id:
+    type: string
+    format: uuid

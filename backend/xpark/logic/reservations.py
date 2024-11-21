@@ -10,7 +10,7 @@ import psycopg
 from psycopg import Cursor
 from psycopg.rows import DictRow
 
-from xpark.utils.mailer import send_email
+from xpark.utils.mailer import send_email, generate_templated_email
 
 
 class ReservationStatus(Enum):
@@ -79,6 +79,7 @@ def get_user_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], st
                     car_info_id, 
                     renter_id,
                     status,
+                    EXISTS(SELECT 1 FROM bookmarked_spots WHERE user_id=%(user_id)s AND parking_space_id=reservations.parking_space_id) as is_bookmarked,
                     json_build_object(
                         'address',   parking_spaces.address,
                         'latitude',  ST_Y(location::geometry),
@@ -89,9 +90,9 @@ def get_user_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], st
                     reservations.updated_at
                 FROM reservations JOIN parking_spaces ON 
                     reservations.parking_space_id = parking_spaces.id
-                WHERE renter_id = %s
+                WHERE renter_id = %(user_id)s
             """,
-                (user_id,),
+                {"user_id": user_id},
             )
             return Ok(cur.fetchall())
 
@@ -563,3 +564,59 @@ def get_owner_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], s
                 (user_id,),
             )
             return Ok(cur.fetchall())
+
+
+def force_cancel_reservation_logic(
+    user_id: uuid.UUID, reservation_id: uuid.UUID
+) -> Result[None, str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT 
+                    parking_spaces.name AS parking_space_name,
+                    LOWER(reservations.time) AS start_time,
+                    UPPER(reservations.time) AS end_time,
+                    users.email AS renter_email,
+                    users.name AS renter_name
+                FROM reservations
+                JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                JOIN users ON reservations.renter_id = users.id
+                WHERE reservations.id = %s
+                """,
+                (reservation_id,),
+            )
+            reservation = cur.fetchone()
+
+            if not reservation:
+                return Err("Reservation not found")
+
+            cur.execute(
+                """
+                UPDATE reservations
+                SET status = 'canceled'
+                WHERE id = %s AND parking_space_id IN (
+                    SELECT id FROM parking_spaces WHERE owner = %s
+                )
+                """,
+                (reservation_id, user_id),
+            )
+
+            if cur.rowcount == 0:
+                return Err("Force cancellation not authorized")
+
+            # Send cancellation email to renter
+            email_content = generate_templated_email(
+                "reservation_force_canceled",
+                name=reservation["renter_name"],
+                parking_space_name=reservation["parking_space_name"],
+                start_time=reservation["start_time"].strftime("%Y-%m-%d %H:%M %Z"),
+                end_time=reservation["end_time"].strftime("%Y-%m-%d %H:%M %Z"),
+            )
+            send_email(
+                to=reservation["renter_email"],
+                subject="Your Parking Reservation Has Been Canceled",
+                content=email_content,
+            )
+
+            return Ok(None)

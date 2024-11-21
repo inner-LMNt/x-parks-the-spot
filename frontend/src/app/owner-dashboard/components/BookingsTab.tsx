@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useMemo } from "react"
 import { motion } from "framer-motion"
 import {
   Card,
@@ -25,7 +25,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { format, parseISO, differenceInHours } from "date-fns"
+import { format, parseISO } from "date-fns"
+import BookingDetailCard from "./BookingDetailCard"
 
 interface BookingStats {
   total: number
@@ -41,27 +42,27 @@ interface BookingDetails {
   spotId: string
   spotName: string
   renterName: string
+  renterEmail: string
   startTime: string
   endTime: string
-  status: "active" | "completed" | "canceled"
+  status: "booked" | "current" | "completed" | "canceled"
   price: number
   duration: number
+  time_status: "upcoming" | "current" | "past"
+  isMultiDay: boolean
+  daysDuration: number
+  rentalCount: number
   carDetails: {
     make: string
     model: string
-    year: number
     color: string
+    plate: string
   }
 }
 
 interface BookingMetrics {
   stats: BookingStats
   recentBookings: BookingDetails[]
-  bookingsByStatus: {
-    active: BookingDetails[]
-    completed: BookingDetails[]
-    canceled: BookingDetails[]
-  }
 }
 
 interface BookingsTabProps {
@@ -69,14 +70,28 @@ interface BookingsTabProps {
 }
 
 export default function BookingsTab({ bookingMetrics }: BookingsTabProps) {
-  const [statusFilter, setStatusFilter] = useState("all")
+  const [selectedBooking, setSelectedBooking] = useState<BookingDetails | null>(
+    null,
+  )
 
-  const filteredBookings =
-    statusFilter === "all"
-      ? bookingMetrics.recentBookings
-      : bookingMetrics.bookingsByStatus[
-          statusFilter as keyof typeof bookingMetrics.bookingsByStatus
-        ]
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "upcoming" | "current" | "past" | "canceled"
+  >("all")
+
+  const filteredBookings = useMemo(() => {
+    if (statusFilter === "all") {
+      return bookingMetrics.recentBookings
+    }
+    if (statusFilter === "canceled") {
+      return bookingMetrics.recentBookings.filter(
+        (booking) => booking.status === "canceled",
+      )
+    }
+    return bookingMetrics.recentBookings.filter(
+      (booking) =>
+        booking.status !== "canceled" && booking.time_status === statusFilter,
+    )
+  }, [statusFilter, bookingMetrics.recentBookings])
 
   return (
     <motion.div
@@ -85,22 +100,33 @@ export default function BookingsTab({ bookingMetrics }: BookingsTabProps) {
       exit={{ opacity: 0, y: -20 }}
       className="space-y-6"
     >
-      <div className="flex justify-between items-center">
+      {selectedBooking && (
+        <BookingDetailCard
+          isOpen={!!selectedBooking}
+          onClose={() => setSelectedBooking(null)}
+          booking={selectedBooking}
+        />
+      )}
+
+      <div className="flex flex-col md:flex-row justify-between items-center">
         <h2 className="text-2xl font-bold text-slate-950">Bookings Overview</h2>
+        {/* @ts-ignore */}
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px] text-slate-950">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Bookings</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="upcoming">Upcoming</SelectItem>
+            <SelectItem value="current">Current</SelectItem>
+            <SelectItem value="past">Past</SelectItem>
             <SelectItem value="canceled">Canceled</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Bookings */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Total Bookings</CardTitle>
@@ -112,6 +138,7 @@ export default function BookingsTab({ bookingMetrics }: BookingsTabProps) {
           </CardContent>
         </Card>
 
+        {/* Active Bookings */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Active Bookings</CardTitle>
@@ -123,82 +150,122 @@ export default function BookingsTab({ bookingMetrics }: BookingsTabProps) {
           </CardContent>
         </Card>
 
+        {/* Completion Rate */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Completion Rate</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {bookingMetrics.stats.completionRate.toFixed(1)}%
+              {Number(bookingMetrics.stats.completionRate).toFixed(1)}%
             </div>
           </CardContent>
         </Card>
 
+        {/* Avg Duration */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Avg Duration</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {bookingMetrics.stats.avgDuration.toFixed(1)}h
+              {Number(bookingMetrics.stats.avgDuration).toFixed(1)}h
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Recent Bookings Table */}
       <Card>
         <CardHeader>
           <CardTitle>Recent Bookings</CardTitle>
           <CardDescription>
-            Showing {filteredBookings.length} bookings
+            Showing {filteredBookings.length} booking
+            {filteredBookings.length !== 1 && "s"}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Spot</TableHead>
-                <TableHead>Renter</TableHead>
-                <TableHead>Start Time</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredBookings.map((booking) => (
-                <TableRow key={booking.id}>
-                  <TableCell>{booking.spotName}</TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div>{booking.renterName}</div>
-                      <div className="text-xs text-gray-500">
-                        {booking.carDetails.make} {booking.carDetails.model}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {format(parseISO(booking.startTime), "PPP")}
-                  </TableCell>
-                  <TableCell>{booking.duration}h</TableCell>
-                  <TableCell>${booking.price}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        booking.status === "completed"
-                          ? "outline"
-                          : booking.status === "active"
-                            ? "default"
-                            : "secondary"
-                      }
-                    >
-                      {booking.status}
-                    </Badge>
-                  </TableCell>
+          {filteredBookings.length === 0 ? (
+            <p className="text-gray-500">
+              No bookings match the selected status.
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Details</TableHead>
+                  <TableHead>When</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredBookings.map((booking) => (
+                  <TableRow
+                    key={booking.id}
+                    className={`${booking.time_status === "current" ? "bg-blue-50" : ""} cursor-pointer hover:bg-gray-50`}
+                    onClick={() => setSelectedBooking(booking)}
+                  >
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="font-medium">
+                          {booking.spotName || "Unnamed Spot"}
+                        </div>
+                        <div className="text-sm text-gray-500 flex items-center gap-2">
+                          {booking.renterName || "Anonymous"}
+                          {booking.rentalCount > 1 && (
+                            <span className="text-xs px-1 bg-gray-100 rounded">
+                              {booking.rentalCount}x
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {[
+                            booking.carDetails.make,
+                            booking.carDetails.model,
+                            booking.carDetails.plate,
+                          ]
+                            .filter(Boolean)
+                            .join(" • ")}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-0.5">
+                        <div className="text-sm">
+                          {format(parseISO(booking.startTime), "MMM d, h:mma")}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {booking.isMultiDay
+                            ? `${booking.daysDuration}d`
+                            : `${Number(booking.duration).toFixed(1)}h`}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      ${booking.price.toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          booking.status === "canceled"
+                            ? "destructive"
+                            : booking.time_status === "upcoming"
+                              ? "secondary"
+                              : "default"
+                        }
+                      >
+                        {booking.status === "canceled"
+                          ? "Canceled"
+                          : booking.time_status.charAt(0).toUpperCase() +
+                            booking.time_status.slice(1)}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </motion.div>

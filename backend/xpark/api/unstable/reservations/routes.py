@@ -9,6 +9,7 @@ from xpark.logic.reservations import (
     get_owner_reservations,
     cancel_reservation_logic,
     get_max_extension_time_logic,
+    force_cancel_reservation_logic,
 )
 from . import bp
 from flask import request
@@ -158,3 +159,20 @@ def get_owner_reservations_route(token: str, user_id: uuid.UUID) -> Tuple[Any, i
             return data, 200
         case Err(e):
             return {"err": e}, 500
+
+
+@bp.post("<reservation_id>/force-cancel")
+@require_logged_in_user
+def force_cancel_reservation_route(
+    reservation_id: str, token: str, user_id: uuid.UUID
+) -> Tuple[Any, int]:
+    reservation_uuid = uuid.UUID(reservation_id)
+    match force_cancel_reservation_logic(user_id, reservation_uuid):
+        case Ok(_):
+            return {"message": "Reservation canceled successfully."}, 200
+        case Err(e):
+            if "not authorized" in e:
+                return {"err": e}, 403
+            if "not found" in e:
+                return {"err": e}, 404
+            return {"err": e}, 400
