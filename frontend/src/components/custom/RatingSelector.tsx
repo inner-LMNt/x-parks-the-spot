@@ -19,11 +19,12 @@ const StarRatingInput = ({
   disabled,
   originalValue,
 }: {
-  value: number
+  value: number | null
   onChange: (rating: number) => void
   disabled?: boolean
   originalValue: number
 }) => {
+  value = value ?? 0
   const [hoverValue, setHoverValue] = useState<number | null>(null)
 
   const handleStarClick = (rating: number) => {

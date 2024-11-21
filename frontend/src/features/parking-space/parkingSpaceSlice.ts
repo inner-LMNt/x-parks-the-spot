@@ -268,15 +268,15 @@ const parkingSpaceSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(awardPoints.pending, (state) => {
+      .addCase(awardPoints.pending, (state: ParkingSpaceState) => {
         state.loading = true
         state.error = null
       })
-      .addCase(awardPoints.fulfilled, (state) => {
+      .addCase(awardPoints.fulfilled, (state: ParkingSpaceState) => {
         state.loading = false
         state.pointsAwarded = true
       })
-      .addCase(awardPoints.rejected, (state, action) => {
+      .addCase(awardPoints.rejected, (state: ParkingSpaceState, action) => {
         state.loading = false
         state.error = action.payload || "Failed to award points"
       })
@@ -398,11 +398,11 @@ const parkingSpaceSlice = createSlice({
           parking_space_id,
           availability_rating:
             action.meta.arg.availabilityRating ??
-            state.userRatings[parking_space_id]?.availabilityRating ??
+            state.userRatings[parking_space_id]?.availability_rating ??
             null,
           cleanliness_rating:
             action.meta.arg.cleanlinessRating ??
-            state.userRatings[parking_space_id]?.cleanlinessRating ??
+            state.userRatings[parking_space_id]?.cleanliness_rating ??
             null,
         }
         state.error = null
@@ -420,8 +420,7 @@ const parkingSpaceSlice = createSlice({
 /**
  * **Export Actions and Reducer**
  */
-export const { resetError, resetParkingSpace, clearUserRatings } =
-  parkingSpaceSlice.actions
+export const { resetError, resetParkingSpace } = parkingSpaceSlice.actions
 
 // Selector to get rating for a specific parking space
 export const selectUserRatingForSpace = (
