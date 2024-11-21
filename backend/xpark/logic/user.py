@@ -610,5 +610,4 @@ def handle_get_raffle_tickets(user_id: uuid.UUID) -> Result[Dict[str, int], str]
             result = cur.fetchone()
             if not result:
                 return Err("User not found")
-            print(result)
             return Ok(result)

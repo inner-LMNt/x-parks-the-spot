@@ -470,14 +470,14 @@ def get_raffle_entries() -> Result[List[Dict[str, Any]], str]:
                         COUNT(points_transaction.transaction_id) AS tickets
                     FROM points_transaction
                     JOIN users ON points_transaction.user_id = users.id
-                    WHERE points_transaction.description LIKE 'Raffle ticket purchase%'
+                    WHERE points_transaction.description LIKE 'Raffle ticket purchase%%'
                     AND points_transaction.status = 'active'
                     GROUP BY users.id, users.name
                     ORDER BY tickets DESC
                     """
                 )
                 raffle_entries = cur.fetchall()
-                print(raffle_entries)
+
                 return Ok(raffle_entries)
     except Exception as e:
         return Err(f"Failed to fetch raffle entries: {str(e)}")
@@ -499,7 +499,7 @@ def perform_raffle() -> Result[List[Dict[str, Any]], str]:
                         COUNT(points_transaction.transaction_id) AS tickets
                     FROM points_transaction
                     JOIN users ON points_transaction.user_id = users.id
-                    WHERE points_transaction.description LIKE 'Raffle ticket purchase%'
+                    WHERE points_transaction.description LIKE 'Raffle ticket purchase%%'
                     AND points_transaction.status = 'active'
                     GROUP BY users.id, users.name
                     ORDER BY tickets DESC
@@ -528,15 +528,15 @@ def perform_raffle() -> Result[List[Dict[str, Any]], str]:
                     (winner["user_id"],),
                 )
 
-                # Send email notification to the winner
-                send_email(
-                    to=winner["email"],
-                    subject="Congratulations! You've Won the XPark Raffle",
-                    content=generate_templated_email(
-                        "raffle_winner",
-                        name=winner["username"],
-                    ),
-                )
+                # Can someone figure this out?
+                # send_email(
+                #     to=winner["email"],
+                #     subject="Congratulations! You've Won the XPark Raffle",
+                #     content=generate_templated_email(
+                #         "raffle_winner",
+                #         name=winner["username"],
+                #     ),
+                # )
 
                 return Ok([winner])
     except Exception as e:

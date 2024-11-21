@@ -95,7 +95,7 @@ const searchSlice = createSlice({
         searchLeaderboard.fulfilled,
         (state: SearchState, action: any) => {
           state.loading = false
-          state.leaderboard = action.payload
+          state.leaderboard = action.payload.leaderboard
         },
       )
       .addCase(

@@ -100,13 +100,13 @@ export default function LeaderboardComponent() {
 
   const filteredUsers = Array.isArray(users)
     ? users
-        .filter(
-          (user: LeaderboardUser) =>
-            user.state !== "None" &&
-            (selectedState === "All States" ||
-              stateDictionary[user.state] === selectedState),
-        )
-        .sort((a: LeaderboardUser, b: LeaderboardUser) => b.points - a.points)
+      .filter(
+        (user: LeaderboardUser) =>
+          user.state !== "None" &&
+          (selectedState === "All States" ||
+            stateDictionary[user.state] === selectedState),
+      )
+      .sort((a: LeaderboardUser, b: LeaderboardUser) => b.points - a.points)
     : []
 
   useEffect(() => {
@@ -199,7 +199,9 @@ export default function LeaderboardComponent() {
                         className={isCurrentUser ? "bg-cyan-100" : ""}
                       >
                         <TableCell className="font-medium">
-                          {indexOfFirstUser + index + 1}
+                          <div className="flex items-center justify-center">
+                            {indexOfFirstUser + index + 1}
+                          </div>
                         </TableCell>
                         <TableCell className="font-medium sm:font-normal">
                           {user.name}

@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   get_transactions,
   get_points,
+  get_badge_list,
   buy_badge,
   buy_raffle_ticket,
   get_raffle_tickets,
@@ -82,6 +83,7 @@ export default function ShopPage() {
   const userPoints = useAppSelector((state) => state.user.current_points)
   const transactions = useAppSelector((state) => state.user.transactions)
   const tickets = useAppSelector((state) => state.user.active_raffle_tickets)
+  const badgeList = useAppSelector((state) => state.user.badges)
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("shop")
   const [timeRemaining, setTimeRemaining] = useState(
@@ -142,6 +144,7 @@ export default function ShopPage() {
     dispatch(get_transactions())
     dispatch(get_points())
     dispatch(get_raffle_tickets())
+    dispatch(get_badge_list())
 
     const interval = setInterval(() => {
       setTimeRemaining(getTimeRemaining(getEndOfMonth()))
@@ -179,69 +182,77 @@ export default function ShopPage() {
       </div>
       {activeTab === "shop" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {shopItems.map((item) => (
-            <Card key={item.id} className="flex flex-col">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <item.icon
-                    className={`h-6 w-6 ${item.color === "bronze" ? "text-yellow-600" : item.color === "silver" ? "text-gray-400" : item.color === "gold" ? "text-yellow-300" : "text-blue-500"}`}
-                  />
-                  {item.name}
-                </CardTitle>
-                <div className="mt-2">
-                  <Card className="inline-block p-2 bg-gray-100 rounded-md shadow-sm">
-                    <span className="text-lg font-semibold text-gray-800">
-                      {item.points} Points
-                    </span>
-                  </Card>
-                </div>
-                <CardDescription>
-                  {item.type === "badge" ? (
-                    "Exclusive Badge"
-                  ) : (
-                    <span>
-                      Raffle Entry -{" "}
-                      <strong>You currently have {tickets} tickets</strong>
-                    </span>
-                  )}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-sm text-muted-foreground">
-                  {item.type === "badge"
-                    ? "Show off your parking expertise with this exclusive badge!"
-                    : "Enter for a chance to win! Buy more tickets to increase your chances."}
-                </p>
-                {item.type === "ticket" && (
-                  <div className="mt-4 text-left">
-                    <p className="text-sm text-gray-600">
-                      Tickets are drawn at the end of each month.
-                    </p>
-                    <div className="text-xl font-semibold text-gray-800">
-                      {timeRemaining.days}d {timeRemaining.hours}h{" "}
-                      {timeRemaining.minutes}m {timeRemaining.seconds}s
-                    </div>
+          {shopItems.map((item) => {
+            const isDisabled = badgeList.includes(item.id);
+
+            return (
+              <Card key={item.id} className="flex flex-col">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <item.icon
+                      className={`h-6 w-6 ${item.color === "bronze" ? "text-yellow-600" : item.color === "silver" ? "text-gray-400" : item.color === "gold" ? "text-yellow-300" : "text-blue-500"}`}
+                    />
+                    {item.name}
+                  </CardTitle>
+                  <div className="mt-2">
+                    <Card className="inline-block p-2 bg-gray-100 rounded-md shadow-sm">
+                      <span className="text-lg font-semibold text-gray-800">
+                        {item.points} Points
+                      </span>
+                    </Card>
                   </div>
-                )}
-              </CardContent>
-              <CardFooter className="flex justify-between items-center">
-                <Button
-                  onClick={() =>
-                    item.id >= 1 && item.id <= 3
-                      ? handlePurchaseBadge(item)
-                      : handlePurchaseRaffle(item)
-                  }
-                >
-                  Purchase
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+                  <CardDescription>
+                    {item.type === "badge" ? (
+                      "Exclusive Badge"
+                    ) : (
+                      <span>
+                        Raffle Entry -{" "}
+                        <strong>You currently have {tickets} tickets</strong>
+                      </span>
+                    )}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <p className="text-sm text-muted-foreground">
+                    {item.type === "badge"
+                      ? "Show off your parking expertise with this exclusive badge!"
+                      : "Enter for a chance to win! Buy more tickets to increase your chances."}
+                  </p>
+                  {item.type === "ticket" && (
+                    <div className="mt-4 text-left">
+                      <p className="text-sm text-gray-600">
+                        Tickets are drawn at the end of each month.
+                      </p>
+                      <div className="text-xl font-semibold text-gray-800">
+                        {timeRemaining.days}d {timeRemaining.hours}h{" "}
+                        {timeRemaining.minutes}m {timeRemaining.seconds}s
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+                <CardFooter className="flex justify-between items-center">
+                  <Button
+                    onClick={() => {
+                      item.id >= 1 && item.id <= 3
+                        ? handlePurchaseBadge(item)
+                        : handlePurchaseRaffle(item)
+                      dispatch(get_points())
+                      }
+                    }
+                    disabled={isDisabled}
+                    className={isDisabled ? "opacity-50 cursor-not-allowed" : ""}
+                  >
+                    {isDisabled ? "Purchased" : "Purchase"}
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })}
         </div>
       )}
       {activeTab === "transactions" && (
         <div className="grid grid-cols-1 gap-6">
-          {transactions.map((transaction: any, index: number) => (
+          {transactions.slice().reverse().map((transaction: any, index: number) => (
             <Card key={index} className="flex flex-col">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

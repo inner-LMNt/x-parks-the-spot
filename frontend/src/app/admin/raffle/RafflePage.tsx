@@ -30,7 +30,6 @@ export const RafflePage = () => {
     raffleResult,
   } = useAppSelector((state) => state.admin)
   const { toast } = useToast()
-  const [isRafflePerformed, setIsRafflePerformed] = useState(false)
 
   useEffect(() => {
     dispatch(getRaffleEntries())
@@ -39,7 +38,7 @@ export const RafflePage = () => {
   const handlePerformRaffle = async () => {
     try {
       await dispatch(performRaffle()).unwrap()
-      setIsRafflePerformed(true)
+      await dispatch(getRaffleEntries()).unwrap()
       toast({
         title: "Raffle Performed",
         description: "The raffle has been performed successfully.",
