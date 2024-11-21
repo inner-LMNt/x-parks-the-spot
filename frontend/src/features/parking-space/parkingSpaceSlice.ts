@@ -33,6 +33,13 @@ interface RatingPayload {
   cleanlinessRating?: number
 }
 
+export const resetParkingSpaceState = createAsyncThunk<void, void, { rejectValue: string }>(
+  "parkingSpace/resetParkingSpaceState",
+  async (_, { dispatch }) => {
+    dispatch(resetParkingSpace());
+  }
+);
+
 export const getAllPendingSpots = createAsyncThunk<
   { pendingSpaces: ParkingSpace[] },
   void,
@@ -254,161 +261,144 @@ const parkingSpaceSlice = createSlice({
      * Reset error state
      */
     resetError(state) {
-      state.error = null
+      state.error = null;
     },
     /**
      * Reset parking space state
      */
     resetParkingSpace(state) {
-      state.parkingSpace = null
-      state.userRating = null
-      state.lockStatus = "idle"
-      state.lockExpiresAt = null
-      state.error = null
-      state.loading = false
-      state.pointsAwarded = false
+      state.parkingSpace = null;
+      state.userRating = null;
+      state.lockStatus = "idle";
+      state.lockExpiresAt = null;
+      state.error = null;
+      state.loading = false;
+      state.pointsAwarded = false;
     },
   },
   extraReducers: (builder) => {
     builder
       .addCase(awardPoints.pending, (state) => {
-        state.loading = true
-        state.error = null
+        state.loading = true;
+        state.error = null;
       })
       .addCase(awardPoints.fulfilled, (state) => {
-        state.loading = false
-        state.pointsAwarded = true
+        state.loading = false;
+        state.pointsAwarded = true;
       })
       .addCase(awardPoints.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload || "Failed to award points"
-      })
+        state.loading = false;
+        state.error = action.payload || "Failed to award points";
+      });
 
     builder
       .addCase(markSpotTaken.pending, (state: ParkingSpaceState) => {
-        state.loading = true
-        state.error = null
+        state.loading = true;
+        state.error = null;
       })
       .addCase(markSpotTaken.fulfilled, (state: ParkingSpaceState) => {
-        state.loading = false
+        state.loading = false;
       })
       .addCase(markSpotTaken.rejected, (state: ParkingSpaceState, action) => {
-        state.loading = false
-        state.error = action.payload || "Failed to update spot status"
-      })
+        state.loading = false;
+        state.error = action.payload || "Failed to update spot status";
+      });
+
     /**
      * Handle fetchParkingSpace actions
      */
     builder
       .addCase(fetchParkingSpace.pending, (state: ParkingSpaceState) => {
-        state.loading = true
-        state.error = null
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(
-        fetchParkingSpace.fulfilled,
-        (state: ParkingSpaceState, action) => {
-          state.loading = false
-          state.parkingSpace = action.payload
-        },
-      )
-      .addCase(
-        fetchParkingSpace.rejected,
-        (state: ParkingSpaceState, action) => {
-          state.loading = false
-          state.error = action.payload || "Failed to fetch parking space"
-        },
-      )
+      .addCase(fetchParkingSpace.fulfilled, (state: ParkingSpaceState, action) => {
+        state.loading = false;
+        state.parkingSpace = action.payload;
+      })
+      .addCase(fetchParkingSpace.rejected, (state: ParkingSpaceState, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch parking space";
+      });
 
     /**
      * Handle lockParkingSpace actions
      */
     builder
       .addCase(lockParkingSpace.pending, (state: ParkingSpaceState) => {
-        state.lockStatus = "locking"
-        state.error = null
+        state.lockStatus = "locking";
+        state.error = null;
       })
-      .addCase(
-        lockParkingSpace.fulfilled,
-        (state: ParkingSpaceState, action) => {
-          state.lockStatus = "locked"
-          state.lockExpiresAt = action.payload.expiresAt
-        },
-      )
-      .addCase(
-        lockParkingSpace.rejected,
-        (state: ParkingSpaceState, action) => {
-          state.lockStatus = "failed"
-          state.error = action.payload || "Failed to lock parking space"
-        },
-      )
+      .addCase(lockParkingSpace.fulfilled, (state: ParkingSpaceState, action) => {
+        state.lockStatus = "locked";
+        state.lockExpiresAt = action.payload.expiresAt;
+      })
+      .addCase(lockParkingSpace.rejected, (state: ParkingSpaceState, action) => {
+        state.lockStatus = "failed";
+        state.error = action.payload || "Failed to lock parking space";
+      });
 
     /**
      * Handle unlockParkingSpace actions
      */
     builder
       .addCase(unlockParkingSpace.pending, (state: ParkingSpaceState) => {
-        state.lockStatus = "unlocking"
-        state.error = null
+        state.lockStatus = "unlocking";
+        state.error = null;
       })
       .addCase(unlockParkingSpace.fulfilled, (state: ParkingSpaceState) => {
-        state.lockStatus = "idle"
-        state.lockExpiresAt = null
+        state.lockStatus = "idle";
+        state.lockExpiresAt = null;
       })
-      .addCase(
-        unlockParkingSpace.rejected,
-        (state: ParkingSpaceState, action) => {
-          state.lockStatus = "failed"
-          state.error = action.payload || "Failed to unlock parking space"
-        },
-      )
+      .addCase(unlockParkingSpace.rejected, (state: ParkingSpaceState, action) => {
+        state.lockStatus = "failed";
+        state.error = action.payload || "Failed to unlock parking space";
+      });
 
     builder
       .addCase(fetchUserRating.pending, (state: ParkingSpaceState) => {
-        state.loading = true
-        state.error = null
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(
-        fetchUserRating.fulfilled,
-        (state: ParkingSpaceState, action: any) => {
-          state.loading = false
-          state.userRating = {
-            availabilityRating: action.payload.availability_rating,
-            cleanlinessRating: action.payload.cleanliness_rating,
-          }
-        },
-      )
-      .addCase(
-        fetchUserRating.rejected,
-        (state: ParkingSpaceState, action: any) => {
-          state.loading = false
-          state.error = action.payload || "Failed to fetch user rating"
-        },
-      )
+      .addCase(fetchUserRating.fulfilled, (state: ParkingSpaceState, action: any) => {
+        state.loading = false;
+        state.userRating = {
+          availabilityRating: action.payload.availability_rating,
+          cleanlinessRating: action.payload.cleanliness_rating,
+        };
+      })
+      .addCase(fetchUserRating.rejected, (state: ParkingSpaceState, action: any) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch user rating";
+      });
 
-    builder.addCase(
-      submitRating.fulfilled,
-      (state: ParkingSpaceState, action: any) => {
-        state.loading = false
-        // Update the local user rating state when a new rating is submitted
-        if (state.userRating) {
-          state.userRating = {
-            ...state.userRating,
-            availabilityRating:
-              action.meta.arg.availabilityRating ??
-              state.userRating.availabilityRating,
-            cleanlinessRating:
-              action.meta.arg.cleanlinessRating ??
-              state.userRating.cleanlinessRating,
-          }
-        }
-      },
-    )
+    builder.addCase(submitRating.fulfilled, (state: ParkingSpaceState, action: any) => {
+      state.loading = false;
+      // Update the local user rating state when a new rating is submitted
+      if (state.userRating) {
+        state.userRating = {
+          ...state.userRating,
+          availabilityRating: action.meta.arg.availabilityRating ?? state.userRating.availabilityRating,
+          cleanlinessRating: action.meta.arg.cleanlinessRating ?? state.userRating.cleanlinessRating,
+        };
+      }
+    });
+
+    builder.addCase(resetParkingSpaceState.fulfilled, (state: ParkingSpaceState) => {
+      state.parkingSpace = null;
+      state.userRating = null;
+      state.lockStatus = "idle";
+      state.lockExpiresAt = null;
+      state.error = null;
+      state.loading = false;
+      state.pointsAwarded = false;
+    });
   },
-})
+});
 
 /**
  * **Export Actions and Reducer**
  */
-export const { resetError, resetParkingSpace } = parkingSpaceSlice.actions
+export const { resetError, resetParkingSpace } = parkingSpaceSlice.actions;
 
-export default parkingSpaceSlice.reducer
+export default parkingSpaceSlice.reducer;

@@ -119,6 +119,7 @@ def search_query(
                             else None
                         )
 
+            print('parking_spaces:', parking_spaces)
             return parking_spaces
 
 

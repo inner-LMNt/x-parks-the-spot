@@ -27,7 +27,7 @@ import {
   DirectionsRenderer,
   InfoWindow,
 } from "@react-google-maps/api"
-import { markSpotTaken, fetchParkingSpace } from "@/features/parking-space/parkingSpaceSlice"
+import { markSpotTaken, fetchParkingSpace, resetParkingSpaceState } from "@/features/parking-space/parkingSpaceSlice"
 import { searchSpots, searchRerouteSpots } from "@/features/search/searchSlice"
 import { usePathname, useRouter } from "next/navigation"
 import {
@@ -166,7 +166,6 @@ export default function SearchPage() {
     }
 
     const distance = calculateDistance(userLocation, spotLocation)
-    console.log("Distance: ", distance)
     return distance <= DISTANCE_THRESHOLD
   }
   /**
@@ -202,7 +201,6 @@ export default function SearchPage() {
 
     try {
       await dispatch(markSpotTaken(submissionData)).unwrap()
-      console.log("Spot status updated successfully.")
       toast({
         title: "Spot Update Successful",
         description: "The parking spot status was updated successfully.",
@@ -433,7 +431,6 @@ export default function SearchPage() {
   }
 
   const handleSpotSelect = (spot: ParkingSpace) => {
-    console.log("Spot clicked:", spot)
     if (selectedSpot && selectedSpot.id === spot.id) {
       setSelectedSpot(null)
     } else {
@@ -827,9 +824,7 @@ export default function SearchPage() {
   useEffect(() => {
     const intervalId = setInterval(() => {
       if (navigationMode && selectedSpot) {
-        console.log('ssdfdsfdselectedSpot:', selectedSpot)
         dispatch(fetchParkingSpace(selectedSpot.id))
-        console.log("Destination spot:", destinationSpot)
       }
     }, 10000)
 
@@ -837,8 +832,17 @@ export default function SearchPage() {
   }, [selectedSpot, navigationMode, dispatch])
 
   useEffect(() => {
-    if (selectedSpot && destinationSpot && destinationSpot.is_taken) {
-      dispatch(searchRerouteSpots(searchRequest))
+    if (destinationSpot && destinationSpot.is_taken) {
+      const request: any = {
+        latitude: destinationSpot.location.latitude,
+        longitude: destinationSpot.location.longitude,
+        radius: 1,
+        paid_status: "UNPAID",
+        is_taken: false,
+      }
+
+      dispatch(searchRerouteSpots(request))
+      dispatch(resetParkingSpaceState())
       setReachedDestination(false)
       setNavigationMode(false)
       setDirections(null)
@@ -1301,7 +1305,7 @@ export default function SearchPage() {
                 />
               )}
 
-              {selectedSpot && selectedSpot.location && (
+              {selectedSpot && selectedSpot.location && !navigationMode && (
                 <>
                   {/* Dialog for Image Modal */}
                   <Dialog
@@ -1649,6 +1653,7 @@ export default function SearchPage() {
               {navigationMode && (
                 <button
                   onClick={() => {
+                    dispatch(resetParkingSpaceState())
                     setNavigationMode(false)
                     setCurrentStepIndex(0)
                     setDirections(null)
@@ -1760,13 +1765,43 @@ export default function SearchPage() {
                 <p className="text-gray-600">The spot you are navigating to is marked as taken.</p>
               </div>
               {rerouteSpots && rerouteSpots.length > 0 ? (
-                <ul className="list-disc pl-5">
-                  {rerouteSpots.map((spot: ParkingSpace) => (
-                    <li key={spot.id}>{spot.name || "Unnamed Parking Space"}</li>
-                  ))}
-                </ul>
+                <>
+                  <div className="mb-4">
+                    <p className="text-lg font-semibold">Here are some alternatives within 1 km:</p>
+                  </div>
+                  <ul className="space-y-4">
+                    {rerouteSpots.map((spot: ParkingSpace) => (
+                      <li key={spot.id} className="bg-white rounded-lg shadow-md p-4">
+                        <div className="mb-2">
+                          <strong>Name:</strong> {spot.name || "Unnamed Parking Space"}
+                        </div>
+                        <div className="mb-2">
+                          <strong>Location:</strong> {spot.location.latitude}, {spot.location.longitude}
+                        </div>
+                        {spot.location.address && (
+                          <div className="mb-2">
+                            <strong>Address:</strong> {spot.location.address}
+                          </div>
+                        )}
+                        <button
+                          className="mt-2 px-3 py-2 bg-blue-500 text-white text-sm font-semibold rounded hover:bg-blue-700 focus:outline-none"
+                          onClick={() => {
+                            setSelectedSpot(spot);
+                            setMapCenter({
+                              lat: spot.location.latitude,
+                              lng: spot.location.longitude,
+                            });
+                            setShowTakenSpotModal(false);
+                          }}
+                        >
+                          Select Spot
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </>
               ) : (
-                <p className="text-gray-600">No available spots found within 1 mile radius.</p>
+                <p className="text-gray-600">No available spots found within 1 km radius.</p>
               )}
             </div>
           </div>

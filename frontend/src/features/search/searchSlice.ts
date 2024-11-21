@@ -51,6 +51,7 @@ export const searchRerouteSpots = createAsyncThunk<
 >("search/rerouteSpots", async (searchRequest, { rejectWithValue }) => {
   try {
     const response = await axios.post<SearchResponse>("/search", searchRequest)
+    console.log("reroute spots", response.data)
     return response.data
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.message || "Search failed")
@@ -98,7 +99,7 @@ const searchSlice = createSlice({
       })
       .addCase(searchRerouteSpots.fulfilled, (state: SearchState, action: any) => {
         state.loading = false
-        state.spots = action.payload
+        state.rerouteSpots = action.payload
       })
       .addCase(searchRerouteSpots.rejected, (state: SearchState, action) => {
         state.loading = false
