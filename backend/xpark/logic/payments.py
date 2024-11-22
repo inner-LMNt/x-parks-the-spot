@@ -117,6 +117,30 @@ def fulfill_checkout(session_id: str) -> None:
                 ),
             )
 
+            cur.execute(
+                """
+                    UPDATE reservations SET status = 'booked' WHERE checkout_id = %s
+                """,
+                (checkout_id,),
+            )
+
+def cancel_checkout(session_id: str) -> None:
+    # Retrieve the Checkout Session from the API with line_items expanded
+    checkout_session = stripe.checkout.Session.retrieve(
+        session_id,
+    )
+
+    checkout_id = checkout_session.id
+
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                    DELETE FROM reservations WHERE checkout_id = %s
+                """,
+            (checkout_id,),
+            )
+
 
 def connect_account(user_id: uuid.UUID) -> Result[str, str]:
     with DB.pool.connection() as conn:
