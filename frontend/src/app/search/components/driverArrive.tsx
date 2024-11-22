@@ -19,6 +19,8 @@ const DriverArrive = ({
   userLocation,
   // @ts-ignore
   closeDriverArriveDialog,
+  //@ts-ignore
+  setNavigationMode,
 }) => {
   const dispatch = useDispatch()
   const { toast } = useToast()
@@ -82,7 +84,7 @@ const DriverArrive = ({
       formData.append("status", statusSelection)
 
       console.log("Submitting form data:", formData)
-
+      setNavigationMode(false)
       //@ts-ignore
       await dispatch(
         //@ts-ignore

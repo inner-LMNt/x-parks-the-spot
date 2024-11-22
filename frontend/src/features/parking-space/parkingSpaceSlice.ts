@@ -4,14 +4,17 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import axios from "@/api/axiosInstance"
 import { ParkingSpace } from "@/types/type"
 
+interface RatingResponse {
+  parking_space_id: string
+  availability_rating: number | null
+  cleanliness_rating: number | null
+}
+
 interface ParkingSpaceState {
   loading: boolean
   error: string | null
   parkingSpace: ParkingSpace | null
-  userRating: {
-    availabilityRating: number | null
-    cleanlinessRating: number | null
-  } | null
+  userRatings: Record<string, RatingResponse> // Indexed by parkingSpaceId
   lockStatus: "idle" | "locking" | "locked" | "unlocking" | "failed"
   lockExpiresAt: number | null
   pointsAwarded: boolean
@@ -21,7 +24,7 @@ const initialState: ParkingSpaceState = {
   loading: false,
   error: null,
   parkingSpace: null,
-  userRating: null,
+  userRatings: {},
   lockStatus: "idle",
   lockExpiresAt: null,
   pointsAwarded: false,
@@ -32,6 +35,14 @@ interface RatingPayload {
   availabilityRating?: number
   cleanlinessRating?: number
 }
+
+export const resetParkingSpaceState = createAsyncThunk<
+  void,
+  void,
+  { rejectValue: string }
+>("parkingSpace/resetParkingSpaceState", async (_, { dispatch }) => {
+  dispatch(resetParkingSpace())
+})
 
 export const getAllPendingSpots = createAsyncThunk<
   { pendingSpaces: ParkingSpace[] },
@@ -198,23 +209,18 @@ export const submitRating = createAsyncThunk<
   },
 )
 
-export const fetchUserRating = createAsyncThunk<
-  { availability_rating: number | null; cleanliness_rating: number | null },
-  string,
+export const fetchUserRatings = createAsyncThunk<
+  RatingResponse[],
+  void,
   { rejectValue: string }
->(
-  "parkingSpace/fetchUserRating",
-  async (parkingSpaceId, { rejectWithValue }) => {
-    try {
-      const response = await axios.get(
-        `/parking-spaces/${parkingSpaceId}/user-rating`,
-      )
-      return response.data
-    } catch (error: any) {
-      return rejectWithValue("Failed to fetch user rating")
-    }
-  },
-)
+>("parkingSpace/fetchUserRatings", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("/parking-spaces/user-ratings")
+    return response.data.ratings
+  } catch (error: any) {
+    return rejectWithValue("Failed to fetch user ratings")
+  }
+})
 
 export const awardPoints = createAsyncThunk<
   void,
@@ -261,7 +267,6 @@ const parkingSpaceSlice = createSlice({
      */
     resetParkingSpace(state) {
       state.parkingSpace = null
-      state.userRating = null
       state.lockStatus = "idle"
       state.lockExpiresAt = null
       state.error = null
@@ -271,15 +276,15 @@ const parkingSpaceSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(awardPoints.pending, (state) => {
+      .addCase(awardPoints.pending, (state: ParkingSpaceState) => {
         state.loading = true
         state.error = null
       })
-      .addCase(awardPoints.fulfilled, (state) => {
+      .addCase(awardPoints.fulfilled, (state: ParkingSpaceState) => {
         state.loading = false
         state.pointsAwarded = true
       })
-      .addCase(awardPoints.rejected, (state, action) => {
+      .addCase(awardPoints.rejected, (state: ParkingSpaceState, action) => {
         state.loading = false
         state.error = action.payload || "Failed to award points"
       })
@@ -296,6 +301,7 @@ const parkingSpaceSlice = createSlice({
         state.loading = false
         state.error = action.payload || "Failed to update spot status"
       })
+
     /**
      * Handle fetchParkingSpace actions
      */
@@ -363,46 +369,60 @@ const parkingSpaceSlice = createSlice({
       )
 
     builder
-      .addCase(fetchUserRating.pending, (state: ParkingSpaceState) => {
+      .addCase(fetchUserRatings.pending, (state: ParkingSpaceState) => {
         state.loading = true
         state.error = null
       })
       .addCase(
-        fetchUserRating.fulfilled,
-        (state: ParkingSpaceState, action: any) => {
+        fetchUserRatings.fulfilled,
+        (state: ParkingSpaceState, action) => {
           state.loading = false
-          state.userRating = {
-            availabilityRating: action.payload.availability_rating,
-            cleanlinessRating: action.payload.cleanliness_rating,
-          }
+          // Reset the ratings record and populate with new data
+          state.userRatings = {}
+          action.payload.forEach((rating) => {
+            state.userRatings[rating.parking_space_id] = {
+              parking_space_id: rating.parking_space_id,
+              availability_rating: rating.availability_rating,
+              cleanliness_rating: rating.cleanliness_rating,
+            }
+          })
+          state.error = null
         },
       )
       .addCase(
-        fetchUserRating.rejected,
-        (state: ParkingSpaceState, action: any) => {
+        fetchUserRatings.rejected,
+        (state: ParkingSpaceState, action) => {
           state.loading = false
-          state.error = action.payload || "Failed to fetch user rating"
+          state.error = action.payload || "Failed to fetch user ratings"
         },
       )
 
-    builder.addCase(
-      submitRating.fulfilled,
-      (state: ParkingSpaceState, action: any) => {
+    builder
+      .addCase(submitRating.fulfilled, (state: ParkingSpaceState, action) => {
         state.loading = false
-        // Update the local user rating state when a new rating is submitted
-        if (state.userRating) {
-          state.userRating = {
-            ...state.userRating,
-            availabilityRating:
-              action.meta.arg.availabilityRating ??
-              state.userRating.availabilityRating,
-            cleanlinessRating:
-              action.meta.arg.cleanlinessRating ??
-              state.userRating.cleanlinessRating,
-          }
+        const parking_space_id = action.meta.arg.parkingSpaceId
+
+        // Update specific rating in our state
+        state.userRatings[parking_space_id] = {
+          parking_space_id,
+          availability_rating:
+            action.meta.arg.availabilityRating ??
+            state.userRatings[parking_space_id]?.availability_rating ??
+            null,
+          cleanliness_rating:
+            action.meta.arg.cleanlinessRating ??
+            state.userRatings[parking_space_id]?.cleanliness_rating ??
+            null,
         }
-      },
-    )
+        state.error = null
+      })
+      .addCase(submitRating.pending, (state: ParkingSpaceState, action) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(submitRating.rejected, (state: ParkingSpaceState, action) => {
+        state.error = "Failed to submit rating"
+      })
   },
 })
 
@@ -411,4 +431,17 @@ const parkingSpaceSlice = createSlice({
  */
 export const { resetError, resetParkingSpace } = parkingSpaceSlice.actions
 
+// Selector to get rating for a specific parking space
+export const selectUserRatingForSpace = (
+  state: { parkingSpace: ParkingSpaceState },
+  parking_space_id: string,
+): RatingResponse => {
+  return (
+    state.parkingSpace.userRatings?.[parking_space_id] ?? {
+      parking_space_id,
+      availability_rating: 0,
+      cleanliness_rating: 0,
+    }
+  )
+}
 export default parkingSpaceSlice.reducer

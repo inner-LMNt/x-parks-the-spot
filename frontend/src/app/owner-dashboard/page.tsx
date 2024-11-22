@@ -1,2 +1,2 @@
-import OwnerDashboard from "./OwnerDashboard"
+import { OwnerDashboard } from "./OwnerDashboard"
 export default OwnerDashboard

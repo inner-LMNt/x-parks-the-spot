@@ -2122,6 +2122,7 @@ export type components = {
             name: string;
             /** Format: uuid */
             renter_id: string;
+            renter_name?: string;
             /** Format: uuid */
             owner_id: string;
             /** Format: date-time */

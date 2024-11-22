@@ -28,6 +28,8 @@ properties:
   renter_id:
     type: string
     format: uuid
+  renter_name:
+    type: string
   owner_id:
     type: string
     format: uuid

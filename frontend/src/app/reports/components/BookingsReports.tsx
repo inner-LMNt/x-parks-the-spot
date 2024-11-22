@@ -142,7 +142,7 @@ export const BookingsReports: React.FC<{
       )}
       {Array.isArray(reports) &&
         reports.map((report) => (
-          <Card key={report.id} className="shadow-lg">
+          <Card data-testid="report-item" key={report.id} className="shadow-lg">
             <CardHeader
               className="cursor-pointer hover:bg-slate-50 transition-colors"
               onClick={() => toggleReport(report)}

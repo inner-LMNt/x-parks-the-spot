@@ -5,6 +5,7 @@ from psycopg.rows import dict_row
 
 from xpark.utils.mailer import generate_templated_email, send_email
 from xpark.utils.db import DB
+import random
 from result import Result, Ok, Err
 import uuid
 
@@ -684,3 +685,90 @@ def admin_delete_paid_parking_space(
             )
 
             return Ok(None)
+
+
+def get_raffle_entries() -> Result[List[Dict[str, Any]], str]:
+    """
+    Fetch all raffle entries from the points_transaction table where description contains 'Raffle ticket purchase'.
+    """
+    try:
+        with DB.pool.connection() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    """
+                    SELECT
+                        users.id AS user_id,
+                        users.name AS username,
+                        users.email AS email,
+                        COUNT(points_transaction.transaction_id) AS tickets
+                    FROM points_transaction
+                    JOIN users ON points_transaction.user_id = users.id
+                    WHERE points_transaction.description LIKE 'Raffle ticket purchase%%'
+                    AND points_transaction.status = 'active'
+                    GROUP BY users.id, users.name
+                    ORDER BY tickets DESC
+                    """
+                )
+                raffle_entries = cur.fetchall()
+
+                return Ok(raffle_entries)
+    except Exception as e:
+        return Err(f"Failed to fetch raffle entries: {str(e)}")
+
+
+def perform_raffle() -> Result[List[Dict[str, Any]], str]:
+    """
+    Perform the raffle by randomly selecting a winner from the raffle entries.
+    """
+    try:
+        with DB.pool.connection() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    """
+                    SELECT
+                        users.id AS user_id,
+                        users.name AS username,
+                        users.email AS email,
+                        COUNT(points_transaction.transaction_id) AS tickets
+                    FROM points_transaction
+                    JOIN users ON points_transaction.user_id = users.id
+                    WHERE points_transaction.description LIKE 'Raffle ticket purchase%%'
+                    AND points_transaction.status = 'active'
+                    GROUP BY users.id, users.name
+                    ORDER BY tickets DESC
+                    """
+                )
+                raffle_entries = cur.fetchall()
+
+                if not raffle_entries:
+                    return Err("No raffle entries found")
+
+                # Create a list of user IDs weighted by the number of tickets
+                weighted_entries = []
+                for entry in raffle_entries:
+                    weighted_entries.extend([entry] * entry["tickets"])
+
+                # Perform the raffle (randomly select a winner)
+                winner = random.choice(weighted_entries)
+
+                # Update the status of the raffle tickets to 'inactive'
+                cur.execute(
+                    """
+                    UPDATE points_transaction
+                    SET status = 'inactive'
+                    WHERE status = 'active' AND description LIKE 'Raffle ticket purchase%%'
+                    """
+                )
+
+                # Can someone figure this out?
+                send_email(
+                    to=winner["email"],
+                    subject="Congratulations! You've Won the XPark Raffle",
+                    content=generate_templated_email(
+                        "raffle_winner", name=winner["username"], amount="$10"
+                    ),
+                )
+
+                return Ok([winner])
+    except Exception as e:
+        return Err(f"Failed to perform raffle: {str(e)}")

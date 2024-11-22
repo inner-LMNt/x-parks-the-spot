@@ -20,6 +20,7 @@ import { ReservationsGroupSelect } from "./ReservationsGroupSelect"
 import { Reservation } from "@/types/type"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { fetchReservationCar } from "@/features/cars/reservationCarSlice"
+import { format } from "date-fns"
 
 interface DamageReportFieldsProps {
   form: any
@@ -72,14 +73,23 @@ export const DamageReportFields = ({
         )}
       />
 
-      {/* Display car info in a compact form */}
-      {selectedReservation && carInfo && (
-        <div className="mt-2 space-y-1">
-          <p className="text-sm font-medium">
-            Car: {carInfo.make} {carInfo.model}
+      {/* Display dynamic data compactly */}
+      {selectedReservation && (
+        <div className="mt-2 space-y-1 text-sm">
+          <p>
+            <strong>Renter:</strong> {selectedReservation.renter_name}
           </p>
-          <p className="text-sm text-gray-600">
-            License Plate: {carInfo.license_plate}
+          <p>
+            <strong>Reservation Time:</strong>{" "}
+            {format(
+              new Date(selectedReservation.start_time),
+              "MMM d, yyyy h:mm a",
+            )}{" "}
+            -{" "}
+            {format(
+              new Date(selectedReservation.end_time),
+              "MMM d, yyyy h:mm a",
+            )}
           </p>
         </div>
       )}

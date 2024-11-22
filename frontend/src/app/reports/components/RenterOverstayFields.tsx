@@ -157,7 +157,15 @@ export const RenterOverstayFields = ({
       {selectedReservation && departureTimeStr && (
         <div className="mt-2 space-y-1 text-sm">
           <p>
-            <strong>Reservation End Time:</strong>{" "}
+            <strong>Renter:</strong> {selectedReservation.renter_name}
+          </p>
+          <p>
+            <strong>Reservation Time:</strong>{" "}
+            {format(
+              new Date(selectedReservation.start_time),
+              "MMM d, yyyy h:mm a",
+            )}{" "}
+            -{" "}
             {format(
               new Date(selectedReservation.end_time),
               "MMM d, yyyy h:mm a",

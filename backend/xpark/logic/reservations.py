@@ -129,12 +129,16 @@ def create_reservation(
             if not check_if_available(conn, parking_space_id, start_time, end_time):
                 return Err("Spot not available")
             # Insert the reservation
-            cur.execute("SELECT owner FROM parking_spaces WHERE id = %s", (parking_space_id,))
+            cur.execute(
+                "SELECT owner FROM parking_spaces WHERE id = %s", (parking_space_id,)
+            )
             owner_id = cur.fetchone()
             assert owner_id
             owner_id = owner_id["owner"]
             price = calculate_booking_price(cur, parking_space_id, start_time, end_time)
-            checkout_secret = create_checkout_session(cur, user_id, owner_id, parking_space_id, price)
+            checkout_secret = create_checkout_session(
+                cur, user_id, owner_id, parking_space_id, price
+            )
             cur.execute(
                 """
                 INSERT INTO reservations (
@@ -551,6 +555,7 @@ def get_owner_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], s
                     upper(time) as end_time,
                     car_info_id, 
                     renter_id,
+                    users.name as renter_name,
                     status,
                     json_build_object(
                         'address',   parking_spaces.address,
@@ -562,6 +567,7 @@ def get_owner_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], s
                     reservations.updated_at
                 FROM reservations 
                 JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                JOIN users ON reservations.renter_id = users.id
                 WHERE parking_spaces.owner = %s
                 ORDER BY reservations.created_at DESC
             """,
@@ -624,3 +630,52 @@ def force_cancel_reservation_logic(
             )
 
             return Ok(None)
+
+
+def rate_renter(
+    reservation_id: uuid.UUID, owner_id: uuid.UUID, score: int
+) -> Result[None, None]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+            INSERT INTO renter_ratings (renter_id, rater_id, responsiveness_score)
+            VALUES ((
+                SELECT renter_id FROM reservations JOIN parking_spaces
+                ON parking_space_id = parking_spaces.id
+                WHERE reservations.id = %(reservation_id)s
+                AND parking_spaces.owner = %(owner_id)s
+            ), %(owner_id)s, %(score)s)
+            ON CONFLICT (renter_id, rater_id) DO UPDATE
+            SET responsiveness_score = %(score)s
+            """,
+                {
+                    "owner_id": owner_id,
+                    "score": score,
+                    "reservation_id": reservation_id,
+                },
+            )
+            return Ok(None)
+
+
+def get_rating(reservation_id: uuid.UUID, owner_id: uuid.UUID) -> Result[int, str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+            SELECT responsiveness_score FROM renter_ratings
+            JOIN reservations ON renter_ratings.renter_id = reservations.renter_id
+            WHERE reservations.id = %(reservation_id)s
+            AND renter_ratings.rater_id = %(owner_id)s
+            """,
+                {
+                    "owner_id": owner_id,
+                    "reservation_id": reservation_id,
+                },
+            )
+            score = cur.fetchone()
+            if score is None:
+                return Ok(0)
+            if score.get("responsiveness_score") is None:
+                return Ok(0)
+            return Ok(score["responsiveness_score"])

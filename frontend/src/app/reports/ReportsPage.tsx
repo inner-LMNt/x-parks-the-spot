@@ -34,6 +34,7 @@ import { ReportDialog } from "./components/ReportDialog"
 import { BookingsReports } from "./components/BookingsReports"
 import { Report } from "@/types/type"
 
+// page for reports
 export default function ReportsPage() {
   const dispatch = useAppDispatch()
   const router = useRouter()
@@ -140,7 +141,9 @@ export default function ReportsPage() {
               value={typeFilter || "all"}
             >
               <SelectTrigger className="w-48 border border-gray-300 rounded-lg shadow-sm text-slate-950">
-                <SelectValue placeholder="Filter by type" />
+                <SelectValue placeholder="Filter by type">
+                  All Reports
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all" className="text-slate-950">
@@ -186,7 +189,7 @@ export default function ReportsPage() {
               value={statusFilter || "all"}
             >
               <SelectTrigger className="w-36 border border-gray-300 rounded-lg shadow-sm text-slate-950">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder="Filter by status">Active</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all" className="text-slate-950">
@@ -214,6 +217,7 @@ export default function ReportsPage() {
           <Button
             onClick={() => handleReportClick()}
             className="flex items-center gap-2 w-24"
+            data-testid="Report Button"
           >
             <AlertCircle className="w-4 h-4" />
             Report
