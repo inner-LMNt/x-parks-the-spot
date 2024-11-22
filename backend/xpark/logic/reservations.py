@@ -368,7 +368,7 @@ def update_reservation(
         if extension_delta.total_seconds() > 0:
             extension_hours = extension_delta.total_seconds() / 3600
             # Round to two decimal places for currency formatting
-            extra_earned = "%.2f" % extension_hours * parking_price / 100
+            extra_earned = "%.2f" % (extension_hours * parking_price / 100)
             # Format extension length into hours and minutes
             hours = int(extension_hours)
             minutes = int((extension_hours - hours) * 60)
