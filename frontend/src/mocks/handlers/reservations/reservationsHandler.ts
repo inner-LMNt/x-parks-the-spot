@@ -146,6 +146,7 @@ export const createReservationHandler = http.post<
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     is_bookmarked: false,
+    checkout_secret: "",
   }
 
   reservations.push(newReservation)

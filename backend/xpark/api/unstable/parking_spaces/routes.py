@@ -103,7 +103,7 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
             longitude=longitude,
             latitude=latitude,
             address=data["location"]["address"],
-            price=float(data["pricing_info"]["base_price"]),
+            price=int(data["pricing_info"]["base_price"]),
             availability_schedule=data["availability_schedule"],
         )
     else:

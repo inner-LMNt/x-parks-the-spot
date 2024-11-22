@@ -31,6 +31,12 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     if Config.S3_ENABLED == "yes":
         S3.connect()
 
+    # Connect to Stripe
+    if Config.STRIPE_SECRET_KEY != "":
+        import stripe
+
+        stripe.api_key = Config.STRIPE_SECRET_KEY
+
     # Run SQL migrations in one transaction. Any failures will not modify the database
     with DB.pool.connection() as conn:
         makemigrate(conn)

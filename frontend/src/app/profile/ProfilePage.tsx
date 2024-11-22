@@ -5,6 +5,8 @@ import Link from "next/link"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   get_user_location,
+  connect_account,
+  create_account_session,
   get_points,
   get_score,
   get_badge_list,
@@ -20,6 +22,8 @@ import {
   Ticket,
   Bookmark,
   Award,
+  Calendar,
+  ShoppingBag,
 } from "lucide-react" // Imported FileWarning
 import { logout } from "@/features/user/userSlice"
 import { Button } from "@/components/ui/button"
@@ -35,6 +39,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useRouter } from "next/navigation"
+import {
+  ConnectAccountOnboarding,
+  ConnectComponentsProvider,
+} from "@stripe/react-connect-js"
+import { loadConnectAndInitialize } from "@stripe/connect-js"
 import { RatingStars } from "@/components/custom/RatingDisplay"
 
 function ProfileStats({ label, value }: { label: string; value: number }) {
@@ -112,6 +121,32 @@ export default function ProfilePage() {
   const userCity = useAppSelector((state: any) => state.user.userCity)
   const currentPoints = useAppSelector((state) => state.user.current_points)
   const totalPoints = useAppSelector((state) => state.user.total_points)
+  const connectedAccountId = useAppSelector((state) => state.user.stripeId)
+  const [stripeConnectInstance, setStripeConnectInstance] = useState<any>()
+
+  useEffect(() => {
+    const fetchClientSecret = async () => {
+      // const connectedAccountId = await dispatch(connect_account()).unwrap()
+      const a = await dispatch(
+        create_account_session({ accountId: connectedAccountId }),
+      ).unwrap()
+      console.log("a! " + JSON.stringify(a.account))
+      return a.account
+    }
+
+    setStripeConnectInstance(
+      loadConnectAndInitialize({
+        publishableKey: process.env.NEXT_PUBLIC_STRIPE_PK || "",
+        fetchClientSecret,
+        appearance: {
+          overlays: "dialog",
+          variables: {
+            colorPrimary: "#635BFF",
+          },
+        },
+      }),
+    )
+  }, [connectedAccountId])
   const userBadges = useAppSelector((state) => state.user.badges) || []
   const raffleTickets = useAppSelector(
     (state) => state.user.active_raffle_tickets,
@@ -172,6 +207,8 @@ export default function ProfilePage() {
   const [domLoaded, setDomLoaded] = useState(false)
   useEffect(() => {
     dispatch(get_user_location())
+    dispatch(connect_account())
+    setDomLoaded(true)
     dispatch(get_points())
     dispatch(get_score())
     dispatch(get_badge_list())
@@ -258,23 +295,28 @@ export default function ProfilePage() {
             </h1>
             <RatingStars rating={score} />
             <div className="h-3"></div>
-            <p className="text-lg md:text-xl text-gray-600 mb-4">
-              Total Points: {totalPoints}
-            </p>
-            <p className="text-lg md:text-xl text-gray-600 mb-4">
-              Current Points: {currentPoints}
-            </p>
             <div className="flex justify-center items-center space-x-8">
               <ProfileStats label="Rating" value={eloRating} />
               <ProfileStats label="Posts" value={userProfile.spotfindPosts} />
               <ProfileStats label="Years" value={userProfile.yearsOnApp} />
             </div>
-          </div>
-
-          <div className="text-left mb-6">
-            <h2 className="text-lg font-semibold mb-4">Location</h2>
-            <p className="text-sm text-gray-700">State: {userState}</p>
-            <p className="text-sm text-gray-700">City: {userCity}</p>
+            <p className="text-lg md:text-xl text-gray-600 mb-2 mt-2">
+              Total Points: {totalPoints}
+            </p>
+            <p className="text-lg md:text-xl text-gray-600 mb-2">
+              Current Points: {currentPoints}
+            </p>
+            <div className="flex justify-center items-center space-x-4 mt-2 mb-2">
+              <Button
+                variant="outline"
+                onClick={() => router.push("/leaderboard")}
+              >
+                <Calendar className="mr-2" /> Leaderboard
+              </Button>
+              <Button variant="outline" onClick={() => router.push("/shop")}>
+                <ShoppingBag className="mr-2" /> Shop
+              </Button>
+            </div>
           </div>
 
           <div className="w-full bg-gray-300 rounded-full h-4 mb-6 drop-shadow-lg">
@@ -282,6 +324,12 @@ export default function ProfilePage() {
               className="bg-green-500 h-4 rounded-full"
               style={{ width: `${(eloRating / maxElo) * 100}%` }}
             ></div>
+          </div>
+
+          <div className="text-left mb-6">
+            <h2 className="text-lg font-semibold mb-4">Location</h2>
+            <p className="text-sm text-gray-700">State: {userState || "N/A"}</p>
+            <p className="text-sm text-gray-700">City: {userCity || "N/A"}</p>
           </div>
 
           <div className="text-left mb-6">
@@ -358,6 +406,11 @@ export default function ProfilePage() {
                 <Bookmark className="mr-2" /> View Your Bookmarks
               </Button>
             </Link>
+          </div>
+          <div>
+            <ConnectComponentsProvider connectInstance={stripeConnectInstance}>
+              <ConnectAccountOnboarding onExit={() => {}} />
+            </ConnectComponentsProvider>
           </div>
         </div>
         <div className="flex h-16"></div>

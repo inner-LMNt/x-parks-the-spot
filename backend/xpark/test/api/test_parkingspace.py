@@ -135,7 +135,7 @@ def test_api_create_paid_parking_spot(client: FlaskClient) -> None:
                             "end_time": "23:59",
                         },
                     ],
-                    "pricing_info": {"base_price": 10, "dynamic_pricing": False},
+                    "pricing_info": {"base_price": 1000, "dynamic_pricing": False},
                 }
             )
         },

@@ -39,3 +39,6 @@ class Config:
     S3_BUCKET = os.environ.get("S3_BUCKET") or ""
     S3_ACCESS_KEY = os.environ.get("S3_ACCESS_KEY") or ""
     S3_SECRET_KEY = os.environ.get("S3_SECRET_KEY") or ""
+
+    STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY") or ""
+    STRIPE_ENDPOINT_SECRET = os.environ.get("STRIPE_ENDPOINT_SECRET") or ""

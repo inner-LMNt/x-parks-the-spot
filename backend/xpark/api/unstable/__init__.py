@@ -8,6 +8,7 @@ from .reservations import bp as reservations_bp
 from .cars import bp as cars_bp
 from .reports import bp as reports_bp
 from .bookmarks import bp as bookmarks_bp
+from .stripe import bp as stripe_bp
 from xpark.middleware import CORS, RequireJSON
 
 bp = Blueprint("unstable", __name__, url_prefix="/api/unstable")
@@ -24,6 +25,7 @@ bp.register_blueprint(reservations_bp)
 bp.register_blueprint(cars_bp)
 bp.register_blueprint(admin_bp)
 bp.register_blueprint(reports_bp)
+bp.register_blueprint(stripe_bp)
 
 
 from . import routes as routes
