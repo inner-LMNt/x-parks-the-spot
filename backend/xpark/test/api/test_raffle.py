@@ -1,5 +1,4 @@
 from flask.testing import FlaskClient
-from ..utils.utils import create_test_user, create_test_parking_space
 from xpark.utils.db import DB
 
 
