@@ -20,6 +20,8 @@ import {
   Ticket,
   Bookmark,
   Award,
+  Calendar,
+  ShoppingBag,
 } from "lucide-react" // Imported FileWarning
 import { logout } from "@/features/user/userSlice"
 import { Button } from "@/components/ui/button"
@@ -258,23 +260,28 @@ export default function ProfilePage() {
             </h1>
             <RatingStars rating={score} />
             <div className="h-3"></div>
-            <p className="text-lg md:text-xl text-gray-600 mb-4">
-              Total Points: {totalPoints}
-            </p>
-            <p className="text-lg md:text-xl text-gray-600 mb-4">
-              Current Points: {currentPoints}
-            </p>
             <div className="flex justify-center items-center space-x-8">
               <ProfileStats label="Rating" value={eloRating} />
               <ProfileStats label="Posts" value={userProfile.spotfindPosts} />
               <ProfileStats label="Years" value={userProfile.yearsOnApp} />
             </div>
-          </div>
-
-          <div className="text-left mb-6">
-            <h2 className="text-lg font-semibold mb-4">Location</h2>
-            <p className="text-sm text-gray-700">State: {userState}</p>
-            <p className="text-sm text-gray-700">City: {userCity}</p>
+            <p className="text-lg md:text-xl text-gray-600 mb-2 mt-2">
+              Total Points: {totalPoints}
+            </p>
+            <p className="text-lg md:text-xl text-gray-600 mb-2">
+              Current Points: {currentPoints}
+            </p>
+            <div className="flex justify-center items-center space-x-4 mt-2 mb-2">
+              <Button
+                variant="outline"
+                onClick={() => router.push("/leaderboard")}
+              >
+                <Calendar className="mr-2" /> Leaderboard
+              </Button>
+              <Button variant="outline" onClick={() => router.push("/shop")}>
+                <ShoppingBag className="mr-2" /> Shop
+              </Button>
+            </div>
           </div>
 
           <div className="w-full bg-gray-300 rounded-full h-4 mb-6 drop-shadow-lg">
@@ -282,6 +289,12 @@ export default function ProfilePage() {
               className="bg-green-500 h-4 rounded-full"
               style={{ width: `${(eloRating / maxElo) * 100}%` }}
             ></div>
+          </div>
+
+          <div className="text-left mb-6">
+            <h2 className="text-lg font-semibold mb-4">Location</h2>
+            <p className="text-sm text-gray-700">State: {userState || "N/A"}</p>
+            <p className="text-sm text-gray-700">City: {userCity || "N/A"}</p>
           </div>
 
           <div className="text-left mb-6">

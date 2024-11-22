@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   get_transactions,
@@ -16,6 +17,7 @@ import {
   Ticket,
   ArrowUpCircle,
   ArrowDownCircle,
+  ArrowLeft,
 } from "lucide-react"
 import {
   Card,
@@ -81,6 +83,7 @@ function getEndOfMonth() {
 
 export default function ShopPage() {
   const dispatch = useAppDispatch()
+  const router = useRouter()
   const userPoints = useAppSelector((state) => state.user.current_points)
   const transactions = useAppSelector((state) => state.user.transactions)
   const tickets = useAppSelector((state) => state.user.active_raffle_tickets)
@@ -156,6 +159,11 @@ export default function ShopPage() {
 
   return (
     <div className="container mx-auto p-4 max-w-6xl bg-gradient-to-r from-purple-500 to-black-500 min-h-screen">
+      <div className="flex items-center justify-between mb-4">
+        <Button variant="outline" onClick={() => router.push("/profile")}>
+          <ArrowLeft className="mr-2" /> Back to Profile
+        </Button>
+      </div>
       <div className="flex justify-between items-center mb-8 bg-white p-4 rounded-lg shadow-md">
         <h1 className="text-3xl font-bold text-gray-800">Parking Rewards</h1>
         <div className="flex items-center gap-2">

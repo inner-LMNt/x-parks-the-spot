@@ -524,6 +524,12 @@ const userSlice = createSlice<UserState, {}, "user">({
         state.userCity = action.meta.arg.city
       })
 
+      .addMatcher(isAnyOf(get_user_location.fulfilled), (state, action) => {
+        state.loading = false
+        state.userState = action.payload?.state || null
+        state.userCity = action.payload?.city || null
+      })
+
       .addMatcher(isAnyOf(get_points.fulfilled), (state, action) => {
         state.loading = false
         //@ts-ignore
