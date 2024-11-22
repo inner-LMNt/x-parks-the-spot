@@ -546,6 +546,7 @@ def get_owner_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], s
                     upper(time) as end_time,
                     car_info_id, 
                     renter_id,
+                    users.name as renter_name,
                     status,
                     json_build_object(
                         'address',   parking_spaces.address,
@@ -557,6 +558,7 @@ def get_owner_reservations(user_id: uuid.UUID) -> Result[List[Dict[str, Any]], s
                     reservations.updated_at
                 FROM reservations 
                 JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                JOIN users ON reservations.renter_id = users.id
                 WHERE parking_spaces.owner = %s
                 ORDER BY reservations.created_at DESC
             """,
