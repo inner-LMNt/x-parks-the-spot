@@ -35,6 +35,7 @@ def app(mocker: MockerFixture) -> Generator[Any, Any, Any]:
         Config.SMTP_ENABLED = "yes"
         Config.SMTP_TLS = "no"
         Config.S3_ENABLED = "no"
+        Config.STRIPE_SECRET_KEY = ""
 
         yield xpark.create_app()
 

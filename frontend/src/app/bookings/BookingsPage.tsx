@@ -164,7 +164,7 @@ function ReservationCard({
         <div className="flex items-center mb-2">
           <p className="text-sm text-gray-700">
             <strong>Price:</strong> $
-            {reservation.price ? reservation.price.toFixed(2) : "0.00"}
+            {reservation.price ? (reservation.price / 100).toFixed(2) : "0.00"}
           </p>
         </div>
         <div className="flex items-center mb-2">

@@ -22,6 +22,7 @@ export const reservations: Reservation[] = [
       longitude: 0,
     },
     is_bookmarked: false,
+    checkout_secret: "",
   },
   // Add more reservations as needed
 ]

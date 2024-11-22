@@ -258,7 +258,7 @@ def create_paid_parking_space(
     latitude: float,
     address: str,
     name: str,
-    price: float,  # FIXME: do not pass around money as floats!!!
+    price: int,
     availability_schedule: List[Dict[str, str]],
 ) -> Result[Dict[str, Any], str]:
     # Save image
@@ -527,7 +527,7 @@ def update_paid_parking_space(
     latitude: Optional[float],
     longitude: Optional[float],
     name: Optional[str],
-    price: Optional[float],
+    price: Optional[int],
     availability_schedule: Optional[List[Dict[str, str]]],
 ) -> Result[Dict[str, Any], str]:
     with DB.pool.connection() as conn:

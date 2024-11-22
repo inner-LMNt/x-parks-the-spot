@@ -5,18 +5,14 @@ from psycopg.rows import dict_row
 from xpark.utils.db import DB
 from result import Result, Ok, Err
 import datetime
-from enum import Enum
 import psycopg
 from psycopg import Cursor
 from psycopg.rows import DictRow
+from xpark.logic.payments import create_checkout_session
+import math
+from xpark.config import Config
 
 from xpark.utils.mailer import send_email, generate_templated_email
-
-
-class ReservationStatus(Enum):
-    book = "booked"
-    cancel = "canceled"
-    complete = "completed"
 
 
 def check_if_available(
@@ -102,14 +98,17 @@ def calculate_booking_price(
     parking_space_id: uuid.UUID,
     start_time: datetime.datetime,
     end_time: datetime.datetime,
-) -> float:
+) -> int:
     cur.execute("SELECT price FROM parking_spaces WHERE id = %s", (parking_space_id,))
     res = cur.fetchone()
     assert res
     price = res["price"]
+    assert type(price) is int
     delta = end_time - start_time
     hours = delta.days * 24 + delta.seconds / 3600
-    return float(hours * price)
+    # Round down to get price
+    # In cents
+    return math.floor(hours * price)
 
 
 def create_reservation(
@@ -132,6 +131,19 @@ def create_reservation(
                 return Err("Spot not available")
             # Insert the reservation
             cur.execute(
+                "SELECT owner FROM parking_spaces WHERE id = %s", (parking_space_id,)
+            )
+            owner_id_c = cur.fetchone()
+            assert owner_id_c
+            owner_id = owner_id_c["owner"]
+            price = calculate_booking_price(cur, parking_space_id, start_time, end_time)
+            if Config.STRIPE_SECRET_KEY != "":
+                checkout_id, checkout_secret = create_checkout_session(
+                    cur, user_id, owner_id, parking_space_id, price
+                )
+            else:
+                checkout_id, checkout_secret = None, None
+            cur.execute(
                 """
                 INSERT INTO reservations (
                     parking_space_id,
@@ -140,6 +152,7 @@ def create_reservation(
                     renter_id,
                     status,
                     price,
+                    checkout_id,
                     created_at,
                     updated_at
                 ) VALUES (
@@ -149,6 +162,7 @@ def create_reservation(
                     %(user_id)s,
                     'booked',
                     %(price)s,
+                    %(checkout_id)s,
                     NOW(),
                     NOW()
                 )
@@ -160,15 +174,16 @@ def create_reservation(
                     "end_time": end_time,
                     "car_id": car_info_id,
                     "user_id": user_id,
-                    "price": calculate_booking_price(
-                        cur, parking_space_id, start_time, end_time
-                    ),
+                    "price": price,
+                    "checkout_id": checkout_id,
                 },
             )
 
             reservation = cur.fetchone()
             if not reservation:
                 return Err("Unable to create reservation")
+
+            reservation["checkout_secret"] = checkout_secret
 
             return Ok(reservation)
 
@@ -299,7 +314,7 @@ def update_reservation(
             owner_id = parking_space["owner"]
             parking_address = parking_space.get("address", "Unknown Location")
             parking_price = parking_space.get(
-                "price", 0.0
+                "price", 0
             )  # Assuming price is a float representing price per hour
 
         # Fetch the owner's email and name from the users table
@@ -355,14 +370,14 @@ def update_reservation(
         if extension_delta.total_seconds() > 0:
             extension_hours = extension_delta.total_seconds() / 3600
             # Round to two decimal places for currency formatting
-            extra_earned = round(extension_hours * parking_price, 2)
+            extra_earned = "%.2f" % (extension_hours * parking_price / 100)
             # Format extension length into hours and minutes
             hours = int(extension_hours)
             minutes = int((extension_hours - hours) * 60)
             extension_length_str = f"{hours} hours and {minutes} minutes"
         else:
             extension_length_str = "No extension"
-            extra_earned = 0.0
+            extra_earned = "0.00"
 
         # Convert start_time and end_time to EST
         est = ZoneInfo("America/New_York")
@@ -391,7 +406,7 @@ def update_reservation(
         - End Time: {end_time_est}
         - Car: {car_info}
         - Extension Length: {extension_length_str}
-        - Extra Earned: ${extra_earned}
+        - Extra Earned: ¢{extra_earned}
 
         If you have any questions or concerns, please feel free to contact us.
 

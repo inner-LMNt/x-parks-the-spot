@@ -49,7 +49,7 @@ def create_test_parking_space(
     client: FlaskClient,
     token: str,
     is_paid: bool = True,
-    price: float = 10.0,
+    price: int = 1000,
     name: str = "Test Space",
 ) -> str:
     """Helper to create a test parking space and return its ID"""
@@ -432,7 +432,7 @@ def setup_analytics_scenario(
         spot_id = create_test_parking_space(
             client,
             owner_token,
-            price=10.0 * (i + 1),  # Different prices for different spots
+            price=1000 * (i + 1),  # Different prices for different spots
             name=f"Test Spot {i + 1}",
         )
         spot_ids.append(spot_id)

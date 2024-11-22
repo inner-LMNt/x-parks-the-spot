@@ -36,6 +36,8 @@ interface UserState {
   userState: string | null
   total_points: number | null
   current_points: number | null
+  stripeId: string | null
+  stripeAccountSession: string | null
   badges: number[]
   transactions: any[]
   active_raffle_tickets: number
@@ -57,6 +59,8 @@ const initialState: UserState = {
   userState: null,
   total_points: 0,
   current_points: 0,
+  stripeId: null,
+  stripeAccountSession: null,
   badges: [],
   transactions: [],
   active_raffle_tickets: 0,
@@ -301,6 +305,33 @@ export const get_points = createAsyncThunk<
   }
 })
 
+export const create_account_session = createAsyncThunk<
+  { account: string },
+  { accountId: string },
+  { rejectValue: string }
+>("user/create_account_session", async ({ accountId }, { rejectWithValue }) => {
+  try {
+    const response = await axios.post("auth/create_account_session", {
+      account: accountId,
+    })
+    return response.data
+  } catch (error: any) {
+    return rejectWithValue("Failed to create account session")
+  }
+})
+
+export const connect_account = createAsyncThunk<
+  { accountId: string },
+  void,
+  { rejectValue: string }
+>("user/connect_account", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.post("auth/connect_account")
+    return response.data
+  } catch (error: any) {
+    return rejectWithValue("Failed to create account session")
+  }
+})
 export const get_transactions = createAsyncThunk<
   any[],
   void,
@@ -522,6 +553,26 @@ const userSlice = createSlice<UserState, {}, "user">({
         state.loading = false
         state.userState = action.meta.arg.state
         state.userCity = action.meta.arg.city
+      })
+      .addMatcher(isAnyOf(get_user_location.fulfilled), (state, action) => {
+        state.loading = false
+        state.userState = action.payload?.state || null
+        state.userCity = action.payload?.city || null
+      })
+      .addMatcher(isAnyOf(connect_account.fulfilled), (state, action) => {
+        state.loading = false
+        state.stripeId = action.payload?.accountId || null
+      })
+      .addMatcher(
+        isAnyOf(create_account_session.fulfilled),
+        (state, action) => {
+          state.loading = false
+          state.stripeAccountSession = action.payload?.account || null
+        },
+      )
+      .addMatcher(isAnyOf(get_notification_time.fulfilled), (state, action) => {
+        state.loading = false
+        state.notificationTime = action.payload
       })
 
       .addMatcher(isAnyOf(get_user_location.fulfilled), (state, action) => {

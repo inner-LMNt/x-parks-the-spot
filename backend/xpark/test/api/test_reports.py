@@ -160,7 +160,7 @@ def test_report_permissions(client: FlaskClient) -> None:
 def test_overstay_calculations(client: FlaskClient) -> None:
     """Test overstay duration and charge calculations"""
     token = create_test_user(client)
-    space_id = create_test_parking_space(client, token, price=5.0)
+    space_id = create_test_parking_space(client, token, price=500)
 
     # Create a reservation that ended 1 hour ago
     end_time = datetime.now(timezone.utc) - timedelta(hours=1)
@@ -182,7 +182,7 @@ def test_overstay_calculations(client: FlaskClient) -> None:
     )
 
     assert report["overstay_duration"] == 30
-    assert round(float(report["overstay_charge"]), 2) == round(5 * 1.5 * 0.5, 2)
+    assert round(float(report["overstay_charge"]), 2) == round(500 * 1.5 * 0.5, 2)
 
     # Report departure time 1 hour after end time
     departure_time = end_time + timedelta(hours=1)
@@ -197,7 +197,7 @@ def test_overstay_calculations(client: FlaskClient) -> None:
     )
 
     assert report["overstay_duration"] == 60
-    assert round(float(report["overstay_charge"]), 2) == round(5 * 1.5, 2)
+    assert round(float(report["overstay_charge"]), 2) == round(500 * 1.5, 2)
 
 
 def test_damage_severity_values(client: FlaskClient) -> None:
@@ -308,7 +308,7 @@ def test_reservation_price_calculations(client: FlaskClient) -> None:
     token = create_test_user(client)
 
     space_id = create_test_parking_space(
-        client, token, price=20.0, name="Test Price Space"
+        client, token, price=2000, name="Test Price Space"
     )
 
     # Create reservation
@@ -337,7 +337,7 @@ def test_reservation_price_calculations(client: FlaskClient) -> None:
     # Base price = $20/hour
     # Overstay rate = 1.5x base rate
     # 30 minutes at 1.5x = (20 * 1.5) * (30/60) = $15
-    assert round(float(report["overstay_charge"]), 2) == 15.00
+    assert round(float(report["overstay_charge"]), 2) == 1500
 
 
 def test_user_specific_report_listing(client: FlaskClient) -> None:
