@@ -51,5 +51,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+        env:
+          NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
       - name: Trigger Deploy
         run: curl https://xpark-staging.ersei.net/xparkfehook.php?bc6ca7d7161f99d949b1c3adf6fbb1ba
