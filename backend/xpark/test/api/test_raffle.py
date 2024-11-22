@@ -3,7 +3,7 @@ from ..utils.utils import create_test_user, create_test_parking_space
 from xpark.utils.db import DB
 
 
-def test_buy_and_get_raffle_entries(client: FlaskClient):
+def test_buy_and_get_raffle_entries(client: FlaskClient) -> None:
     # Create user1
     response = client.post(
         "/api/unstable/auth/register",
@@ -98,10 +98,10 @@ def test_buy_and_get_raffle_entries(client: FlaskClient):
     assert response.get_json()[1]['tickets'] == 5
 
 
-def test_perform_raffle(client: FlaskClient): # Need to test without sending email
+def test_perform_raffle(client: FlaskClient) -> None: # Need to test without sending email
     pass
 
-def test_handle_buy_and_get_badge(client: FlaskClient, mocker):
+def test_handle_buy_and_get_badge(client: FlaskClient) -> None:
     # Create a user
     response = client.post(
         "/api/unstable/auth/register",
