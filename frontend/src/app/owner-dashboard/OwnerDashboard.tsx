@@ -166,9 +166,7 @@ export function OwnerDashboard() {
     setSelectedSpotId(spotId)
     setSelectedTab(tab || "revenue")
   }, [])
-  const params = new URLSearchParams(window.location.search)
   console.log("selected", selectedSpotId)
-  setSelectedSpotId(params.get("spotId"))
   // Initial data fetch
   useEffect(() => {
     dispatch(getOwnerSpots())
