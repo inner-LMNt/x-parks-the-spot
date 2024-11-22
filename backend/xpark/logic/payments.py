@@ -7,6 +7,8 @@ from psycopg.rows import DictRow
 import time
 from xpark.utils.db import DB
 from psycopg.rows import dict_row
+from xpark.utils.mailer import send_email, generate_templated_email
+from typing import Tuple
 
 
 def create_checkout_session(
@@ -15,7 +17,7 @@ def create_checkout_session(
     owner_id: uuid.UUID,
     spot_id: uuid.UUID,
     price: int,
-) -> str:
+) -> Tuple[str, str]:
     # Get user email
     # Check if the email already exists in the database
     cur.execute("SELECT email FROM users WHERE id = %s", (user_id,))
@@ -58,7 +60,7 @@ def create_checkout_session(
 
     # TODO: Lock parking spot
 
-    return session.client_secret
+    return session.id, session.client_secret
 
 
 def get_session_status(session_id: str) -> Result[str, None]:
@@ -70,27 +72,50 @@ def get_session_status(session_id: str) -> Result[str, None]:
     return Ok(session.status)
 
 
-# def fulfill_checkout(session_id):
-#     # TODO: Make this function safe to run multiple times,
-#     # even concurrently, with the same session ID
-#
-#     # TODO: Make sure fulfillment hasn't already been
-#     # peformed for this Checkout Session
-#
-#     # Retrieve the Checkout Session from the API with line_items expanded
-#     checkout_session = stripe.checkout.Session.retrieve(
-#         session_id,
-#         expand=["line_items"],
-#     )
-#
-#     # Check the Checkout Session's payment_status property
-#     # to determine if fulfillment should be peformed
-#     if checkout_session.payment_status != "unpaid":
-#         # TODO: Perform fulfillment of the line items
-#
-#         # TODO: Record/save fulfillment status for this
-#         # Checkout Session
-#         ...
+def fulfill_checkout(session_id):
+    # TODO: Make this function safe to run multiple times,
+    # even concurrently, with the same session ID
+
+    # TODO: Make sure fulfillment hasn't already been
+    # peformed for this Checkout Session
+
+    # Retrieve the Checkout Session from the API with line_items expanded
+    checkout_session = stripe.checkout.Session.retrieve(
+        session_id,
+        expand=["line_items"],
+    )
+
+    # Check the Checkout Session's payment_status property
+    # to determine if fulfillment should be peformed
+    if checkout_session.payment_status != "unpaid":
+        # TODO: Perform fulfillment of the line items
+
+        # TODO: Record/save fulfillment status for this
+        # Checkout Session
+        ...
+    checkout_id = checkout_session.id
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """SELECT users.email, users.name, reservations.price FROM reservations
+                JOIN parking_spaces ON reservations.parking_space_id = parking_spaces.id
+                JOIN users ON parking_spaces.owner = users.id
+                WHERE checkout_id = %(checkout_id)s""",
+                {"checkout_id": checkout_id},
+            )
+
+            user_info = cur.fetchone()
+            assert user_info
+
+            send_email(
+                to=user_info["email"],
+                subject="XPark: Spot Reservation Notice",
+                content=generate_templated_email(
+                    "owner_spot_reserved",
+                    name=user_info["name"],
+                    money="%.2f" % (user_info["price"] / 100),
+                ),
+            )
 
 
 def connect_account(user_id: uuid.UUID) -> Result[str, str]:

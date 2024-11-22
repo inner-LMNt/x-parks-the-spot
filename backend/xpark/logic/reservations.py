@@ -8,7 +8,7 @@ import datetime
 import psycopg
 from psycopg import Cursor
 from psycopg.rows import DictRow
-from xpark.logic.payments import create_checkout_session
+from xpark.logic.payments import create_checkout_session, fulfill_checkout
 import math
 from xpark.config import Config
 
@@ -138,11 +138,11 @@ def create_reservation(
             owner_id = owner_id_c["owner"]
             price = calculate_booking_price(cur, parking_space_id, start_time, end_time)
             if Config.STRIPE_SECRET_KEY != "":
-                checkout_secret = create_checkout_session(
+                checkout_id, checkout_secret = create_checkout_session(
                     cur, user_id, owner_id, parking_space_id, price
                 )
             else:
-                checkout_secret = ""
+                checkout_id, checkout_secret = None, None
             cur.execute(
                 """
                 INSERT INTO reservations (
@@ -152,7 +152,7 @@ def create_reservation(
                     renter_id,
                     status,
                     price,
-                    checkout_secret,
+                    checkout_id,
                     created_at,
                     updated_at
                 ) VALUES (
@@ -162,11 +162,11 @@ def create_reservation(
                     %(user_id)s,
                     'booked',
                     %(price)s,
-                    %(checkout_secret)s,
+                    %(checkout_id)s,
                     NOW(),
                     NOW()
                 )
-                RETURNING id, parking_space_id, lower(time) as start_time, upper(time) as end_time, car_info_id, checkout_secret, status, created_at, updated_at
+                RETURNING id, parking_space_id, lower(time) as start_time, upper(time) as end_time, car_info_id, status, created_at, updated_at
                 """,
                 {
                     "id": parking_space_id,
@@ -175,13 +175,15 @@ def create_reservation(
                     "car_id": car_info_id,
                     "user_id": user_id,
                     "price": price,
-                    "checkout_secret": checkout_secret,
+                    "checkout_id": checkout_id,
                 },
             )
 
             reservation = cur.fetchone()
             if not reservation:
                 return Err("Unable to create reservation")
+
+            reservation["checkout_secret"] = checkout_secret
 
             return Ok(reservation)
 

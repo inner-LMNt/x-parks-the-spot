@@ -3,6 +3,7 @@ from typing import Tuple, Any
 import stripe
 from flask import request
 from xpark.config import Config
+from xpark.logic.payments import fulfill_checkout
 
 
 @bp.post("webhook")
@@ -30,6 +31,8 @@ def webhook() -> Tuple[Any, int]:
             ...
             # Then define and call a method to handle the successful attachment of a PaymentMethod.
             # handle_payment_method_attached(payment_method)
+        case "checkout.session.completed":
+            fulfill_checkout(event.data.object.id)  # type: ignore
         case _:
             return {"err": "unhandled event type"}, 400
 
