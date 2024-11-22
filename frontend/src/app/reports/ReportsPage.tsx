@@ -34,6 +34,7 @@ import { ReportDialog } from "./components/ReportDialog"
 import { BookingsReports } from "./components/BookingsReports"
 import { Report } from "@/types/type"
 
+// page for reports
 export default function ReportsPage() {
   const dispatch = useAppDispatch()
   const router = useRouter()
