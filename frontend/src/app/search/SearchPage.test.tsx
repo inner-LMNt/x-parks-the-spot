@@ -5,11 +5,11 @@ import { Provider } from "react-redux"
 import configureStore, { MockStoreEnhanced } from "redux-mock-store"
 import { searchSpots } from "@/features/search/searchSlice"
 import "@testing-library/jest-dom"
-import {store} from "@/store";
-import {login, logout} from "@/features/user/userSlice";
-import {AuthResponse} from "@/types/type";
-import {injectStore} from "@/api/axiosInstance";
-import {ToastProvider} from "@/components/ui/toast";
+import { store } from "@/store"
+import { login, logout } from "@/features/user/userSlice"
+import { AuthResponse } from "@/types/type"
+import { injectStore } from "@/api/axiosInstance"
+import { ToastProvider } from "@/components/ui/toast"
 
 jest.mock("@react-google-maps/api", () => ({
   LoadScript: ({ children }) => <div data-testid="load-script">{children}</div>,
@@ -22,11 +22,9 @@ jest.mock("@react-google-maps/api", () => ({
   ),
 }))
 
-
 const mockStore = configureStore([])
 
 describe.skip("SearchPage", () => {
-
   const mockUser = {
     email: "xparkusr1@gmail.com",
     password: "Xp4rK!usrP@swrD",
@@ -35,8 +33,8 @@ describe.skip("SearchPage", () => {
   beforeEach(async () => {
     let authToken
     const result = (await store.dispatch(
-        //@ts-ignore
-        login(mockUser),
+      //@ts-ignore
+      login(mockUser),
     )) as { payload: AuthResponse }
 
     // Store auth token for reference/debugging
@@ -44,13 +42,13 @@ describe.skip("SearchPage", () => {
 
     // Verify login success and token presence
     await waitFor(
-        () => {
-          const state = store.getState()
-          expect(state.user.isLoggedIn).toBeTruthy()
-          expect(state.user.access_token).toBe(authToken)
-          expect(state.user.error).toBeNull()
-        },
-        { timeout: 10000 },
+      () => {
+        const state = store.getState()
+        expect(state.user.isLoggedIn).toBeTruthy()
+        expect(state.user.access_token).toBe(authToken)
+        expect(state.user.error).toBeNull()
+      },
+      { timeout: 10000 },
     )
 
     // Optional: Log token for debugging
@@ -60,32 +58,32 @@ describe.skip("SearchPage", () => {
   afterEach(async () => {
     jest.clearAllMocks()
     await store.dispatch(
-        //@ts-ignore
-        logout(),
+      //@ts-ignore
+      logout(),
     )
   })
   const renderWithStore = async (component: React.ReactNode) => {
     injectStore(store)
     return render(
-        <Provider store={store}>
-          <ToastProvider>{component}</ToastProvider>
-        </Provider>,
+      <Provider store={store}>
+        <ToastProvider>{component}</ToastProvider>
+      </Provider>,
     )
   }
 
   it("renders the search for parking component", async () => {
-    await renderWithStore(<SearchPage/>);
+    await renderWithStore(<SearchPage />)
     await waitFor(
-        () => {
-          expect(store.getState().reports.loading).toBe(false)
-        },
-        {timeout: 5000},
+      () => {
+        expect(store.getState().reports.loading).toBe(false)
+      },
+      { timeout: 5000 },
     )
 
     expect(screen.getByText("Search for Parking")).toBeInTheDocument()
     expect(screen.getByText("Radius (km):")).toBeInTheDocument()
     expect(screen.getByLabelText("Radius Input")).toBeInTheDocument()
-    expect(screen.getAllByRole("button", {name: "Select"})).toHaveLength(2)
+    expect(screen.getAllByRole("button", { name: "Select" })).toHaveLength(2)
   })
 
   it("displays the user location on the map", async () => {

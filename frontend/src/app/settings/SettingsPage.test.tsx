@@ -3,12 +3,12 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import SettingsPage from "./SettingsPage" // Adjust path if necessary
 import { Provider } from "react-redux"
 import configureStore from "redux-mock-store"
-import {store} from "@/store";
-import {login, logout} from "@/features/user/userSlice";
-import {AuthResponse} from "@/types/type";
-import ProfilePage from "@/app/profile/ProfilePage";
-import {injectStore} from "@/api/axiosInstance";
-import {ToastProvider} from "@/components/ui/toast";
+import { store } from "@/store"
+import { login, logout } from "@/features/user/userSlice"
+import { AuthResponse } from "@/types/type"
+import ProfilePage from "@/app/profile/ProfilePage"
+import { injectStore } from "@/api/axiosInstance"
+import { ToastProvider } from "@/components/ui/toast"
 
 const mockStore = configureStore([])
 
@@ -21,8 +21,8 @@ describe("SettingsPage", () => {
   beforeEach(async () => {
     let authToken
     const result = (await store.dispatch(
-        //@ts-ignore
-        login(mockUser),
+      //@ts-ignore
+      login(mockUser),
     )) as { payload: AuthResponse }
 
     // Store auth token for reference/debugging
@@ -30,13 +30,13 @@ describe("SettingsPage", () => {
 
     // Verify login success and token presence
     await waitFor(
-        () => {
-          const state = store.getState()
-          expect(state.user.isLoggedIn).toBeTruthy()
-          expect(state.user.access_token).toBe(authToken)
-          expect(state.user.error).toBeNull()
-        },
-        { timeout: 10000 },
+      () => {
+        const state = store.getState()
+        expect(state.user.isLoggedIn).toBeTruthy()
+        expect(state.user.access_token).toBe(authToken)
+        expect(state.user.error).toBeNull()
+      },
+      { timeout: 10000 },
     )
 
     // Optional: Log token for debugging
@@ -46,26 +46,26 @@ describe("SettingsPage", () => {
   afterEach(async () => {
     jest.clearAllMocks()
     await store.dispatch(
-        //@ts-ignore
-        logout(),
+      //@ts-ignore
+      logout(),
     )
   })
   const renderWithStore = async (component: React.ReactNode) => {
     injectStore(store)
     return render(
-        <Provider store={store}>
-          <ToastProvider>{component}</ToastProvider>
-        </Provider>,
+      <Provider store={store}>
+        <ToastProvider>{component}</ToastProvider>
+      </Provider>,
     )
   }
 
-  it("renders settings page with notification options", async() => {
+  it("renders settings page with notification options", async () => {
     renderWithStore(<SettingsPage />)
     await waitFor(
-        () => {
-          expect(store.getState().user.loading).toBe(false)
-        },
-        {timeout: 5000},
+      () => {
+        expect(store.getState().user.loading).toBe(false)
+      },
+      { timeout: 5000 },
     )
 
     // Check if the Settings heading and notification options are rendered
@@ -79,10 +79,10 @@ describe("SettingsPage", () => {
   it('opens the delete account dialog when clicking "Delete My Account"', async () => {
     renderWithStore(<SettingsPage />)
     await waitFor(
-        () => {
-          expect(store.getState().user.loading).toBe(false)
-        },
-        {timeout: 5000},
+      () => {
+        expect(store.getState().user.loading).toBe(false)
+      },
+      { timeout: 5000 },
     )
 
     // Check if the delete account button is rendered
@@ -104,10 +104,10 @@ describe("SettingsPage", () => {
   it("validates password and confirm password fields correctly", async () => {
     renderWithStore(<SettingsPage />)
     await waitFor(
-        () => {
-          expect(store.getState().user.loading).toBe(false)
-        },
-        {timeout: 5000},
+      () => {
+        expect(store.getState().user.loading).toBe(false)
+      },
+      { timeout: 5000 },
     )
 
     // Simulate clicking the delete button

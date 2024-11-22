@@ -1,14 +1,14 @@
-'use client';
+"use client"
 
 import React from "react"
-import {render, screen, waitFor} from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import ProfilePage from "./ProfilePage"
-import {store} from "@/store";
-import {login, logout} from "@/features/user/userSlice";
-import {AuthResponse} from "@/types/type";
-import {injectStore} from "@/api/axiosInstance";
-import {Provider} from "react-redux";
-import {ToastProvider} from "@/components/ui/toast";
+import { store } from "@/store"
+import { login, logout } from "@/features/user/userSlice"
+import { AuthResponse } from "@/types/type"
+import { injectStore } from "@/api/axiosInstance"
+import { Provider } from "react-redux"
+import { ToastProvider } from "@/components/ui/toast"
 
 describe.skip("ProfilePage", () => {
   const mockUser = {
@@ -19,8 +19,8 @@ describe.skip("ProfilePage", () => {
   beforeEach(async () => {
     let authToken
     const result = (await store.dispatch(
-        //@ts-ignore
-        login(mockUser),
+      //@ts-ignore
+      login(mockUser),
     )) as { payload: AuthResponse }
 
     // Store auth token for reference/debugging
@@ -28,13 +28,13 @@ describe.skip("ProfilePage", () => {
 
     // Verify login success and token presence
     await waitFor(
-        () => {
-          const state = store.getState()
-          expect(state.user.isLoggedIn).toBeTruthy()
-          expect(state.user.access_token).toBe(authToken)
-          expect(state.user.error).toBeNull()
-        },
-        { timeout: 10000 },
+      () => {
+        const state = store.getState()
+        expect(state.user.isLoggedIn).toBeTruthy()
+        expect(state.user.access_token).toBe(authToken)
+        expect(state.user.error).toBeNull()
+      },
+      { timeout: 10000 },
     )
 
     // Optional: Log token for debugging
@@ -44,28 +44,28 @@ describe.skip("ProfilePage", () => {
   afterEach(async () => {
     jest.clearAllMocks()
     await store.dispatch(
-        //@ts-ignore
-        logout(),
+      //@ts-ignore
+      logout(),
     )
   })
   const renderWithStore = (component: React.ReactNode) => {
     injectStore(store)
     return render(
-        <Provider store={store}>
-          <ToastProvider>{component}</ToastProvider>
-        </Provider>,
+      <Provider store={store}>
+        <ToastProvider>{component}</ToastProvider>
+      </Provider>,
     )
   }
 
   const waitForLoad = async () => {
     // Wait for minimum 300ms AND loading false
-    await new Promise(resolve => setTimeout(resolve, 300))
+    await new Promise((resolve) => setTimeout(resolve, 300))
     await waitFor(
-        () => {
-          const state = store.getState()
-          expect(state.user.loading).toBe(false)
-        },
-        { timeout: 5000 }
+      () => {
+        const state = store.getState()
+        expect(state.user.loading).toBe(false)
+      },
+      { timeout: 5000 },
     )
   }
 
@@ -85,9 +85,9 @@ describe.skip("ProfilePage", () => {
     await waitForLoad()
 
     // These values come from hardcoded userProfile in the component
-    expect(screen.getByText('1200')).toBeInTheDocument() // Rating
-    expect(screen.getByText('50')).toBeInTheDocument() // Posts
-    expect(screen.getByText('2')).toBeInTheDocument() // Years
+    expect(screen.getByText("1200")).toBeInTheDocument() // Rating
+    expect(screen.getByText("50")).toBeInTheDocument() // Posts
+    expect(screen.getByText("2")).toBeInTheDocument() // Years
   })
 
   it("renders the badges section with all badge levels", async () => {
@@ -117,23 +117,29 @@ describe.skip("ProfilePage", () => {
     // Check all hardcoded comments exist
     expect(screen.getByText("Logged many spots!")).toBeInTheDocument()
     expect(screen.getByText("Found a great spot, thanks!")).toBeInTheDocument()
-    expect(screen.getByText("Logged a spot that was on private property")).toBeInTheDocument()
-    expect(screen.getByText("Helpful and friendly service!")).toBeInTheDocument()
+    expect(
+      screen.getByText("Logged a spot that was on private property"),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("Helpful and friendly service!"),
+    ).toBeInTheDocument()
   })
 
   it("handles the logout flow", async () => {
     renderWithStore(<ProfilePage />)
     await waitForLoad()
 
-    const logoutButton = screen.getByRole('button', { name: /logout/i })
+    const logoutButton = screen.getByRole("button", { name: /logout/i })
     fireEvent.click(logoutButton)
 
     // Check dialog appears
-    expect(screen.getByText(/are you sure you want to logout\?/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/are you sure you want to logout\?/i),
+    ).toBeInTheDocument()
 
     // Verify both buttons exist
-    expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /logout/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument()
   })
 
   it("shows all navigation links with correct hrefs", async () => {
@@ -141,11 +147,19 @@ describe.skip("ProfilePage", () => {
     await waitForLoad()
 
     // Check all navigation links exist with correct hrefs
-    const links = screen.getAllByRole('link')
-    expect(links.find(link => link.getAttribute('href') === '/reports')).toBeInTheDocument()
-    expect(links.find(link => link.getAttribute('href') === '/cars')).toBeInTheDocument()
-    expect(links.find(link => link.getAttribute('href') === '/settings')).toBeInTheDocument()
-    expect(links.find(link => link.getAttribute('href') === '/bookmarks')).toBeInTheDocument()
+    const links = screen.getAllByRole("link")
+    expect(
+      links.find((link) => link.getAttribute("href") === "/reports"),
+    ).toBeInTheDocument()
+    expect(
+      links.find((link) => link.getAttribute("href") === "/cars"),
+    ).toBeInTheDocument()
+    expect(
+      links.find((link) => link.getAttribute("href") === "/settings"),
+    ).toBeInTheDocument()
+    expect(
+      links.find((link) => link.getAttribute("href") === "/bookmarks"),
+    ).toBeInTheDocument()
   })
 
   it("shows all star rating icons", async () => {
