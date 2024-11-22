@@ -351,6 +351,41 @@ const RevenueTab: React.FC<RevenueTabProps> = ({
                 Icon={TrendingUp}
                 iconColor="text-blue-500"
               />
+              <div className="space-y-4">
+                {bookingMetrics?.recentBookings
+                  ?.filter((booking) => booking.time_status === "upcoming")
+                  ?.filter((booking) => booking.status !== "canceled")
+                  ?.map((booking) => (
+                    <div
+                      key={booking.id}
+                      className="flex justify-between items-center p-4 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">
+                          {booking.spotName}
+                        </h4>
+                        <p className="text-sm text-gray-500">
+                          {format(new Date(booking.startTime), "MMM d")} -
+                          {format(new Date(booking.endTime), "MMM d")}
+                          {booking.isMultiDay &&
+                            ` (${booking.daysDuration} days)`}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium text-gray-900">
+                          {formatCurrency(booking.price)}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {formatDistance(
+                            new Date(booking.startTime),
+                            new Date(),
+                            { addSuffix: true },
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -248,9 +248,16 @@ export const update_notification_time = createAsyncThunk<
 export const get_notification_time = createAsyncThunk<
   string | null,
   void,
-  { rejectValue: string }
->("user/get_notification_time", async (_, { rejectWithValue }) => {
+  { rejectValue: string; state: { user: UserState } }
+>("user/get_notification_time", async (_, { rejectWithValue, getState }) => {
   try {
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+
+    const state = getState()
+    if (!state.user.isLoggedIn) {
+      return null
+    }
+
     const response = await axios.get("auth/notification-time")
     return response.data.time
   } catch (error: any) {
@@ -529,13 +536,13 @@ const userSlice = createSlice<UserState, {}, "user">({
         state.name = action.payload
       })
 
-      .addMatcher(
-        isAnyOf(update_notification_time.fulfilled),
-        (state, action) => {
-          state.loading = false
-          state.notificationTime = action.meta.arg.notificationTime
-        },
-      )
+      .addMatcher(isAnyOf(get_notification_time.fulfilled), (state, action) => {
+        state.loading = false
+        // Only update state if the payload is not null
+        if (action.payload !== null) {
+          state.notificationTime = action.payload
+        }
+      })
 
       .addMatcher(isAnyOf(get_notification_time.fulfilled), (state, action) => {
         state.loading = false
