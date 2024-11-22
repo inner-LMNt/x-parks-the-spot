@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { MapPinIcon, RefreshCwIcon } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { MapPinIcon, RefreshCwIcon, ArrowLeft } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -24,6 +25,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { LeaderboardUser } from "@/types/type"
 import { searchLeaderboard } from "@/features/search/searchSlice"
@@ -89,6 +91,7 @@ const reversedStateDictionary: { [key: string]: string } = Object.fromEntries(
 
 export default function LeaderboardComponent() {
   const dispatch = useAppDispatch()
+  const router = useRouter()
   const [selectedState, setSelectedState] = useState("All States")
   const [currentPage, setCurrentPage] = useState(1)
   const [usersPerPage, setUsersPerPage] = useState(5)
@@ -100,13 +103,13 @@ export default function LeaderboardComponent() {
 
   const filteredUsers = Array.isArray(users)
     ? users
-        .filter(
-          (user: LeaderboardUser) =>
-            user.state !== "None" &&
-            (selectedState === "All States" ||
-              stateDictionary[user.state] === selectedState),
-        )
-        .sort((a: LeaderboardUser, b: LeaderboardUser) => b.points - a.points)
+      .filter(
+        (user: LeaderboardUser) =>
+          user.state !== "None" &&
+          (selectedState === "All States" ||
+            stateDictionary[user.state] === selectedState),
+      )
+      .sort((a: LeaderboardUser, b: LeaderboardUser) => b.points - a.points)
     : []
 
   useEffect(() => {
@@ -137,6 +140,11 @@ export default function LeaderboardComponent() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-500 to-purple-600 p-4">
       <Card className="w-full max-w-4xl mx-auto px-2 sm:px-4 overflow-y-auto max-h-[80vh]">
+        <div className="flex items-center justify-between mb-4 mt-4">
+          <Button variant="outline" onClick={() => router.push("/profile")}>
+            <ArrowLeft className="mr-2" /> Back to Profile
+          </Button>
+        </div>
         <CardHeader className="flex justify-between items-center">
           <div>
             <CardTitle className="text-2xl font-bold text-center">
