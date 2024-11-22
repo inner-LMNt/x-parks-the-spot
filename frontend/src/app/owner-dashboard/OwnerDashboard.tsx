@@ -316,6 +316,7 @@ export function OwnerDashboard() {
                 <TabsContent value="revenue">
                   <RevenueTab
                     revenueMetrics={analytics.revenueMetrics}
+                    bookingMetrics={analytics.bookingMetrics}
                     timeFilter={timeFilter}
                   />
                 </TabsContent>
