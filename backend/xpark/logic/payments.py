@@ -147,6 +147,14 @@ def create_account_session(account_id: str) -> Result[str, str]:
                     "enabled": True,
                     "features": {"external_account_collection": True},
                 },
+                "balances": {
+                    "enabled": True,
+                    "features": {
+                        "instant_payouts": True,
+                        "standard_payouts": True,
+                        "edit_payout_schedule": True,
+                    },
+                },
             },
         )
 

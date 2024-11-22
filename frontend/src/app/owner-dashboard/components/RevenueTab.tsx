@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useMemo } from "react"
+import React, { useMemo, useState, useEffect } from "react"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   Card,
   CardContent,
@@ -8,6 +9,10 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card"
+import {
+  create_account_session,
+  connect_account,
+} from "@/features/user/userSlice"
 import {
   LineChart,
   Line,
@@ -28,6 +33,11 @@ import {
 } from "date-fns"
 import SummaryCard from "./RevenueSummaryCard"
 import { DollarSign, TrendingUp } from "lucide-react"
+import { loadConnectAndInitialize } from "@stripe/connect-js"
+import {
+  ConnectComponentsProvider,
+  ConnectBalances,
+} from "@stripe/react-connect-js"
 
 interface DetailedRevenuePoint {
   timestamp: string
@@ -92,6 +102,39 @@ const RevenueTab: React.FC<RevenueTabProps> = ({
   bookingMetrics,
   timeFilter,
 }) => {
+  const connectedAccountId = useAppSelector((state) => state.user.stripeId)
+  const [stripeConnectInstance, setStripeConnectInstance] = useState<any>()
+  const dispatch = useAppDispatch()
+
+  useEffect(() => {
+    const fetchClientSecret = async () => {
+      // const connectedAccountId = await dispatch(connect_account()).unwrap()
+      const a = await dispatch(
+        create_account_session({ accountId: connectedAccountId }),
+      ).unwrap()
+      console.log("a! " + JSON.stringify(a.account))
+      return a.account
+    }
+
+    setStripeConnectInstance(
+      loadConnectAndInitialize({
+        publishableKey: process.env.NEXT_PUBLIC_STRIPE_PK || "",
+        fetchClientSecret,
+        appearance: {
+          overlays: "dialog",
+          variables: {
+            colorPrimary: "#635BFF",
+          },
+        },
+      }),
+    )
+  }, [connectedAccountId])
+
+  useEffect(() => {
+    dispatch(connect_account())
+    setTabLoaded(true)
+  }, [])
+
   // Utility function to group data
   const groupData = (
     data: DetailedRevenuePoint[] | UpcomingRevenuePoint[],
@@ -276,7 +319,9 @@ const RevenueTab: React.FC<RevenueTabProps> = ({
     }
   }, [revenueMetrics])
 
-  return (
+  const [tabLoaded, setTabLoaded] = useState(false)
+
+  return tabLoaded && (
     <div className="space-y-6">
       {/* Main Summary Metrics Card */}
       <Card>
@@ -306,6 +351,12 @@ const RevenueTab: React.FC<RevenueTabProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      <div className="h-full">
+      <ConnectComponentsProvider connectInstance={stripeConnectInstance}>
+        <ConnectBalances />
+      </ConnectComponentsProvider>
+      </div>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
