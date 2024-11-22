@@ -205,11 +205,8 @@ export default function ProfilePage() {
   const [domLoaded, setDomLoaded] = useState(false)
   useEffect(() => {
     dispatch(get_user_location())
-<<<<<<< HEAD
     dispatch(connect_account())
     setDomLoaded(true)
-=======
->>>>>>> main
     dispatch(get_points())
     dispatch(get_score())
     dispatch(get_badge_list())
