@@ -146,6 +146,7 @@ export default function SearchPage() {
 
   const closeDriverArriveDialog = () => {
     setDriverArriveOpen(false)
+    dispatch(resetParkingSpaceState())
   }
 
   const openUpdateStatusDialog = (spotId: string) => {
@@ -212,8 +213,10 @@ export default function SearchPage() {
         description: "The parking spot status was updated successfully.",
         variant: "success",
       })
+
       setTimeout(closeUpdateStatusDialog, 500)
     } catch (error) {
+      setSelectedSpot(null)
       console.error("Failed to update spot status:", error)
       toast({
         title: "Spot Update Failed",
@@ -222,6 +225,7 @@ export default function SearchPage() {
         variant: "destructive",
       })
     }
+
   }
 
   const handleCameraCapture = useCallback(async () => {
@@ -1694,6 +1698,7 @@ export default function SearchPage() {
                         currentSpotId={selectedSpot?.id}
                         userLocation={userLocation}
                         closeDriverArriveDialog={closeDriverArriveDialog}
+                        setNavigationMode = {setNavigationMode}
                       />
                     )}
                   </div>

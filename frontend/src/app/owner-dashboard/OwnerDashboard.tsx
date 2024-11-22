@@ -166,7 +166,7 @@ export function OwnerDashboard() {
     setSelectedSpotId(spotId)
     setSelectedTab(tab || "revenue")
   }, [])
-
+  console.log("selected", selectedSpotId)
   // Initial data fetch
   useEffect(() => {
     dispatch(getOwnerSpots())
@@ -325,6 +325,7 @@ export function OwnerDashboard() {
                 </TabsContent>
 
                 <TabsContent value="spots">
+
                   <SpotsTab
                     paidSpots={paidSpots}
                     pendingSpots={pendingSpots}
