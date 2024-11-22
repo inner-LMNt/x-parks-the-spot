@@ -93,7 +93,6 @@ def get_session_status(session_id: str) -> Result[str, None]:
 #         ...
 
 
-
 def connect_account(user_id: uuid.UUID) -> Result[str, str]:
     with DB.pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
