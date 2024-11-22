@@ -313,7 +313,7 @@ def create_paid_parking_space(
                     "addr": address,
                     "photos": photos,
                     "name": name,
-                    "price": price,
+                    "price": price * 100,
                     "sched": json.dumps(availability_schedule),
                 },
             )
