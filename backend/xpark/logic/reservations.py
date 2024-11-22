@@ -10,6 +10,7 @@ from psycopg import Cursor
 from psycopg.rows import DictRow
 from xpark.logic.payments import create_checkout_session
 import math
+from xpark.config import Config
 
 from xpark.utils.mailer import send_email, generate_templated_email
 
@@ -136,9 +137,12 @@ def create_reservation(
             assert owner_id_c
             owner_id = owner_id_c["owner"]
             price = calculate_booking_price(cur, parking_space_id, start_time, end_time)
-            checkout_secret = create_checkout_session(
-                cur, user_id, owner_id, parking_space_id, price
-            )
+            if Config.STRIPE_SECRET_KEY != "":
+                checkout_secret = create_checkout_session(
+                    cur, user_id, owner_id, parking_space_id, price
+                )
+            else:
+                checkout_secret = ""
             cur.execute(
                 """
                 INSERT INTO reservations (
