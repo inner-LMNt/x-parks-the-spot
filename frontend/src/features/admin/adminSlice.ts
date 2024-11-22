@@ -325,7 +325,7 @@ const adminSlice = createSlice({
       })
       .addCase(getAllConflicts.fulfilled, (state: AdminState, action: any) => {
         state.loading = false
-        state.conflicts = action.payload.conflicts
+        state.conflicts = action.payload
       })
       .addCase(getAllConflicts.rejected, (state: AdminState, action: any) => {
         state.loading = false
