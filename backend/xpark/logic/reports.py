@@ -220,7 +220,7 @@ def create_renter_overstay_report_logic(
                     "status": "open",
                     "departure_time": departure_time,
                     "overstay_duration": overstay_duration,
-                    "overstay_charge": overstay_charge,
+                    "overstay_charge": overstay_charge*0.01,
                     "image_url": image_url,
                 },
             )
