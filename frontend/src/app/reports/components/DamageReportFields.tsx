@@ -20,7 +20,7 @@ import { ReservationsGroupSelect } from "./ReservationsGroupSelect"
 import { Reservation } from "@/types/type"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { fetchReservationCar } from "@/features/cars/reservationCarSlice"
-import {format} from "date-fns";
+import { format } from "date-fns"
 
 interface DamageReportFieldsProps {
   form: any
@@ -73,26 +73,26 @@ export const DamageReportFields = ({
         )}
       />
 
-        {/* Display dynamic data compactly */}
-        {selectedReservation && (
-            <div className="mt-2 space-y-1 text-sm">
-                <p>
-                    <strong>Renter:</strong> {selectedReservation.renter_name}
-                </p>
-                <p>
-                    <strong>Reservation Time:</strong>{" "}
-                    {format(
-                        new Date(selectedReservation.start_time),
-                        "MMM d, yyyy h:mm a",
-                    )}{" "}
-                    -{" "}
-                    {format(
-                        new Date(selectedReservation.end_time),
-                        "MMM d, yyyy h:mm a",
-                    )}
-                </p>
-            </div>
-        )}
+      {/* Display dynamic data compactly */}
+      {selectedReservation && (
+        <div className="mt-2 space-y-1 text-sm">
+          <p>
+            <strong>Renter:</strong> {selectedReservation.renter_name}
+          </p>
+          <p>
+            <strong>Reservation Time:</strong>{" "}
+            {format(
+              new Date(selectedReservation.start_time),
+              "MMM d, yyyy h:mm a",
+            )}{" "}
+            -{" "}
+            {format(
+              new Date(selectedReservation.end_time),
+              "MMM d, yyyy h:mm a",
+            )}
+          </p>
+        </div>
+      )}
 
       <FormField
         control={form.control}
