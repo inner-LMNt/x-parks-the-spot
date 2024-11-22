@@ -257,11 +257,9 @@ export default function ParkingSpaceBooking() {
       })
       router.push("/bookings")
     } else {
-      // Booking failed
-      const errormsg = useAppSelector((state) => state.reservations.error)
       toast({
         title: "Booking Failed",
-        description: errormsg || "Unable to complete your booking.",
+        description: "Spot already booked at this time.",
         variant: "destructive",
       })
     }
