@@ -19,13 +19,13 @@ def create_checkout_session(
     # Get user email
     # Check if the email already exists in the database
     cur.execute("SELECT email FROM users WHERE id = %s", (user_id,))
-    email = cur.fetchone()
-    assert email
-    email = email["email"]
+    email_c = cur.fetchone()
+    assert email_c
+    email = email_c["email"]
     cur.execute("SELECT stripe_account_id FROM users WHERE id = %s", (owner_id,))
-    stripe_account_id = cur.fetchone()
-    assert stripe_account_id
-    stripe_account_id = stripe_account_id["stripe_account_id"]
+    stripe_account_id_c = cur.fetchone()
+    assert stripe_account_id_c
+    stripe_account_id = stripe_account_id_c["stripe_account_id"]
     session = stripe.checkout.Session.create(
         line_items=[
             {
@@ -70,30 +70,28 @@ def get_session_status(session_id: str) -> Result[str, None]:
     return Ok(session.status)
 
 
-def fulfill_checkout(session_id):
-    # TODO: Make this function safe to run multiple times,
-    # even concurrently, with the same session ID
+# def fulfill_checkout(session_id):
+#     # TODO: Make this function safe to run multiple times,
+#     # even concurrently, with the same session ID
+#
+#     # TODO: Make sure fulfillment hasn't already been
+#     # peformed for this Checkout Session
+#
+#     # Retrieve the Checkout Session from the API with line_items expanded
+#     checkout_session = stripe.checkout.Session.retrieve(
+#         session_id,
+#         expand=["line_items"],
+#     )
+#
+#     # Check the Checkout Session's payment_status property
+#     # to determine if fulfillment should be peformed
+#     if checkout_session.payment_status != "unpaid":
+#         # TODO: Perform fulfillment of the line items
+#
+#         # TODO: Record/save fulfillment status for this
+#         # Checkout Session
+#         ...
 
-    # TODO: Make sure fulfillment hasn't already been
-    # peformed for this Checkout Session
-
-    # Retrieve the Checkout Session from the API with line_items expanded
-    checkout_session = stripe.checkout.Session.retrieve(
-        session_id,
-        expand=["line_items"],
-    )
-
-    # Check the Checkout Session's payment_status property
-    # to determine if fulfillment should be peformed
-    if checkout_session.payment_status != "unpaid":
-        # TODO: Perform fulfillment of the line items
-
-        # TODO: Record/save fulfillment status for this
-        # Checkout Session
-        ...
-
-
-def payout(cur: Cursor[DictRow], user_id: uuid.UUID) -> Result[str, None]: ...
 
 
 def connect_account(user_id: uuid.UUID) -> Result[str, str]:

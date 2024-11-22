@@ -12,10 +12,10 @@ def webhook() -> Tuple[Any, int]:
     assert request.json
     sig_header = request.headers["Stripe-Signature"]
     try:
-        event = stripe.Webhook.construct_event(
+        event = stripe.Webhook.construct_event(  # type: ignore
             request.data, sig_header, Config.STRIPE_ENDPOINT_SECRET
         )
-    except ValueError as e:
+    except ValueError:
         return {"err": "invalid payload"}, 400
     except stripe.SignatureVerificationError as e:
         return {"err": f"Error verifying webhook signature: {e}"}, 403
@@ -23,7 +23,7 @@ def webhook() -> Tuple[Any, int]:
     match event.type:
         case "payment_intent.succeeded":
             ...
-            payment_intent = event.data.object  # contains a stripe.PaymentIntent
+            # payment_intent = event.data.object  # contains a stripe.PaymentIntent
             # Then define and call a method to handle the successful payment intent.
             # handle_payment_intent_succeeded(payment_intent)
         case "payment_method.attached":
@@ -37,6 +37,12 @@ def webhook() -> Tuple[Any, int]:
 
 
 @bp.get("status")
-def session_status():
+def session_status() -> Tuple[Any, int]:
     session = stripe.checkout.Session.retrieve(request.args["session_id"])
-    return jsonify(status=session.status, customer_email=session.customer_details.email)  # type: ignore
+    return (
+        {
+            "status": session.status,
+            "customer_email": session.customer_details.email,  # type: ignore
+        },
+        200,
+    )

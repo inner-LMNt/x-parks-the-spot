@@ -132,9 +132,9 @@ def create_reservation(
             cur.execute(
                 "SELECT owner FROM parking_spaces WHERE id = %s", (parking_space_id,)
             )
-            owner_id = cur.fetchone()
-            assert owner_id
-            owner_id = owner_id["owner"]
+            owner_id_c = cur.fetchone()
+            assert owner_id_c
+            owner_id = owner_id_c["owner"]
             price = calculate_booking_price(cur, parking_space_id, start_time, end_time)
             checkout_secret = create_checkout_session(
                 cur, user_id, owner_id, parking_space_id, price
