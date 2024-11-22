@@ -82,8 +82,22 @@ jobs:
       run: |
         set -o pipefail
         rm -rf .next
-        npm run test:coverage | tail -n +6 | sed '$d' > coverage.md
-        sed -i '2,$ s/^/| /; 2,$ s/$/ |/' coverage.md
+        npm run test:coverage | tail -n +6 | sed '$d' > coverage_raw.md
+
+        {
+          echo "| File | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s |"
+          echo "|------|---------|-----------|----------|---------|------------------|"
+          
+          grep "Page.tsx" coverage_raw.md | while read -r line; do
+          echo "| $line |"
+          done
+          
+          grep "All files" coverage_raw.md | while read -r line; do
+          echo "| $line |"
+          done
+        } > coverage.md
+        
+
     - name: "Report Code Coverage"
       if: github.event_name == 'pull_request'
       uses: thollander/actions-comment-pull-request@v2
