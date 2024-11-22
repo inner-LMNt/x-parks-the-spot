@@ -21,7 +21,7 @@ import {
   Bookmark,
   Award,
   Calendar,
-  ShoppingBag
+  ShoppingBag,
 } from "lucide-react" // Imported FileWarning
 import { logout } from "@/features/user/userSlice"
 import { Button } from "@/components/ui/button"
@@ -195,11 +195,11 @@ export default function ProfilePage() {
   }, [])
 
   const badgeDetails: { [key: string]: { colorClass: string; label: string } } =
-  {
-    "1": { colorClass: "text-yellow-600", label: "Bronze Badge" },
-    "2": { colorClass: "text-gray-400", label: "Silver Badge" },
-    "3": { colorClass: "text-yellow-300", label: "Gold Badge" },
-  }
+    {
+      "1": { colorClass: "text-yellow-600", label: "Bronze Badge" },
+      "2": { colorClass: "text-gray-400", label: "Silver Badge" },
+      "3": { colorClass: "text-yellow-300", label: "Gold Badge" },
+    }
 
   return (
     domLoaded && (
@@ -272,7 +272,10 @@ export default function ProfilePage() {
               Current Points: {currentPoints}
             </p>
             <div className="flex justify-center items-center space-x-4 mt-2 mb-2">
-              <Button variant="outline" onClick={() => router.push("/leaderboard")}>
+              <Button
+                variant="outline"
+                onClick={() => router.push("/leaderboard")}
+              >
                 <Calendar className="mr-2" /> Leaderboard
               </Button>
               <Button variant="outline" onClick={() => router.push("/shop")}>
