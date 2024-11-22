@@ -129,6 +129,14 @@ def handle_ban_user(ban_user_id: uuid.UUID, rationale: str) -> Result[None, str]
                     (str(ban_user_id),),
                 )
 
+                # Remove user's reservation
+                cur.execute(
+                    """
+                    DELETE FROM reservations WHERE renter_id = %s
+                    """,
+                    (str(ban_user_id),),
+                )
+
         conn.commit()
 
         # Notify the banned user

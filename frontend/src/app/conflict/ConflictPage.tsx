@@ -182,7 +182,7 @@ const ReportCard = ({
                           onClick={(e) => {
                             e.stopPropagation()
                             console.log("Renter ID:", report) // Debug log
-                            handleUserClick(report.user_id)
+                            handleUserClick(report.renter_id)
                           }}
                         >
                           {report.renter_name}
