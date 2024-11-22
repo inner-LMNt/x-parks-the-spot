@@ -5,7 +5,11 @@ import { Provider } from "react-redux"
 import configureStore, { MockStoreEnhanced } from "redux-mock-store"
 import { searchSpots } from "@/features/search/searchSlice"
 import "@testing-library/jest-dom"
-import { useRouter, usePathname } from "next/navigation"
+import {store} from "@/store";
+import {login, logout} from "@/features/user/userSlice";
+import {AuthResponse} from "@/types/type";
+import {injectStore} from "@/api/axiosInstance";
+import {ToastProvider} from "@/components/ui/toast";
 
 jest.mock("@react-google-maps/api", () => ({
   LoadScript: ({ children }) => <div data-testid="load-script">{children}</div>,
@@ -18,80 +22,70 @@ jest.mock("@react-google-maps/api", () => ({
   ),
 }))
 
-jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(),
-  usePathname: jest.fn(),
-}))
-
-jest.mock("@/features/search/searchSlice", () => ({
-  searchSpots: jest.fn(),
-}))
 
 const mockStore = configureStore([])
 
 describe.skip("SearchPage", () => {
-  let store: MockStoreEnhanced<unknown, {}>
-  const mockPush = jest.fn()
-  const mockPathname = "/search"
 
-  beforeEach(() => {
-    store = mockStore({
-      search: {
-        spots: [
-          {
-            id: "1",
-            owner_id: "1001",
-            location: {
-              latitude: 40.4237,
-              longitude: -86.9212,
-              address: "Address 1",
-            },
-            is_paid: true,
-          },
-          {
-            id: "2",
-            owner_id: "1002",
-            location: {
-              latitude: 40.4238,
-              longitude: -86.9213,
-              address: "Address 2",
-            },
-            is_paid: false,
-          },
-        ],
-      },
-    })
-    ;(useRouter as jest.Mock).mockReturnValue({
-      push: mockPush,
-    })
-    ;(usePathname as jest.Mock).mockReturnValue(mockPathname)
+  const mockUser = {
+    email: "xparkusr1@gmail.com",
+    password: "Xp4rK!usrP@swrD",
+  }
 
-    const mockGeolocation = {
-      getCurrentPosition: jest.fn((success) =>
-        success({ coords: { latitude: 40.4237, longitude: -86.9212 } }),
-      ),
-    }
-    Object.defineProperty(global.navigator, "geolocation", {
-      value: mockGeolocation,
-      writable: true,
-    })
+  beforeEach(async () => {
+    let authToken
+    const result = (await store.dispatch(
+        //@ts-ignore
+        login(mockUser),
+    )) as { payload: AuthResponse }
+
+    // Store auth token for reference/debugging
+    authToken = result.payload.access_token
+
+    // Verify login success and token presence
+    await waitFor(
+        () => {
+          const state = store.getState()
+          expect(state.user.isLoggedIn).toBeTruthy()
+          expect(state.user.access_token).toBe(authToken)
+          expect(state.user.error).toBeNull()
+        },
+        { timeout: 10000 },
+    )
+
+    // Optional: Log token for debugging
+    console.log("Auth token for test:", authToken)
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.clearAllMocks()
+    await store.dispatch(
+        //@ts-ignore
+        logout(),
+    )
   })
+  const renderWithStore = async (component: React.ReactNode) => {
+    injectStore(store)
+    return render(
+        <Provider store={store}>
+          <ToastProvider>{component}</ToastProvider>
+        </Provider>,
+    )
+  }
 
-  it("renders the search for parking component", () => {
-    render(
-      <Provider store={store}>
-        <SearchPage />
-      </Provider>,
+  it("renders the search for parking component", async () => {
+    await renderWithStore(<SearchPage/>);
+    await waitFor(
+        () => {
+          expect(store.getState().reports.loading).toBe(false)
+        },
+        {timeout: 5000},
     )
 
     expect(screen.getByText("Search for Parking")).toBeInTheDocument()
     expect(screen.getByText("Radius (km):")).toBeInTheDocument()
     expect(screen.getByLabelText("Radius Input")).toBeInTheDocument()
-    expect(screen.getAllByRole("button", { name: "Select" })).toHaveLength(2)
+    expect(screen.getAllByRole("button", {name: "Select"})).toHaveLength(2)
   })
 
   it("displays the user location on the map", async () => {

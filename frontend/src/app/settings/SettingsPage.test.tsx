@@ -3,27 +3,69 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import SettingsPage from "./SettingsPage" // Adjust path if necessary
 import { Provider } from "react-redux"
 import configureStore from "redux-mock-store"
+import {store} from "@/store";
+import {login, logout} from "@/features/user/userSlice";
+import {AuthResponse} from "@/types/type";
+import ProfilePage from "@/app/profile/ProfilePage";
+import {injectStore} from "@/api/axiosInstance";
+import {ToastProvider} from "@/components/ui/toast";
 
 const mockStore = configureStore([])
 
-describe.skip("SettingsPage", () => {
-  let store
+describe("SettingsPage", () => {
+  const mockUser = {
+    email: "xparkusr1@gmail.com",
+    password: "Xp4rK!usrP@swrD",
+  }
 
-  beforeEach(() => {
-    store = mockStore({
-      user: {
-        isLoggedIn: true,
-        loading: false,
-        error: null,
-      },
-    })
+  beforeEach(async () => {
+    let authToken
+    const result = (await store.dispatch(
+        //@ts-ignore
+        login(mockUser),
+    )) as { payload: AuthResponse }
+
+    // Store auth token for reference/debugging
+    authToken = result.payload.access_token
+
+    // Verify login success and token presence
+    await waitFor(
+        () => {
+          const state = store.getState()
+          expect(state.user.isLoggedIn).toBeTruthy()
+          expect(state.user.access_token).toBe(authToken)
+          expect(state.user.error).toBeNull()
+        },
+        { timeout: 10000 },
+    )
+
+    // Optional: Log token for debugging
+    console.log("Auth token for test:", authToken)
   })
 
-  it("renders settings page with notification options", () => {
-    render(
-      <Provider store={store}>
-        <SettingsPage />
-      </Provider>,
+  afterEach(async () => {
+    jest.clearAllMocks()
+    await store.dispatch(
+        //@ts-ignore
+        logout(),
+    )
+  })
+  const renderWithStore = async (component: React.ReactNode) => {
+    injectStore(store)
+    return render(
+        <Provider store={store}>
+          <ToastProvider>{component}</ToastProvider>
+        </Provider>,
+    )
+  }
+
+  it("renders settings page with notification options", async() => {
+    renderWithStore(<SettingsPage />)
+    await waitFor(
+        () => {
+          expect(store.getState().user.loading).toBe(false)
+        },
+        {timeout: 5000},
     )
 
     // Check if the Settings heading and notification options are rendered
@@ -34,11 +76,13 @@ describe.skip("SettingsPage", () => {
     expect(screen.getByLabelText(/push notifications/i)).toBeInTheDocument()
   })
 
-  it('opens the delete account dialog when clicking "Delete My Account"', () => {
-    render(
-      <Provider store={store}>
-        <SettingsPage />
-      </Provider>,
+  it('opens the delete account dialog when clicking "Delete My Account"', async () => {
+    renderWithStore(<SettingsPage />)
+    await waitFor(
+        () => {
+          expect(store.getState().user.loading).toBe(false)
+        },
+        {timeout: 5000},
     )
 
     // Check if the delete account button is rendered
@@ -58,10 +102,12 @@ describe.skip("SettingsPage", () => {
   })
 
   it("validates password and confirm password fields correctly", async () => {
-    render(
-      <Provider store={store}>
-        <SettingsPage />
-      </Provider>,
+    renderWithStore(<SettingsPage />)
+    await waitFor(
+        () => {
+          expect(store.getState().user.loading).toBe(false)
+        },
+        {timeout: 5000},
     )
 
     // Simulate clicking the delete button
@@ -98,6 +144,4 @@ describe.skip("SettingsPage", () => {
       ).toBeInTheDocument()
     })
   })
-
-  // You can add more tests for actions that would trigger Redux actions, like form submissions or API calls
 })
