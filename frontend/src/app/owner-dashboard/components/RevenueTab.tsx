@@ -19,7 +19,13 @@ import {
   Legend,
   Scatter,
 } from "recharts"
-import { startOfWeek, startOfMonth, format, parseISO } from "date-fns"
+import {
+  startOfWeek,
+  startOfMonth,
+  format,
+  parseISO,
+  formatDistance,
+} from "date-fns"
 import SummaryCard from "./RevenueSummaryCard"
 import { DollarSign, TrendingUp } from "lucide-react"
 
@@ -38,13 +44,52 @@ interface RevenueMetrics {
   upcomingRevenue: UpcomingRevenuePoint[]
 }
 
+interface BookingStats {
+  total: number
+  active: number
+  completed: number
+  canceled: number
+  avgDuration: number
+  completionRate: number
+}
+
+interface BookingDetails {
+  id: string
+  spotId: string
+  spotName: string
+  renterName: string
+  renterEmail: string
+  startTime: string
+  endTime: string
+  status: "booked" | "current" | "completed" | "canceled"
+  price: number
+  duration: number
+  time_status: "upcoming" | "current" | "past"
+  isMultiDay: boolean
+  daysDuration: number
+  rentalCount: number
+  carDetails: {
+    make: string
+    model: string
+    color: string
+    plate: string
+  }
+}
+
+interface BookingMetrics {
+  stats: BookingStats
+  recentBookings: BookingDetails[]
+}
+
 interface RevenueTabProps {
   revenueMetrics: RevenueMetrics
+  bookingMetrics: BookingMetrics
   timeFilter: "7_days" | "30_days" | "1_year"
 }
 
 const RevenueTab: React.FC<RevenueTabProps> = ({
   revenueMetrics,
+  bookingMetrics,
   timeFilter,
 }) => {
   // Utility function to group data
@@ -302,6 +347,7 @@ const RevenueTab: React.FC<RevenueTabProps> = ({
                   />
                   <Tooltip
                     formatter={(value: number, name: string) => [
+                      // @ts-ignore
                       formatCurrency(value),
                       "Actual Revenue",
                     ]}
@@ -332,7 +378,7 @@ const RevenueTab: React.FC<RevenueTabProps> = ({
         </Card>
 
         {/* Upcoming Revenue Forecast Chart Card */}
-        <Card>
+        <Card className="w-full">
           <CardHeader>
             <CardTitle>Next 7 Days Revenue Forecast</CardTitle>
             <CardDescription>
@@ -340,7 +386,7 @@ const RevenueTab: React.FC<RevenueTabProps> = ({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Chart */}
+            {/* Chart Section */}
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
@@ -371,7 +417,8 @@ const RevenueTab: React.FC<RevenueTabProps> = ({
                     tick={{ fill: "#666", fontSize: 12 }}
                   />
                   <Tooltip
-                    formatter={(value: number, name: string) => [
+                    formatter={(value, name) => [
+                      // @ts-ignore
                       formatCurrency(value),
                       "Future Revenue",
                     ]}
@@ -385,7 +432,6 @@ const RevenueTab: React.FC<RevenueTabProps> = ({
                     }}
                   />
                   <Legend verticalAlign="top" height={36} />
-                  {/* Potential Revenue Line */}
                   <Line
                     yAxisId="left"
                     type="monotone"
@@ -399,6 +445,51 @@ const RevenueTab: React.FC<RevenueTabProps> = ({
                   />
                 </LineChart>
               </ResponsiveContainer>
+            </div>
+
+            {/* Upcoming Bookings Section */}
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold mb-4">Upcoming Bookings</h3>
+              <SummaryCard
+                label="Total Projected Revenue"
+                value={formatCurrency(summaryMetrics.totalProjectedRevenue)}
+                Icon={TrendingUp}
+                iconColor="text-blue-500"
+              />
+              <div className="space-y-4">
+                {bookingMetrics?.recentBookings
+                  ?.filter((booking) => booking.time_status === "upcoming")
+                  ?.map((booking) => (
+                    <div
+                      key={booking.id}
+                      className="flex justify-between items-center p-4 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">
+                          {booking.spotName}
+                        </h4>
+                        <p className="text-sm text-gray-500">
+                          {format(new Date(booking.startTime), "MMM d")} -
+                          {format(new Date(booking.endTime), "MMM d")}
+                          {booking.isMultiDay &&
+                            ` (${booking.daysDuration} days)`}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium text-gray-900">
+                          {formatCurrency(booking.price)}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {formatDistance(
+                            new Date(booking.startTime),
+                            new Date(),
+                            { addSuffix: true },
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+              </div>
             </div>
           </CardContent>
         </Card>
