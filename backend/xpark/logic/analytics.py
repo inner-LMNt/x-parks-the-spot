@@ -774,10 +774,11 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                             ),
                         },
                         "occupancy": {
-                            "overallRate": overall_occupancy_rate
-                            / len(spot_metrics_rows)
-                            if spot_metrics_rows
-                            else 0
+                            "overallRate": (
+                                overall_occupancy_rate / len(spot_metrics_rows)
+                                if spot_metrics_rows
+                                else 0
+                            )
                         },
                         "bookings": {
                             "active": overall["active_bookings"],
