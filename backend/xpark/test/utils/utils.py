@@ -193,6 +193,13 @@ def create_test_reservation(client: FlaskClient, token: str, space_id: str) -> s
     assert response.status_code == 201
     data = response.get_json()
     assert data is not None
+    # Force reservation to be booked
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE reservations SET status = 'booked' WHERE id = %s",
+                (data["id"],),
+            )
     return str(data["id"])
 
 
