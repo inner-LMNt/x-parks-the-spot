@@ -119,7 +119,6 @@ export default function ProfilePage() {
   const userCity = useAppSelector((state: any) => state.user.userCity)
   const currentPoints = useAppSelector((state) => state.user.current_points)
   const totalPoints = useAppSelector((state) => state.user.total_points)
-<<<<<<< HEAD
   const connectedAccountId = useAppSelector((state) => state.user.stripeId)
   const [stripeConnectInstance, setStripeConnectInstance] = useState<any>()
 
@@ -146,7 +145,6 @@ export default function ProfilePage() {
       }),
     )
   }, [connectedAccountId])
-=======
   const userBadges = useAppSelector((state) => state.user.badges) || []
   const raffleTickets = useAppSelector(
     (state) => state.user.active_raffle_tickets,
@@ -156,7 +154,6 @@ export default function ProfilePage() {
     getTimeRemaining(getEndOfMonth()),
   )
   const score = useAppSelector((state) => state.user.score)
->>>>>>> main
 
   const handleLogout = async () => {
     await dispatch(logout())
