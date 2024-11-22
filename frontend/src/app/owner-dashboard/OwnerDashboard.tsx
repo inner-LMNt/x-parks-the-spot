@@ -325,7 +325,6 @@ export function OwnerDashboard() {
                 </TabsContent>
 
                 <TabsContent value="spots">
-
                   <SpotsTab
                     paidSpots={paidSpots}
                     pendingSpots={pendingSpots}

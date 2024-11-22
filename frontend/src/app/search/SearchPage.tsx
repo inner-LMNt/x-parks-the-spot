@@ -225,7 +225,6 @@ export default function SearchPage() {
         variant: "destructive",
       })
     }
-
   }
 
   const handleCameraCapture = useCallback(async () => {
@@ -1698,7 +1697,7 @@ export default function SearchPage() {
                         currentSpotId={selectedSpot?.id}
                         userLocation={userLocation}
                         closeDriverArriveDialog={closeDriverArriveDialog}
-                        setNavigationMode = {setNavigationMode}
+                        setNavigationMode={setNavigationMode}
                       />
                     )}
                   </div>
