@@ -3,7 +3,11 @@
 import React from "react"
 import Link from "next/link"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { get_user_location } from "@/features/user/userSlice"
+import {
+  get_user_location,
+  connect_account,
+  create_account_session,
+} from "@/features/user/userSlice"
 import { get_points } from "@/features/user/userSlice"
 import {
   Settings,
@@ -29,6 +33,11 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
+import {
+  ConnectAccountOnboarding,
+  ConnectComponentsProvider,
+} from "@stripe/react-connect-js"
+import { loadConnectAndInitialize } from "@stripe/connect-js"
 
 // Profile stats component
 function ProfileStats({ label, value }: { label: string; value: number }) {
@@ -100,6 +109,32 @@ export default function ProfilePage() {
   //const yearsOnApp = useSelector((state:any) => state.user.);
   const currentPoints = useAppSelector((state) => state.user.current_points)
   const totalPoints = useAppSelector((state) => state.user.total_points)
+  const connectedAccountId = useAppSelector((state) => state.user.stripeId)
+  const [stripeConnectInstance, setStripeConnectInstance] = useState<any>()
+
+  useEffect(() => {
+    const fetchClientSecret = async () => {
+      // const connectedAccountId = await dispatch(connect_account()).unwrap()
+      const a = await dispatch(
+        create_account_session({ accountId: connectedAccountId }),
+      ).unwrap()
+      console.log("a! " + JSON.stringify(a.account))
+      return a.account
+    }
+
+    setStripeConnectInstance(
+      loadConnectAndInitialize({
+        publishableKey: process.env.NEXT_PUBLIC_STRIPE_PK || "",
+        fetchClientSecret,
+        appearance: {
+          overlays: "dialog",
+          variables: {
+            colorPrimary: "#635BFF",
+          },
+        },
+      }),
+    )
+  }, [connectedAccountId])
 
   const handleLogout = async () => {
     // @ts-ignore
@@ -157,6 +192,7 @@ export default function ProfilePage() {
   const [domLoaded, setDomLoaded] = useState(false)
   useEffect(() => {
     dispatch(get_user_location())
+    dispatch(connect_account())
     setDomLoaded(true)
     dispatch(get_points())
   }, [])
@@ -301,6 +337,11 @@ export default function ProfilePage() {
                 <Bookmark className="mr-2" /> View Your Bookmarks
               </Button>
             </Link>
+          </div>
+          <div>
+            <ConnectComponentsProvider connectInstance={stripeConnectInstance}>
+              <ConnectAccountOnboarding onExit={() => { }} />
+            </ConnectComponentsProvider>
           </div>
         </div>
         <div className="flex h-16"></div>

@@ -129,7 +129,9 @@ export default function ParkingSpaceBooking() {
    * **Open AddCarModal if No Cars Exist**
    */
   useEffect(() => {
-    setIsBookmarked(parkingSpace.is_bookmarked)
+    if (parkingSpace) {
+      setIsBookmarked(parkingSpace.is_bookmarked)
+    }
   }, [parkingSpace])
 
   /**

@@ -40,6 +40,8 @@
     "@radix-ui/react-toggle": "^1.1.0",
     "@react-google-maps/api": "^2.19.3",
     "@reduxjs/toolkit": "^2.2.7",
+    "@stripe/connect-js": "^3.3.18",
+    "@stripe/react-connect-js": "^3.3.19",
     "@stripe/react-stripe-js": "^3.0.0",
     "@stripe/stripe-js": "^5.2.0",
     "@zxcvbn-ts/core": "^3.0.4",

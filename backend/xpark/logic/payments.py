@@ -4,10 +4,17 @@ from result import Ok, Err, Result
 import uuid
 from psycopg import Cursor
 from psycopg.rows import DictRow
+import time
+from xpark.utils.db import DB
+from psycopg.rows import dict_row
 
 
 def create_checkout_session(
-    cur: Cursor[DictRow], user_id: uuid.UUID, price: int
+    cur: Cursor[DictRow],
+    user_id: uuid.UUID,
+    owner_id: uuid.UUID,
+    spot_id: uuid.UUID,
+    price: int,
 ) -> str:
     # Get user email
     # Check if the email already exists in the database
@@ -15,6 +22,10 @@ def create_checkout_session(
     email = cur.fetchone()
     assert email
     email = email["email"]
+    cur.execute("SELECT stripe_account_id FROM users WHERE id = %s", (owner_id,))
+    stripe_account_id = cur.fetchone()
+    assert stripe_account_id
+    stripe_account_id = stripe_account_id["stripe_account_id"]
     session = stripe.checkout.Session.create(
         line_items=[
             {
@@ -28,12 +39,18 @@ def create_checkout_session(
                 "quantity": 1,
             }
         ],
+        payment_intent_data={
+            "application_fee_amount": price // 10,
+            "transfer_data": {"destination": stripe_account_id},
+        },
         mode="payment",
         ui_mode="embedded",
         return_url=Config.BASE_HOST
-        + "/bookings?session_id={CHECKOUT_SESSION_ID}",  # the session ID is not a variable, but is instead going to be templated by stripe itself
+        # + f"/bookings/{spot_id}/reserve/confirm?session_id={{CHECKOUT_SESSION_ID}}",
+        + "/bookings",
         # saved_payment_method_options={"payment_method_save": "enabled"},
         customer_email=email,
+        expires_at=int(time.time()) + 30 * 60,  # 30 minutes from now
         # customer_creation="always",
     )
 
@@ -74,3 +91,65 @@ def fulfill_checkout(session_id):
         # TODO: Record/save fulfillment status for this
         # Checkout Session
         ...
+
+
+def payout(cur: Cursor[DictRow], user_id: uuid.UUID) -> Result[str, None]: ...
+
+
+def connect_account(user_id: uuid.UUID) -> Result[str, str]:
+    with DB.pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("SELECT stripe_account_id FROM users WHERE id = %s", (user_id,))
+            c = cur.fetchone()
+            assert c
+            if c.get("stripe_account_id") is None:
+                print("creating new")
+                try:
+                    acc = stripe.Account.create(
+                        controller={
+                            "stripe_dashboard": {
+                                "type": "none",
+                            },
+                            "fees": {"payer": "application"},
+                            "losses": {"payments": "application"},
+                            "requirement_collection": "application",
+                        },
+                        capabilities={
+                            "transfers": {"requested": True},
+                        },
+                        country="US",
+                    )
+                    account_id = acc.id
+                except Exception as e:
+                    return Err(str(e))
+
+                cur.execute(
+                    "UPDATE users SET stripe_account_id = %s WHERE id = %s",
+                    (account_id, user_id),
+                )
+            else:
+                print("reusing account")
+                account_id = c["stripe_account_id"]
+
+            print(account_id)
+            return Ok(account_id)
+
+
+def create_account_session(account_id: str) -> Result[str, str]:
+    try:
+        session = stripe.AccountSession.create(
+            account=account_id,
+            # refresh_url=Config.BASE_HOST + "/verifyowner",
+            # return_url=Config.BASE_HOST + "/bookings",
+            # type="account_onboarding",
+            components={
+                "account_onboarding": {
+                    "enabled": True,
+                    "features": {"external_account_collection": True},
+                },
+            },
+        )
+
+        return Ok(session.client_secret)
+    except Exception as e:
+        return Err(str(e))

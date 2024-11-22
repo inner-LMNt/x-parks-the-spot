@@ -23,6 +23,9 @@
 1. Run the app
    1. Configure the `.env` file (look at the `.env.sample` file)
    1. From the `backend` directory, run `flask run --debug`
+1. Run the Stripe forwarder
+   1. Install the [Stripe CLI](https://docs.stripe.com/stripe-cli)
+   1. Run `stripe listen --forward-to localhost:5001/api/unstable/stripe/webhook`
 
 ## Testing
 

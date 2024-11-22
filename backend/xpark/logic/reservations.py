@@ -129,8 +129,12 @@ def create_reservation(
             if not check_if_available(conn, parking_space_id, start_time, end_time):
                 return Err("Spot not available")
             # Insert the reservation
+            cur.execute("SELECT owner FROM parking_spaces WHERE id = %s", (parking_space_id,))
+            owner_id = cur.fetchone()
+            assert owner_id
+            owner_id = owner_id["owner"]
             price = calculate_booking_price(cur, parking_space_id, start_time, end_time)
-            checkout_secret = create_checkout_session(cur, user_id, price)
+            checkout_secret = create_checkout_session(cur, user_id, owner_id, parking_space_id, price)
             cur.execute(
                 """
                 INSERT INTO reservations (
@@ -148,7 +152,7 @@ def create_reservation(
                     TSTZRANGE(%(start_time)s, %(end_time)s, '[]'),
                     %(car_id)s,
                     %(user_id)s,
-                    'pending',
+                    'booked',
                     %(price)s,
                     %(checkout_secret)s,
                     NOW(),

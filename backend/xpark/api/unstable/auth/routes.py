@@ -15,6 +15,8 @@ from xpark.logic.user import (
     handle_get_points,  # Testing purposes
 )
 
+from xpark.logic.payments import connect_account, create_account_session
+
 
 from flask import request
 from result import Ok, Err
@@ -169,3 +171,23 @@ def get_points(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
 @require_logged_in_user
 def get_user_info_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
     return {"id": str(user_id)}, 200
+
+
+@bp.post("connect_account")
+@require_logged_in_user
+def connect_account_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int]:
+    match connect_account(user_id):
+        case Ok(account_id):
+            return {"accountId": account_id}, 200
+        case Err(e):
+            return {"err": e}, 400
+
+
+@bp.post("create_account_session")
+def create_account_session_route() -> Tuple[Any, int]:
+    assert request.json
+    match create_account_session(request.json["account"]):
+        case Ok(session):
+            return {"account": session}, 200
+        case Err(e):
+            return {"err": e}, 400
