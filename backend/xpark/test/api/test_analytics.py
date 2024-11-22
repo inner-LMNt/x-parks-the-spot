@@ -667,21 +667,21 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
             "spot_id": spot_ids[0],
             "start_time": now + timedelta(days=3),
             "duration": timedelta(hours=4),
-            "expected_price": 40.0,
+            "expected_price": 4000,
         },
         # 6 days from now, Spot 2 ($20/hr * 3 hours = $60)
         {
             "spot_id": spot_ids[1],
             "start_time": now + timedelta(days=6),
             "duration": timedelta(hours=3),
-            "expected_price": 60.0,
+            "expected_price": 6000,
         },
         # 10 days from now, Spot 3 ($30/hr * 5 hours = $150) - should not be included in upcoming
         {
             "spot_id": spot_ids[2],
             "start_time": now + timedelta(days=10),
             "duration": timedelta(hours=5),
-            "expected_price": 150.0,
+            "expected_price": 15000,
         },
     ]
 
@@ -727,14 +727,14 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
 
     # Revenue validation
     revenue = overall["revenue"]
-    assert round(revenue["total"], 1) == 840.0
-    assert round(revenue["perBooking"], 1) == 56.0
+    assert revenue["total"] == 84000
+    assert revenue["perBooking"] == 5600
 
     # Bookings validation
     bookings = overall["bookings"]
     assert bookings["total"] == 17
     assert bookings["active"] == 0
-    assert round(bookings["percentageActive"], 1) == 0.0
+    assert bookings["percentageActive"] == 0.0
 
     # Occupancy validation
     assert round(float(overall["occupancy"]["overallRate"]), 10) == 1.9444444444
@@ -755,7 +755,7 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
     assert len(recent) == 17
     first_booking = recent[0]
     assert first_booking["duration"] == 3.0
-    assert first_booking["price"] == 60.0
+    assert first_booking["price"] == 6000
     assert first_booking["status"] == "completed"
     assert first_booking["time_status"] == "upcoming"
 
@@ -789,27 +789,27 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
     entry_1 = next(
         h for h in historical if h["timestamp"] == timestamps["entry_1"].isoformat()
     )
-    assert round(entry_1["actual"], 1) == 120.0
+    assert entry_1["actual"] == 12000
 
     entry_2 = next(
         h for h in historical if h["timestamp"] == timestamps["entry_2"].isoformat()
     )
-    assert round(entry_2["actual"], 1) == 180.0
+    assert entry_2["actual"] == 18000
 
     entry_3 = next(
         h for h in historical if h["timestamp"] == timestamps["entry_3"].isoformat()
     )
-    assert round(entry_3["actual"], 1) == 240.0
+    assert entry_3["actual"] == 24000
 
     entry_4 = next(
         h for h in historical if h["timestamp"] == timestamps["entry_4"].isoformat()
     )
-    assert round(entry_4["actual"], 1) == 120.0
+    assert entry_4["actual"] == 12000
 
     entry_5 = next(
         h for h in historical if h["timestamp"] == timestamps["entry_5"].isoformat()
     )
-    assert round(entry_5["actual"], 1) == 180.0
+    assert entry_5["actual"] == 18000
 
     # 4. Spot Performance
     spot_performance = data["spotPerformance"]
@@ -832,9 +832,9 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
 
     # Check specific spot revenues and completions
     # spot_1=, spot2=, spot3= if you want to restore completedBookings assertions
-    next(sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 140.0)
-    next(sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 280.0)
-    next(sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 420.0)
+    next(sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 14000)
+    next(sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 28000)
+    next(sp for sp_id, sp in spot_performance.items() if sp["totalRevenue"] == 42000)
 
     # assert spot_1["completedBookings"] == 575
     # assert spot_2["completedBookings"] == 525
@@ -853,20 +853,20 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
     # 6. Upcoming Earnings
     upcoming = data["upcomingEarnings"]
     assert len(upcoming["reservations"]) == 2  # Only within 7 days
-    expected_total = 100.0  # $40 + $60
+    expected_total = 10000  # $40 + $60
     assert round(upcoming["total"], 1) == expected_total
 
     # Check individual upcoming reservations
     reservations = sorted(upcoming["reservations"], key=lambda x: x["startTime"])
 
     # 3-day reservation
-    assert round(reservations[0]["earnings"], 1) == 40.0
+    assert round(reservations[0]["earnings"], 1) == 4000
     assert reservations[0]["spotName"] == "Test Spot 1"
     start_time = datetime.fromisoformat(reservations[0]["startTime"])
     assert abs((start_time - (now + timedelta(days=3))).total_seconds()) < 60
 
     # 6-day reservation
-    assert round(reservations[1]["earnings"], 1) == 60.0
+    assert round(reservations[1]["earnings"], 1) == 6000
     assert reservations[1]["spotName"] == "Test Spot 2"
     start_time = datetime.fromisoformat(reservations[1]["startTime"])
     assert abs((start_time - (now + timedelta(days=6))).total_seconds()) < 60
@@ -881,14 +881,14 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
     day_3_entry = next(
         u for u in upcoming_revenue if u["timestamp"] == day_3_hour.isoformat()
     )
-    assert round(day_3_entry["potential"], 1) == 40.0
+    assert day_3_entry["potential"] == 4000
 
     day_6_hour = now + timedelta(days=6)
     day_6_hour = day_6_hour.replace(minute=0, second=0, microsecond=0)
     day_6_entry = next(
         u for u in upcoming_revenue if u["timestamp"] == day_6_hour.isoformat()
     )
-    assert round(day_6_entry["potential"], 1) == 60.0
+    assert day_6_entry["potential"] == 6000
 
     # Verify day 10 reservation is not included
     day_10_hour = now + timedelta(days=10)
