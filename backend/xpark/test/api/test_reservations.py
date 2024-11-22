@@ -9,6 +9,8 @@ from xpark.test.utils.utils import (
     create_test_car,
 )
 
+from xpark.utils.db import DB
+
 
 def create_test_reservation_at_time(
     client: FlaskClient,
@@ -287,6 +289,14 @@ def test_cancel_already_canceled_reservation(client: FlaskClient) -> None:
         client, token, space_id, start_time=start_time, end_time=end_time
     )
 
+    # Force reservation to be booked
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE reservations SET status = 'booked' WHERE id = %s",
+                (reservation_id,),
+            )
+
     response = client.delete(
         f"/api/unstable/reservations/{reservation_id}",
         headers={"Authorization": f"Bearer {token}"},
@@ -375,6 +385,14 @@ def test_cancel_reservation_more_than_2_hours_before(client: FlaskClient) -> Non
         client, token, space_id, start_time=start_time, end_time=end_time
     )
 
+    # Force reservation to be booked
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE reservations SET status = 'booked' WHERE id = %s",
+                (reservation_id,),
+            )
+
     response = client.delete(
         f"/api/unstable/reservations/{reservation_id}",
         headers={"Authorization": f"Bearer {token}"},
@@ -393,6 +411,14 @@ def test_cancel_reservation_less_than_2_hours_before(client: FlaskClient) -> Non
     reservation_id = create_test_reservation_at_time(
         client, token, space_id, start_time=start_time, end_time=end_time
     )
+
+    # Force reservation to be booked
+    with DB.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE reservations SET status = 'booked' WHERE id = %s",
+                (reservation_id,),
+            )
 
     response = client.delete(
         f"/api/unstable/reservations/{reservation_id}",

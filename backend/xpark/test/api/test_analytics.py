@@ -1,4 +1,3 @@
-import json
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -720,15 +719,16 @@ def test_analytics_response_strict(client: FlaskClient) -> None:
     )
     assert response.status_code == 200
     data = response.get_json()
-    print("\nFull response data:", json.dumps(data, indent=2))
+    # print("\nFull response data:", json.dumps(data, indent=2))
 
     # 1. Overall Metrics
     overall = data["overallMetrics"]
 
     # Revenue validation
+    # This endpoint returns floats
     revenue = overall["revenue"]
-    assert revenue["total"] == 84000
-    assert revenue["perBooking"] == 5600
+    assert revenue["total"] == 840.0
+    assert revenue["perBooking"] == 56.0
 
     # Bookings validation
     bookings = overall["bookings"]

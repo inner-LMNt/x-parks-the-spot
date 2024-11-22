@@ -116,6 +116,7 @@ def test_get_cancellations(client: FlaskClient) -> None:
         headers={"Authorization": f"Bearer {user_token}"},
     )
 
+    print(response.data)
     assert response.status_code == 200
 
     response = client.get(
