@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
+import { availableParallelism } from "node:os"
 
 const shopItems = [
   {
@@ -169,13 +170,25 @@ export default function ShopPage() {
       <div className="flex justify-center mb-8">
         <button
           className={`px-4 py-2 mx-2 ${activeTab === "shop" ? "bg-purple-500 text-white" : "bg-gray-200 text-gray-800"} rounded-md outline outline-2 outline-violet-500 outline-offset-2`}
-          onClick={() => setActiveTab("shop")}
+          onClick={() => {
+            setActiveTab("shop")
+            dispatch(get_transactions())
+            dispatch(get_points())
+            dispatch(get_raffle_tickets())
+            dispatch(get_badge_list())
+          }}
         >
           Shop
         </button>
         <button
           className={`px-4 py-2 mx-2 ${activeTab === "transactions" ? "bg-purple-500 text-white" : "bg-gray-200 text-gray-800"} rounded-md outline outline-2 outline-violet-500 outline-offset-2`}
-          onClick={() => setActiveTab("transactions")}
+          onClick={() => {
+            setActiveTab("transactions")
+            dispatch(get_transactions())
+            dispatch(get_points())
+            dispatch(get_raffle_tickets())
+            dispatch(get_badge_list())
+          }}
         >
           Transactions
         </button>

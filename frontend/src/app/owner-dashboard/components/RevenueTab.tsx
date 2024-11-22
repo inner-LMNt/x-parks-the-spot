@@ -459,6 +459,7 @@ const RevenueTab: React.FC<RevenueTabProps> = ({
               <div className="space-y-4">
                 {bookingMetrics?.recentBookings
                   ?.filter((booking) => booking.time_status === "upcoming")
+                  ?.filter((booking) => booking.status !== "canceled")
                   ?.map((booking) => (
                     <div
                       key={booking.id}
