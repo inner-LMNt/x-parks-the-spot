@@ -160,7 +160,7 @@ def create_reservation(
                     TSTZRANGE(%(start_time)s, %(end_time)s, '[]'),
                     %(car_id)s,
                     %(user_id)s,
-                    'booked',
+                    'pending',
                     %(price)s,
                     %(checkout_id)s,
                     NOW(),

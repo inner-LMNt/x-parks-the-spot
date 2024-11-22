@@ -103,7 +103,7 @@ def create_parking_space_route(token: str, user_id: uuid.UUID) -> Tuple[Any, int
             longitude=longitude,
             latitude=latitude,
             address=data["location"]["address"],
-            price=int(data["pricing_info"]["base_price"]),
+            price=data["pricing_info"]["base_price"],
             availability_schedule=data["availability_schedule"],
         )
     else:
@@ -144,10 +144,6 @@ def update_parking_space_route(
 
     assert request.json is not None
 
-    # Convert to float only if it is not None
-    price_nullable = request.json.get("pricing_info", {}).get("base_price")
-    price = float(price_nullable) if price_nullable else price_nullable
-
     match is_paid_spot(parking_space_uuid):
         case Ok(a):
             is_paid = a
@@ -160,7 +156,7 @@ def update_parking_space_route(
             longitude=request.json.get("location", {}).get("longitude"),
             latitude=request.json.get("location", {}).get("latitude"),
             address=request.json.get("location", {}).get("address"),
-            price=price,
+            price=request.json.get("pricing_info", {}).get("base_price"),
             name=request.json.get("name"),
             availability_schedule=request.json.get("availability_schedule"),
         ):

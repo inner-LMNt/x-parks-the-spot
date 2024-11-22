@@ -485,7 +485,7 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                 )
 
                 spot_performance[spot_id_str] = {
-                    "totalRevenue": float(row.get("total_revenue") or 0),
+                    "totalRevenue": float(row.get("total_revenue") or 0) * 0.01,
                     "totalBookings": int(row.get("total_bookings") or 0),
                     "occupancyRate": float(occupancy_rate),
                     "averageBookingLength": float(
@@ -501,10 +501,10 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                     {
                         "spotId": spot_id_str,
                         "spotName": row.get("spot_name"),
-                        "revenue": float(row.get("total_revenue") or 0),
+                        "revenue": float(row.get("total_revenue") or 0) * 0.01,
                         "bookings": int(row.get("total_bookings") or 0),
                         "occupancyRate": float(occupancy_rate),
-                        "basePrice": float(row.get("base_price") or 0),
+                        "basePrice": float(row.get("base_price") or 0) * 0.01,
                     }
                 )
 
@@ -759,9 +759,10 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                 {
                     "overallMetrics": {
                         "revenue": {
-                            "total": sum(row["actual"] for row in historical_revenue),
+                            "total": sum(row["actual"] for row in historical_revenue)
+                            * 0.01,
                             "perBooking": (
-                                sum(row["actual"] for row in historical_revenue)
+                                sum(row["actual"] * 0.01 for row in historical_revenue)
                                 / sum(
                                     row["booking_count"] for row in historical_revenue
                                 )
@@ -773,10 +774,11 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                             ),
                         },
                         "occupancy": {
-                            "overallRate": overall_occupancy_rate
-                            / len(spot_metrics_rows)
-                            if spot_metrics_rows
-                            else 0
+                            "overallRate": (
+                                overall_occupancy_rate / len(spot_metrics_rows)
+                                if spot_metrics_rows
+                                else 0
+                            )
                         },
                         "bookings": {
                             "active": overall["active_bookings"],
@@ -788,14 +790,14 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                         "historicalRevenue": [
                             {
                                 "timestamp": row["timestamp"].isoformat(),
-                                "actual": float(row["actual"]),
+                                "actual": float(row["actual"]) * 0.01,
                             }
                             for row in historical_revenue
                         ],
                         "upcomingRevenue": [
                             {
                                 "timestamp": row["timestamp"].isoformat(),
-                                "potential": float(row["potential_revenue"]),
+                                "potential": float(row["potential_revenue"]) * 0.01,
                             }
                             for row in upcoming_revenue
                         ],
@@ -820,7 +822,7 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                                 "endTime": booking["endTime"].isoformat(),
                                 "status": booking["status"],
                                 "time_status": booking["timeStatus"],
-                                "price": float(booking["price"]),
+                                "price": float(booking["price"]) * 0.01,
                                 "duration": float(booking["duration"]),
                                 "isMultiDay": booking["isMultiDay"],
                                 "daysDuration": booking["daysDuration"],
@@ -832,13 +834,13 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                     },
                     "spotPerformance": spot_performance,
                     "upcomingEarnings": {
-                        "total": float(total_upcoming_earnings),
+                        "total": float(total_upcoming_earnings) * 0.01,
                         "reservations": [
                             {
                                 "spotName": earning["spot_name"],
                                 "startTime": earning["start_time"].isoformat(),
                                 "endTime": earning["end_time"].isoformat(),
-                                "earnings": float(earning["earnings"]),
+                                "earnings": float(earning["earnings"]) * 0.01,
                             }
                             for earning in upcoming_earnings_rows
                         ],
