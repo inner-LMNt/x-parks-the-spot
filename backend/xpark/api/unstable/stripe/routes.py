@@ -32,7 +32,7 @@ def webhook() -> Tuple[Any, int]:
             # Then define and call a method to handle the successful attachment of a PaymentMethod.
             # handle_payment_method_attached(payment_method)
         case "checkout.session.completed":
-            fulfill_checkout(event.data.object.id)  # type: ignore
+            fulfill_checkout(event.data.object["id"])
         case _:
             return {"err": "unhandled event type"}, 400
 

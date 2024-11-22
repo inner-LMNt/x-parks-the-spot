@@ -8,7 +8,7 @@ import datetime
 import psycopg
 from psycopg import Cursor
 from psycopg.rows import DictRow
-from xpark.logic.payments import create_checkout_session, fulfill_checkout
+from xpark.logic.payments import create_checkout_session
 import math
 from xpark.config import Config
 

@@ -72,7 +72,7 @@ def get_session_status(session_id: str) -> Result[str, None]:
     return Ok(session.status)
 
 
-def fulfill_checkout(session_id) -> None:
+def fulfill_checkout(session_id: str) -> None:
     # TODO: Make this function safe to run multiple times,
     # even concurrently, with the same session ID
 
