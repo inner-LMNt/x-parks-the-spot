@@ -228,11 +228,11 @@ export default function ProfilePage() {
   }, [])
 
   const badgeDetails: { [key: string]: { colorClass: string; label: string } } =
-  {
-    "1": { colorClass: "text-yellow-600", label: "Bronze Badge" },
-    "2": { colorClass: "text-gray-400", label: "Silver Badge" },
-    "3": { colorClass: "text-yellow-300", label: "Gold Badge" },
-  }
+    {
+      "1": { colorClass: "text-yellow-600", label: "Bronze Badge" },
+      "2": { colorClass: "text-gray-400", label: "Silver Badge" },
+      "3": { colorClass: "text-yellow-300", label: "Gold Badge" },
+    }
 
   return (
     domLoaded && (
@@ -396,7 +396,7 @@ export default function ProfilePage() {
           </div>
           <div>
             <ConnectComponentsProvider connectInstance={stripeConnectInstance}>
-              <ConnectAccountOnboarding onExit={() => { }} />
+              <ConnectAccountOnboarding onExit={() => {}} />
             </ConnectComponentsProvider>
           </div>
         </div>

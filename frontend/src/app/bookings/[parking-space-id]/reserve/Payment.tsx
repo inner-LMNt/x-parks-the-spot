@@ -12,7 +12,7 @@ export interface PaymentPageProps {
   reservation: Reservation
 }
 
-export default function PaymentPage({reservation}: PaymentPageProps) {
+export default function PaymentPage({ reservation }: PaymentPageProps) {
   const clientSecret = reservation.checkout_secret
   const options = { clientSecret }
   return (

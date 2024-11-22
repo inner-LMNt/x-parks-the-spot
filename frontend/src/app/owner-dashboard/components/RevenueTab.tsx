@@ -321,231 +321,240 @@ const RevenueTab: React.FC<RevenueTabProps> = ({
 
   const [tabLoaded, setTabLoaded] = useState(false)
 
-  return tabLoaded && (
-    <div className="space-y-6">
-      {/* Main Summary Metrics Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">
-            Key Revenue Metrics
-          </CardTitle>
-          <CardDescription>Overview of key revenue indicators</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {/* Total Actual Revenue */}
-            <SummaryCard
-              label="Total Actual Revenue"
-              value={formatCurrency(summaryMetrics.totalActualRevenue)}
-              Icon={DollarSign}
-              iconColor="text-green-500"
-            />
-
-            {/* Total Projected Revenue */}
-            <SummaryCard
-              label="Total Projected Revenue"
-              value={formatCurrency(summaryMetrics.totalProjectedRevenue)}
-              Icon={TrendingUp}
-              iconColor="text-blue-500"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="h-full">
-      <ConnectComponentsProvider connectInstance={stripeConnectInstance}>
-        <ConnectBalances />
-      </ConnectComponentsProvider>
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Historical Revenue Chart Card */}
+  return (
+    tabLoaded && (
+      <div className="space-y-6">
+        {/* Main Summary Metrics Card */}
         <Card>
           <CardHeader>
-            <CardTitle>
-              {timeFilter === "7_days"
-                ? "Last 7 Days Revenue"
-                : timeFilter === "30_days"
-                  ? "Last 30 Days Revenue"
-                  : "Last Year Revenue"}
+            <CardTitle className="text-lg font-semibold">
+              Key Revenue Metrics
             </CardTitle>
             <CardDescription>
-              Revenue trends over the selected period
+              Overview of key revenue indicators
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Chart */}
-            <div className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={historicalData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                    dataKey="timestamp"
-                    tickFormatter={formatAxisDateHistorical}
-                    interval={getTickIntervalHistorical}
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
-                    tick={{ fill: "#666", fontSize: 12 }}
-                  />
-                  <YAxis
-                    tickFormatter={formatCurrency}
-                    tick={{ fill: "#666", fontSize: 12 }}
-                  />
-                  <Tooltip
-                    formatter={(value: number, name: string) => [
-                      // @ts-ignore
-                      formatCurrency(value),
-                      "Actual Revenue",
-                    ]}
-                    labelFormatter={formatTooltipDateHistorical}
-                    contentStyle={{
-                      backgroundColor: "rgba(255, 255, 255, 0.95)",
-                      borderRadius: "6px",
-                      padding: "8px",
-                      border: "1px solid #eaeaea",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Legend verticalAlign="top" height={36} />
-                  {/* Actual Revenue Line */}
-                  <Line
-                    type="monotone"
-                    dataKey="actual"
-                    name="Actual Revenue"
-                    stroke="#3b82f6"
-                    strokeWidth={3}
-                    dot={false}
-                    connectNulls
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Total Actual Revenue */}
+              <SummaryCard
+                label="Total Actual Revenue"
+                value={formatCurrency(summaryMetrics.totalActualRevenue)}
+                Icon={DollarSign}
+                iconColor="text-green-500"
+              />
 
-        {/* Upcoming Revenue Forecast Chart Card */}
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle>Next 7 Days Revenue Forecast</CardTitle>
-            <CardDescription>
-              Projected revenue for the upcoming 7 days
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {/* Chart Section */}
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={upcomingData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                    dataKey="timestamp"
-                    tickFormatter={formatAxisDateUpcoming}
-                    interval={Math.max(1, Math.floor(upcomingData.length / 6))}
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
-                    tick={{ fill: "#666", fontSize: 12 }}
-                  />
-                  <YAxis
-                    yAxisId="left"
-                    orientation="left"
-                    tickFormatter={formatCurrency}
-                    tick={{ fill: "#666", fontSize: 12 }}
-                  />
-                  <YAxis
-                    yAxisId="right"
-                    orientation="right"
-                    domain={[0, 100]}
-                    tickFormatter={(value) => `${value}%`}
-                    tick={{ fill: "#666", fontSize: 12 }}
-                  />
-                  <Tooltip
-                    formatter={(value, name) => [
-                      // @ts-ignore
-                      formatCurrency(value),
-                      "Future Revenue",
-                    ]}
-                    labelFormatter={formatTooltipDateUpcoming}
-                    contentStyle={{
-                      backgroundColor: "rgba(255, 255, 255, 0.95)",
-                      borderRadius: "6px",
-                      padding: "8px",
-                      border: "1px solid #eaeaea",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Legend verticalAlign="top" height={36} />
-                  <Line
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="potential"
-                    name="Potential Revenue"
-                    stroke="#93c5fd"
-                    strokeDasharray="5 5"
-                    strokeWidth={3}
-                    dot={false}
-                    connectNulls
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Upcoming Bookings Section */}
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-4">Upcoming Bookings</h3>
+              {/* Total Projected Revenue */}
               <SummaryCard
                 label="Total Projected Revenue"
                 value={formatCurrency(summaryMetrics.totalProjectedRevenue)}
                 Icon={TrendingUp}
                 iconColor="text-blue-500"
               />
-              <div className="space-y-4">
-                {bookingMetrics?.recentBookings
-                  ?.filter((booking) => booking.time_status === "upcoming")
-                  ?.map((booking) => (
-                    <div
-                      key={booking.id}
-                      className="flex justify-between items-center p-4 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">
-                          {booking.spotName}
-                        </h4>
-                        <p className="text-sm text-gray-500">
-                          {format(new Date(booking.startTime), "MMM d")} -
-                          {format(new Date(booking.endTime), "MMM d")}
-                          {booking.isMultiDay &&
-                            ` (${booking.daysDuration} days)`}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-gray-900">
-                          {formatCurrency(booking.price)}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {formatDistance(
-                            new Date(booking.startTime),
-                            new Date(),
-                            { addSuffix: true },
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-              </div>
             </div>
           </CardContent>
         </Card>
+
+        <div className="h-full">
+          <ConnectComponentsProvider connectInstance={stripeConnectInstance}>
+            <ConnectBalances />
+          </ConnectComponentsProvider>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Historical Revenue Chart Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {timeFilter === "7_days"
+                  ? "Last 7 Days Revenue"
+                  : timeFilter === "30_days"
+                    ? "Last 30 Days Revenue"
+                    : "Last Year Revenue"}
+              </CardTitle>
+              <CardDescription>
+                Revenue trends over the selected period
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Chart */}
+              <div className="h-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={historicalData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="timestamp"
+                      tickFormatter={formatAxisDateHistorical}
+                      interval={getTickIntervalHistorical}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                      tick={{ fill: "#666", fontSize: 12 }}
+                    />
+                    <YAxis
+                      tickFormatter={formatCurrency}
+                      tick={{ fill: "#666", fontSize: 12 }}
+                    />
+                    <Tooltip
+                      formatter={(value: number, name: string) => [
+                        // @ts-ignore
+                        formatCurrency(value),
+                        "Actual Revenue",
+                      ]}
+                      labelFormatter={formatTooltipDateHistorical}
+                      contentStyle={{
+                        backgroundColor: "rgba(255, 255, 255, 0.95)",
+                        borderRadius: "6px",
+                        padding: "8px",
+                        border: "1px solid #eaeaea",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Legend verticalAlign="top" height={36} />
+                    {/* Actual Revenue Line */}
+                    <Line
+                      type="monotone"
+                      dataKey="actual"
+                      name="Actual Revenue"
+                      stroke="#3b82f6"
+                      strokeWidth={3}
+                      dot={false}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Upcoming Revenue Forecast Chart Card */}
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle>Next 7 Days Revenue Forecast</CardTitle>
+              <CardDescription>
+                Projected revenue for the upcoming 7 days
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Chart Section */}
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={upcomingData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="timestamp"
+                      tickFormatter={formatAxisDateUpcoming}
+                      interval={Math.max(
+                        1,
+                        Math.floor(upcomingData.length / 6),
+                      )}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                      tick={{ fill: "#666", fontSize: 12 }}
+                    />
+                    <YAxis
+                      yAxisId="left"
+                      orientation="left"
+                      tickFormatter={formatCurrency}
+                      tick={{ fill: "#666", fontSize: 12 }}
+                    />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      domain={[0, 100]}
+                      tickFormatter={(value) => `${value}%`}
+                      tick={{ fill: "#666", fontSize: 12 }}
+                    />
+                    <Tooltip
+                      formatter={(value, name) => [
+                        // @ts-ignore
+                        formatCurrency(value),
+                        "Future Revenue",
+                      ]}
+                      labelFormatter={formatTooltipDateUpcoming}
+                      contentStyle={{
+                        backgroundColor: "rgba(255, 255, 255, 0.95)",
+                        borderRadius: "6px",
+                        padding: "8px",
+                        border: "1px solid #eaeaea",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Legend verticalAlign="top" height={36} />
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="potential"
+                      name="Potential Revenue"
+                      stroke="#93c5fd"
+                      strokeDasharray="5 5"
+                      strokeWidth={3}
+                      dot={false}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Upcoming Bookings Section */}
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-4">
+                  Upcoming Bookings
+                </h3>
+                <SummaryCard
+                  label="Total Projected Revenue"
+                  value={formatCurrency(summaryMetrics.totalProjectedRevenue)}
+                  Icon={TrendingUp}
+                  iconColor="text-blue-500"
+                />
+                <div className="space-y-4">
+                  {bookingMetrics?.recentBookings
+                    ?.filter((booking) => booking.time_status === "upcoming")
+                    ?.map((booking) => (
+                      <div
+                        key={booking.id}
+                        className="flex justify-between items-center p-4 bg-gray-50 rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">
+                            {booking.spotName}
+                          </h4>
+                          <p className="text-sm text-gray-500">
+                            {format(new Date(booking.startTime), "MMM d")} -
+                            {format(new Date(booking.endTime), "MMM d")}
+                            {booking.isMultiDay &&
+                              ` (${booking.daysDuration} days)`}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium text-gray-900">
+                            {formatCurrency(booking.price)}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {formatDistance(
+                              new Date(booking.startTime),
+                              new Date(),
+                              { addSuffix: true },
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    )
   )
 }
 

@@ -529,19 +529,19 @@ export default function ParkingSpaceBooking() {
                       <strong>Start Time:</strong>{" "}
                       {isValidDate(reservation.start_time)
                         ? format(
-                          new Date(reservation.start_time as string),
-                          "PPp",
-                        )
+                            new Date(reservation.start_time as string),
+                            "PPp",
+                          )
                         : "N/A"}
                     </p>
                     <p>
                       <strong>End Time:</strong>{" "}
                       {isValidDate(reservation.start_time) &&
-                        isValidDate(reservation.end_time)
+                      isValidDate(reservation.end_time)
                         ? format(
-                          new Date(reservation.end_time as string),
-                          "PPp",
-                        )
+                            new Date(reservation.end_time as string),
+                            "PPp",
+                          )
                         : "N/A"}
                     </p>
                     <p>

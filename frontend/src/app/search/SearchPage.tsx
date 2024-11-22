@@ -1593,7 +1593,8 @@ export default function SearchPage() {
                       {spot.is_paid && (
                         <>
                           <p className="text-md">
-                            Price: ${(spot?.pricing_info?.base_price || 0) / 100}
+                            Price: $
+                            {(spot?.pricing_info?.base_price || 0) / 100}
                           </p>
                           {isAvailable247(spot.availability_schedule) ? (
                             <p className="text-md mt-2">Available 24/7</p>
