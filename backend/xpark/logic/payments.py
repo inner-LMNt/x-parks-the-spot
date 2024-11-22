@@ -124,6 +124,7 @@ def fulfill_checkout(session_id: str) -> None:
                 (checkout_id,),
             )
 
+
 def cancel_checkout(session_id: str) -> None:
     # Retrieve the Checkout Session from the API with line_items expanded
     checkout_session = stripe.checkout.Session.retrieve(
@@ -138,7 +139,7 @@ def cancel_checkout(session_id: str) -> None:
                 """
                     DELETE FROM reservations WHERE checkout_id = %s
                 """,
-            (checkout_id,),
+                (checkout_id,),
             )
 
 

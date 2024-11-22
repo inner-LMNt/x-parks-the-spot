@@ -759,7 +759,8 @@ WHERE LOWER(r.time) BETWEEN %(start_date)s AND %(end_date)s
                 {
                     "overallMetrics": {
                         "revenue": {
-                            "total": sum(row["actual"] for row in historical_revenue) * 0.01,
+                            "total": sum(row["actual"] for row in historical_revenue)
+                            * 0.01,
                             "perBooking": (
                                 sum(row["actual"] * 0.01 for row in historical_revenue)
                                 / sum(
