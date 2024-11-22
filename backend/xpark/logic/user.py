@@ -574,7 +574,7 @@ def handle_buy_raffle_ticket(user_id: uuid.UUID, raffle_id: int) -> Result[None,
                 return Err("User not found")
             points = result[0]
             price = id_to_price[raffle_id]
-            if points["current"] < price:
+            if int(points["current"]) < price:
                 return Err("Insufficient points")
 
             # Update points and raffle tickets
@@ -590,7 +590,7 @@ def handle_buy_raffle_ticket(user_id: uuid.UUID, raffle_id: int) -> Result[None,
                 INSERT INTO points_transaction (user_id, transaction_type, points_amount, description, balance_after_transaction, status)
                 VALUES (%s, 'spend', %s, %s, %s, 'active')
                 """,
-                (user_id, price, description, points["current"] - price),
+                (user_id, price, description, int(points["current"]) - price),
             )
 
             return Ok(None)
