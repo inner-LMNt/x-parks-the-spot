@@ -170,7 +170,7 @@ def create_renter_overstay_report_logic(
 
             # Calculate overstay charge
             overstay_charge = (
-                hourly_rate * 1.5 / 60
+                hourly_rate / 40
             ) * overstay_duration  # Charge per minute
 
             # Insert into reports and return specific fields
