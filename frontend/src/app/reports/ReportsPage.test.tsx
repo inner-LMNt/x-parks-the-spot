@@ -449,7 +449,7 @@ describe("ReportsPage Component", () => {
       expect(reportItems).toHaveLength(4)
     })
 
-    it.skip("displays reports in the correct order", async () => {
+    it("displays reports in the correct order", async () => {
       await renderWithStore(<ReportsPage />)
       await waitFor(
         () => {

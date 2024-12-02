@@ -29,7 +29,7 @@ export function BottomNavBar() {
 
   return (
     domLoaded && (
-      <nav className="fixed bottom-0 left-0 right-0 bg-gray-100 shadow-lg z-10 border-t border-gray-300">
+      <nav className="fixed bottom-0 left-0 right-0 bg-gray-100 shadow-lg z-10 border-t border-gray-300 h-24">
         <div className="flex justify-around items-center h-16 px-4">
           {navItems.map((item) => (
             <Link href={item.href} passHref key={item.label}>
