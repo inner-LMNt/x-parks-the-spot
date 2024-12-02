@@ -525,6 +525,7 @@ def test_analytics_with_invalid_time_filter(client: FlaskClient) -> None:
     data = response.get_json()
     assert "err" in data, "Expected error message in response"
 
+
 def test_analytics_with_spot_id_filter(client: FlaskClient) -> None:
     """Test the analytics endpoint with a specific parking space (spot_id) filter."""
     # Create an owner and a renter
