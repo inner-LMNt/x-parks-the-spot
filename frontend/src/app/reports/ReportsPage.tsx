@@ -104,6 +104,9 @@ export default function ReportsPage() {
     setIsDialogOpen(true)
   }
 
+  const isLoading =
+    reportsLoading || reservationsLoading || ownerReservationsLoading
+
   const filteredReports = reports.filter((report: Report) => {
     const matchesType = !typeFilter || report.type === typeFilter
     const matchesStatus =
@@ -113,9 +116,6 @@ export default function ReportsPage() {
       (statusFilter === "Resolved" && report.status === "resolved")
     return matchesType && matchesStatus
   })
-
-  const isLoading =
-    reportsLoading || reservationsLoading || ownerReservationsLoading
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -152,7 +152,7 @@ export default function ReportsPage() {
                     {typeFilter === "Damage Report" && (
                       <ShieldX className="w-4 h-4 text-red-600" />
                     )}
-                    {typeFilter === "Other Issues" && (
+                    {typeFilter === "Other" && (
                       <Settings className="w-4 h-4 text-gray-600" />
                     )}
                     {(typeFilter === null || typeFilter === "all") && (
@@ -190,7 +190,7 @@ export default function ReportsPage() {
                     <span>Damage Reports</span>
                   </div>
                 </SelectItem>
-                <SelectItem value="Other Issues" className="text-slate-950">
+                <SelectItem value="Other" className="text-slate-950">
                   <div className="flex items-center gap-2">
                     <Settings className="w-4 h-4 text-gray-600" />
                     <span>Other Issues</span>
