@@ -704,7 +704,7 @@ export default function SearchPage() {
       if (navigationCardRef.current) {
         const navigationCardHeight = navigationCardRef.current.offsetHeight
         if (mapRef.current) {
-          mapRef.current.style.height = `calc(100vh - 64px - ${navigationCardHeight}px)`
+          mapRef.current.style.height = `calc(100vh - 96px - ${navigationCardHeight}px)`
         }
       }
     }
@@ -1264,7 +1264,7 @@ export default function SearchPage() {
           style={{
             height: isLoggedIn
               ? isListCollapsed
-                ? `calc(100vh - 64px)`
+                ? `calc(100vh - 96px)`
                 : "50vh"
               : isListCollapsed
                 ? "100vh"
@@ -1656,7 +1656,7 @@ export default function SearchPage() {
           className={`fixed bottom-0 left-0 w-full bg-gray-100 p-4 transition-transform duration-300 transform ${
             navigationMode ? "translate-y-0" : "translate-y-full"
           }`}
-          style={{ bottom: isLoggedIn ? "64px" : "0", height: "auto" }}
+          style={{ bottom: isLoggedIn ? "96px" : "0", height: "auto" }}
         >
           <Card className="shadow-sm">
             <CardHeader className="flex flex-row justify-between items-center w-full">

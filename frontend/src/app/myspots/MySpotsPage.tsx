@@ -298,20 +298,23 @@ export default function MySpotsPage() {
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-center gap-3 w-full sm:w-auto">
-                    <Link href="/owner-dashboard" className="w-full sm:w-auto">
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto text-sm">
+                    <Link
+                      href="/owner-dashboard"
+                      className="w-full sm:max-w-xs"
+                    >
                       <Button
                         variant="outline"
-                        className="w-full h-11 bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-900"
+                        className="w-full h-11 bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-900 text-sm overflow-hidden whitespace-normal break-words"
                       >
                         <TrendingUp className="w-4 h-4 mr-2 text-gray-600" />
-                        Analytics Dashboard
+                        <span>Analytics Dashboard</span>
                       </Button>
                     </Link>
-                    <Link href="/add" className="w-full sm:w-auto">
-                      <Button className="w-full h-11 shadow-sm">
+                    <Link href="/add" className="w-full sm:max-w-xs">
+                      <Button className="w-full h-11 shadow-sm text-sm overflow-hidden whitespace-normal break-words">
                         <Plus className="w-4 h-4 mr-2" />
-                        Add New Spot
+                        <span>Add New Spot</span>
                       </Button>
                     </Link>
                   </div>

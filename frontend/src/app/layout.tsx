@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     maximumScale: 1.0,
     userScalable: false, // Disable pinch-zooming
   },
-  themeColor: "#ff9238", // Sets the theme color for status bar
+  themeColor: "#e2e8f0", // Sets the theme color for status bar
   icons: {
     icon: "/icon512_rounded.png", // Default icon
     apple: "/icon512_maskable.png", // Apple devices

@@ -41,7 +41,7 @@ export default function ReportsPage() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [typeFilter, setTypeFilter] = useState<string | null>(null)
-  const [statusFilter, setStatusFilter] = useState<string | null>("active")
+  const [statusFilter, setStatusFilter] = useState<string | null>("Active")
   const [selectedReservation, setSelectedReservation] = useState(null)
   const [selectedReportType, setSelectedReportType] = useState<string | null>(
     null,
@@ -108,9 +108,9 @@ export default function ReportsPage() {
     const matchesType = !typeFilter || report.type === typeFilter
     const matchesStatus =
       !statusFilter ||
-      (statusFilter === "active" &&
+      (statusFilter === "Active" &&
         ["open", "in_progress"].includes(report.status)) ||
-      (statusFilter === "resolved" && report.status === "resolved")
+      (statusFilter === "Resolved" && report.status === "Resolved")
     return matchesType && matchesStatus
   })
 
@@ -132,17 +132,34 @@ export default function ReportsPage() {
           <h1 className="text-3xl font-bold text-slate-950">Your Reports</h1>
         </header>
 
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <Select
               onValueChange={(value) =>
                 value === "all" ? setTypeFilter(null) : setTypeFilter(value)
               }
               value={typeFilter || "all"}
             >
-              <SelectTrigger className="w-48 border border-gray-300 rounded-lg shadow-sm text-slate-950">
-                <SelectValue placeholder="Filter by type">
-                  All Reports
+              <SelectTrigger className="w-full sm:w-48 border border-gray-300 rounded-lg shadow-sm text-slate-950">
+                <SelectValue>
+                  <div className="flex items-center gap-2">
+                    {typeFilter === "Reservation Issue" && (
+                      <AlertCircle className="w-4 h-4 text-green-600" />
+                    )}
+                    {typeFilter === "Renter Overstay" && (
+                      <Clock className="w-4 h-4 text-yellow-600" />
+                    )}
+                    {typeFilter === "Damage Report" && (
+                      <ShieldX className="w-4 h-4 text-red-600" />
+                    )}
+                    {typeFilter === "Other Issues" && (
+                      <Settings className="w-4 h-4 text-gray-600" />
+                    )}
+                    {(typeFilter === null || typeFilter === "all") && (
+                      <Layers className="w-4 h-4 text-slate-700" />
+                    )}
+                    <span>{typeFilter || "All Reports"}</span>
+                  </div>
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -173,7 +190,7 @@ export default function ReportsPage() {
                     <span>Damage Reports</span>
                   </div>
                 </SelectItem>
-                <SelectItem value="Other" className="text-slate-950">
+                <SelectItem value="Other Issues" className="text-slate-950">
                   <div className="flex items-center gap-2">
                     <Settings className="w-4 h-4 text-gray-600" />
                     <span>Other Issues</span>
@@ -188,8 +205,21 @@ export default function ReportsPage() {
               }
               value={statusFilter || "all"}
             >
-              <SelectTrigger className="w-36 border border-gray-300 rounded-lg shadow-sm text-slate-950">
-                <SelectValue placeholder="Filter by status">Active</SelectValue>
+              <SelectTrigger className="w-full sm:w-36 border border-gray-300 rounded-lg shadow-sm text-slate-950">
+                <SelectValue>
+                  <div className="flex items-center gap-2">
+                    {statusFilter === "Active" && (
+                      <Circle className="w-4 h-4 text-blue-600" />
+                    )}
+                    {statusFilter === "Resolved" && (
+                      <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    )}
+                    {(statusFilter === null || statusFilter === "all") && (
+                      <CircleDot className="w-4 h-4 text-slate-700" />
+                    )}
+                    <span>{statusFilter || "All Statuses"}</span>
+                  </div>
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all" className="text-slate-950">
@@ -198,13 +228,13 @@ export default function ReportsPage() {
                     <span>All Statuses</span>
                   </div>
                 </SelectItem>
-                <SelectItem value="active" className="text-slate-950">
+                <SelectItem value="Active" className="text-slate-950">
                   <div className="flex items-center gap-2">
                     <Circle className="w-4 h-4 text-blue-600" />
                     <span>Active</span>
                   </div>
                 </SelectItem>
-                <SelectItem value="resolved" className="text-slate-950">
+                <SelectItem value="Resolved" className="text-slate-950">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-green-600" />
                     <span>Resolved</span>
@@ -216,7 +246,7 @@ export default function ReportsPage() {
 
           <Button
             onClick={() => handleReportClick()}
-            className="flex items-center gap-2 w-24"
+            className="flex items-center gap-2 w-full sm:w-24"
             data-testid="Report Button"
           >
             <AlertCircle className="w-4 h-4" />
