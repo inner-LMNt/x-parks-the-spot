@@ -110,7 +110,7 @@ export default function ReportsPage() {
       !statusFilter ||
       (statusFilter === "Active" &&
         ["open", "in_progress"].includes(report.status)) ||
-      (statusFilter === "Resolved" && report.status === "Resolved")
+      (statusFilter === "Resolved" && report.status === "resolved")
     return matchesType && matchesStatus
   })
 
