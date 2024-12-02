@@ -543,7 +543,7 @@ def test_analytics_with_spot_id_filter(client: FlaskClient) -> None:
     # Create reservations for both spaces
     start_time = datetime.now(timezone.utc) - timedelta(days=1)
     end_time = start_time + timedelta(hours=2)
-    renter_id = get_user_id_from_token(renter_token)
+    renter_id = get_user_id_from_token(client, renter_token)
     insert_reservation_directly(
         renter_id=renter_id,
         space_id=space_id_1,
