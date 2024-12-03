@@ -408,6 +408,11 @@ export default function SettingsPage() {
               </AlertDialogContent>
             </AlertDialog>
           </div>
+          <Link href="/reports" passHref>
+            <Button variant="link" className="absolute top-2 left-0">
+              <ArrowLeft className="w-5 h-5 text-gray-400" />
+            </Button>
+          </Link>
         </div>
 
         {/* Account Deleted Dialog */}
