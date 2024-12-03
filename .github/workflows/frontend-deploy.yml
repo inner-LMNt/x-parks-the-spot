@@ -44,10 +44,10 @@ jobs:
       # It uses the `tags` and `labels` parameters to tag and label the image with the output from the "meta" step.
       - name: Set up Environment
         run: |
-          cat << '
-          NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
-          NEXT_PUBLIC_STRIPE_PK: ${{ secrets.NEXT_PUBLIC_STRIPE_PK }}
-          ' > .env
+          cat << EOF > .env
+          NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
+          NEXT_PUBLIC_STRIPE_PK=${{ secrets.NEXT_PUBLIC_STRIPE_PK }}
+          EOF
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
