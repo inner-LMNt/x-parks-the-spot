@@ -158,8 +158,8 @@ export default function ProfilePage() {
   const score = useAppSelector((state) => state.user.score)
 
   const handleLogout = async () => {
+    await router.push("/login")
     await dispatch(logout())
-    router.push("/login")
   }
 
   const userProfile = {
