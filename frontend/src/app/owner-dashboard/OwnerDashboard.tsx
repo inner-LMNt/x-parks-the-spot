@@ -187,7 +187,7 @@ export function OwnerDashboard() {
       animate={{ opacity: 1 }}
       className="min-h-screen bg-gray-50"
     >
-      <div className="sticky top-0 z-50 bg-white border-b border-gray-200">
+      <div className="sticky top-0 z-50 bg-slate-50 border-b border-gray-200">
         <motion.div
           initial={{ y: -20 }}
           animate={{ y: 0 }}

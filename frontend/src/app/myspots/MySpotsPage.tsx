@@ -164,7 +164,7 @@ export default function MySpotsPage() {
               </div>
             )}
 
-            <CardHeader className="bg-gray-50">
+            <CardHeader className="bg-slate-50">
               <div className="flex justify-between items-center">
                 <CardTitle className="flex items-center space-x-2">
                   <MapPin
