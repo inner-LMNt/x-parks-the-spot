@@ -2,7 +2,7 @@
   "name": "X Parks the Spot",
   "short_name": "xpark",
   "description": "Parking anywhere. Rent and find paid or free spots.",
-  "theme_color": "#ffffff",
+  "theme_color": "#f8fafc",
   "background_color": "#ffffff",
   "display": "fullscreen",
   "orientation": "portrait",
