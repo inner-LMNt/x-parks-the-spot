@@ -11,6 +11,7 @@ RUN npm install
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_PUBLIC_API_BASE_URL=https://xpark-staging.ersei.net/api/unstable
+COPY .env .
 
 RUN npm run build
 
