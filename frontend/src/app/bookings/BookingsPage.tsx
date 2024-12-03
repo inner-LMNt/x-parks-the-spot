@@ -237,7 +237,7 @@ export default function BookingsPage() {
   const isLoggedIn = useAppSelector((state) => state.user.isLoggedIn)
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-slate-900">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-900">
         <p className="text-xl">
           Please{" "}
           <Link href="/login" className="text-blue-500 underline">
@@ -341,7 +341,7 @@ export default function BookingsPage() {
 
   return (
     domLoaded && (
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-slate-50">
         <div className="flex-grow container mx-auto p-4 max-w-5xl mt-2">
           {/* Header Section */}
           <header className="flex flex-col items-center mb-8">
