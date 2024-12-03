@@ -409,11 +409,12 @@ export default function ProfilePage() {
           </div>
           <div>
             <div className="bg-slate-100 p-4 rounded-lg shadow-sm flex justify-between items-start drop-shadow-lg">
-
-            <ConnectComponentsProvider connectInstance={stripeConnectInstance}>
-              <ConnectAccountOnboarding onExit={() => {}} />
-            </ConnectComponentsProvider>
-          </div>
+              <ConnectComponentsProvider
+                connectInstance={stripeConnectInstance}
+              >
+                <ConnectAccountOnboarding onExit={() => {}} />
+              </ConnectComponentsProvider>
+            </div>
           </div>
         </div>
         <div className="flex h-16"></div>
