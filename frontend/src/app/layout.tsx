@@ -11,14 +11,6 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "X Parks the Spot",
   description: "Parking anywhere. Rent and find paid or free spots.",
-  viewport: {
-    width: "device-width",
-    height: "device-height",
-    initialScale: 1.0,
-    maximumScale: 1.0,
-    userScalable: false, // Disable pinch-zooming
-  },
-  themeColor: "#e2e8f0", // Sets the theme color for status bar
   icons: {
     icon: "/icon512_rounded.png", // Default icon
     apple: "/icon512_maskable.png", // Apple devices
@@ -39,6 +31,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+        />
+      </head>
       <body className={inter.className}>
         <Providers>
           <NotificationBanner />
