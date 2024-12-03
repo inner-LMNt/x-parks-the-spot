@@ -1,5 +1,3 @@
-// src/app/bookings/BookingsPage.tsx
-
 "use client"
 
 import React, { useEffect, useState, useMemo } from "react"
