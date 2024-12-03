@@ -185,7 +185,7 @@ export function OwnerDashboard() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-gray-50"
+      className="min-h-screen bg-slate-50"
     >
       <div className="sticky top-0 z-50 bg-slate-50 border-b border-gray-200">
         <motion.div
