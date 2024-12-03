@@ -755,7 +755,7 @@ export default function AddPage() {
 
   return (
     domLoaded && (
-      <div className="flex flex-col min-h-screen bg-gray-100">
+      <div className="flex flex-col min-h-screen bg-slate-50">
         <div className="flex-grow overflow-y-auto">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl py-6">
             <motion.div
