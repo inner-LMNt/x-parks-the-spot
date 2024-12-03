@@ -10,7 +10,7 @@ import {
   CardDescription,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import {ArrowLeft, MapPin} from "lucide-react"
+import { ArrowLeft, MapPin } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   getAllPendingSpots,
@@ -23,7 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {useRouter} from "next/navigation";
+import { useRouter } from "next/navigation"
 
 // Define the type for a pending spot
 interface PendingSpot {
@@ -44,7 +44,7 @@ export const VerificationPage = () => {
   const { pendingSpots, loading, error } = useAppSelector(
     (state) => state.admin,
   )
-  const router = useRouter();
+  const router = useRouter()
 
   const [isListExpanded, setIsListExpanded] = useState(true)
   const [selectedSpot, setSelectedSpot] = useState<PendingSpot | null>(null)
@@ -131,9 +131,9 @@ export const VerificationPage = () => {
           className="bg-white shadow-md rounded-lg p-6 mb-8"
         >
           <Button
-              variant="ghost"
-              className="left-4 flex items-center text-gray-800"
-              onClick={() => router.push("/settings")}
+            variant="ghost"
+            className="left-4 flex items-center text-gray-800"
+            onClick={() => router.push("/settings")}
           >
             <ArrowLeft className="w-5 h-5 mr-1" />
             Back

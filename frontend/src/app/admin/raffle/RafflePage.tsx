@@ -13,8 +13,8 @@ import { Button } from "@/components/ui/button"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { getRaffleEntries, performRaffle } from "@/features/admin/adminSlice"
 import { useToast } from "@/hooks/use-toast"
-import {ArrowLeft} from "lucide-react";
-import {useRouter} from "next/navigation";
+import { ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface RaffleEntry {
   user_id: string
@@ -25,7 +25,7 @@ interface RaffleEntry {
 
 export const RafflePage = () => {
   const dispatch = useAppDispatch()
-  const router = useRouter();
+  const router = useRouter()
   const {
     raffleEntries = [],
     loading,
@@ -91,9 +91,9 @@ export const RafflePage = () => {
           className="bg-white shadow-md rounded-lg p-6 mb-8"
         >
           <Button
-              variant="ghost"
-              className="left-4 flex items-center text-gray-800"
-              onClick={() => router.push("/settings")}
+            variant="ghost"
+            className="left-4 flex items-center text-gray-800"
+            onClick={() => router.push("/settings")}
           >
             <ArrowLeft className="w-5 h-5 mr-1" />
             Back

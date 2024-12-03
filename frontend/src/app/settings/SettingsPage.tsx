@@ -52,7 +52,7 @@ export default function SettingsPage() {
   const dispatch = useAppDispatch()
   const router = useRouter()
   const [accountDeleted, setAccountDeleted] = useState(false)
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [notificationTime, setNotificationTime] = useState("")
   const [isNotificationDialogOpen, setIsNotificationDialogOpen] =
@@ -226,13 +226,13 @@ export default function SettingsPage() {
           <div className="mb-8">
             <h3 className="text-lg font-medium mb-4">Notification Options</h3>
             <div className="flex items-center mb-3">
-              <Checkbox id="emailNotifications" className="mr-3 h-4 w-4"/>
+              <Checkbox id="emailNotifications" className="mr-3 h-4 w-4" />
               <Label htmlFor="emailNotifications" className="text-sm">
                 Email Notifications
               </Label>
             </div>
             <div className="flex items-center">
-              <Checkbox id="pushNotifications" className="mr-3 h-4 w-4"/>
+              <Checkbox id="pushNotifications" className="mr-3 h-4 w-4" />
               <Label htmlFor="pushNotifications" className="text-sm">
                 Push Notifications
               </Label>
@@ -242,9 +242,9 @@ export default function SettingsPage() {
                 Current Notification Time: {userNotificationTime} minutes
               </p>
               <Button
-                  variant="secondary"
-                  className="mt-4 bg-gray-800 hover:bg-gray-700 text-white"
-                  onClick={() => setIsNotificationDialogOpen(true)}
+                variant="secondary"
+                className="mt-4 bg-gray-800 hover:bg-gray-700 text-white"
+                onClick={() => setIsNotificationDialogOpen(true)}
               >
                 Set Custom Notification Time
               </Button>
@@ -257,55 +257,55 @@ export default function SettingsPage() {
             <form onSubmit={locationHandleSubmit(handleSaveLocation)}>
               <div className="mb-4">
                 <Label
-                    htmlFor="state"
-                    className="text-sm font-medium text-gray-800"
+                  htmlFor="state"
+                  className="text-sm font-medium text-gray-800"
                 >
                   State
                 </Label>
                 <select
-                    id="state"
-                    {...locationRegister("state", {
-                      required: "State is required",
-                    })}
-                    className="mt-1 block w-full text-gray-800"
+                  id="state"
+                  {...locationRegister("state", {
+                    required: "State is required",
+                  })}
+                  className="mt-1 block w-full text-gray-800"
                 >
                   <option value="">Select state</option>
                   {states.map((state) => (
-                      <option key={state.value} value={state.value}>
-                        {state.label}
-                      </option>
+                    <option key={state.value} value={state.value}>
+                      {state.label}
+                    </option>
                   ))}
                 </select>
                 {locationErrors.state && (
-                    <p className="text-red-600 text-sm mt-1">
-                      {locationErrors.state.message}
-                    </p>
+                  <p className="text-red-600 text-sm mt-1">
+                    {locationErrors.state.message}
+                  </p>
                 )}
               </div>
               <div className="mb-4">
                 <Label
-                    htmlFor="city"
-                    className="text-sm font-medium text-gray-800"
+                  htmlFor="city"
+                  className="text-sm font-medium text-gray-800"
                 >
                   City
                 </Label>
                 <Input
-                    id="city"
-                    type="text"
-                    placeholder="Enter your city"
-                    {...locationRegister("city", {
-                      required: "City is required",
-                    })}
-                    className="mt-1 block w-full text-gray-800"
+                  id="city"
+                  type="text"
+                  placeholder="Enter your city"
+                  {...locationRegister("city", {
+                    required: "City is required",
+                  })}
+                  className="mt-1 block w-full text-gray-800"
                 />
                 <p className="text-gray-600 text-sm mt-1">
-                  Case insensitive. <br/>
+                  Case insensitive. <br />
                   Type "none" if you don't want to specify a city.
                 </p>
                 {locationErrors.city && (
-                    <p className="text-red-600 text-sm mt-1">
-                      {locationErrors.city.message}
-                    </p>
+                  <p className="text-red-600 text-sm mt-1">
+                    {locationErrors.city.message}
+                  </p>
                 )}
               </div>
               <Button variant="default" type="submit" className="w-full">
@@ -329,7 +329,7 @@ export default function SettingsPage() {
                 </Button>
               </AlertDialogTrigger>
               {/* Semi-transparent overlay */}
-              <AlertDialogOverlay className="bg-black bg-opacity-50 fixed inset-0"/>
+              <AlertDialogOverlay className="bg-black bg-opacity-50 fixed inset-0" />
               <AlertDialogContent className="bg-white rounded-md p-6">
                 <AlertDialogHeader>
                   <AlertDialogTitle className="text-xl font-semibold text-gray-900">
@@ -341,61 +341,61 @@ export default function SettingsPage() {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <form
-                    onSubmit={handleSubmit(handleDeleteAccount)}
-                    className="mt-6"
+                  onSubmit={handleSubmit(handleDeleteAccount)}
+                  className="mt-6"
                 >
                   <div className="mb-4">
                     <Label
-                        htmlFor="password"
-                        className="text-sm font-medium text-gray-800"
+                      htmlFor="password"
+                      className="text-sm font-medium text-gray-800"
                     >
                       Password
                     </Label>
                     <Input
-                        id="password"
-                        type="password"
-                        placeholder="Enter your password"
-                        {...register("password", {
-                          required: "Password is required",
-                        })}
-                        className="mt-1 block w-full text-gray-800"
+                      id="password"
+                      type="password"
+                      placeholder="Enter your password"
+                      {...register("password", {
+                        required: "Password is required",
+                      })}
+                      className="mt-1 block w-full text-gray-800"
                     />
                     {errors.password && (
-                        <p className="text-red-600 text-sm mt-1">
-                          {errors.password.message}
-                        </p>
+                      <p className="text-red-600 text-sm mt-1">
+                        {errors.password.message}
+                      </p>
                     )}
                   </div>
                   <div className="mb-4">
                     <Label
-                        htmlFor="confirmPassword"
-                        className="text-sm font-medium text-gray-900" // Updated to text-gray-900
+                      htmlFor="confirmPassword"
+                      className="text-sm font-medium text-gray-900" // Updated to text-gray-900
                     >
                       Confirm Password
                     </Label>
                     <Input
-                        id="confirmPassword"
-                        type="password"
-                        placeholder="Confirm your password"
-                        {...register("confirmPassword", {
-                          required: "Confirm your password",
-                          validate: (val: string) => {
-                            if (watch("password") != val) {
-                              return "Your passwords do not match"
-                            }
-                          },
-                        })}
-                        className="mt-1 block w-full text-gray-800"
+                      id="confirmPassword"
+                      type="password"
+                      placeholder="Confirm your password"
+                      {...register("confirmPassword", {
+                        required: "Confirm your password",
+                        validate: (val: string) => {
+                          if (watch("password") != val) {
+                            return "Your passwords do not match"
+                          }
+                        },
+                      })}
+                      className="mt-1 block w-full text-gray-800"
                     />
                     {errors.confirmPassword && (
-                        <p className="text-red-600 text-sm mt-1">
-                          {errors.confirmPassword.message}
-                        </p>
+                      <p className="text-red-600 text-sm mt-1">
+                        {errors.confirmPassword.message}
+                      </p>
                     )}
                   </div>
                   {/* Error message for mismatched passwords */}
                   {errorMessage && (
-                      <p className="text-red-600 text-sm mb-4">{errorMessage}</p>
+                    <p className="text-red-600 text-sm mb-4">{errorMessage}</p>
                   )}
                   <AlertDialogFooter className="mt-6">
                     <AlertDialogCancel asChild>
@@ -412,47 +412,60 @@ export default function SettingsPage() {
           {/* Navigation Buttons */}
           <div className="mt-8">
             <Button
-                variant="ghost"
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full text-gray-500 hover:text-gray-700 flex items-center justify-between text-sm"
+              variant="ghost"
+              onClick={() => setIsOpen(!isOpen)}
+              className="w-full text-gray-500 hover:text-gray-700 flex items-center justify-between text-sm"
             >
               <span>Administrative Tools</span>
-              {isOpen ? <ChevronUp className="h-4 w-4"/> : <ChevronDown className="h-4 w-4"/>}
+              {isOpen ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </Button>
 
             {isOpen && (
-                <div className="mt-2 flex gap-2 justify-center p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <Link href="/admin/raffle" passHref>
-                    <Button variant="default" className="bg-blue-600 hover:bg-blue-700 text-white">
-                      Raffle
-                    </Button>
-                  </Link>
-                  <Link href="/conflict" passHref>
-                    <Button variant="default" className="bg-purple-600 hover:bg-purple-700 text-white">
-                      Conflict
-                    </Button>
-                  </Link>
-                  <Link href="/verification" passHref>
-                    <Button variant="default" className="bg-green-600 hover:bg-green-700 text-white">
-                      Verify
-                    </Button>
-                  </Link>
-                </div>
+              <div className="mt-2 flex gap-2 justify-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <Link href="/admin/raffle" passHref>
+                  <Button
+                    variant="default"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Raffle
+                  </Button>
+                </Link>
+                <Link href="/conflict" passHref>
+                  <Button
+                    variant="default"
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    Conflict
+                  </Button>
+                </Link>
+                <Link href="/verification" passHref>
+                  <Button
+                    variant="default"
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    Verify
+                  </Button>
+                </Link>
+              </div>
             )}
           </div>
         </div>
 
         {/* Account Deleted Dialog */}
         <Dialog
-            open={accountDeleted}
-            onOpenChange={(open) => {
-              if (!open) {
-                router.push("/login")
-              }
-            }}
+          open={accountDeleted}
+          onOpenChange={(open) => {
+            if (!open) {
+              router.push("/login")
+            }
+          }}
         >
           {/* Semi-transparent overlay */}
-          <DialogOverlay className="bg-black bg-opacity-50 fixed inset-0"/>
+          <DialogOverlay className="bg-black bg-opacity-50 fixed inset-0" />
           <DialogContent className="bg-white rounded-md p-6">
             <DialogHeader>
               <DialogTitle className="text-xl font-semibold text-gray-900">
@@ -463,9 +476,9 @@ export default function SettingsPage() {
               </DialogDescription>
             </DialogHeader>
             <Button
-                variant="secondary"
-                onClick={() => router.push("/login")}
-                className="w-full mt-6 text-gray-900"
+              variant="secondary"
+              onClick={() => router.push("/login")}
+              className="w-full mt-6 text-gray-900"
             >
               Go to Login
             </Button>
@@ -474,8 +487,8 @@ export default function SettingsPage() {
 
         {/* Custom Notification Time Dialog */}
         <Dialog
-            open={isNotificationDialogOpen}
-            onOpenChange={setIsNotificationDialogOpen}
+          open={isNotificationDialogOpen}
+          onOpenChange={setIsNotificationDialogOpen}
         >
           {/* Semi-transparent overlay */}
           <DialogOverlay className="bg-black bg-opacity-50 fixed inset-0" />

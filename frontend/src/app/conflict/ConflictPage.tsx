@@ -15,7 +15,8 @@ import {
   ShieldX,
   Settings,
   User,
-  DollarSign, ArrowLeft,
+  DollarSign,
+  ArrowLeft,
 } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
@@ -39,7 +40,7 @@ import { format, isValid } from "date-fns"
 import { Skeleton } from "@/components/ui/skeleton"
 import DeleteListingDialog from "@/app/conflict/components/DeleteListingDialog"
 import UserInfo from "./components/[user-id]/UserInfo"
-import {useRouter} from "next/navigation";
+import { useRouter } from "next/navigation"
 
 const MAX_ITEMS = 10
 
@@ -365,7 +366,7 @@ const AdminReportsPage = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [userDetails, setUserDetails] = useState<UserDetailsType | null>(null)
-  const router = useRouter();
+  const router = useRouter()
 
   const handleUserClick = (userId: string) => {
     console.log("User ID clicked:", userId)
@@ -480,9 +481,9 @@ const AdminReportsPage = () => {
     return (
       <div className="min-h-screen bg-slate-50 py-8">
         <Button
-            variant="ghost"
-            className="left-4 flex items-center text-gray-800"
-            onClick={() => router.push("/settings")}
+          variant="ghost"
+          className="left-4 flex items-center text-gray-800"
+          onClick={() => router.push("/settings")}
         >
           <ArrowLeft className="w-5 h-5 mr-1" />
           Back
@@ -506,9 +507,9 @@ const AdminReportsPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 py-8">
       <Button
-          variant="ghost"
-          className="left-4 flex items-center text-gray-800"
-          onClick={() => router.push("/settings")}
+        variant="ghost"
+        className="left-4 flex items-center text-gray-800"
+        onClick={() => router.push("/settings")}
       >
         <ArrowLeft className="w-5 h-5 mr-1" />
         Back
