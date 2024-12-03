@@ -537,7 +537,7 @@ export default function SearchPage() {
           console.error("Error getting position:", error)
         },
         {
-          enableHighAccuracy: false,
+          enableHighAccuracy: true,
           maximumAge: 5000,
         },
       )
@@ -578,7 +578,7 @@ export default function SearchPage() {
           console.error("Error getting position:", error)
         },
         {
-          enableHighAccuracy: false,
+          enableHighAccuracy: true,
           maximumAge: 5000,
         },
       )
