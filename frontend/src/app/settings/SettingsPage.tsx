@@ -34,7 +34,7 @@ import {
   update_notification_time,
   set_user_location,
 } from "@/features/user/userSlice"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, ChevronDown, ChevronUp } from "lucide-react"
 import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
 
@@ -52,6 +52,7 @@ export default function SettingsPage() {
   const dispatch = useAppDispatch()
   const router = useRouter()
   const [accountDeleted, setAccountDeleted] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [notificationTime, setNotificationTime] = useState("")
   const [isNotificationDialogOpen, setIsNotificationDialogOpen] =
@@ -407,6 +408,50 @@ export default function SettingsPage() {
                 </form>
               </AlertDialogContent>
             </AlertDialog>
+          </div>
+          {/* Navigation Buttons */}
+          <div className="mt-8">
+            <Button
+              variant="ghost"
+              onClick={() => setIsOpen(!isOpen)}
+              className="w-full text-gray-500 hover:text-gray-700 flex items-center justify-between text-sm"
+            >
+              <span>Administrative Tools</span>
+              {isOpen ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+
+            {isOpen && (
+              <div className="mt-2 flex gap-2 justify-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <Link href="/admin/raffle" passHref>
+                  <Button
+                    variant="default"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Raffle
+                  </Button>
+                </Link>
+                <Link href="/conflict" passHref>
+                  <Button
+                    variant="default"
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    Conflict
+                  </Button>
+                </Link>
+                <Link href="/verification" passHref>
+                  <Button
+                    variant="default"
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    Verify
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 
