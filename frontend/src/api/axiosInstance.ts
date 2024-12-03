@@ -39,7 +39,7 @@ axiosInstance.interceptors.response.use(
     return resp
   },
   (error) => {
-    const loggedIn = store.getState().user.isLoggedIn;
+    const loggedIn = store.getState().user.isLoggedIn
     if ((error.status === 401 || error.status === 403) && loggedIn) {
       store.dispatch({ type: "user/resetLoggedIn" })
       window.location.href = `${window.location.protocol}//${window.location.host}/login`
