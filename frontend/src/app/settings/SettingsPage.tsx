@@ -132,9 +132,10 @@ export default function SettingsPage() {
       .catch((err: any) => {
         console.error("Reset failed:", err)
       })
-      .finally(() =>{
+      .finally(() => {
         setIsNotificationDialogOpen(false)
-        dispatch(get_notification_time())}
+        dispatch(get_notification_time())
+      }
       )
   }
 
