@@ -4,7 +4,7 @@ from xpark.config import Config
 import uuid
 from werkzeug.datastructures import FileStorage
 import boto3
-from PIL import Image
+from PIL import Image, ImageOps
 from io import BytesIO
 from pillow_heif import register_heif_opener  # type: ignore[import-untyped]
 
@@ -27,6 +27,7 @@ class S3:
             i = BytesIO()
             # Scale down
             img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+            img = ImageOps.exif_transpose(img)
             img.save(i, format="PNG")
             i.seek(0)
 
