@@ -66,9 +66,6 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setDomLoaded(true)
-  }, [])
-
-  useEffect(() => {
     dispatch(get_notification_time())
   }, [])
 
@@ -135,7 +132,10 @@ export default function SettingsPage() {
       .catch((err: any) => {
         console.error("Reset failed:", err)
       })
-      .finally(() => setIsNotificationDialogOpen(false))
+      .finally(() =>{
+        setIsNotificationDialogOpen(false)
+        dispatch(get_notification_time())}
+      )
   }
 
   // save state and city

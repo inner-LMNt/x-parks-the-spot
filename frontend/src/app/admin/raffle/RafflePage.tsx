@@ -77,9 +77,9 @@ export const RafflePage = () => {
     return <p className="text-center text-lg">Loading...</p>
   }
 
-  if (error) {
-    return <p className="text-red-500 text-center">Error: {error}</p>
-  }
+  // if (error) {
+  //   return <p className="text-red-500 text-center">Error: {error}</p>
+  // }
 
   return (
     <div className="min-h-screen bg-slate-50 py-8">
@@ -102,14 +102,15 @@ export const RafflePage = () => {
             <h1 className="text-3xl font-bold mb-2 text-black">
               Raffle Entries
             </h1>
-            <div className="flex gap-2">
-              <Button variant="default" onClick={handleRefreshEntries}>
-                Refresh Entries
-              </Button>
-              <Button variant="default" onClick={handlePerformRaffle}>
-                Perform Raffle
-              </Button>
-            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button variant="default" onClick={handleRefreshEntries}>
+              Refresh Entries
+            </Button>
+            <Button variant="default" onClick={handlePerformRaffle}>
+              Perform Raffle
+            </Button>
           </div>
 
           {raffleEntries.length === 0 ? (
