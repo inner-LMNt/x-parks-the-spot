@@ -6,7 +6,7 @@ from werkzeug.datastructures import FileStorage
 import boto3
 from PIL import Image
 from io import BytesIO
-from pillow_heif import register_heif_opener
+from pillow_heif import register_heif_opener  # type: ignore[import-untyped]
 
 register_heif_opener()
 
