@@ -126,7 +126,7 @@ const DriverArrive = ({
         <DialogHeader>
           <DialogTitle>Spot Verification</DialogTitle>
         </DialogHeader>
-        <div className="text-center">
+        <div className="text-center text-slate-950">
           <p>Is this spot taken, or are you parked here?</p>
 
           {photoTimestamp && (
@@ -180,7 +180,7 @@ const DriverArrive = ({
                 onChange={() => setStatusSelection("taken")}
                 className="form-radio h-5 w-5 text-green-500"
               />
-              <span>This Spot was Already Taken</span>
+              <span className="text-slate-950">This Spot was Already Taken</span>
             </label>
             <label className="flex items-center space-x-2">
               <input
@@ -190,7 +190,7 @@ const DriverArrive = ({
                 onChange={() => setStatusSelection("parked")}
                 className="form-radio h-5 w-5 text-blue-500"
               />
-              <span>I Am Parked Here</span>
+              <span className="text-slate-950">I Am Parked Here</span>
             </label>
           </div>
 
@@ -203,7 +203,7 @@ const DriverArrive = ({
             >
               Submit
             </Button>
-            <Button onClick={closeDriverArriveDialog} variant="outline">
+            <Button onClick={closeDriverArriveDialog} variant="outline" className="text-slate-950">
               Close
             </Button>
           </div>
