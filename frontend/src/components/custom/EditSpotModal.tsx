@@ -1007,7 +1007,6 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
       <AlertDialog
         open={isReverifyOpen}
         onOpenChange={setIsReverifyOpen}
-        className="z-[200]"
       >
         <AlertDialogOverlay className="z-[200]" />
         <AlertDialogContent className="z-[300]">
