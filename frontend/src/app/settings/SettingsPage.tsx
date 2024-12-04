@@ -135,8 +135,7 @@ export default function SettingsPage() {
       .finally(() => {
         setIsNotificationDialogOpen(false)
         dispatch(get_notification_time())
-      }
-      )
+      })
   }
 
   // save state and city
