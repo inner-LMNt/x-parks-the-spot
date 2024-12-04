@@ -39,8 +39,8 @@ interface SpotPerformance {
   activeBookings: number
   completedBookings: number
   canceledBookings: number
-  popularHours: Array<{ hour: number; bookings: number }>
-  popularDays: Array<{ day: string; bookings: number }>
+  popularHours: Array<{ hour: string; reservations: number }>
+  popularDays: Array<{ day: string; reservations: number }>
 }
 
 export interface SpotsTabProps {
@@ -164,12 +164,16 @@ export default function SpotsTab({
     const daysMap: Record<string, number> = {}
 
     source.forEach((spot) => {
-      spot.performance.popularHours.forEach(({ hour, bookings }) => {
-        hoursMap[hour] = (hoursMap[hour] || 0) + bookings
-      })
-      spot.performance.popularDays.forEach(({ day, bookings }) => {
-        daysMap[day] = (daysMap[day] || 0) + bookings
-      })
+      spot.performance.popularHours.forEach(
+        ({ hour, reservations }: { hour: string; reservations: number }) => {
+          hoursMap[Number(hour)] = (hoursMap[Number(hour)] || 0) + reservations
+        },
+      )
+      spot.performance.popularDays.forEach(
+        ({ day, reservations }: { day: string; reservations: number }) => {
+          daysMap[day] = (daysMap[day] || 0) + reservations
+        },
+      )
     })
 
     return {
@@ -183,7 +187,32 @@ export default function SpotsTab({
       })),
     }
   }, [spotsWithPerformance, selectedSpot])
+  const getNumbers = (spot: any) => {
+    const hoursMap: Record<number, number> = {}
+    const daysMap: Record<string, number> = {}
 
+    spot.performance.popularHours.forEach(
+      ({ hour, reservations }: { hour: string; reservations: number }) => {
+        hoursMap[Number(hour)] = (hoursMap[Number(hour)] || 0) + reservations
+      },
+    )
+    spot.performance.popularDays.forEach(
+      ({ day, reservations }: { day: string; reservations: number }) => {
+        daysMap[day] = (daysMap[day] || 0) + reservations
+      },
+    )
+
+    return {
+      hours: Array.from({ length: 24 }, (_, i) => ({
+        hour: formatHour(i),
+        reservations: hoursMap[i] || 0,
+      })),
+      days: WEEKDAYS_ORDER.map((day) => ({
+        day,
+        reservations: daysMap[day] || 0,
+      })),
+    }
+  }
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -276,8 +305,8 @@ export default function SpotsTab({
               </AccordionTrigger>
               <AccordionContent className="px-6 pb-6">
                 <PerformanceCharts
-                  popularHours={aggregatedData.hours}
-                  popularDays={aggregatedData.days}
+                  popularHours={getNumbers(spot).hours}
+                  popularDays={getNumbers(spot).days}
                   className="mt-4"
                 />
               </AccordionContent>

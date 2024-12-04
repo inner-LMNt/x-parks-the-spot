@@ -401,7 +401,11 @@ def create_test_image(
 ) -> FileStorage:
     """Create a test image file"""
     return FileStorage(
-        stream=io.BytesIO(bytes.fromhex("FFD8FFDB000000")),
+        stream=io.BytesIO(
+            bytes.fromhex(
+                "89504e470d0a1a0a0000000d4948445200000001000000010100000000376ef9240000000a4944415478016360000000020001737501180000000049454e44ae426082"
+            )
+        ),
         filename=filename,
         content_type=content_type,
     )

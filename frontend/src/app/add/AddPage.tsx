@@ -1148,7 +1148,7 @@ export default function AddPage() {
                         <input
                           type="file"
                           name="image"
-                          accept="image/*"
+                          accept="image/*, .heic, .HEIC"
                           onChange={handleImageChange}
                           ref={fileInputRef}
                           className="hidden"
@@ -1233,7 +1233,7 @@ export default function AddPage() {
                       </DialogHeader>
                       <DialogFooter>
                         <Button
-                          variant="outline"
+                          variant="destructive"
                           onClick={() => setShowConfirmationModal(false)}
                         >
                           Cancel

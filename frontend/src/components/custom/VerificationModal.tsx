@@ -151,7 +151,7 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
                     <>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/*, .heic, .HEIC"
                         ref={fileInputRef}
                         onChange={handleFileChange}
                         className="hidden"
