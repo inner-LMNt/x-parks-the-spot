@@ -6,6 +6,9 @@ from werkzeug.datastructures import FileStorage
 import boto3
 from PIL import Image
 from io import BytesIO
+from pillow_heif import register_heif_opener
+
+register_heif_opener()
 
 
 class S3:
@@ -22,6 +25,8 @@ class S3:
             # Convert to PNG if not PNG
             img = Image.open(image_file.stream)
             i = BytesIO()
+            # Scale down
+            img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
             img.save(i, format="PNG")
             i.seek(0)
 
