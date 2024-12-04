@@ -503,6 +503,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
       toast({
         title: "Spot Updated Successfully!",
         description: "Your parking spot has been updated.",
+        variant: "success",
       })
       dispatch(resetError())
       onClose()
@@ -1003,9 +1004,13 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
       </Transition>
 
       {/* Reverification Confirmation Dialog */}
-      <AlertDialog open={isReverifyOpen} onOpenChange={setIsReverifyOpen}>
-        <AlertDialogOverlay />
-        <AlertDialogContent>
+      <AlertDialog
+        open={isReverifyOpen}
+        onOpenChange={setIsReverifyOpen}
+        className="z-[200]"
+      >
+        <AlertDialogOverlay className="z-[200]" />
+        <AlertDialogContent className="z-[300]">
           <AlertDialogTitle>Reverification Required</AlertDialogTitle>
           <AlertDialogDescription>
             Modifying the address or location of this parking spot requires
