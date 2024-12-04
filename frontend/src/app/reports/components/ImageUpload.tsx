@@ -30,7 +30,7 @@ export const ImageUpload = ({ onFileSelect }: ImageUploadProps) => {
       <div className="relative">
         <input
           type="file"
-          accept="image/*"
+          accept="image/*, .heic, .HEIC"
           onChange={handleFileUpload}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           id="file-upload"
