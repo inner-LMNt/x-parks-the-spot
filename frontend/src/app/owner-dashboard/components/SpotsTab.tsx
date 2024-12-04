@@ -39,8 +39,8 @@ interface SpotPerformance {
   activeBookings: number
   completedBookings: number
   canceledBookings: number
-  popularHours: Array<{ hour: number; bookings: number }>
-  popularDays: Array<{ day: string; bookings: number }>
+  popularHours: Array<{ hour: string; reservations: number }>
+  popularDays: Array<{ day: string; reservations: number }>
 }
 
 export interface SpotsTabProps {
@@ -183,7 +183,28 @@ export default function SpotsTab({
       })),
     }
   }, [spotsWithPerformance, selectedSpot])
+  const getNumbers = (spot) => {
+    const hoursMap: Record<number, number> = {}
+    const daysMap: Record<string, number> = {}
 
+    spot.performance.popularHours.forEach(({ hour, bookings }) => {
+      hoursMap[hour] = (hoursMap[hour] || 0) + bookings
+    })
+    spot.performance.popularDays.forEach(({ day, bookings }) => {
+      daysMap[day] = (daysMap[day] || 0) + bookings
+    })
+
+    return {
+      hours: Array.from({ length: 24 }, (_, i) => ({
+        hour: formatHour(i),
+        reservations: hoursMap[i] || 0,
+      })),
+      days: WEEKDAYS_ORDER.map((day) => ({
+        day,
+        reservations: daysMap[day] || 0,
+      })),
+    }
+  }
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -276,8 +297,8 @@ export default function SpotsTab({
               </AccordionTrigger>
               <AccordionContent className="px-6 pb-6">
                 <PerformanceCharts
-                  popularHours={aggregatedData.hours}
-                  popularDays={aggregatedData.days}
+                  popularHours={getNumbers(spot).hours}
+                  popularDays={getNumbers(spot).days}
                   className="mt-4"
                 />
               </AccordionContent>
