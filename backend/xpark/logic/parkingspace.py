@@ -351,7 +351,9 @@ def create_free_parking_space(
         photos = []
 
     # Provide default values
-    default_name = f'Spot Logged at {datetime.now().astimezone().strftime("%I:%M %p, %B %d %Y")}'
+    default_name = (
+        f'Spot Logged at {datetime.now().astimezone().strftime("%I:%M %p, %B %d %Y")}'
+    )
     default_verification_status = "unverified"
     default_availability_schedule = json.dumps([])  # or another appropriate default
     default_price = 0
