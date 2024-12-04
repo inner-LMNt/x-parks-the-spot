@@ -130,14 +130,10 @@ const DriverArrive = ({
           <p>Is this spot taken, or are you parked here?</p>
 
           {photoTimestamp && (
-            <p className="text-gray-600 text-sm mb-2">
-              Captured at: {photoTimestamp}
-            </p>
+            <p className="text-sm mb-2">Captured at: {photoTimestamp}</p>
           )}
           {photoLocation && (
-            <p className="text-gray-600 text-sm mb-2">
-              Location: {photoLocation}
-            </p>
+            <p className="text-sm mb-2">Location: {photoLocation}</p>
           )}
 
           {/* Photo preview or webcam capture */}

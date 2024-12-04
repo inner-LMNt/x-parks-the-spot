@@ -1433,18 +1433,18 @@ export default function SearchPage() {
                               <DialogTitle className="text-lg text-gray-800 font-bold">
                                 Submit Verification Photo
                               </DialogTitle>
-                              <DialogDescription className="text-sm text-gray-500">
+                              <DialogDescription className="text-sm">
                                 Use your camera to take a photo for
                                 verification.
                               </DialogDescription>
                             </DialogHeader>
                             {photoTimestamp && (
-                              <p className="text-gray-600 text-sm mb-2">
+                              <p className="text-sm mb-2">
                                 Captured at: {photoTimestamp}
                               </p>
                             )}
                             {photoLocation && (
-                              <p className="text-gray-600 text-sm mb-2">
+                              <p className="text-sm mb-2">
                                 Location: {photoLocation}
                               </p>
                             )}
