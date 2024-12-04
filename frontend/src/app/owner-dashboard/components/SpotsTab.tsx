@@ -164,12 +164,16 @@ export default function SpotsTab({
     const daysMap: Record<string, number> = {}
 
     source.forEach((spot) => {
-      spot.performance.popularHours.forEach(({ hour, reservations } : {hour: string, reservations: number}) => {
-        hoursMap[Number(hour)] = (hoursMap[Number(hour)] || 0) + reservations
-      })
-      spot.performance.popularDays.forEach(({ day, reservations } : {day: string, reservations: number}) => {
-        daysMap[day] = (daysMap[day] || 0) + reservations
-      })
+      spot.performance.popularHours.forEach(
+        ({ hour, reservations }: { hour: string; reservations: number }) => {
+          hoursMap[Number(hour)] = (hoursMap[Number(hour)] || 0) + reservations
+        },
+      )
+      spot.performance.popularDays.forEach(
+        ({ day, reservations }: { day: string; reservations: number }) => {
+          daysMap[day] = (daysMap[day] || 0) + reservations
+        },
+      )
     })
 
     return {
@@ -187,12 +191,16 @@ export default function SpotsTab({
     const hoursMap: Record<number, number> = {}
     const daysMap: Record<string, number> = {}
 
-    spot.performance.popularHours.forEach(({ hour, reservations } : {hour: string, reservations: number}) => {
-      hoursMap[Number(hour)] = (hoursMap[Number(hour)] || 0) + reservations
-    })
-    spot.performance.popularDays.forEach(({ day, reservations } : {day: string, reservations: number}) => {
-      daysMap[day] = (daysMap[day] || 0) + reservations
-    })
+    spot.performance.popularHours.forEach(
+      ({ hour, reservations }: { hour: string; reservations: number }) => {
+        hoursMap[Number(hour)] = (hoursMap[Number(hour)] || 0) + reservations
+      },
+    )
+    spot.performance.popularDays.forEach(
+      ({ day, reservations }: { day: string; reservations: number }) => {
+        daysMap[day] = (daysMap[day] || 0) + reservations
+      },
+    )
 
     return {
       hours: Array.from({ length: 24 }, (_, i) => ({
