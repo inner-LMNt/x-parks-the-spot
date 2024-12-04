@@ -142,13 +142,17 @@ export const VerificationPage = () => {
             <h1 className="text-3xl font-bold mb-2 text-black">
               Pending Verification Parking Spots
             </h1>
-            <Button variant="ghost" onClick={toggleListExpansion}>
+            <Button
+              variant="ghost"
+              onClick={toggleListExpansion}
+              className="text-slate-950"
+            >
               {isListExpanded ? "Collapse" : "Expand"} List
             </Button>
           </div>
 
           {pendingSpots.length === 0 ? (
-            <p className="text-center">
+            <p className="text-center text-slate-950">
               No pending verification spots available.
             </p>
           ) : (
@@ -322,7 +326,7 @@ export const VerificationPage = () => {
                 {actionType === "approve" ? "Verification" : "Rejection"}
               </DialogTitle>
             </DialogHeader>
-            <p className="mb-4">
+            <p className="mb-4 text-slate-950">
               To confirm the{" "}
               {actionType === "approve" ? "approval" : "rejection"} of this
               parking spot, type "confirm" in the box below.
