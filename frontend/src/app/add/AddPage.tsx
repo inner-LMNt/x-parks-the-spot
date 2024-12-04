@@ -1148,7 +1148,7 @@ export default function AddPage() {
                         <input
                           type="file"
                           name="image"
-                          accept="image/*"
+                          accept="image/*, .heic, .HEIC"
                           onChange={handleImageChange}
                           ref={fileInputRef}
                           className="hidden"
