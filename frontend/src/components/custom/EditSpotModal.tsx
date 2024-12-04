@@ -1004,10 +1004,7 @@ const EditSpotModal: React.FC<EditSpotModalProps> = ({
       </Transition>
 
       {/* Reverification Confirmation Dialog */}
-      <AlertDialog
-        open={isReverifyOpen}
-        onOpenChange={setIsReverifyOpen}
-      >
+      <AlertDialog open={isReverifyOpen} onOpenChange={setIsReverifyOpen}>
         <AlertDialogOverlay className="z-[200]" />
         <AlertDialogContent className="z-[300]">
           <AlertDialogTitle>Reverification Required</AlertDialogTitle>
