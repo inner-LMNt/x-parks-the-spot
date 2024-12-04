@@ -20,13 +20,10 @@ class S3:
 
         if mime.split("/")[0] == "image":
             # Convert to PNG if not PNG
-            if mime != "image/png":
-                img = Image.open(image_file.stream)
-                i = BytesIO()
-                img.save(i, format="PNG")
-                i.seek(0)
-            else:
-                i = image_file.stream
+            img = Image.open(image_file.stream)
+            i = BytesIO()
+            img.save(i, format="PNG")
+            i.seek(0)
 
             unique_filename = f"{uuid.uuid4()}"
             image_uri = f"{Config.S3_ENDPOINT}/{Config.S3_BUCKET}/{unique_filename}"
