@@ -1233,7 +1233,7 @@ export default function AddPage() {
                       </DialogHeader>
                       <DialogFooter>
                         <Button
-                          variant="outline"
+                          variant="destructive"
                           onClick={() => setShowConfirmationModal(false)}
                         >
                           Cancel
