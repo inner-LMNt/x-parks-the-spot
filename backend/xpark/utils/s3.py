@@ -4,6 +4,8 @@ from xpark.config import Config
 import uuid
 from werkzeug.datastructures import FileStorage
 import boto3
+from PIL import Image
+from io import BytesIO
 
 
 class S3:
@@ -15,15 +17,25 @@ class S3:
         mime = magic.from_buffer(image_file.read(2048), mime=True)
         # Reset seek before uploading stream
         image_file.seek(0)
+
         if mime.split("/")[0] == "image":
+            # Convert to PNG if not PNG
+            if mime != "image/png":
+                img = Image.open(image_file.stream)
+                i = BytesIO()
+                img.save(i, format="PNG")
+                i.seek(0)
+            else:
+                i = image_file.stream
+
             unique_filename = f"{uuid.uuid4()}"
             image_uri = f"{Config.S3_ENDPOINT}/{Config.S3_BUCKET}/{unique_filename}"
             # Upload file with correct file type
             if Config.S3_ENABLED == "yes":
                 S3.conn.Bucket(Config.S3_BUCKET).upload_fileobj(
-                    image_file.stream,
+                    i,
                     unique_filename,
-                    ExtraArgs={"ContentType": mime},
+                    ExtraArgs={"ContentType": "image/png"},
                 )
             return image_uri
         else:
