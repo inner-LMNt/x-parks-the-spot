@@ -80,22 +80,25 @@ const UserInfo: React.FC<{ userId: string; userDetails?: UserDetails }> = ({
         {/* Content Section */}
         <div className="p-6">
           <Tabs defaultValue="pastBookings">
-            <TabsList className="flex space-x-4 border-b border-gray-200 mb-4">
+            <TabsList
+              className="flex space-x-4 border-b border-gray-200 flex-1 mb-4 py-4 w-full bg-gray-100 rounded-lg"
+              style={{ minHeight: "3 rem" }}
+            >
               <TabsTrigger
                 value="pastBookings"
-                className="text-gray-700 hover:text-gray-900 focus:outline-none"
+                className="w-32 text-gray-700 hover:text-gray-900 focus:outline-none text-center whitespace-normal py-2 px-3 leading-6"
               >
                 Past Bookings
               </TabsTrigger>
               <TabsTrigger
                 value="parkingSpaces"
-                className="text-gray-700 hover:text-gray-900 focus:outline-none"
+                className="w-32 text-gray-700 hover:text-gray-900 focus:outline-none text-center whitespace-normal py-2 px-3 leading-6"
               >
                 Parking Spaces
               </TabsTrigger>
               <TabsTrigger
                 value="reports"
-                className="text-gray-700 hover:text-gray-900 focus:outline-none"
+                className="w-32 text-gray-700 hover:text-gray-900 focus:outline-none text-center whitespace-normal py-2 px-3 leading-6"
               >
                 Reports
               </TabsTrigger>
