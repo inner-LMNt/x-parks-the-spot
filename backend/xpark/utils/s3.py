@@ -27,7 +27,7 @@ class S3:
             i = BytesIO()
             # Scale down
             img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
-            img = ImageOps.exif_transpose(img)
+            ImageOps.exif_transpose(img, in_place=True)
             img.save(i, format="PNG")
             i.seek(0)
 
